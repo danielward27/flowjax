@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import jax.numpy as jnp
 import equinox as eqx
 from jax import random
+import jax
 
 class Bijection(ABC):
 
@@ -121,15 +122,15 @@ class RealNVP(eqx.Module):
         num_layers : int,  # add option for other bijections?
         ):
         
-        d = round(D//2)
         layers = []
+        ds = [round(jnp.floor(D/2).item()), round(jnp.ceil(D/2).item())]
+        permutation = jnp.flip(jnp.arange(D))
         for i in range(num_layers):
-            perm_key, coupling_key, key = random.split(key, 3)
-            permutation = random.permutation(perm_key, jnp.arange(D))
+            key, subkey = random.split(key)
+            d = ds[0] if i % 2 == 0 else ds[1]
             layers.extend(
                 [CouplingLayer(
-                    coupling_key, d, D,
-                    conditioner_width, conditioner_depth, Affine()),
+                    key, d, D, conditioner_width, conditioner_depth, Affine()),
                 Permute(permutation)]
             )
         self.layers = layers
@@ -153,4 +154,11 @@ class RealNVP(eqx.Module):
         for layer in reversed(self.layers):
             x = layer.inverse(x)
         return x
-        
+
+    def log_prob(self, x):
+        """Log probability in target distribution, assuming a standard normal
+        base distribution."""
+        z, log_abs_det = self.transform_and_log_abs_det_jacobian(x)
+        p_z = jax.scipy.stats.norm.logpdf(z)
+        return (p_z + log_abs_det).mean()
+
