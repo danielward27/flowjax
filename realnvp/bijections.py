@@ -169,12 +169,11 @@ class RealNVP(eqx.Module):
 class RationalQuadraticSpline(ParameterisedBijection):
     K : int
     B : float
-    _linear_pad : jnp.ndarray  # End knots and beyond
+    _pos_pad : jnp.ndarray  # End knots and beyond
 
     def __init__(self, K, B):
         self.K = K
         self.B = B
-
         pos_pad = jnp.zeros(self.K+4)
         pad_idxs = jnp.array([0, 1, -2, -1])
         pad_vals = jnp.array([-B*1e4, -B, B, B*1e4]) # Avoids jax control flow for identity tails
