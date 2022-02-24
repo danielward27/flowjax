@@ -1,12 +1,11 @@
-# %%
 import jax.numpy as jnp
-from jax import random 
-from realnvp.bijections.rational_quadratic_spline import RationalQuadraticSpline1D, RationalQuadraticSpline
+from jax import random
+from realnvp.bijections.rational_quadratic_spline import (
+    RationalQuadraticSpline1D,
+    RationalQuadraticSpline,
+)
 import pytest
 
-
-
-# %%
 
 def test_RationalQuadraticSpline1D():
     spline = RationalQuadraticSpline1D(K=5, B=3)
@@ -28,77 +27,17 @@ def test_RationalQuadraticSpline1D():
         assert y == pytest.approx(x_reconstructed)
 
 
-# # %% plot to see which is wrong
-# x = jnp.linspace(-6, 6)
-# y = [spline.transform(xi, *args).item() for xi in x]
-# y = jnp.array(y)
+def test_RationalQuadraticSpline():
+    spline = RationalQuadraticSpline(K=5, B=3)
+    x = jnp.array([-20, 0.1, 2, 20])
+    params = random.normal(random.PRNGKey(0), (spline.num_params(x.shape[0]),))
+    transform_args = spline.get_args(params)
+    y = spline.transform(x, *transform_args)
+    x_reconstructed = spline.inverse(y, *transform_args)
+    assert x == pytest.approx(x_reconstructed)
+    expected_changed = jnp.array([True, False, False, True])
+    assert ((jnp.abs((y - x)) <= 1e-5) == expected_changed).all()
 
-# import matplotlib.pyplot as plt
-# plt.plot(x,y)
-
-# x_reconstructed = [spline.inverse(yi, *args).item() for yi in y]
-
-# plt.plot(x_reconstructed, y)
-
-
-# %%
-
-# x_dim = 5
-# params = random.normal(key, (spline.num_params(x_dim), ))
-# key, subkey = random.split(key)
-# x = random.normal(key, (x_dim,))
-
-# # %%
-# args = spline.get_args(params)
-# print(x)
-# y = spline.transform(x, *args)
-
-# print(y)
-
-# x_reconstructed = spline.inverse(x, *args)
-# print(x_reconstructed)
-
-
-# # %%
-
-# import pytest
-# import jax.numpy as jnp
-# from jax import random
-# from realnvp.bijections import (
-#     Affine,
-#     Permute,
-#     Coupling,
-#     RealNVP,
-#     RationalQuadraticSpline,
-# )
-# from realnvp.bijections.coupling import Coupling
-# from jax import random
-
-
-
-
-
-
-# # %%
-# import pytest
-# import jax.numpy as jnp
-# from jax import random
-# from realnvp.bijections import (
-#     Affine,
-#     Permute,
-#     Coupling,
-#     RealNVP,
-#     RationalQuadraticSpline,
-# )
-# from jax import random
-
-# spline = RationalQuadraticSpline(K=5, B=3)
-# x = jnp.array([-20])
-# params = random.normal(random.PRNGKey(0), (spline.num_params(),))
-# transform_args = spline.get_args(params)
-# y = spline.transform(x, *transform_args)
-# x_reconstructed = spline.inverse(y, *transform_args)
-# # assert x == pytest.approx(x_reconstructed)
 
 # # %%
 
@@ -129,3 +68,5 @@ def test_RationalQuadraticSpline1D():
 
 # # %%
 # # fix tests
+
+# %%

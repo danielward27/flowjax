@@ -1,8 +1,8 @@
-
 import pytest
 from jax import random
-from realnvp.bijections.coupling import Coupling
+from realnvp.bijections.coupling import Coupling, CouplingStack
 from realnvp.bijections.affine import Affine
+
 
 def test_Coupling():
     model_key, x_key = random.split(random.PRNGKey(0), 2)
@@ -10,7 +10,7 @@ def test_Coupling():
     D = 5
 
     coupling = Coupling(
-        model_key, Affine(), d=d, D=D, conditioner_width=10, conditioner_depth=3, 
+        model_key, Affine(), d=d, D=D, conditioner_width=10, conditioner_depth=3,
     )
 
     x = random.uniform(x_key, (D,))
@@ -21,3 +21,14 @@ def test_Coupling():
     assert x == pytest.approx(x_reconstructed)
     assert x[:d] == pytest.approx(y[:d])
     assert (x[d:] != y[d:]).all()
+
+
+def test_CouplingStack():
+    model_key, x_key = random.split(random.PRNGKey(0), 2)
+    D = 5
+    model = CouplingStack(model_key, Affine(), D, 10, 2, 3)
+
+    x = random.uniform(x_key, (D,))
+    z = model.transform(x)
+    x_reconstructed = model.inverse(z)
+    assert x == pytest.approx(x_reconstructed)

@@ -2,6 +2,7 @@ from realnvp.bijections.affine import Affine
 import jax.numpy as jnp
 import pytest
 
+
 def test_Affine():
     d = 5
     b = Affine()
