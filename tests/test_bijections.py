@@ -58,49 +58,10 @@ def test_RealNVP():
 
 def test_RationalQuadraticSpline():
     spline = RationalQuadraticSpline(K=5, B=3)
-    x = jnp.array(0.4)
+    x = jnp.array([0.4])
     params = random.normal(random.PRNGKey(0), (spline.num_params(),))
     transform_args = spline.get_args(params)
     y = spline.transform(x, *transform_args)
     x_reconstructed = spline.inverse(y, *transform_args)
-    assert True
+    assert x ==pytest.approx(x_reconstructed)
 
-
-# %% plot transforms and inverses from -B to B and see if looks reasonable
-import jax.numpy as jnp
-import jax
-from jax import random
-from realnvp.bijections import RationalQuadraticSpline
-from jax import random
-import matplotlib.pyplot as plt
-from functools import partial
-spline = RationalQuadraticSpline(K=5, B=3)
-
-x = jnp.linspace(-spline.B+1e-6, spline.B - 1e-6, 200)
-params = random.normal(random.PRNGKey(0), (spline.num_params(),))
-transform_args = spline.get_args(params)
-y = jax.vmap(spline.transform, in_axes=(0, None, None, None))(x, *transform_args)
-plt.plot(x,y)
-# %%
-# inverse
-x_reconstructed = jax.vmap(spline.inverse, in_axes=(0, None, None, None))(y, *transform_args)
-
-# %%
-plt.plot(x,y)
-plt.plot(x_reconstructed, y)
-# inverse is broken
-
-#define method that just takes array for ParameterisedBijection and outputs 
-
-# %%
-spline.inverse(jnp.array(0.3), *transform_args)
-
-# %%
-
-def tuple_output_test(a):
-    return (a, a)
-
-a = jnp.array([1, 2, 3])
-jax.vmap(tuple_output_test)(a)
-# tuple outputs seem to work fine.
-# %%
