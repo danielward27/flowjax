@@ -1,4 +1,4 @@
-from realnvp.bijections.affine import Affine
+from jaxflows.bijections.affine import Affine
 import jax.numpy as jnp
 import pytest
 

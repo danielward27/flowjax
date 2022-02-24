@@ -14,13 +14,13 @@ def read(filename):
 
 
 setup(
-    name="realnvp",
+    name="jaxflows",
     version="0.1.0",
-    url="https://github.com/danielward27/realnvp.git",
+    url="https://github.com/danielward27/jaxflows.git",
     license="MIT",
     author="Daniel Ward",
     author_email="danielward27@outlook.com",
-    description="Basic RealNVP implementation in jax.",
+    description="Basic jaxflows implementation in jax.",
     long_description=read("README.rst"),
     packages=find_packages(exclude=("tests",)),
     install_requires=["jax", "equinox", "pytest"],

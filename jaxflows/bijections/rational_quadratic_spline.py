@@ -1,4 +1,4 @@
-from realnvp.bijections.abc import ParameterisedBijection
+from jaxflows.bijections.abc import ParameterisedBijection
 import jax.numpy as jnp
 import jax
 
@@ -26,14 +26,14 @@ class RationalQuadraticSpline1D(ParameterisedBijection):
     def transform(self, x, x_pos, y_pos, derivatives):
         k = self.get_bin(x, x_pos)
         yk, yk1, xk, xk1 = y_pos[k], y_pos[k + 1], x_pos[k], x_pos[k + 1]
-        dk, dk1 = derivatives[k], derivatives[k+1]
+        dk, dk1 = derivatives[k], derivatives[k + 1]
         sk = (yk1 - yk) / (xk1 - xk)
         xi = (x - xk) / (xk1 - xk)
         return self._rational_quadratic(sk, xi, dk, dk1, yk, yk1)
 
     def inverse(self, y, x_pos, y_pos, derivatives):
         k = self.get_bin(y, y_pos)
-        xk, xk1, yk = x_pos[k], x_pos[k+1], y_pos[k]
+        xk, xk1, yk = x_pos[k], x_pos[k + 1], y_pos[k]
         sk = (y_pos[k + 1] - yk) / (xk1 - xk)
         y_delta_s_term = (y - yk) * (derivatives[k + 1] + derivatives[k] - 2 * sk)
         a = (y_pos[k + 1] - yk) * (sk - derivatives[k]) + y_delta_s_term
@@ -41,7 +41,7 @@ class RationalQuadraticSpline1D(ParameterisedBijection):
         c = -sk * (y - yk)
         sqrt_term = jnp.sqrt(b ** 2 - 4 * a * c)
 
-        xi = (2 * c) / (-b - sqrt_term) # TODO check right square root
+        xi = (2 * c) / (-b - sqrt_term)  # TODO check right square root
 
         x = xi * (xk1 - xk) + xk
         return x
@@ -49,7 +49,7 @@ class RationalQuadraticSpline1D(ParameterisedBijection):
     def transform_and_log_abs_det_jacobian(self, x, x_pos, y_pos, derivatives):
         k = self.get_bin(x, x_pos)
         yk, yk1, xk, xk1 = y_pos[k], y_pos[k + 1], x_pos[k], x_pos[k + 1]
-        dk, dk1 = derivatives[k], derivatives[k+1]
+        dk, dk1 = derivatives[k], derivatives[k + 1]
         sk = (yk1 - yk) / (xk1 - xk)
         xi = (x - xk) / (xk1 - xk)
         y = self._rational_quadratic(sk, xi, dk, dk1, yk, yk1)
@@ -69,7 +69,7 @@ class RationalQuadraticSpline1D(ParameterisedBijection):
         y_pos = jnp.cumsum(heights) - self.B
         y_pos = self.pos_pad.at[2:-2].set(y_pos)
         return x_pos, y_pos, derivatives
-    
+
     @staticmethod
     def get_bin(target, positions):
         cond1 = target <= positions[1:]
@@ -77,17 +77,18 @@ class RationalQuadraticSpline1D(ParameterisedBijection):
         return jnp.where(cond1 & cond2, size=1)[0][0]
 
     @staticmethod
-    def _rational_quadratic(sk, xi, dk, dk1, yk, yk1):  # eq. 4 https://arxiv.org/pdf/1906.04032.pdf
+    def _rational_quadratic(
+        sk, xi, dk, dk1, yk, yk1
+    ):  # eq. 4 https://arxiv.org/pdf/1906.04032.pdf
         num = (yk1 - yk) * (sk * xi ** 2 + dk * xi * (1 - xi))
         den = sk + (dk1 + dk - 2 * sk) * xi * (1 - xi)
         return yk + num / den
 
     @staticmethod
     def _derivative(sk, xi, dk, dk1):  # eq. 5 https://arxiv.org/pdf/1906.04032.pdf
-        num = sk**2*(dk1*xi**2 + 2*sk*xi*(1-xi) + dk*(1-xi)**2)
-        den = (sk + (dk1 + dk -2*sk)*xi*(1-xi))**2
-        return num/den
-
+        num = sk ** 2 * (dk1 * xi ** 2 + 2 * sk * xi * (1 - xi) + dk * (1 - xi) ** 2)
+        den = (sk + (dk1 + dk - 2 * sk) * xi * (1 - xi)) ** 2
+        return num / den
 
 
 class RationalQuadraticSpline(ParameterisedBijection):
@@ -108,7 +109,7 @@ class RationalQuadraticSpline(ParameterisedBijection):
     def transform_and_log_abs_det_jacobian(self, x, x_pos, y_pos, derivatives):
         y, log_abs_det_jacobian = jax.vmap(
             self.spline.transform_and_log_abs_det_jacobian
-            )(x, x_pos, y_pos, derivatives)
+        )(x, x_pos, y_pos, derivatives)
         return y, log_abs_det_jacobian.sum()
 
     def inverse(self, y, x_pos, y_pos, derivatives):

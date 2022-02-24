@@ -1,9 +1,10 @@
-from realnvp.bijections.abc import ParameterisedBijection
+from jaxflows.bijections.abc import ParameterisedBijection
 import equinox as eqx
 import jax.numpy as jnp
 from jax import random
 import jax
-from realnvp.bijections.permute import Permute
+from jaxflows.bijections.permute import Permute
+
 
 class Coupling(eqx.Module):
     d: int  # Where to partition

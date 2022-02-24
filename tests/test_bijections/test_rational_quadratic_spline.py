@@ -1,6 +1,6 @@
 import jax.numpy as jnp
 from jax import random
-from realnvp.bijections.rational_quadratic_spline import (
+from jaxflows.bijections.rational_quadratic_spline import (
     RationalQuadraticSpline1D,
     RationalQuadraticSpline,
 )
@@ -44,11 +44,11 @@ def test_RationalQuadraticSpline():
 # import pytest
 # import jax.numpy as jnp
 # from jax import random
-# from realnvp.bijections import (
+# from jaxflows.bijections import (
 #     Affine,
 #     Permute,
 #     Coupling,
-#     RealNVP,
+#     jaxflows,
 #     RationalQuadraticSpline,
 # )
 # from jax import random

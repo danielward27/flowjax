@@ -1,7 +1,7 @@
 import pytest
 from jax import random
-from realnvp.bijections.coupling import Coupling, CouplingStack
-from realnvp.bijections.affine import Affine
+from jaxflows.bijections.coupling import Coupling, CouplingStack
+from jaxflows.bijections.affine import Affine
 
 
 def test_Coupling():
