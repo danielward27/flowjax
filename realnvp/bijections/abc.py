@@ -2,8 +2,10 @@ from abc import ABC, abstractmethod
 
 from scipy.misc import derivative
 
+
 class Bijection(ABC):
     "Basic bijection class"
+
     @abstractmethod
     def transform(self, x, *args):
         pass
@@ -20,7 +22,7 @@ class Bijection(ABC):
 class ParameterisedBijection(Bijection, ABC):
     """Bijection with additional methods facilitating parameterisation with a
     neural network."""
-    
+
     @abstractmethod
     def num_params(self, dim: int):
         "Total number of parameters required for bijection."
