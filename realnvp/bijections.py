@@ -2,6 +2,7 @@ import jax.numpy as jnp
 import equinox as eqx
 from jax import random
 import jax
+from scipy.misc import derivative
 from realnvp.bijection_abcs import Bijection, ParameterisedBijection
 
 
@@ -168,10 +169,22 @@ class RealNVP(eqx.Module):
 class RationalQuadraticSpline(ParameterisedBijection):
     K : int
     B : float
+    _linear_pad : jnp.ndarray  # End knots and beyond
 
     def __init__(self, K, B):
         self.K = K
         self.B = B
+
+        pos_pad = jnp.zeros(self.K+4)
+        pad_idxs = jnp.array([0, 1, -2, -1])
+        pad_vals = jnp.array([-B*1e4, -B, B, B*1e4]) # Avoids jax control flow for identity tails
+        pos_pad = pos_pad.at[pad_idxs].set(pad_vals)
+        self._pos_pad = pos_pad
+
+
+    @property  # TODO update to Buffer when introduced to eqx: https://github.com/patrick-kidger/equinox/issues/31
+    def pos_pad(self):
+        return jax.lax.stop_gradient(self._pos_pad)
 
     def transform(self, x, x_pos, y_pos, derivatives):
         # Roughly following notation from Neural Spline Flow paper (univariate)
@@ -205,10 +218,20 @@ class RationalQuadraticSpline(ParameterisedBijection):
         widths = jax.nn.softmax(params[:self.K])*2*self.B
         heights = jax.nn.softmax(params[self.K:self.K*2])*2*self.B
         derivatives = jax.nn.softmax(params[self.K*2:])
-        derivatives = jnp.pad(derivatives, 1, constant_values=1)
+        derivatives = jnp.pad(derivatives, 2, constant_values=1)
         x_pos = jnp.cumsum(widths) - self.B
-        x_pos = jnp.pad(x_pos, 1, mode="linear_ramp", end_values=(-self.B, self.B))
+        x_pos = self.pos_pad.at[2:-2].set(x_pos)
         y_pos = jnp.cumsum(heights) - self.B
-        y_pos = jnp.pad(y_pos, 1, mode="linear_ramp", end_values=(-self.B, self.B))
+        y_pos = self.pos_pad.at[2:-2].set(y_pos)
         return x_pos, y_pos, derivatives
     
+
+# %%
+import jax.numpy as jnp
+z = jnp.zeros(3)
+jnp.pad(z, 2, mode="linear_ramp", end_values=(-10, 10))
+
+# %%
+jnp.pad(z, 2, constant_values=(-10, -5))
+
+# %%

@@ -58,10 +58,41 @@ def test_RealNVP():
 
 def test_RationalQuadraticSpline():
     spline = RationalQuadraticSpline(K=5, B=3)
-    x = jnp.array([0.4])
     params = random.normal(random.PRNGKey(0), (spline.num_params(),))
     transform_args = spline.get_args(params)
+
+    x = jnp.array([0.4])
     y = spline.transform(x, *transform_args)
     x_reconstructed = spline.inverse(y, *transform_args)
     assert x ==pytest.approx(x_reconstructed)
+    assert (x != y)
 
+    # Test identity padding
+    for x_val in [-20, 20]:
+        x = jnp.array([x_val])
+        y = spline.transform(x, *transform_args)
+        x_reconstructed = spline.inverse(y, *transform_args)
+        assert x == pytest.approx(y)
+        assert y == pytest.approx(x_reconstructed)
+
+
+
+
+
+
+# %%
+import pytest
+import jax.numpy as jnp
+from jax import random
+from realnvp.bijections import Affine, Permute, CouplingLayer, RealNVP, RationalQuadraticSpline
+from jax import random
+
+spline = RationalQuadraticSpline(K=5, B=3)
+x = jnp.array([-20])
+params = random.normal(random.PRNGKey(0), (spline.num_params(),))
+transform_args = spline.get_args(params)
+y = spline.transform(x, *transform_args)
+x_reconstructed = spline.inverse(y, *transform_args)
+# assert x == pytest.approx(x_reconstructed)
+
+# %%
