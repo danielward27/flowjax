@@ -1,0 +1,2 @@
+
+class MaskedMLP(eqx.Module)
