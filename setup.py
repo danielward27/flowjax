@@ -23,7 +23,7 @@ setup(
     description="Basic jaxflows implementation in jax.",
     long_description=read("README.rst"),
     packages=find_packages(exclude=("tests",)),
-    install_requires=["jax", "equinox", "pytest"],
+    install_requires=["jax", "equinox", "pytest", "tqdm", "optax"],
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "License :: OSI Approved :: MIT License",

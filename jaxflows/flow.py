@@ -1,8 +1,11 @@
-from typing import Callable
+from typing import Callable, Iterable
+from chex import PRNGKey
 import jax.numpy as jnp
+import optax
 from jaxflows.bijections.abc import Bijection
 from jax.scipy.stats import norm
 from jax import random
+from tqdm import tqdm
 import equinox as eqx
 import jax
 
@@ -38,16 +41,17 @@ class Flow(eqx.Module):
         else:
             self.base_log_prob = lambda x: norm.logpdf(x).sum(axis=1)
             self.base_sample = lambda key, n: random.normal(key, (n, target_dim))
-            
+    
+    @eqx.filter_jit
     def log_prob(self, x : jnp.array):
         "Evaluate the log probability of the target distribution."
         z, log_abs_det = jax.vmap(self.bijection.transform_and_log_abs_det_jacobian)(x)
         p_z = self.base_log_prob(z)
         return p_z + log_abs_det
 
+    @eqx.filter_jit
     def sample(self, key : random.PRNGKey, n : int):
         "Sample from the target distribution."
         z = self.base_sample(key, n)
         x = jax.vmap(self.bijection.inverse)(z)
         return x
-        
