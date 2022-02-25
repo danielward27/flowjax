@@ -20,7 +20,7 @@ class Permute(Bijection):
         return x[self.permutation]
 
     def transform_and_log_abs_det_jacobian(self, x):
-        return x[self.permutation], jnp.array([0])
+        return x[self.permutation], jnp.array(0)
 
     def inverse(self, y):
         return y[self.inverse_permutation]

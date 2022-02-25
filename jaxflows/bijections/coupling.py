@@ -2,25 +2,34 @@ from jaxflows.bijections.abc import ParameterisedBijection
 import equinox as eqx
 import jax.numpy as jnp
 from jax import random
-import jax
 from jaxflows.bijections.permute import Permute
+from jaxflows.bijections.abc import Bijection
 
-
-class Coupling(eqx.Module):
-    d: int  # Where to partition
-    D: int  # Total dimension
+class Coupling(Bijection, eqx.Module):
+    d: int
+    D: int
     bijection: ParameterisedBijection
     conditioner: eqx.nn.MLP
 
     def __init__(
         self,
         key: random.PRNGKey,
-        bijection,
+        bijection : ParameterisedBijection,
         d: int,
         D: int,
         conditioner_width: int,
         conditioner_depth: int,
     ):
+        """Coupling layer implementation.
+
+        Args:
+            key (random.PRNGKey): Key
+            bijection (ParameterisedBijection): Bijection to be parameterised by the conditioner neural netork.
+            d (int): Number of untransformed conditioning variables.
+            D (int): Total dimension.
+            conditioner_width (int): Number of nodes in hidden layers.
+            conditioner_depth (int): Number of hidden layers.
+        """
         self.d = d
         self.D = D
         self.bijection = bijection
@@ -59,17 +68,18 @@ class Coupling(eqx.Module):
         return x
 
 
-class CouplingStack(eqx.Module):
+class CouplingStack(Bijection, eqx.Module):
     layers: list
+    D : int
 
     def __init__(
         self,
         key: random.PRNGKey,
         bijection: ParameterisedBijection,
         D: int,
-        conditioner_width: int,
-        conditioner_depth: int,
         num_layers: int,
+        conditioner_width: int = 40,
+        conditioner_depth: int = 2,
     ):
 
         layers = []
@@ -81,12 +91,15 @@ class CouplingStack(eqx.Module):
             layers.extend(
                 [
                     Coupling(
-                        key, bijection, d, D, conditioner_width, conditioner_depth
+                        key=key, bijection=bijection, d=d, D=D,
+                        conditioner_width=conditioner_width,
+                        conditioner_depth=conditioner_depth
                     ),
                     Permute(permutation),
                 ]
             )
         self.layers = layers[:-2]  # remove last leakyRelu and permute
+        self.D = D
 
     def transform(self, x):
         z = x
@@ -107,10 +120,3 @@ class CouplingStack(eqx.Module):
         for layer in reversed(self.layers):
             x = layer.inverse(x)
         return x
-
-    def log_prob(self, x):
-        """Log probability in target distribution, assuming a standard normal
-        base distribution."""
-        z, log_abs_det = self.transform_and_log_abs_det_jacobian(x)
-        p_z = jax.scipy.stats.norm.logpdf(z)
-        return (p_z + log_abs_det).mean()
