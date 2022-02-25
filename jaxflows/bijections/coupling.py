@@ -69,7 +69,7 @@ class CouplingStack(eqx.Module):
         D: int,
         conditioner_width: int,
         conditioner_depth: int,
-        num_layers: int,  # add option for other bijections?
+        num_layers: int,
     ):
 
         layers = []
