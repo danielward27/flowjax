@@ -1,7 +1,5 @@
 from abc import ABC, abstractmethod
 
-from scipy.misc import derivative
-
 
 class Bijection(ABC):
     "Basic bijection class"
