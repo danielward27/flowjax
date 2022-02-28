@@ -62,7 +62,7 @@ class RationalQuadraticSpline1D(ParameterisedBijection):
     def get_args(self, params):
         widths = jax.nn.softmax(params[: self.K]) * 2 * self.B
         heights = jax.nn.softmax(params[self.K : self.K * 2]) * 2 * self.B
-        derivatives = jax.nn.softmax(params[self.K * 2 :])
+        derivatives = jax.nn.softplus(params[self.K * 2 :])
         derivatives = jnp.pad(derivatives, 2, constant_values=1)
         x_pos = jnp.cumsum(widths) - self.B
         x_pos = self.pos_pad.at[2:-2].set(x_pos)

@@ -1,24 +1,47 @@
 from jaxflows.bijections.abc import ParameterisedBijection
 import equinox as eqx
 import jax.numpy as jnp
+import jax
 from jax import random
 from jaxflows.bijections.permute import Permute
 from jaxflows.bijections.abc import Bijection
+
+
+class IgnoreCondition(Bijection):
+    """Wrap bijection to allow it to take and ignore additional
+    conditioning variables. Facilitates simple stacking of layers."""
+
+    bijection: Bijection
+
+    def __init__(self, bijection):
+        self.bijection = bijection
+
+    def transform(self, x, condition):
+        return self.bijection.transform(x)
+
+    def transform_and_log_abs_det_jacobian(self, x, condition):
+        return self.bijection.transform_and_log_abs_det_jacobian(x)
+
+    def inverse(self, y, condition):
+        return self.bijection.inverse(y)
+
 
 class Coupling(Bijection, eqx.Module):
     d: int
     D: int
     bijection: ParameterisedBijection
     conditioner: eqx.nn.MLP
+    condition_dim: int
 
     def __init__(
         self,
         key: random.PRNGKey,
-        bijection : ParameterisedBijection,
+        bijection: ParameterisedBijection,
         d: int,
         D: int,
-        conditioner_width: int,
-        conditioner_depth: int,
+        nn_width: int,
+        nn_depth: int,
+        condition_dim: int = 0,
     ):
         """Coupling layer implementation.
 
@@ -27,23 +50,42 @@ class Coupling(Bijection, eqx.Module):
             bijection (ParameterisedBijection): Bijection to be parameterised by the conditioner neural netork.
             d (int): Number of untransformed conditioning variables.
             D (int): Total dimension.
-            conditioner_width (int): Number of nodes in hidden layers.
-            conditioner_depth (int): Number of hidden layers.
+            nn_width (int): Number of nodes in hidden layers.
+            nn_depth (int): Number of hidden layers.
         """
         self.d = d
         self.D = D
         self.bijection = bijection
         output_size = self.bijection.num_params(D - d)
-        self.conditioner = eqx.nn.MLP(
-            d, output_size, conditioner_width, conditioner_depth, key=key
+
+        mlp = eqx.nn.MLP(
+            in_size=d + condition_dim,
+            out_size=output_size,
+            width_size=nn_width,
+            depth=nn_depth,
+            key=key,
         )
+        params, static = eqx.partition(mlp, eqx.filters.is_array)
+        params = jax.tree_map(lambda x: x / 50, params)
+        mlp = eqx.combine(params, static)
+        self.conditioner = mlp
 
-    def __call__(self, x: jnp.ndarray):
-        return self.transform_and_log_abs_det_jacobian(x)
+        self.condition_dim = condition_dim
 
-    def transform_and_log_abs_det_jacobian(self, x):
+    def transform(self, x, condition):
         x_cond, x_trans = x[: self.d], x[self.d :]
-        bijection_params = self.conditioner(x_cond)
+        cond = jnp.concatenate((x_cond, condition))
+        bijection_params = self.conditioner(cond)
+        bijection_args = self.bijection.get_args(bijection_params)
+        y_trans = self.bijection.transform(x_trans, *bijection_args)
+        y = jnp.concatenate((x_cond, y_trans))
+        return y
+
+    def transform_and_log_abs_det_jacobian(self, x, condition):
+        x_cond, x_trans = x[: self.d], x[self.d :]
+        cond = jnp.concatenate((x_cond, condition))
+
+        bijection_params = self.conditioner(cond)
         bijection_args = self.bijection.get_args(bijection_params)
         y_trans, log_abs_det = self.bijection.transform_and_log_abs_det_jacobian(
             x_trans, *bijection_args
@@ -51,26 +93,19 @@ class Coupling(Bijection, eqx.Module):
         y = jnp.concatenate([x_cond, y_trans])
         return y, log_abs_det
 
-    def transform(self, x):
-        x_cond, x_trans = x[: self.d], x[self.d :]
-        bijection_params = self.conditioner(x_cond)
-        bijection_args = self.bijection.get_args(bijection_params)
-        y_trans = self.bijection.transform(x_trans, *bijection_args)
-        y = jnp.concatenate([x_cond, y_trans])
-        return y
-
-    def inverse(self, y: jnp.ndarray):
+    def inverse(self, y: jnp.ndarray, condition):
         x_cond, y_trans = y[: self.d], y[self.d :]
-        bijection_params = self.conditioner(x_cond)
+        cond = jnp.concatenate((x_cond, condition))
+        bijection_params = self.conditioner(cond)
         bijection_args = self.bijection.get_args(bijection_params)
         x_trans = self.bijection.inverse(y_trans, *bijection_args)
-        x = jnp.concatenate([x_cond, x_trans])
+        x = jnp.concatenate((x_cond, x_trans))
         return x
 
 
 class CouplingStack(Bijection, eqx.Module):
     layers: list
-    D : int
+    D: int
 
     def __init__(
         self,
@@ -78,45 +113,55 @@ class CouplingStack(Bijection, eqx.Module):
         bijection: ParameterisedBijection,
         D: int,
         num_layers: int,
-        conditioner_width: int = 40,
-        conditioner_depth: int = 2,
+        nn_width: int = 40,
+        nn_depth: int = 2,
+        condition_dim: int = 0,
     ):
 
         layers = []
         ds = [round(jnp.floor(D / 2).item()), round(jnp.ceil(D / 2).item())]
         permutation = jnp.flip(jnp.arange(D))
         for i in range(num_layers):
-            key, subkey = random.split(key)
+            key, coupling_key = random.split(key)
             d = ds[0] if i % 2 == 0 else ds[1]
             layers.extend(
                 [
                     Coupling(
-                        key=key, bijection=bijection, d=d, D=D,
-                        conditioner_width=conditioner_width,
-                        conditioner_depth=conditioner_depth
+                        key=coupling_key,
+                        bijection=bijection,
+                        d=d,
+                        D=D,
+                        nn_width=nn_width,
+                        nn_depth=nn_depth,
+                        condition_dim=condition_dim,
                     ),
-                    Permute(permutation),
+                    IgnoreCondition(Permute(permutation)),
                 ]
             )
         self.layers = layers[:-2]  # remove last leakyRelu and permute
         self.D = D
 
-    def transform(self, x):
+    def transform(self, x, condition):
         z = x
         for layer in self.layers:
-            z = layer.transform(z)
+            z = layer.transform(z, condition)
         return z
 
-    def transform_and_log_abs_det_jacobian(self, x):
+    def transform_and_log_abs_det_jacobian(self, x, condition):
         log_abs_det_jac = 0
         z = x
         for layer in self.layers:
-            z, log_abs_det_jac_i = layer.transform_and_log_abs_det_jacobian(z)
+            z, log_abs_det_jac_i = layer.transform_and_log_abs_det_jacobian(
+                z, condition
+            )
             log_abs_det_jac += log_abs_det_jac_i
         return z, log_abs_det_jac
 
-    def inverse(self, z):
+    def inverse(self, z, condition):
         x = z
         for layer in reversed(self.layers):
-            x = layer.inverse(x)
+            x = layer.inverse(x, condition)
         return x
+
+
+# TODO remove last permutation

@@ -9,9 +9,7 @@ def test_Coupling():
     d = 2
     D = 5
 
-    coupling = Coupling(
-        model_key, Affine(), d=d, D=D, conditioner_width=10, conditioner_depth=3,
-    )
+    coupling = Coupling(model_key, Affine(), d=d, D=D, nn_width=10, nn_depth=3,)
 
     x = random.uniform(x_key, (D,))
     y = coupling(x)[0]

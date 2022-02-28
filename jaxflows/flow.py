@@ -1,26 +1,26 @@
-from typing import Callable, Iterable
-from chex import PRNGKey
+from typing import Callable
 import jax.numpy as jnp
-import optax
 from jaxflows.bijections.abc import Bijection
 from jax.scipy.stats import norm
 from jax import random
-from tqdm import tqdm
 import equinox as eqx
 import jax
 
+
 class Flow(eqx.Module):
-    bijection : Bijection
-    target_dim : int
-    base_log_prob : Callable
-    base_sample : Callable
+    bijection: Bijection
+    target_dim: int
+    base_log_prob: Callable
+    base_sample: Callable
 
     def __init__(
         self,
-        bijection : Bijection,
-        target_dim : int,
-        base_log_prob : Callable = None,
-        base_sample : Callable = None):
+        bijection: Bijection,
+        target_dim: int,
+        condition_dim: int = 0,  # TODO do we want to have this
+        base_log_prob: Callable = None,
+        base_sample: Callable = None,
+    ):
         """Form a distribution like object using a base distribution and a
         bijection.
 
@@ -41,17 +41,17 @@ class Flow(eqx.Module):
         else:
             self.base_log_prob = lambda x: norm.logpdf(x).sum(axis=1)
             self.base_sample = lambda key, n: random.normal(key, (n, target_dim))
-    
-    @eqx.filter_jit
-    def log_prob(self, x : jnp.array):
+
+    def log_prob(self, x: jnp.array, condition):
         "Evaluate the log probability of the target distribution."
-        z, log_abs_det = jax.vmap(self.bijection.transform_and_log_abs_det_jacobian)(x)
+        z, log_abs_det = jax.vmap(self.bijection.transform_and_log_abs_det_jacobian)(
+            x, condition
+        )
         p_z = self.base_log_prob(z)
         return p_z + log_abs_det
 
-    @eqx.filter_jit
-    def sample(self, key : random.PRNGKey, n : int):
+    def sample(self, key: random.PRNGKey, n: int, condition):
         "Sample from the target distribution."
         z = self.base_sample(key, n)
-        x = jax.vmap(self.bijection.inverse)(z)
+        x = jax.vmap(self.bijection.inverse)(z, condition)
         return x
