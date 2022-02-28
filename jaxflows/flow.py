@@ -17,7 +17,6 @@ class Flow(eqx.Module):
         self,
         bijection: Bijection,
         target_dim: int,
-        condition_dim: int = 0,  # TODO do we want to have this
         base_log_prob: Callable = None,
         base_sample: Callable = None,
     ):

@@ -2,6 +2,7 @@ import pytest
 from jax import random
 from jaxflows.bijections.coupling import Coupling, CouplingStack
 from jaxflows.bijections.affine import Affine
+import jax.numpy as jnp
 
 
 def test_Coupling():
@@ -12,9 +13,11 @@ def test_Coupling():
     coupling = Coupling(model_key, Affine(), d=d, D=D, nn_width=10, nn_depth=3,)
 
     x = random.uniform(x_key, (D,))
-    y = coupling(x)[0]
 
-    x_reconstructed = coupling.inverse(y)
+    condition = jnp.zeros((x.shape[0], 0))  # No condition
+    y = coupling.transform(x, condition)[0]
+
+    x_reconstructed = coupling.inverse(y, condition)
 
     assert x == pytest.approx(x_reconstructed)
     assert x[:d] == pytest.approx(y[:d])

@@ -16,13 +16,13 @@ class IgnoreCondition(Bijection):
     def __init__(self, bijection):
         self.bijection = bijection
 
-    def transform(self, x, condition):
+    def transform(self, x, condition=None):
         return self.bijection.transform(x)
 
-    def transform_and_log_abs_det_jacobian(self, x, condition):
+    def transform_and_log_abs_det_jacobian(self, x, condition=None):
         return self.bijection.transform_and_log_abs_det_jacobian(x)
 
-    def inverse(self, y, condition):
+    def inverse(self, y, condition=None):
         return self.bijection.inverse(y)
 
 
@@ -58,21 +58,20 @@ class Coupling(Bijection, eqx.Module):
         self.bijection = bijection
         output_size = self.bijection.num_params(D - d)
 
-        mlp = eqx.nn.MLP(
+        self.conditioner = eqx.nn.MLP(
             in_size=d + condition_dim,
             out_size=output_size,
             width_size=nn_width,
             depth=nn_depth,
             key=key,
         )
-        params, static = eqx.partition(mlp, eqx.filters.is_array)
-        params = jax.tree_map(lambda x: x / 50, params)
-        mlp = eqx.combine(params, static)
-        self.conditioner = mlp
 
         self.condition_dim = condition_dim
 
-    def transform(self, x, condition):
+    def transform(self, x, condition=None):
+        if condition is None and self.condition_dim == 0:
+            condition = jnp.empty((0,))
+
         x_cond, x_trans = x[: self.d], x[self.d :]
         cond = jnp.concatenate((x_cond, condition))
         bijection_params = self.conditioner(cond)
@@ -81,7 +80,10 @@ class Coupling(Bijection, eqx.Module):
         y = jnp.concatenate((x_cond, y_trans))
         return y
 
-    def transform_and_log_abs_det_jacobian(self, x, condition):
+    def transform_and_log_abs_det_jacobian(self, x, condition=None):
+        if condition is None and self.condition_dim == 0:
+            condition = jnp.empty((0,))
+
         x_cond, x_trans = x[: self.d], x[self.d :]
         cond = jnp.concatenate((x_cond, condition))
 
@@ -93,7 +95,10 @@ class Coupling(Bijection, eqx.Module):
         y = jnp.concatenate([x_cond, y_trans])
         return y, log_abs_det
 
-    def inverse(self, y: jnp.ndarray, condition):
+    def inverse(self, y: jnp.ndarray, condition=None):
+        if condition is None and self.condition_dim == 0:
+            condition = jnp.empty((0,))
+
         x_cond, y_trans = y[: self.d], y[self.d :]
         cond = jnp.concatenate((x_cond, condition))
         bijection_params = self.conditioner(cond)
@@ -138,16 +143,24 @@ class CouplingStack(Bijection, eqx.Module):
                     IgnoreCondition(Permute(permutation)),
                 ]
             )
-        self.layers = layers[:-2]  # remove last leakyRelu and permute
+        self.layers = layers[
+            :-1
+        ]  # TODO check this works as expected (remove last permute)
         self.D = D
 
-    def transform(self, x, condition):
+    def transform(self, x, condition=None):
+        if condition is None and self.condition_dim == 0:
+            condition = jnp.empty((0,))
+
         z = x
         for layer in self.layers:
             z = layer.transform(z, condition)
         return z
 
-    def transform_and_log_abs_det_jacobian(self, x, condition):
+    def transform_and_log_abs_det_jacobian(self, x, condition=None):
+        if condition is None and self.condition_dim == 0:
+            condition = jnp.empty((0,))
+
         log_abs_det_jac = 0
         z = x
         for layer in self.layers:
@@ -157,11 +170,10 @@ class CouplingStack(Bijection, eqx.Module):
             log_abs_det_jac += log_abs_det_jac_i
         return z, log_abs_det_jac
 
-    def inverse(self, z, condition):
+    def inverse(self, z, condition=None):
+        if condition is None and self.condition_dim == 0:
+            condition = jnp.empty((0,))
         x = z
         for layer in reversed(self.layers):
             x = layer.inverse(x, condition)
         return x
-
-
-# TODO remove last permutation
