@@ -111,6 +111,7 @@ class Coupling(Bijection, eqx.Module):
 class CouplingStack(Bijection, eqx.Module):
     layers: list
     D: int
+    condition_dim: int
 
     def __init__(
         self,
@@ -147,6 +148,7 @@ class CouplingStack(Bijection, eqx.Module):
             :-1
         ]  # TODO check this works as expected (remove last permute)
         self.D = D
+        self.condition_dim = condition_dim
 
     def transform(self, x, condition=None):
         if condition is None and self.condition_dim == 0:

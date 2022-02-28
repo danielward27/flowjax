@@ -14,10 +14,9 @@ def test_Coupling():
 
     x = random.uniform(x_key, (D,))
 
-    condition = jnp.zeros((x.shape[0], 0))  # No condition
-    y = coupling.transform(x, condition)[0]
+    y = coupling.transform(x)
 
-    x_reconstructed = coupling.inverse(y, condition)
+    x_reconstructed = coupling.inverse(y)
 
     assert x == pytest.approx(x_reconstructed)
     assert x[:d] == pytest.approx(y[:d])
@@ -32,4 +31,4 @@ def test_CouplingStack():
     x = random.uniform(x_key, (D,))
     z = model.transform(x)
     x_reconstructed = model.inverse(z)
-    assert x == pytest.approx(x_reconstructed)
+    assert x == pytest.approx(x_reconstructed, abs=1e-6)

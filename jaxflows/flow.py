@@ -21,7 +21,8 @@ class Flow(eqx.Module):
         base_sample: Callable = None,
     ):
         """Form a distribution like object using a base distribution and a
-        bijection.
+        bijection. Bijection must support extra conditioning variables (or the
+        bijection can be wrapped in IgnoreCondition).
 
         Args:
             bijection (Bijection): Bijection mapping from target distribution to
