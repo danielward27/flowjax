@@ -10,7 +10,7 @@ So far primarily supports:
 - Neural spline flows (Durkan *et al.*) - https://arxiv.org/abs/1906.04032/
 
 
-See example at https://github.com/danielward27/jaxflows/blob/main/examples/two_moons.ipynb.
+See examples at https://github.com/danielward27/jaxflows/blob/main/examples/
 
 
 Authors
