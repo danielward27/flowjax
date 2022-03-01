@@ -5,6 +5,8 @@ from jax.scipy.stats import norm
 from jax import random
 import equinox as eqx
 import jax
+from jaxflows.bijections.coupling import CouplingStack
+from jaxflows.bijections.rational_quadratic_spline import RationalQuadraticSpline
 
 
 class Flow(eqx.Module):
@@ -64,3 +66,40 @@ class Flow(eqx.Module):
         z = self.base_sample(key, n)
         x = jax.vmap(self.bijection.inverse)(z, condition)
         return x
+
+
+class NeuralSplineFlow(Flow):
+    def __init__(
+        self,
+        key: random.PRNGKey,
+        target_dim: int,
+        condition_dim: int = 0,
+        K: int = 8,
+        B: int = 5,
+        num_layers: int = 5,
+        base_log_prob: Callable = None,
+        base_sample: Callable = None,
+    ):
+        """Convenience constructor for neural spline flow (with coupling layers).
+        Note that points outside [-B, B] will not be transformed.
+
+        Args:
+            key (random.PRNGKey): Random key.
+            target_dim (int): Dimension of the target distribution.
+            condition_dim (int): Dimension of extra conditioning variables. Defualts to 0.
+            K (int, optional): Number of (inner) spline segments. Defaults to 8.
+            B (int, optional): Interval to transform [-B, B]. Defaults to 5.
+            base_log_prob (Callable, optional): Log probability in base distribution. Defaults to standard normal.
+            base_sample (Callable, optional): Sample function in base distribution. Defaults to standard normal.
+        """
+
+        bijection = CouplingStack(
+            key=key,
+            bijection=RationalQuadraticSpline(K=K, B=B),
+            D=target_dim,
+            num_layers=num_layers,
+            condition_dim=condition_dim,
+        )
+
+        super().__init__(bijection, target_dim, base_log_prob, base_sample)
+

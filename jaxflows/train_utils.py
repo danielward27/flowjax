@@ -1,4 +1,4 @@
-from jaxflows.flow import Flow
+from jaxflows.flows import Flow
 from jax import random
 import jax.numpy as jnp
 import equinox as eqx

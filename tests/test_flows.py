@@ -1,4 +1,4 @@
-from jaxflows.flow import Flow
+from jaxflows.flows import Flow
 from jaxflows.bijections.permute import Permute
 from jaxflows.bijections.coupling import IgnoreCondition
 import jax.numpy as jnp
