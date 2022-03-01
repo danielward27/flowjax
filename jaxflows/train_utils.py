@@ -7,8 +7,8 @@ from tqdm import tqdm
 
 
 def train_flow(
-    flow: Flow,
     key: random.PRNGKey,
+    flow: Flow,
     x: jnp.ndarray,
     condition=None,
     max_epochs: int = 50,
