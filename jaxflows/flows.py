@@ -45,12 +45,13 @@ class Flow(eqx.Module):
             self.base_sample = lambda key, n: random.normal(key, (n, target_dim))
 
     def log_prob(self, x: jnp.array, condition=None):
-        "Evaluate the log probability of the target distribution."
+        "Evaluate the log probability of the target distribution. Condition must broadcast to x in dimension 0."
+        x = jnp.atleast_2d(x)
         if condition is None:
             condition = jnp.zeros((x.shape[0], 0))  # Empty placeholder
+        condition = jnp.broadcast_to(condition, (x.shape[0], condition.shape[1]))
         return self._log_prob(x, condition)
 
-    @eqx.filter_jit
     def _log_prob(self, x: jnp.array, condition: jnp.array):
         z, log_abs_det = jax.vmap(self.bijection.transform_and_log_abs_det_jacobian)(
             x, condition

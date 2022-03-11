@@ -146,7 +146,7 @@ class CouplingStack(Bijection, eqx.Module):
             )
         self.layers = layers[
             :-1
-        ]  # TODO check this works as expected (remove last permute)
+        ]
         self.D = D
         self.condition_dim = condition_dim
 
