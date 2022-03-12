@@ -41,7 +41,7 @@ class RationalQuadraticSpline1D(ParameterisedBijection):
         c = -sk * (y - yk)
         sqrt_term = jnp.sqrt(b ** 2 - 4 * a * c)
 
-        xi = (2 * c) / (-b - sqrt_term)  # TODO check right square root
+        xi = (2 * c) / (-b - sqrt_term)
 
         x = xi * (xk1 - xk) + xk
         return x
@@ -121,3 +121,6 @@ class RationalQuadraticSpline(ParameterisedBijection):
     def get_args(self, params):
         params = params.reshape((-1, self.K * 3 - 1))
         return jax.vmap(self.spline.get_args)(params)
+
+
+# TODO maybe possible to make multilayer Spline+Permute with jax.scan?

@@ -1,4 +1,5 @@
-from typing import Callable
+from base64 import b16decode
+from typing import Callable, Union
 import jax.numpy as jnp
 from jaxflows.bijections.abc import Bijection
 from jax.scipy.stats import norm
@@ -7,7 +8,6 @@ import equinox as eqx
 import jax
 from jaxflows.bijections.coupling import CouplingStack
 from jaxflows.bijections.rational_quadratic_spline import RationalQuadraticSpline
-
 
 class Flow(eqx.Module):
     bijection: Bijection
@@ -24,7 +24,8 @@ class Flow(eqx.Module):
     ):
         """Form a distribution like object using a base distribution and a
         bijection. Bijection must support extra conditioning variables (or the
-        bijection can be wrapped in IgnoreCondition).
+        bijection can be wrapped in IgnoreCondition). Operations are assumed
+        to be batched along dimension 0. If a one dimensional 
 
         Args:
             bijection (Bijection): Bijection mapping from target distribution to
@@ -45,32 +46,29 @@ class Flow(eqx.Module):
             self.base_sample = lambda key, n: random.normal(key, (n, target_dim))
 
     @eqx.filter_jit
-    def log_prob(self, x: jnp.array, condition=None):
+    def log_prob(
+        self,
+        x: jnp.ndarray,
+        condition : jnp.ndarray = jnp.array([[]])):
         "Evaluate the log probability of the target distribution. Condition must broadcast to x in dimension 0."
-        x = jnp.atleast_2d(x)
-        if condition is None:
-            condition = jnp.zeros((x.shape[0], 0))  # Empty placeholder
+        x, condition = jnp.atleast_2d(x), jnp.atleast_2d(condition)
         condition = jnp.broadcast_to(condition, (x.shape[0], condition.shape[1]))
-        return self._log_prob(x, condition)
-
-    @eqx.filter_jit
-    def _log_prob(self, x: jnp.array, condition: jnp.array):
         z, log_abs_det = jax.vmap(self.bijection.transform_and_log_abs_det_jacobian)(
             x, condition
         )
         p_z = self.base_log_prob(z)
         return p_z + log_abs_det
-
+        
     @eqx.filter_jit
-    def sample(self, key: random.PRNGKey, n: int, condition=None):
+    def sample(self, key: random.PRNGKey, condition=jnp.array([[]]), n: Union[int, None] = None):
         "Sample from the target distribution."
-        if condition is None:
-            condition = jnp.zeros((n, 0))  # Empty placeholder
-
+        condition = jnp.atleast_2d(condition)
+        if n is None:
+            n = condition.shape[0]
+        condition = jnp.broadcast_to(condition, (n, condition.shape[1]))
         z = self.base_sample(key, n)
         x = jax.vmap(self.bijection.inverse)(z, condition)
         return x
-
 
 class NeuralSplineFlow(Flow):
     def __init__(

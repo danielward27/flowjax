@@ -10,7 +10,7 @@ def train_flow(
     key: random.PRNGKey,
     flow: Flow,
     x: jnp.ndarray,
-    condition=None,
+    condition: jnp.ndarray = None,
     max_epochs: int = 50,
     max_patience: int = 5,
     learning_rate: float = 5e-4,
@@ -18,7 +18,7 @@ def train_flow(
     val_prop: float = 0.1,
 ):
     if condition is None:
-        condition = jnp.zeros((x.shape[0], 0))
+        condition = jnp.empty((x.shape[0], 0))  # Note zero dim col
 
     def loss(flow, x, condition):
         return -flow.log_prob(x, condition).mean()
