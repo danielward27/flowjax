@@ -100,4 +100,3 @@ def count_fruitless(losses: list):
     the minimum loss"""
     min_idx = jnp.array(losses).argmin().item()
     return len(losses) - min_idx - 1
-

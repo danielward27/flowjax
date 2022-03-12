@@ -9,6 +9,7 @@ import jax
 from jaxflows.bijections.coupling import CouplingStack
 from jaxflows.bijections.rational_quadratic_spline import RationalQuadraticSpline
 
+
 class Flow(eqx.Module):
     bijection: Bijection
     target_dim: int
@@ -46,10 +47,7 @@ class Flow(eqx.Module):
             self.base_sample = lambda key, n: random.normal(key, (n, target_dim))
 
     @eqx.filter_jit
-    def log_prob(
-        self,
-        x: jnp.ndarray,
-        condition : jnp.ndarray = jnp.array([[]])):
+    def log_prob(self, x: jnp.ndarray, condition: jnp.ndarray = jnp.array([[]])):
         "Evaluate the log probability of the target distribution. Condition must broadcast to x in dimension 0."
         x, condition = jnp.atleast_2d(x), jnp.atleast_2d(condition)
         condition = jnp.broadcast_to(condition, (x.shape[0], condition.shape[1]))
@@ -58,9 +56,11 @@ class Flow(eqx.Module):
         )
         p_z = self.base_log_prob(z)
         return p_z + log_abs_det
-        
+
     @eqx.filter_jit
-    def sample(self, key: random.PRNGKey, condition=jnp.array([[]]), n: Union[int, None] = None):
+    def sample(
+        self, key: random.PRNGKey, condition=jnp.array([[]]), n: Union[int, None] = None
+    ):
         "Sample from the target distribution."
         condition = jnp.atleast_2d(condition)
         if n is None:
@@ -69,6 +69,7 @@ class Flow(eqx.Module):
         z = self.base_sample(key, n)
         x = jax.vmap(self.bijection.inverse)(z, condition)
         return x
+
 
 class NeuralSplineFlow(Flow):
     def __init__(
@@ -104,4 +105,3 @@ class NeuralSplineFlow(Flow):
         )
 
         super().__init__(bijection, target_dim, base_log_prob, base_sample)
-

@@ -126,7 +126,7 @@ class CouplingStack(Bijection, eqx.Module):
 
         layers = []
         ds = [round(jnp.floor(D / 2).item()), round(jnp.ceil(D / 2).item())]
-        permutation = jnp.flip(jnp.arange(D))
+        permutation = jnp.flip(jnp.arange(D)) # TODO Random permutation likely better than flipping
         for i in range(num_layers):
             key, coupling_key = random.split(key)
             d = ds[0] if i % 2 == 0 else ds[1]
@@ -144,9 +144,7 @@ class CouplingStack(Bijection, eqx.Module):
                     IgnoreCondition(Permute(permutation)),
                 ]
             )
-        self.layers = layers[
-            :-1
-        ]
+        self.layers = layers[:-1]
         self.D = D
         self.condition_dim = condition_dim
 

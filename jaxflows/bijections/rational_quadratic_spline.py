@@ -16,6 +16,12 @@ class RationalQuadraticSpline1D(ParameterisedBijection):
         pad_vals = jnp.array(
             [-B * 1e4, -B, B, B * 1e4]
         )  # Avoids jax control flow for identity tails
+        """One dimensional rational quadratic spline, following Durkin et al.
+        (2019), https://arxiv.org/abs/1906.04032. RationalQuadraticSpline
+        provides a vmapped version for multidimensional transformations. See
+        RationalQuadraticSpline for more information.
+        """
+        
         pos_pad = pos_pad.at[pad_idxs].set(pad_vals)
         self._pos_pad = pos_pad
 
@@ -92,13 +98,20 @@ class RationalQuadraticSpline1D(ParameterisedBijection):
 
 
 class RationalQuadraticSpline(ParameterisedBijection):
-    K: int  # Number of inner knots
-    B: int  # Bound size
+    K: int
+    B: int
     spline: RationalQuadraticSpline1D
 
     def __init__(self, K, B):
-        """As for 1D spline, but we vmap over x dimensions. i.e. parameter args
-        are now matrices, with each row being parameters for each dimension of x."""
+        """
+        RationalQuadraticSpline following Durkin et al. (2019),
+        https://arxiv.org/abs/1906.04032. Each row of parameter matrices (x_pos,
+        y_pos, derivatives) corresponds to a column (axis=1) in x
+
+        Args:
+            K (int): Number of inner knots B: (int): Interval to transform ([-B,
+            B])
+        """
         self.K = K
         self.B = B
         self.spline = RationalQuadraticSpline1D(K, B)

@@ -29,4 +29,3 @@ def test_random_permutation_multiple():
     x2, y2 = random_permutation_multiple(random.PRNGKey(0), (x, y))
     after = jnp.sort(jnp.concatenate((x2, y2), axis=1).sum(axis=1))
     assert (before == after).all()
-
