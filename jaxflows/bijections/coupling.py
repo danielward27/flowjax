@@ -119,6 +119,9 @@ class CouplingStack(Bijection, eqx.Module):
         is somewhat strategised as it (roughly) allows untransformed variables
         in the previous layer to be transformed.
 
+        To learn a conditional distribution, condition_dim should be >0,
+        and conditioning variables should be passed when transforming.
+        
         Args:
             key (random.PRNGKey): Random key.
             bijection (ParameterisedBijection): Bijection to transform variables
