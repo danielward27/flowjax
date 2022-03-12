@@ -1,7 +1,6 @@
 from jaxflows.bijections.abc import ParameterisedBijection
 import equinox as eqx
 import jax.numpy as jnp
-import jax
 from jax import random
 from jaxflows.bijections.permute import Permute
 from jaxflows.bijections.abc import Bijection
@@ -68,10 +67,7 @@ class Coupling(Bijection, eqx.Module):
 
         self.condition_dim = condition_dim
 
-    def transform(self, x, condition=None):
-        if condition is None and self.condition_dim == 0:
-            condition = jnp.empty((0,))
-
+    def transform(self, x, condition=jnp.array([])):
         x_cond, x_trans = x[: self.d], x[self.d :]
         cond = jnp.concatenate((x_cond, condition))
         bijection_params = self.conditioner(cond)
@@ -80,10 +76,7 @@ class Coupling(Bijection, eqx.Module):
         y = jnp.concatenate((x_cond, y_trans))
         return y
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=None):
-        if condition is None and self.condition_dim == 0:
-            condition = jnp.empty((0,))
-
+    def transform_and_log_abs_det_jacobian(self, x, condition=jnp.array([])):
         x_cond, x_trans = x[: self.d], x[self.d :]
         cond = jnp.concatenate((x_cond, condition))
 
@@ -95,10 +88,7 @@ class Coupling(Bijection, eqx.Module):
         y = jnp.concatenate([x_cond, y_trans])
         return y, log_abs_det
 
-    def inverse(self, y: jnp.ndarray, condition=None):
-        if condition is None and self.condition_dim == 0:
-            condition = jnp.empty((0,))
-
+    def inverse(self, y: jnp.ndarray, condition=jnp.array([])):
         x_cond, y_trans = y[: self.d], y[self.d :]
         cond = jnp.concatenate((x_cond, condition))
         bijection_params = self.conditioner(cond)
@@ -123,10 +113,27 @@ class CouplingStack(Bijection, eqx.Module):
         nn_depth: int = 2,
         condition_dim: int = 0,
     ):
+        """
+        A stack of bijections, alternating a coupling layer, and a permutation.
+        The permutations alternate between flipping and shuffling the data. Flipping
+        is somewhat strategised as it (roughly) allows untransformed variables
+        in the previous layer to be transformed.
 
+        Args:
+            key (random.PRNGKey): Random key.
+            bijection (ParameterisedBijection): Bijection to transform variables
+                in coupling layers.
+            D (int): Dimension of the target distribution.
+            num_layers (int): Number of layers (1 layer = coupling layer + permute).
+            nn_width (int, optional): Conditioner network width. Defaults to 40.
+            nn_depth (int, optional): Conditioner network depth. Defaults to 2.
+            condition_dim (int, optional): Dimension of additional conditioning
+                variables (for learning conditional distributions). Defaults to 0.
+        """
+    
         layers = []
         ds = [round(jnp.floor(D / 2).item()), round(jnp.ceil(D / 2).item())]
-        permutation = jnp.flip(jnp.arange(D)) # TODO Random permutation likely better than flipping
+        permutation = jnp.flip(jnp.arange(D)) # TODO Random permutation likely better than flipping - or alternate flip and random.
         for i in range(num_layers):
             key, coupling_key = random.split(key)
             d = ds[0] if i % 2 == 0 else ds[1]
@@ -148,19 +155,13 @@ class CouplingStack(Bijection, eqx.Module):
         self.D = D
         self.condition_dim = condition_dim
 
-    def transform(self, x, condition=None):
-        if condition is None and self.condition_dim == 0:
-            condition = jnp.empty((0,))
-
+    def transform(self, x, condition=jnp.array([])):
         z = x
         for layer in self.layers:
             z = layer.transform(z, condition)
         return z
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=None):
-        if condition is None and self.condition_dim == 0:
-            condition = jnp.empty((0,))
-
+    def transform_and_log_abs_det_jacobian(self, x, condition=jnp.array([])):
         log_abs_det_jac = 0
         z = x
         for layer in self.layers:
@@ -170,9 +171,7 @@ class CouplingStack(Bijection, eqx.Module):
             log_abs_det_jac += log_abs_det_jac_i
         return z, log_abs_det_jac
 
-    def inverse(self, z, condition=None):
-        if condition is None and self.condition_dim == 0:
-            condition = jnp.empty((0,))
+    def inverse(self, z, condition=jnp.array([])):
         x = z
         for layer in reversed(self.layers):
             x = layer.inverse(x, condition)

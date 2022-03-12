@@ -37,3 +37,5 @@ nosetests.xml
 
 # Personal
 .ipynb_checkpoints
+
+timing_tests.ipynb
