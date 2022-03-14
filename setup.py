@@ -21,7 +21,8 @@ setup(
     author="Daniel Ward",
     author_email="danielward27@outlook.com",
     description="Basic jaxflows implementation in jax.",
-    long_description=read("README.rst"),
+    long_description=read("README.md"),
+    long_description_content_type="text/markdown",
     packages=find_packages(exclude=("tests",)),
     install_requires=["jax", "equinox", "pytest", "tqdm", "optax"],
     classifiers=[
