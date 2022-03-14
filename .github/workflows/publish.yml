@@ -1,6 +1,9 @@
 name: Publish to TestPyPI and PyPI 
 
-on: push
+on:
+  # Triggers the workflow when a release is created
+  release: 
+    types: [created]
 
 jobs:
   build-n-publish:
