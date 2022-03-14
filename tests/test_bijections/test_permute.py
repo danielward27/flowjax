@@ -1,4 +1,4 @@
-from jaxflows.bijections.permute import Permute
+from flowjax.bijections.permute import Permute
 import jax.numpy as jnp
 import pytest
 

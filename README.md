@@ -1,4 +1,4 @@
-## jaxflows
+## flowjax
 -------
 
 Normalising flow implementations in jax.
@@ -10,10 +10,10 @@ So far supports:
 - Neural spline coupling flows (Durkan *et al.*) - https://arxiv.org/abs/1906.04032/
 
 
-See examples at https://github.com/danielward27/jaxflows/blob/main/examples/
+See examples at https://github.com/danielward27/flowjax/blob/main/examples/
 
 
 ## Authors
 -------
 
-`jaxflows` was written by `Daniel Ward <danielward27@outlook.com>`_.
+`flowjax` was written by `Daniel Ward <danielward27@outlook.com>`_.
