@@ -15,7 +15,7 @@ def test_RationalQuadraticSpline1D():
     x = jnp.array(0.4)
     y = spline.transform(x, *transform_args)
     x_reconstructed = spline.inverse(y, *transform_args)
-    assert x == pytest.approx(x_reconstructed)
+    assert x == pytest.approx(x_reconstructed, abs=1e-6)
     assert (x != y).all()
 
     # Test identity padding
@@ -24,7 +24,7 @@ def test_RationalQuadraticSpline1D():
         y = spline.transform(x, *transform_args)
         x_reconstructed = spline.inverse(y, *transform_args)
         assert x == pytest.approx(y)
-        assert y == pytest.approx(x_reconstructed)
+        assert y == pytest.approx(x_reconstructed, abs=1e-6)
 
 
 def test_RationalQuadraticSpline():
@@ -34,7 +34,7 @@ def test_RationalQuadraticSpline():
     transform_args = spline.get_args(params)
     y = spline.transform(x, *transform_args)
     x_reconstructed = spline.inverse(y, *transform_args)
-    assert x == pytest.approx(x_reconstructed)
+    assert x == pytest.approx(x_reconstructed, abs=1e-6)
     expected_changed = jnp.array([True, False, False, True])
     assert ((jnp.abs((y - x)) <= 1e-5) == expected_changed).all()
 
