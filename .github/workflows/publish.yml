@@ -1,9 +1,9 @@
 name: Publish to TestPyPI and PyPI 
 
 on:
-  # Triggers the workflow when a release is created.
+  # Triggers the workflow when a release is created or edited.
   release: 
-    types: [created]
+    types: [created, edited]
 
 jobs:
   build-n-publish:
