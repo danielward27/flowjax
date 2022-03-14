@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  Build:
+    name: Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+
+      - name: Pytest
+        run: |
+          pip install pytest
+          pytest
+
+      - name: Publish package if tagged
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+        uses: pypa/gh-action-pypi-publish@release/v1
+        run: |
+          python setup.py sdist
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+
+
+      
