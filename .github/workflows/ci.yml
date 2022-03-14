@@ -30,11 +30,14 @@ jobs:
           pip install pytest
           pytest
 
-      - name: Publish package if tagged
+      - name: Build source if tagged
         if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
-        uses: pypa/gh-action-pypi-publish@release/v1
         run: |
           python setup.py sdist
+
+      - name: Publish to pypi if tagged
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+        uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
