@@ -48,9 +48,9 @@ jobs:
           repository_url: https://test.pypi.org/legacy/
 
       - name: Publish distribution 📦 to PyPI
-          uses: pypa/gh-action-pypi-publish@master
-          with:
-            password: ${{ secrets.PYPI_API_TOKEN }}
+        uses: pypa/gh-action-pypi-publish@master
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
 
 
 
