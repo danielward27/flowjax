@@ -100,6 +100,7 @@ class Coupling(Bijection, eqx.Module):
 
 class CouplingStack(Bijection, eqx.Module):
     layers: list
+    d: int
     D: int
     condition_dim: int
 
@@ -133,17 +134,21 @@ class CouplingStack(Bijection, eqx.Module):
             condition_dim (int, optional): Dimension of additional conditioning
                 variables (for learning conditional distributions). Defaults to 0.
         """
-    
+
+        key, subkey = random.split(key)
+        permutations = jnp.row_stack([jnp.arange(D) for _ in range(num_layers)])
+        permutations = random.permutation(subkey, permutations, 1, True)
+
+        d = D // 2
         layers = []
-        ds = [round(jnp.floor(D / 2).item()), round(jnp.ceil(D / 2).item())]
-        permutation = jnp.flip(jnp.arange(D)) # TODO Random permutation likely better than flipping - or alternate flip and random.
-        for i in range(num_layers):
-            key, coupling_key = random.split(key)
-            d = ds[0] if i % 2 == 0 else ds[1]
+
+        for permutation in permutations:
+            key, subkey = random.split(key)
+
             layers.extend(
                 [
                     Coupling(
-                        key=coupling_key,
+                        key=subkey,
                         bijection=bijection,
                         d=d,
                         D=D,
@@ -154,7 +159,8 @@ class CouplingStack(Bijection, eqx.Module):
                     IgnoreCondition(Permute(permutation)),
                 ]
             )
-        self.layers = layers[:-1]
+        self.layers = layers[:-1]  # Remove last permutation
+        self.d = d
         self.D = D
         self.condition_dim = condition_dim
 
