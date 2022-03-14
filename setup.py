@@ -15,7 +15,7 @@ def read(filename):
 
 setup(
     name="jaxflows",
-    version="0.1.0",
+    version="0.1.10",
     url="https://github.com/danielward27/jaxflows.git",
     license="MIT",
     author="Daniel Ward",
