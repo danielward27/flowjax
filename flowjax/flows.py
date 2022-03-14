@@ -1,13 +1,13 @@
 from base64 import b16decode
 from typing import Callable, Union
 import jax.numpy as jnp
-from jaxflows.bijections.abc import Bijection
+from flowjax.bijections.abc import Bijection
 from jax.scipy.stats import norm
 from jax import random
 import equinox as eqx
 import jax
-from jaxflows.bijections.coupling import CouplingStack
-from jaxflows.bijections.rational_quadratic_spline import RationalQuadraticSpline
+from flowjax.bijections.coupling import CouplingStack
+from flowjax.bijections.rational_quadratic_spline import RationalQuadraticSpline
 
 
 class Flow(eqx.Module):

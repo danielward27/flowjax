@@ -1,6 +1,6 @@
-from jaxflows.train_utils import count_fruitless
+from flowjax.train_utils import count_fruitless
 import pytest
-from jaxflows.train_utils import train_val_split, random_permutation_multiple
+from flowjax.train_utils import train_val_split, random_permutation_multiple
 import jax.numpy as jnp
 from jax import random
 

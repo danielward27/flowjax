@@ -1,4 +1,4 @@
-from jaxflows.bijections.abc import ParameterisedBijection
+from flowjax.bijections.abc import ParameterisedBijection
 import jax.numpy as jnp
 
 

@@ -14,13 +14,13 @@ def read(filename):
 
 
 setup(
-    name="jaxflows",
-    version="0.1.10",
-    url="https://github.com/danielward27/jaxflows.git",
+    name="flowjax",
+    version="0.2.1",
+    url="https://github.com/danielward27/flowjax.git",
     license="MIT",
     author="Daniel Ward",
     author_email="danielward27@outlook.com",
-    description="Basic jaxflows implementation in jax.",
+    description="Basic flowjax implementation in jax.",
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
     packages=find_packages(exclude=("tests",)),
@@ -30,9 +30,7 @@ setup(
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.4",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
     ],
 )

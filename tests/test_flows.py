@@ -1,6 +1,6 @@
-from jaxflows.flows import Flow
-from jaxflows.bijections.permute import Permute
-from jaxflows.bijections.coupling import IgnoreCondition
+from flowjax.flows import Flow
+from flowjax.bijections.permute import Permute
+from flowjax.bijections.coupling import IgnoreCondition
 import jax.numpy as jnp
 from jax import random
 import pytest

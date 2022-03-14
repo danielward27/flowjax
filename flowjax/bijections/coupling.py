@@ -1,9 +1,9 @@
-from jaxflows.bijections.abc import ParameterisedBijection
+from flowjax.bijections.abc import ParameterisedBijection
 import equinox as eqx
 import jax.numpy as jnp
 from jax import random
-from jaxflows.bijections.permute import Permute
-from jaxflows.bijections.abc import Bijection
+from flowjax.bijections.permute import Permute
+from flowjax.bijections.abc import Bijection
 
 
 class IgnoreCondition(Bijection):

@@ -1,4 +1,4 @@
-from jaxflows.bijections.abc import Bijection
+from flowjax.bijections.abc import Bijection
 import jax.numpy as jnp
 
 

@@ -1,4 +1,4 @@
-from jaxflows.bijections.abc import ParameterisedBijection
+from flowjax.bijections.abc import ParameterisedBijection
 import jax.numpy as jnp
 import jax
 
@@ -21,7 +21,7 @@ class RationalQuadraticSpline1D(ParameterisedBijection):
         provides a vmapped version for multidimensional transformations. See
         RationalQuadraticSpline for more information.
         """
-        
+
         pos_pad = pos_pad.at[pad_idxs].set(pad_vals)
         self._pos_pad = pos_pad
 
