@@ -5,13 +5,12 @@ Normalising flow implementations in jax.
 
 So far supports:
 
-- Affine coupling flows/RealNVP (Dinh *et al.*) - https://arxiv.org/abs/1605.08803
+- Affine coupling flows/RealNVP ([Dinh *et al.*](https://arxiv.org/abs/1605.08803))
 
-- Neural spline coupling flows (Durkan *et al.*) - https://arxiv.org/abs/1906.04032/
+- Neural spline coupling flows ([Durkan *et al.*](https://arxiv.org/abs/1906.04032/))
 
 
-See examples at https://github.com/danielward27/flowjax/blob/main/examples/
-
+See [examples](https://github.com/danielward27/flowjax/blob/main/examples/).
 
 ## Authors
 -------
