@@ -1,4 +1,3 @@
-from base64 import b16decode
 from typing import Callable, Union
 import jax.numpy as jnp
 from flowjax.bijections.abc import Bijection
@@ -8,6 +7,7 @@ import equinox as eqx
 import jax
 from flowjax.bijections.coupling import CouplingStack
 from flowjax.bijections.rational_quadratic_spline import RationalQuadraticSpline
+from flowjax.bijections.affine import Affine
 
 
 class Flow(eqx.Module):
@@ -24,9 +24,8 @@ class Flow(eqx.Module):
         base_sample: Callable = None,
     ):
         """Form a distribution like object using a base distribution and a
-        bijection. Bijection must support extra conditioning variables (or the
-        bijection can be wrapped in IgnoreCondition). Operations are assumed
-        to be batched along dimension 0. If a one dimensional 
+        bijection. Operations are generally assumed to be batched along
+        dimension 0.
 
         Args:
             bijection (Bijection): Bijection mapping from target distribution to
@@ -61,7 +60,8 @@ class Flow(eqx.Module):
     def sample(
         self, key: random.PRNGKey, condition=jnp.array([[]]), n: Union[int, None] = None
     ):
-        "Sample from the target distribution."
+        """Sample from the target distribution. If a 2 dimensional condition is
+        provided, n is inferred from dimension 0."""
         condition = jnp.atleast_2d(condition)
         if n is None:
             n = condition.shape[0]
@@ -77,11 +77,13 @@ class NeuralSplineFlow(Flow):
         key: random.PRNGKey,
         target_dim: int,
         condition_dim: int = 0,
-        K: int = 8,
+        K: int = 10,
         B: int = 5,
         num_layers: int = 5,
         base_log_prob: Callable = None,
         base_sample: Callable = None,
+        nn_width: int = 40,
+        nn_depth: int = 2,
     ):
         """Convenience constructor for neural spline flow (with coupling layers).
         Note that points outside [-B, B] will not be transformed.
@@ -100,8 +102,46 @@ class NeuralSplineFlow(Flow):
             key=key,
             bijection=RationalQuadraticSpline(K=K, B=B),
             D=target_dim,
-            num_layers=num_layers,
             condition_dim=condition_dim,
+            num_layers=num_layers,
+            nn_width=nn_width,
+            nn_depth=nn_depth
+        )
+
+        super().__init__(bijection, target_dim, base_log_prob, base_sample)
+
+
+
+class RealNVPFlow(Flow):
+    def __init__(
+        self,
+        key: random.PRNGKey,
+        target_dim: int,
+        condition_dim: int = 0,
+        num_layers: int = 5,
+        base_log_prob: Callable = None,
+        base_sample: Callable = None,
+    ):
+        """Convenience constructor for a RealNVP style flow. Note this
+        implementation differs slightly from the original, e.g. it does not use
+        batch normaliziation and it permutes between the layers.
+
+        Args:
+            key (random.PRNGKey): Random key.
+            target_dim (int): Dimension of the target distribution.
+            condition_dim (int): Dimension of extra conditioning variables. Defualts to 0.
+            K (int, optional): Number of (inner) spline segments. Defaults to 8.
+            B (int, optional): Interval to transform [-B, B]. Defaults to 5.
+            base_log_prob (Callable, optional): Log probability in base distribution. Defaults to standard normal.
+            base_sample (Callable, optional): Sample function in base distribution. Defaults to standard normal.
+        """
+
+        bijection = CouplingStack(
+            key=key,
+            bijection=Affine(),
+            D=target_dim,
+            condition_dim=condition_dim,
+            num_layers=num_layers,
         )
 
         super().__init__(bijection, target_dim, base_log_prob, base_sample)

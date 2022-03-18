@@ -1,19 +1,23 @@
 from abc import ABC, abstractmethod
-
+import jax.numpy as jnp
 
 class Bijection(ABC):
-    "Basic bijection class"
+    """Basic bijection class. All bijections should support conditioning variables
+    (even if ignored)."""
 
     @abstractmethod
-    def transform(self, x, *args):
+    def transform(self, x: jnp.ndarray, *args, condition: jnp.ndarray = jnp.array([])):
+        """Apply transformation."""
         pass
 
     @abstractmethod
-    def transform_and_log_abs_det_jacobian(self, x, *args):
+    def transform_and_log_abs_det_jacobian(self, x, *args, condition=jnp.array([])):
+        """Apply transformation and compute log absolute value of the Jacobian determinant."""
         pass
 
     @abstractmethod
-    def inverse(self, y, *args):
+    def inverse(self, y, *args, condition=jnp.array([])):
+        """Invert the transformation."""
         pass
 
 

@@ -2,28 +2,8 @@ from flowjax.bijections.abc import ParameterisedBijection
 import equinox as eqx
 import jax.numpy as jnp
 from jax import random
-from flowjax.bijections.permute import Permute
+from flowjax.bijections.utils import Permute, Chain
 from flowjax.bijections.abc import Bijection
-
-
-class IgnoreCondition(Bijection):
-    """Wrap bijection to allow it to take and ignore additional
-    conditioning variables. Facilitates simple stacking of layers."""
-
-    bijection: Bijection
-
-    def __init__(self, bijection):
-        self.bijection = bijection
-
-    def transform(self, x, condition=None):
-        return self.bijection.transform(x)
-
-    def transform_and_log_abs_det_jacobian(self, x, condition=None):
-        return self.bijection.transform_and_log_abs_det_jacobian(x)
-
-    def inverse(self, y, condition=None):
-        return self.bijection.inverse(y)
-
 
 class Coupling(Bijection, eqx.Module):
     d: int
@@ -72,7 +52,7 @@ class Coupling(Bijection, eqx.Module):
         cond = jnp.concatenate((x_cond, condition))
         bijection_params = self.conditioner(cond)
         bijection_args = self.bijection.get_args(bijection_params)
-        y_trans = self.bijection.transform(x_trans, *bijection_args)
+        y_trans = self.bijection.transform(x_trans, *bijection_args, condition)
         y = jnp.concatenate((x_cond, y_trans))
         return y
 
@@ -83,7 +63,7 @@ class Coupling(Bijection, eqx.Module):
         bijection_params = self.conditioner(cond)
         bijection_args = self.bijection.get_args(bijection_params)
         y_trans, log_abs_det = self.bijection.transform_and_log_abs_det_jacobian(
-            x_trans, *bijection_args
+            x_trans, *bijection_args, condition
         )
         y = jnp.concatenate([x_cond, y_trans])
         return y, log_abs_det
@@ -98,7 +78,7 @@ class Coupling(Bijection, eqx.Module):
         return x
 
 
-class CouplingStack(Bijection, eqx.Module):
+class CouplingStack(Chain):
     layers: list
     d: int
     D: int
@@ -109,17 +89,13 @@ class CouplingStack(Bijection, eqx.Module):
         key: random.PRNGKey,
         bijection: ParameterisedBijection,
         D: int,
-        num_layers: int,
+        condition_dim: int = 0,
+        num_layers: int = 5,
         nn_width: int = 40,
         nn_depth: int = 2,
-        condition_dim: int = 0,
     ):
         """
         A stack of bijections, alternating a coupling layer, and a permutation.
-        The permutations alternate between flipping and shuffling the data. Flipping
-        is somewhat strategised as it (roughly) allows untransformed variables
-        in the previous layer to be transformed.
-
         To learn a conditional distribution, condition_dim should be >0,
         and conditioning variables should be passed when transforming.
         
@@ -156,7 +132,7 @@ class CouplingStack(Bijection, eqx.Module):
                         nn_depth=nn_depth,
                         condition_dim=condition_dim,
                     ),
-                    IgnoreCondition(Permute(permutation)),
+                    Permute(permutation),
                 ]
             )
         self.layers = layers[:-1]  # Remove last permutation
@@ -164,24 +140,4 @@ class CouplingStack(Bijection, eqx.Module):
         self.D = D
         self.condition_dim = condition_dim
 
-    def transform(self, x, condition=jnp.array([])):
-        z = x
-        for layer in self.layers:
-            z = layer.transform(z, condition)
-        return z
-
-    def transform_and_log_abs_det_jacobian(self, x, condition=jnp.array([])):
-        log_abs_det_jac = 0
-        z = x
-        for layer in self.layers:
-            z, log_abs_det_jac_i = layer.transform_and_log_abs_det_jacobian(
-                z, condition
-            )
-            log_abs_det_jac += log_abs_det_jac_i
-        return z, log_abs_det_jac
-
-    def inverse(self, z, condition=jnp.array([])):
-        x = z
-        for layer in reversed(self.layers):
-            x = layer.inverse(x, condition)
-        return x
+        super().__init__(layers)

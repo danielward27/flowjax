@@ -1,14 +1,14 @@
 import jax.numpy as jnp
 from jax import random
 from flowjax.bijections.rational_quadratic_spline import (
-    RationalQuadraticSpline1D,
+    _RationalQuadraticSpline1D,
     RationalQuadraticSpline,
 )
 import pytest
 
 
-def test_RationalQuadraticSpline1D():
-    spline = RationalQuadraticSpline1D(K=5, B=3)
+def test__RationalQuadraticSpline1D():
+    spline = _RationalQuadraticSpline1D(K=5, B=3)
     params = random.normal(random.PRNGKey(0), (spline.num_params(),))
     transform_args = spline.get_args(params)
 
