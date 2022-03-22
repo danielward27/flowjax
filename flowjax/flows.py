@@ -8,6 +8,8 @@ import jax
 from flowjax.bijections.coupling import CouplingStack
 from flowjax.bijections.rational_quadratic_spline import RationalQuadraticSpline
 from flowjax.bijections.affine import Affine
+from flowjax.bijections.utils import Chain
+from flowjax.bijections.bnaf import BlockAutoregressiveNetwork
 
 
 class Flow(eqx.Module):
@@ -105,11 +107,10 @@ class NeuralSplineFlow(Flow):
             condition_dim=condition_dim,
             num_layers=num_layers,
             nn_width=nn_width,
-            nn_depth=nn_depth
+            nn_depth=nn_depth,
         )
 
         super().__init__(bijection, target_dim, base_log_prob, base_sample)
-
 
 
 class RealNVPFlow(Flow):
@@ -144,4 +145,33 @@ class RealNVPFlow(Flow):
             num_layers=num_layers,
         )
 
+        super().__init__(bijection, target_dim, base_log_prob, base_sample)
+
+
+class BlockNeuralAutoregressiveFlow(Flow):
+    def __init__(
+        self,
+        key: random.PRNGKey,
+        target_dim: int,
+        flow_layers=2,
+        nn_layers=3,
+        block_size=(50, 50),
+        base_log_prob: Callable = None,
+        base_sample: Callable = None,
+    ):
+        assert nn_layers >= 2
+
+        key, *subkeys = random.split(key, flow_layers + 1)
+        bijections = []
+        for i in range(flow_layers):
+            bijections.extend(
+                [
+                    BlockAutoregressiveNetwork(
+                        subkeys[i], dim=2, n_layers=3, block_size=block_size
+                    ),
+                    # TODO Add permutation and option for activation?
+                ]
+            )
+
+        bijection = Chain(bijections)
         super().__init__(bijection, target_dim, base_log_prob, base_sample)
