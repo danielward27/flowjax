@@ -4,12 +4,12 @@ import jax
 import jax.numpy as jnp
 from flowjax.bijections.abc import Bijection
 from jax import random
-from math import prod
 from jax.nn.initializers import glorot_uniform
 from jax import lax
 
 
 def b_diag_mask(block_shape: tuple, num_blocks: int):
+    "Block diagonal mask."
     return jax.scipy.linalg.block_diag(
         *[jnp.ones(block_shape, int) for _ in range(num_blocks)]
     )
@@ -43,8 +43,16 @@ class BlockAutoregressiveLinear(eqx.Module):
         key: random.PRNGKey,
         num_blocks: int,
         block_shape: tuple,
-        init=glorot_uniform(),
+        init: Callable = glorot_uniform(),
     ):
+        """Block autoregressive neural netork layer (https://arxiv.org/abs/1904.04676).
+
+        Args:
+            key (random.PRNGKey): Random key
+            num_blocks (int): Number of diagonal blocks (dimension of input layer).
+            block_shape (tuple): The shape of the blocks.
+            init (Callable, optional): Default initialisation method for the weight matrix. Defaults to glorot_uniform().
+        """
         self.block_shape = block_shape
         self.num_blocks = num_blocks
 
