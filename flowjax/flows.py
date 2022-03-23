@@ -161,6 +161,18 @@ class BlockNeuralAutoregressiveFlow(Flow):
         base_log_prob: Callable = None,
         base_sample: Callable = None,
     ):
+        """Block neural autoregressive flow (https://arxiv.org/abs/1904.04676).
+
+        Args:
+            key (random.PRNGKey): Random key.
+            target_dim (int): Dimension of the target distribution.
+            flow_layers (int, optional): Number of flow layers (autoregressive 1 layer = neural network + TanH activation) . Defaults to 1.
+            nn_layers (int, optional): Number of layers within autoregressive neural networks. Defaults to 3.
+            block_size (tuple, optional): Block size in lower triangular blocks of autoregressive neural network. Defaults to (8, 8).
+            permute_strategy (str, optional): Permutation between flow layers, should be "flip" or "random". Defaults to "flip".
+            base_log_prob (Callable, optional): Base distribution log probability function. Defaults to standard normal.
+            base_sample (Callable, optional): Base distribution sample function. Defaults to standard normal.
+        """
         assert nn_layers >= 2
 
         key, *subkeys = random.split(key, flow_layers + 1)
