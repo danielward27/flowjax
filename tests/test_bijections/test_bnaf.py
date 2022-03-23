@@ -1,4 +1,3 @@
-#%%
 from flowjax.bijections.bnaf import (
     BlockAutoregressiveLinear,
     _IdentityBNAF,
@@ -12,9 +11,9 @@ import jax
 import pytest
 from flowjax.bijections.bnaf import _TanhBNAF
 from jax.scipy.linalg import block_diag
+from flowjax.bijections.bnaf import b_diag_mask
 
 
-# %%
 def test_b_tril_mask():
     args = [(1, 2), 3]
     expected = jnp.array([[0, 0, 0, 0, 0, 0], [1, 1, 0, 0, 0, 0], [1, 1, 1, 1, 0, 0]])
@@ -58,10 +57,9 @@ def test_BlockAutoregressiveNetwork():
         # Check log abs det jacobian calculation
         y, log_abs_det_jacobian = barn.transform_and_log_abs_det_jacobian(x)
         expected = jnp.log(jnp.diag(auto_jacobian)).sum()
-        assert log_abs_det_jacobian == pytest.approx(expected)
-
-
-from flowjax.bijections.bnaf import b_diag_mask
+        assert log_abs_det_jacobian == pytest.approx(
+            expected
+        )  # TODO is this just numerical error?
 
 
 def test__TanhBNAF():
@@ -73,47 +71,7 @@ def test__TanhBNAF():
     y, log_det_3d = tanh(x)
     auto_jacobian = jax.jacobian(lambda a: tanh(a)[0])(x)
     mask = b_diag_mask((block_size, block_size), num_blocks)
-    # We have a bunch of ones in log_det_3d
     assert block_diag(*jnp.exp(log_det_3d)) == pytest.approx(
         auto_jacobian * mask, abs=1e-7
     )
 
-
-# This is where we wnt wrong
-
-# # %%
-# import jax.numpy as jnp
-# import jax
-# from flowjax.bijections.bnaf import BlockAutoregressiveNetwork
-# import equinox as eqx
-# from jax import random
-
-# dim = 5
-# barn = BlockAutoregressiveNetwork(random.PRNGKey(0), dim)
-# x = random.uniform(random.PRNGKey(0), (dim,))
-# y = barn.transform(x)
-# assert y.shape == (5,)
-
-# y, logdet = barn.transform_and_log_abs_det_jacobian(x)
-
-# logdet.reshape(x.shape)
-
-# # %%
-# # IS equation 10 a scaler?
-# # Jacobian is upper triangular. But somewhere we are computing it incorrectly.
-# # Maybe we should just try and train it and see if it fails.
-# # 9 does not compute the full jacobian, just the diagonal elements..
-# # %%
-# expected_log_jac = jnp.log(jax.jacobian(barn.transform)(x))
-# print(expected_log_jac)
-# print(jnp.diagonal(expected_log_jac).sum())
-# # %%
-# # def f(x):
-# #     return np.array([x[0] ** 2, x[1] ** 2])
-
-
-# # x = np.array([[3.0, 11.0], [5.0, 13.0], [7.0, 17.0]])
-
-# # jac = jax.jacobian(f)
-
-# # %%

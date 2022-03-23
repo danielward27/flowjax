@@ -2,8 +2,9 @@ from flowjax.bijections.abc import ParameterisedBijection
 import equinox as eqx
 import jax.numpy as jnp
 from jax import random
-from flowjax.bijections.utils import Permute, Chain
+from flowjax.bijections.utils import Chain, intertwine_permute
 from flowjax.bijections.abc import Bijection
+
 
 class Coupling(Bijection, eqx.Module):
     d: int
@@ -93,6 +94,7 @@ class CouplingStack(Chain):
         num_layers: int = 5,
         nn_width: int = 40,
         nn_depth: int = 2,
+        permute_strategy: str = "flip",
     ):
         """
         A stack of bijections, alternating a coupling layer, and a permutation.
@@ -110,34 +112,26 @@ class CouplingStack(Chain):
             condition_dim (int, optional): Dimension of additional conditioning
                 variables (for learning conditional distributions). Defaults to 0.
         """
+        d = D // 2
+        key, *subkeys = random.split(key, num_layers + 1)
+        layers = [
+            Coupling(
+                key=subkey,
+                bijection=bijection,
+                d=d,
+                D=D,
+                nn_width=nn_width,
+                nn_depth=nn_depth,
+                condition_dim=condition_dim,
+            )
+            for subkey in subkeys
+        ]
 
         key, subkey = random.split(key)
-        permutations = jnp.row_stack([jnp.arange(D) for _ in range(num_layers)])
-        permutations = random.permutation(subkey, permutations, 1, True)
+        layers = intertwine_permute(layers, permute_strategy, subkey, D)
 
-        d = D // 2
-        layers = []
-
-        for permutation in permutations:
-            key, subkey = random.split(key)
-
-            layers.extend(
-                [
-                    Coupling(
-                        key=subkey,
-                        bijection=bijection,
-                        d=d,
-                        D=D,
-                        nn_width=nn_width,
-                        nn_depth=nn_depth,
-                        condition_dim=condition_dim,
-                    ),
-                    Permute(permutation),
-                ]
-            )
-        self.layers = layers[:-1]  # Remove last permutation
+        self.layers = layers
         self.d = d
         self.D = D
         self.condition_dim = condition_dim
-
         super().__init__(layers)

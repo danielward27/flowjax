@@ -10,6 +10,7 @@ from flowjax.bijections.rational_quadratic_spline import RationalQuadraticSpline
 from flowjax.bijections.affine import Affine
 from flowjax.bijections.utils import Chain
 from flowjax.bijections.bnaf import BlockAutoregressiveNetwork
+from flowjax.bijections.utils import intertwine_permute
 
 
 class Flow(eqx.Module):
@@ -156,22 +157,24 @@ class BlockNeuralAutoregressiveFlow(Flow):
         flow_layers=2,
         nn_layers=3,
         block_size=(50, 50),
+        permute_strategy="flip",
         base_log_prob: Callable = None,
         base_sample: Callable = None,
     ):
         assert nn_layers >= 2
 
         key, *subkeys = random.split(key, flow_layers + 1)
-        bijections = []
-        for i in range(flow_layers):
-            bijections.extend(
-                [
-                    BlockAutoregressiveNetwork(
-                        subkeys[i], dim=2, n_layers=3, block_size=block_size
-                    ),
-                    # TODO Add permutation and option for activation?
-                ]
-            )
 
+        bijections = [
+            BlockAutoregressiveNetwork(
+                subkeys[i], dim=2, n_layers=3, block_size=block_size
+            )
+            for i in range(flow_layers)
+        ]
+
+        key, subkey = random.split(key)
+        bijections = intertwine_permute(
+            bijections, permute_strategy, subkey, target_dim
+        )
         bijection = Chain(bijections)
         super().__init__(bijection, target_dim, base_log_prob, base_sample)
