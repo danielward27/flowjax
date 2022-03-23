@@ -30,8 +30,8 @@ class BlockAutoregressiveLinear(eqx.Module):
     num_blocks: int
     block_shape: tuple
     W: jnp.ndarray
-    # W_scale: jnp.ndarray
     bias: jnp.ndarray
+    W_log_scale: jnp.ndarray
     in_features: int
     out_features: int
     _b_diag_mask: jnp.ndarray
@@ -52,31 +52,37 @@ class BlockAutoregressiveLinear(eqx.Module):
         self._b_diag_mask_idxs = jnp.where(self._b_diag_mask)
         self._b_tril_mask = b_tril_mask(block_shape, num_blocks)
 
-        w_key, bias_key = random.split(key, 2)
         in_features, out_features = (
             block_shape[1] * num_blocks,
             block_shape[0] * num_blocks,
         )
 
-        self.W = init(w_key, (out_features, in_features)) * (
+        *w_key, bias_key, scale_key = random.split(key, num_blocks + 2)
+
+        self.W = init(w_key[0], (out_features, in_features)) * (
             self.b_tril_mask + self.b_diag_mask
         )
-        self.bias = random.uniform(bias_key, (out_features,)) - 0.5
+        self.bias = (random.uniform(bias_key, (out_features,)) - 0.5) * (
+            2 / jnp.sqrt(out_features)
+        )
+        self.W_log_scale = jnp.log(random.uniform(scale_key, (out_features, 1)))
         self.in_features = in_features
         self.out_features = out_features
-        # self.W_scale = jnp.log(random.uniform(scale_key, (out_features, 1)))
 
-    def __call__(self, x):  # TODO include weight scaling
+    def __call__(
+        self, x
+    ):  # TODO once trained the jacobian is fixed. Maybe this can be exploited?
         "returns output y, and components of weight matrix needed log_det component (n_blocks, block_shape[0], block_shape[1])"
         W = jnp.exp(self.W) * self.b_diag_mask + self.W * self.b_tril_mask
-        y = W @ x + self.bias
-        return y, self.log_jacobian_3d()
+        W_norms = jnp.linalg.norm(W, axis=-1, keepdims=True)
 
-    def log_jacobian_3d(self):
-        log_det_3d = self.W[self.b_diag_mask_idxs].reshape(
+        W = jnp.exp(self.W_log_scale) * W / W_norms  # Weight normalisation
+        y = W @ x + self.bias
+        log_jac = self.W_log_scale + self.W - jnp.log(W_norms)
+        log_jac_3d = log_jac[self.b_diag_mask_idxs].reshape(
             self.num_blocks, *self.block_shape
         )
-        return log_det_3d
+        return y, log_jac_3d
 
     @property
     def b_diag_mask(self):
@@ -89,20 +95,6 @@ class BlockAutoregressiveLinear(eqx.Module):
     @property
     def b_tril_mask(self):
         return jax.lax.stop_gradient(self._b_tril_mask)
-
-        # def get_weight_matrix_and_log_det_component(self):
-
-    #     "Scales weight matrix, and gives 3d log_det component with shape (n_blocks, block_shape[0], block_shape[1])"
-    #     W = jnp.exp(self.W) * self.b_diag_mask + self.W * self.b_tril_mask
-    #     W_norm = jnp.linalg.norm(W, axis=-2, keepdims=True)
-    #     W = (
-    #         jnp.exp(self.W_scale) * W / W_norm
-    #     )  # Normalize and rescale  # TODO W_scale should be (n, 1) as otherwise it tries to do things colwise.
-    #     log_det_3d = self.W_scale + W - jnp.log(W_norm)
-    #     log_det_3d = log_det_3d[self.b_diag_mask_idxs].reshape(
-    #         self.num_blocks, *self.block_shape
-    #     )
-    #     return W, log_det_3d  # TODO we can check this?
 
 
 def logmatmulexp(
@@ -117,24 +109,12 @@ def logmatmulexp(
     return xy + x_shift + y_shift
 
 
-class _IdentityBNAF:
-    """
-    Identity activation compatible with BNAF (log_abs_det provided as 3D array).
-    Mainly provided to facilitate testing.
-    """
-
-    def __init__(self, num_blocks: int):
-        self.num_blocks = num_blocks
-
-    def __call__(self, x, condition=jnp.array([])):
-        d = len(x) // self.num_blocks
-        i = jnp.expand_dims(jnp.eye(d), 0)
-        i = jnp.broadcast_to(i, (self.num_blocks, *i.shape))[0]
-        return x, jnp.log(i)
-
-
 class _TanhBNAF:
-    """Tanh transformation compatible with BNAF (log_abs_det provided as 3D array). Condition is ignored."""
+    """
+    Tanh transformation compatible with BNAF (log_abs_det provided as 3D array).
+    Condition is ignored. Output shape is (num_blocks, *block_size), where
+    output[i] is the log jacobian for the iith block.
+    """
 
     def __init__(self, num_blocks: int):
         self.num_blocks = num_blocks
@@ -159,7 +139,7 @@ class BlockAutoregressiveNetwork(eqx.Module, Bijection):
         key: random.PRNGKey,
         dim: int,
         n_layers: int = 3,
-        block_size: tuple = (10, 10),  # TODO scrape good defaults.
+        block_size: tuple = (8, 8),
         activation=_TanhBNAF,
     ):
 
@@ -177,7 +157,7 @@ class BlockAutoregressiveNetwork(eqx.Module, Bijection):
             layers.extend(
                 [BlockAutoregressiveLinear(subkey, dim, size), activation(dim)]
             )
-        self.layers = layers[:-1]  # Avoid last activation
+        self.layers = layers[:-1]
         self.activation = activation
 
     def transform(self, x: jnp.ndarray, condition: jnp.ndarray = jnp.array([])):
@@ -196,7 +176,7 @@ class BlockAutoregressiveNetwork(eqx.Module, Bijection):
 
         logdet = log_det_3ds[-1]
         for ld in reversed(log_det_3ds[:-1]):
-            logdet = logmatmulexp(logdet, ld)  # TODO Check if we need to exp
+            logdet = logmatmulexp(logdet, ld)
         return y, logdet.sum()
 
     def inverse():

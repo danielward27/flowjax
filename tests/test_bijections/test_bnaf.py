@@ -1,6 +1,5 @@
 from flowjax.bijections.bnaf import (
     BlockAutoregressiveLinear,
-    _IdentityBNAF,
     b_diag_mask,
     b_tril_mask,
     BlockAutoregressiveNetwork,
@@ -44,22 +43,19 @@ def test_BlockAutoregressiveNetwork():
     dim = 5
     x = jnp.ones(dim)
 
-    for activation in [_IdentityBNAF, _TanhBNAF]:
-        barn = BlockAutoregressiveNetwork(random.PRNGKey(0), dim, activation=activation)
-        y = barn.transform(x)
-        assert y.shape == (dim,)
-        auto_jacobian = jax.jacobian(barn.transform)(x)
+    barn = BlockAutoregressiveNetwork(random.PRNGKey(0), dim, activation=_TanhBNAF)
+    y = barn.transform(x)
+    assert y.shape == (dim,)
+    auto_jacobian = jax.jacobian(barn.transform)(x)
 
-        # Check autograd autoregressive
-        assert jnp.all(jnp.triu(auto_jacobian, 1) == pytest.approx(0, abs=1e-7))
-        assert jnp.all(jnp.diag(auto_jacobian) > 0)
+    # Check autograd autoregressive
+    assert jnp.all(jnp.triu(auto_jacobian, 1) == pytest.approx(0, abs=1e-7))
+    assert jnp.all(jnp.diag(auto_jacobian) > 0)
 
-        # Check log abs det jacobian calculation
-        y, log_abs_det_jacobian = barn.transform_and_log_abs_det_jacobian(x)
-        expected = jnp.log(jnp.diag(auto_jacobian)).sum()
-        assert log_abs_det_jacobian == pytest.approx(
-            expected
-        )  # TODO is this just numerical error?
+    # Check log abs det jacobian calculation
+    y, log_abs_det_jacobian = barn.transform_and_log_abs_det_jacobian(x)
+    expected = jnp.log(jnp.diag(auto_jacobian)).sum()
+    assert log_abs_det_jacobian == pytest.approx(expected, abs=1e-5)
 
 
 def test__TanhBNAF():
