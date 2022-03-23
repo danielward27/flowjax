@@ -25,7 +25,7 @@ def test_Coupling():
 def test_CouplingStack():
     model_key, x_key = random.split(random.PRNGKey(0), 2)
     D = 5
-    model = CouplingStack(model_key, Affine(), D, 10, 2, 3)
+    model = CouplingStack(model_key, Affine(), D)
 
     x = random.uniform(x_key, (D,))
     z = model.transform(x)
