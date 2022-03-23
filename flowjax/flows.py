@@ -167,7 +167,7 @@ class BlockNeuralAutoregressiveFlow(Flow):
 
         bijections = [
             BlockAutoregressiveNetwork(
-                subkeys[i], dim=2, n_layers=3, block_size=block_size
+                subkeys[i], dim=target_dim, n_layers=nn_layers, block_size=block_size
             )
             for i in range(flow_layers)
         ]
