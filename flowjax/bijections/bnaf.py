@@ -8,18 +8,18 @@ from jax.nn.initializers import glorot_uniform
 from jax import lax
 
 
-def b_diag_mask(block_shape: tuple, num_blocks: int):
+def b_diag_mask(block_shape: tuple, n_blocks: int):
     "Block diagonal mask."
     return jax.scipy.linalg.block_diag(
-        *[jnp.ones(block_shape, int) for _ in range(num_blocks)]
+        *[jnp.ones(block_shape, int) for _ in range(n_blocks)]
     )
 
 
-def b_tril_mask(block_shape: tuple, num_blocks: int):
+def b_tril_mask(block_shape: tuple, n_blocks: int):
     "Upper triangular block mask, excluding diagonal blocks."
-    mask = jnp.zeros((block_shape[0] * num_blocks, block_shape[1] * num_blocks))
+    mask = jnp.zeros((block_shape[0] * n_blocks, block_shape[1] * n_blocks))
 
-    for i in range(num_blocks):
+    for i in range(n_blocks):
         mask = mask.at[
             (i + 1) * block_shape[0] :, i * block_shape[1] : (i + 1) * block_shape[1]
         ].set(1)
@@ -27,7 +27,7 @@ def b_tril_mask(block_shape: tuple, num_blocks: int):
 
 
 class BlockAutoregressiveLinear(eqx.Module):
-    num_blocks: int
+    n_blocks: int
     block_shape: tuple
     W: jnp.ndarray
     bias: jnp.ndarray
@@ -41,7 +41,7 @@ class BlockAutoregressiveLinear(eqx.Module):
     def __init__(
         self,
         key: random.PRNGKey,
-        num_blocks: int,
+        n_blocks: int,
         block_shape: tuple,
         init: Callable = glorot_uniform(),
     ):
@@ -49,23 +49,23 @@ class BlockAutoregressiveLinear(eqx.Module):
 
         Args:
             key (random.PRNGKey): Random key
-            num_blocks (int): Number of diagonal blocks (dimension of input layer).
+            n_blocks (int): Number of diagonal blocks (dimension of input layer).
             block_shape (tuple): The shape of the blocks.
             init (Callable, optional): Default initialisation method for the weight matrix. Defaults to glorot_uniform().
         """
         self.block_shape = block_shape
-        self.num_blocks = num_blocks
+        self.n_blocks = n_blocks
 
-        self._b_diag_mask = b_diag_mask(block_shape, num_blocks)
+        self._b_diag_mask = b_diag_mask(block_shape, n_blocks)
         self._b_diag_mask_idxs = jnp.where(self._b_diag_mask)
-        self._b_tril_mask = b_tril_mask(block_shape, num_blocks)
+        self._b_tril_mask = b_tril_mask(block_shape, n_blocks)
 
         in_features, out_features = (
-            block_shape[1] * num_blocks,
-            block_shape[0] * num_blocks,
+            block_shape[1] * n_blocks,
+            block_shape[0] * n_blocks,
         )
 
-        *w_key, bias_key, scale_key = random.split(key, num_blocks + 2)
+        *w_key, bias_key, scale_key = random.split(key, n_blocks + 2)
 
         self.W = init(w_key[0], (out_features, in_features)) * (
             self.b_tril_mask + self.b_diag_mask
@@ -77,20 +77,18 @@ class BlockAutoregressiveLinear(eqx.Module):
         self.in_features = in_features
         self.out_features = out_features
 
-    def __call__(
-        self, x
-    ):  # TODO once trained the jacobian is fixed. Maybe this can be exploited?
-        "returns output y, and components of weight matrix needed log_det component (n_blocks, block_shape[0], block_shape[1])"
+    def get_normalised_weights(self):
+        "Carries out weight normalisation."
         W = jnp.exp(self.W) * self.b_diag_mask + self.W * self.b_tril_mask
         W_norms = jnp.linalg.norm(W, axis=-1, keepdims=True)
+        return jnp.exp(self.W_log_scale) * W / W_norms
 
-        W = jnp.exp(self.W_log_scale) * W / W_norms  # Weight normalisation
+    def __call__(self, x):
+        "returns output y, and components of weight matrix needed log_det component (n_blocks, block_shape[0], block_shape[1])"
+        W = self.get_normalised_weights()
         y = W @ x + self.bias
-        log_jac = self.W_log_scale + self.W - jnp.log(W_norms)
-        log_jac_3d = log_jac[self.b_diag_mask_idxs].reshape(
-            self.num_blocks, *self.block_shape
-        )
-        return y, log_jac_3d
+        jac_3d = W[self.b_diag_mask_idxs].reshape(self.n_blocks, *self.block_shape)
+        return y, jnp.log(jac_3d)
 
     @property
     def b_diag_mask(self):
@@ -120,19 +118,19 @@ def logmatmulexp(
 class _TanhBNAF:
     """
     Tanh transformation compatible with BNAF (log_abs_det provided as 3D array).
-    Condition is ignored. Output shape is (num_blocks, *block_size), where
+    Condition is ignored. Output shape is (n_blocks, *block_size), where
     output[i] is the log jacobian for the iith block.
     """
 
-    def __init__(self, num_blocks: int):
-        self.num_blocks = num_blocks
+    def __init__(self, n_blocks: int):
+        self.n_blocks = n_blocks
 
     def __call__(self, x, condition=jnp.array([])):
-        d = x.shape[0] // self.num_blocks
+        d = x.shape[0] // self.n_blocks
         log_det_vals = -2 * (x + jax.nn.softplus(-2 * x) - jnp.log(2.0))
-        log_det = jnp.full((self.num_blocks, d, d), -jnp.inf)
+        log_det = jnp.full((self.n_blocks, d, d), -jnp.inf)
         log_det = log_det.at[:, jnp.arange(d), jnp.arange(d)].set(
-            log_det_vals.reshape(self.num_blocks, d)
+            log_det_vals.reshape(self.n_blocks, d)
         )
         return jnp.tanh(x), log_det
 
