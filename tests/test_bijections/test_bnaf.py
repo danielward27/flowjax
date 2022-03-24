@@ -40,7 +40,7 @@ def test_BlockAutoregressiveLinear():
 
 
 def test_BlockAutoregressiveNetwork():
-    dim = 5
+    dim = 3
     x = jnp.ones(dim)
 
     barn = BlockAutoregressiveNetwork(random.PRNGKey(0), dim, activation=_TanhBNAF)
@@ -59,14 +59,14 @@ def test_BlockAutoregressiveNetwork():
 
 
 def test__TanhBNAF():
-    num_blocks = 2
+    n_blocks = 2
     block_size = 3
-    x = random.uniform(random.PRNGKey(0), (num_blocks * block_size,))
-    tanh = _TanhBNAF(num_blocks)
+    x = random.uniform(random.PRNGKey(0), (n_blocks * block_size,))
+    tanh = _TanhBNAF(n_blocks)
 
     y, log_det_3d = tanh(x)
     auto_jacobian = jax.jacobian(lambda a: tanh(a)[0])(x)
-    mask = b_diag_mask((block_size, block_size), num_blocks)
+    mask = b_diag_mask((block_size, block_size), n_blocks)
     assert block_diag(*jnp.exp(log_det_3d)) == pytest.approx(
         auto_jacobian * mask, abs=1e-7
     )
