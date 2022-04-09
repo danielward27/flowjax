@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import jax.numpy as jnp
 
+
 class Bijection(ABC):
     """Basic bijection class. All bijections should support conditioning variables
     (even if ignored)."""

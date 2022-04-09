@@ -190,9 +190,3 @@ class BlockNeuralAutoregressiveFlow(Flow):
         )
         bijection = Chain(bijections)
         super().__init__(bijection, target_dim, base_log_prob, base_sample)
-
-    def sample(self, *args, **kwargs):
-        raise NotImplementedError(
-            "Sampling this flow would require numerical inversion of the bijection"
-        )
-
