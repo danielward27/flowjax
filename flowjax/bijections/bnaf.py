@@ -185,7 +185,7 @@ class BlockAutoregressiveNetwork(eqx.Module, Bijection):
             logdet = logmatmulexp(logdet, ld)
         return y, logdet.sum()
 
-    def inverse():
+    def inverse(*args, **kwargs):
         return NotImplementedError(
             """
         This transform would require numerical methods for inversion..
