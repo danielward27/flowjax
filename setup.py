@@ -20,7 +20,7 @@ setup(
     license="MIT",
     author="Daniel Ward",
     author_email="danielward27@outlook.com",
-    description="Basic flowjax implementation in jax.",
+    description="Normalizing flow implementations in jax.",
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
     packages=find_packages(exclude=("tests",)),
