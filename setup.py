@@ -24,7 +24,7 @@ setup(
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
     packages=find_packages(exclude=("tests",)),
-    install_requires=["jax", "equinox", "pytest", "tqdm", "optax"],
+    install_requires=["jax", "jaxlib", "equinox", "pytest", "tqdm", "optax"],
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "License :: OSI Approved :: MIT License",
