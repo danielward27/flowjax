@@ -2,14 +2,16 @@ from flowjax.bijections.abc import ParameterisedBijection
 import jax.numpy as jnp
 
 """Note condition is ignored"""
+
+
 class Affine(ParameterisedBijection):
-    def transform(self, x, loc, log_scale, condition=jnp.array([])):
+    def transform(self, x, loc, log_scale):
         return x * jnp.exp(log_scale) + loc
 
-    def transform_and_log_abs_det_jacobian(self, x, loc, log_scale, condition=jnp.array([])):
+    def transform_and_log_abs_det_jacobian(self, x, loc, log_scale):
         return x * jnp.exp(log_scale) + loc, jnp.sum(log_scale)
 
-    def inverse(self, y, loc, log_scale, condition=jnp.array([])):
+    def inverse(self, y, loc, log_scale):
         return (y - loc) / jnp.exp(log_scale)
 
     def num_params(self, dim: int):

@@ -53,7 +53,7 @@ class Coupling(Bijection, eqx.Module):
         cond = jnp.concatenate((x_cond, condition))
         bijection_params = self.conditioner(cond)
         bijection_args = self.bijection.get_args(bijection_params)
-        y_trans = self.bijection.transform(x_trans, *bijection_args, condition)
+        y_trans = self.bijection.transform(x_trans, *bijection_args)
         y = jnp.concatenate((x_cond, y_trans))
         return y
 
@@ -64,7 +64,7 @@ class Coupling(Bijection, eqx.Module):
         bijection_params = self.conditioner(cond)
         bijection_args = self.bijection.get_args(bijection_params)
         y_trans, log_abs_det = self.bijection.transform_and_log_abs_det_jacobian(
-            x_trans, *bijection_args, condition
+            x_trans, *bijection_args
         )
         y = jnp.concatenate([x_cond, y_trans])
         return y, log_abs_det
@@ -113,10 +113,10 @@ class CouplingStack(Chain):
                 variables (for learning conditional distributions). Defaults to 0.
         """
         d = D // 2
-        key, *subkeys = random.split(key, num_layers + 1)
+        permute_key, *layer_keys = random.split(key, num_layers + 1)
         layers = [
             Coupling(
-                key=subkey,
+                key=key,
                 bijection=bijection,
                 d=d,
                 D=D,
@@ -124,11 +124,10 @@ class CouplingStack(Chain):
                 nn_depth=nn_depth,
                 condition_dim=condition_dim,
             )
-            for subkey in subkeys
+            for key in layer_keys
         ]
 
-        key, subkey = random.split(key)
-        layers = intertwine_permute(layers, permute_strategy, subkey, D)
+        layers = intertwine_permute(layers, permute_strategy, permute_key, D)
 
         self.layers = layers
         self.d = d

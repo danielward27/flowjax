@@ -25,11 +25,11 @@ class _RationalQuadraticSpline1D(ParameterisedBijection):
         pos_pad = pos_pad.at[pad_idxs].set(pad_vals)
         self._pos_pad = pos_pad
 
-    @property  # TODO update to Buffer when introduced to eqx: https://github.com/patrick-kidger/equinox/issues/31
+    @property
     def pos_pad(self):
         return jax.lax.stop_gradient(self._pos_pad)
 
-    def transform(self, x, x_pos, y_pos, derivatives, condition=jnp.array([])):
+    def transform(self, x, x_pos, y_pos, derivatives):
         k = self.get_bin(x, x_pos)
         yk, yk1, xk, xk1 = y_pos[k], y_pos[k + 1], x_pos[k], x_pos[k + 1]
         dk, dk1 = derivatives[k], derivatives[k + 1]
@@ -37,7 +37,7 @@ class _RationalQuadraticSpline1D(ParameterisedBijection):
         xi = (x - xk) / (xk1 - xk)
         return self._rational_quadratic(sk, xi, dk, dk1, yk, yk1)
 
-    def inverse(self, y, x_pos, y_pos, derivatives, condition=jnp.array([])):
+    def inverse(self, y, x_pos, y_pos, derivatives):
         k = self.get_bin(y, y_pos)
         xk, xk1, yk = x_pos[k], x_pos[k + 1], y_pos[k]
         sk = (y_pos[k + 1] - yk) / (xk1 - xk)
@@ -52,9 +52,7 @@ class _RationalQuadraticSpline1D(ParameterisedBijection):
         x = xi * (xk1 - xk) + xk
         return x
 
-    def transform_and_log_abs_det_jacobian(
-        self, x, x_pos, y_pos, derivatives, condition=jnp.array([])
-    ):
+    def transform_and_log_abs_det_jacobian(self, x, x_pos, y_pos, derivatives):
         k = self.get_bin(x, x_pos)
         yk, yk1, xk, xk1 = y_pos[k], y_pos[k + 1], x_pos[k], x_pos[k + 1]
         dk, dk1 = derivatives[k], derivatives[k + 1]
@@ -118,18 +116,16 @@ class RationalQuadraticSpline(ParameterisedBijection):
         self.B = B
         self.spline = _RationalQuadraticSpline1D(K, B)
 
-    def transform(self, x, x_pos, y_pos, derivatives, condition=jnp.array([])):
+    def transform(self, x, x_pos, y_pos, derivatives):
         return jax.vmap(self.spline.transform)(x, x_pos, y_pos, derivatives)
 
-    def transform_and_log_abs_det_jacobian(
-        self, x, x_pos, y_pos, derivatives, condition=jnp.array([])
-    ):
+    def transform_and_log_abs_det_jacobian(self, x, x_pos, y_pos, derivatives):
         y, log_abs_det_jacobian = jax.vmap(
             self.spline.transform_and_log_abs_det_jacobian
         )(x, x_pos, y_pos, derivatives)
         return y, log_abs_det_jacobian.sum()
 
-    def inverse(self, y, x_pos, y_pos, derivatives, condition=jnp.array([])):
+    def inverse(self, y, x_pos, y_pos, derivatives):
         return jax.vmap(self.spline.inverse)(y, x_pos, y_pos, derivatives)
 
     def num_params(self, dim: int):
