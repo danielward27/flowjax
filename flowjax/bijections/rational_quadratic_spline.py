@@ -18,9 +18,8 @@ class _RationalQuadraticSpline1D(ParameterisedBijection):
             [-B * 1e4, -B, B, B * 1e4]
         )  # Avoids jax control flow for identity tails
         """One dimensional rational quadratic spline, following Durkin et al.
-        (2019), https://arxiv.org/abs/1906.04032. RationalQuadraticSpline
-        provides a vmapped version for multidimensional transformations. See
-        RationalQuadraticSpline for more information. Note condition argument is ignored.
+        (2019), https://arxiv.org/abs/1906.04032. This spline is vmapped
+        for multidimensional transformations; See RationalQuadraticSpline.
         """
 
         pos_pad = pos_pad.at[pad_idxs].set(pad_vals)
@@ -84,15 +83,13 @@ class _RationalQuadraticSpline1D(ParameterisedBijection):
         return jnp.where(cond1 & cond2, size=1)[0][0]
 
     @staticmethod
-    def _rational_quadratic(
-        sk, xi, dk, dk1, yk, yk1
-    ):  # eq. 4 https://arxiv.org/pdf/1906.04032.pdf
+    def _rational_quadratic(sk, xi, dk, dk1, yk, yk1):  # eq. 4
         num = (yk1 - yk) * (sk * xi ** 2 + dk * xi * (1 - xi))
         den = sk + (dk1 + dk - 2 * sk) * xi * (1 - xi)
         return yk + num / den
 
     @staticmethod
-    def _derivative(sk, xi, dk, dk1):  # eq. 5 https://arxiv.org/pdf/1906.04032.pdf
+    def _derivative(sk, xi, dk, dk1):  # eq. 5
         num = sk ** 2 * (dk1 * xi ** 2 + 2 * sk * xi * (1 - xi) + dk * (1 - xi) ** 2)
         den = (sk + (dk1 + dk - 2 * sk) * xi * (1 - xi)) ** 2
         return num / den
@@ -107,11 +104,12 @@ class RationalQuadraticSpline(ParameterisedBijection):
         """
         RationalQuadraticSpline following Durkin et al. (2019),
         https://arxiv.org/abs/1906.04032. Each row of parameter matrices (x_pos,
-        y_pos, derivatives) corresponds to a column (axis=1) in x
+        y_pos, derivatives) corresponds to a column (axis=1) in x. Ouside the interval
+        [-B, B], the identity transform is used.
 
         Args:
-            K (int): Number of inner knots B: (int): Interval to transform ([-B,
-            B])
+            K (int): Number of inner knots B: (int):
+            B: (int): Interval to transform [-B, B]
         """
         self.K = K
         self.B = B
@@ -135,4 +133,3 @@ class RationalQuadraticSpline(ParameterisedBijection):
     def get_args(self, params):
         params = params.reshape((-1, self.K * 3 - 1))
         return jax.vmap(self.spline.get_args)(params)
-
