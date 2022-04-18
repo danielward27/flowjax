@@ -5,7 +5,7 @@ from jax.scipy.stats import norm
 from jax import random
 import equinox as eqx
 import jax
-from flowjax.bijections.coupling import CouplingStack
+from flowjax.bijections.coupling import Coupling
 from flowjax.bijections.rational_quadratic_spline import RationalQuadraticSpline
 from flowjax.bijections.affine import Affine
 from flowjax.bijections.utils import Chain
@@ -66,8 +66,17 @@ class Flow(eqx.Module):
         condition: jnp.ndarray = jnp.array([[]]),
         n: Optional[int] = None,
     ):
-        """Sample from the target distribution. If a 2 dimensional condition is
-        provided, n is inferred from dimension 0."""
+        """Sample from the target distribution. If `condition.ndim==2`, n is
+        inferred from dimension 0.
+
+        Args:
+            key (random.PRNGKey): Random key.
+            condition (jnp.ndarray, optional): Conditioning variables. Defaults to jnp.array([[]]).
+            n (Optional[int], optional): Number of samples. Defaults to None.
+
+        Returns:
+            jnp.ndarray: Samples from the target distribution.
+        """
         condition = jnp.atleast_2d(condition)
         if n is None:
             n = condition.shape[0]
@@ -92,29 +101,39 @@ class NeuralSplineFlow(Flow):
         base_log_prob: Optional[Callable] = None,
         base_sample: Optional[Callable] = None,
     ):
-        """Convenience constructor for neural spline flow (with coupling layers).
-        Note that points outside [-B, B] will not be transformed.
+        """Neural spline flow (Durkan et al. 2019; https://arxiv.org/abs/1906.04032).
+        Note that the transformation is on the interval [-B, B]!
 
         Args:
             key (random.PRNGKey): Random key.
             target_dim (int): Dimension of the target distribution.
-            condition_dim (int): Dimension of extra conditioning variables. Defualts to 0.
+            condition_dim (int, optional): Dimension of extra conditioning variables. Defaults to 0.
             K (int, optional): Number of (inner) spline segments. Defaults to 10.
             B (int, optional): Interval to transform [-B, B]. Defaults to 5.
-            base_log_prob (Callable, optional): Log probability in base distribution. Defaults to standard normal.
-            base_sample (Callable, optional): Sample function in base distribution. Defaults to standard normal.
+            num_layers (int, optional): _description_. Defaults to 5.
+            nn_width (int, optional): _description_. Defaults to 40.
+            nn_depth (int, optional): _description_. Defaults to 2.
+            permute_strategy (str, optional): _description_. Defaults to "flip".
+            base_log_prob (Optional[Callable], optional): Log probability in base distribution. Defaults to standard normal.
+            base_sample (Optional[Callable], optional): Sample function in base distribution. Defaults to standard normal.
         """
+        d = target_dim // 2
+        permute_key, *layer_keys = random.split(key, num_layers + 1)
+        layers = [
+            Coupling(
+                key=key,
+                bijection=RationalQuadraticSpline(K=K, B=B),
+                d=d,
+                D=target_dim,
+                nn_width=nn_width,
+                nn_depth=nn_depth,
+                condition_dim=condition_dim,
+            )
+            for key in layer_keys
+        ]
 
-        bijection = CouplingStack(
-            key=key,
-            bijection=RationalQuadraticSpline(K=K, B=B),
-            D=target_dim,
-            condition_dim=condition_dim,
-            num_layers=num_layers,
-            nn_width=nn_width,
-            nn_depth=nn_depth,
-            permute_strategy=permute_strategy,
-        )
+        layers = intertwine_permute(layers, permute_strategy, permute_key, target_dim)
+        bijection = Chain(layers)
 
         super().__init__(bijection, target_dim, base_log_prob, base_sample)
 
@@ -145,18 +164,23 @@ class RealNVPFlow(Flow):
             base_log_prob (Callable, optional): _description_. Defaults to None.
             base_sample (Callable, optional): _description_. Defaults to None.
         """
+        d = target_dim // 2
+        permute_key, *layer_keys = random.split(key, num_layers + 1)
+        layers = [
+            Coupling(
+                key=key,
+                bijection=Affine(),
+                d=d,
+                D=target_dim,
+                nn_width=nn_width,
+                nn_depth=nn_depth,
+                condition_dim=condition_dim,
+            )
+            for key in layer_keys
+        ]
 
-        bijection = CouplingStack(
-            key=key,
-            bijection=Affine(),
-            D=target_dim,
-            condition_dim=condition_dim,
-            num_layers=num_layers,
-            nn_width=nn_width,
-            nn_depth=nn_depth,
-            permute_strategy=permute_strategy,
-        )
-
+        layers = intertwine_permute(layers, permute_strategy, permute_key, target_dim)
+        bijection = Chain(layers)
         super().__init__(bijection, target_dim, base_log_prob, base_sample)
 
 
@@ -165,10 +189,10 @@ class BlockNeuralAutoregressiveFlow(Flow):
         self,
         key: random.PRNGKey,
         target_dim: int,
-        nn_layers=3,
-        flow_layers=1,
-        block_size=(8, 8),
-        permute_strategy="flip",
+        nn_layers: int = 3,
+        block_size: tuple = (8, 8),
+        flow_layers: int = 1,
+        permute_strategy: str = "flip",
         base_log_prob: Optional[Callable] = None,
         base_sample: Optional[Callable] = None,
     ):
@@ -190,9 +214,9 @@ class BlockNeuralAutoregressiveFlow(Flow):
 
         bijections = [
             BlockAutoregressiveNetwork(
-                layer_keys[i], dim=target_dim, n_layers=nn_layers, block_size=block_size
+                key, dim=target_dim, n_layers=nn_layers, block_size=block_size
             )
-            for i in range(flow_layers)
+            for key in layer_keys
         ]
 
         bijections = intertwine_permute(
@@ -200,3 +224,4 @@ class BlockNeuralAutoregressiveFlow(Flow):
         )
         bijection = Chain(bijections)
         super().__init__(bijection, target_dim, base_log_prob, base_sample)
+

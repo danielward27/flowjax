@@ -1,6 +1,6 @@
 import pytest
 from jax import random
-from flowjax.bijections.coupling import Coupling, CouplingStack
+from flowjax.bijections.coupling import Coupling
 from flowjax.bijections.affine import Affine
 
 
@@ -20,14 +20,3 @@ def test_Coupling():
     assert x == pytest.approx(x_reconstructed)
     assert x[:d] == pytest.approx(y[:d])
     assert (x[d:] != y[d:]).all()
-
-
-def test_CouplingStack():
-    model_key, x_key = random.split(random.PRNGKey(0), 2)
-    D = 5
-    model = CouplingStack(model_key, Affine(), D)
-
-    x = random.uniform(x_key, (D,))
-    z = model.transform(x)
-    x_reconstructed = model.inverse(z)
-    assert x == pytest.approx(x_reconstructed, abs=1e-6)
