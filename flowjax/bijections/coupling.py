@@ -2,7 +2,6 @@ from flowjax.bijections.abc import ParameterisedBijection
 import equinox as eqx
 import jax.numpy as jnp
 from jax import random
-from flowjax.bijections.utils import Chain, intertwine_permute
 from flowjax.bijections.abc import Bijection
 
 
