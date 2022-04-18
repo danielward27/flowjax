@@ -18,9 +18,9 @@ class Coupling(Bijection, eqx.Module):
         bijection: ParameterisedBijection,
         d: int,
         D: int,
+        condition_dim: int,
         nn_width: int,
         nn_depth: int,
-        condition_dim: int = 0,
     ):
         """Coupling layer implementation.
 
