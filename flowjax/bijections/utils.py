@@ -39,7 +39,7 @@ class Chain(Bijection, eqx.Module):
 
 
 class Permute(Bijection):
-    permutation: jnp.ndarray  # with indices
+    permutation: jnp.ndarray
     inverse_permutation: jnp.ndarray
 
     def __init__(self, permutation):
