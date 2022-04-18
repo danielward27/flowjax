@@ -2,6 +2,7 @@ from flowjax.bijections.abc import Bijection
 import jax.numpy as jnp
 import equinox as eqx
 from jax import random
+from typing import Optional
 
 
 class Chain(Bijection, eqx.Module):
@@ -78,8 +79,8 @@ class Flip(Bijection):
 def intertwine_permute(
     bijection_list: list[Bijection],
     strategy: str,
-    key: random.PRNGKey = None,
-    dim: int = None,
+    key: Optional[random.PRNGKey] = None,
+    dim: Optional[int] = None,
 ):
     """Given a list of bijections, add permutations between layers. i.e.
     with bijections [a,b,c], returns [a, perm1, b, perm2, c].

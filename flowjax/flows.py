@@ -1,4 +1,4 @@
-from typing import Callable, Union
+from typing import Callable, Optional
 import jax.numpy as jnp
 from flowjax.bijections.abc import Bijection
 from jax.scipy.stats import norm
@@ -23,8 +23,8 @@ class Flow(eqx.Module):
         self,
         bijection: Bijection,
         target_dim: int,
-        base_log_prob: Callable = None,
-        base_sample: Callable = None,
+        base_log_prob: Optional[Callable] = None,
+        base_sample: Optional[Callable] = None,
     ):
         """Form a distribution like object using a base distribution and a
         bijection. Operations are generally assumed to be batched along
@@ -61,7 +61,7 @@ class Flow(eqx.Module):
 
     @eqx.filter_jit
     def sample(
-        self, key: random.PRNGKey, condition=jnp.array([[]]), n: Union[int, None] = None
+        self, key: random.PRNGKey, condition=jnp.array([[]]), n: Optional[int] = None
     ):
         """Sample from the target distribution. If a 2 dimensional condition is
         provided, n is inferred from dimension 0."""
@@ -83,8 +83,8 @@ class NeuralSplineFlow(Flow):
         K: int = 10,
         B: int = 5,
         num_layers: int = 5,
-        base_log_prob: Callable = None,
-        base_sample: Callable = None,
+        base_log_prob: Optional[Callable] = None,
+        base_sample: Optional[Callable] = None,
         nn_width: int = 40,
         nn_depth: int = 2,
     ):
@@ -121,19 +121,29 @@ class RealNVPFlow(Flow):
         target_dim: int,
         condition_dim: int = 0,
         num_layers: int = 5,
-        base_log_prob: Callable = None,
-        base_sample: Callable = None,
+        permute_strategy: str = "flip",
+        base_log_prob: Optional[Callable] = None,
+        base_sample: Optional[Callable] = None,
     ):
         """Convenience constructor for a RealNVP style flow. Note this
         implementation differs slightly from the original, e.g. it does not use
-        batch normaliziation and it permutes between the layers.
+        batch normaliziation.
 
         Args:
             key (random.PRNGKey): Random key.
             target_dim (int): Dimension of the target distribution.
+            condition_dim (int, optional): _description_. Defaults to 0.
+            num_layers (int, optional): _description_. Defaults to 5.
+            permute_strategy (str, optional): _description_. Defaults to "flip".
+            base_log_prob (Callable, optional): _description_. Defaults to None.
+            base_sample (Callable, optional): _description_. Defaults to None.
+        """
+
+        """
+
             condition_dim (int): Dimension of extra conditioning variables. Defualts to 0.
-            K (int, optional): Number of (inner) spline segments. Defaults to 8.
-            B (int, optional): Interval to transform [-B, B]. Defaults to 5.
+            num
+            permute_strategy (str, optional): Permutation between flow layers, should be "flip" or "random". Defaults to "flip".
             base_log_prob (Callable, optional): Log probability in base distribution. Defaults to standard normal.
             base_sample (Callable, optional): Sample function in base distribution. Defaults to standard normal.
         """
@@ -144,6 +154,7 @@ class RealNVPFlow(Flow):
             D=target_dim,
             condition_dim=condition_dim,
             num_layers=num_layers,
+            permute_strategy=permute_strategy,
         )
 
         super().__init__(bijection, target_dim, base_log_prob, base_sample)
@@ -158,10 +169,10 @@ class BlockNeuralAutoregressiveFlow(Flow):
         nn_layers=3,
         block_size=(8, 8),
         permute_strategy="flip",
-        base_log_prob: Callable = None,
-        base_sample: Callable = None,
+        base_log_prob: Optional[Callable] = None,
+        base_sample: Optional[Callable] = None,
     ):
-        """Block neural autoregressive flow (https://arxiv.org/abs/1904.04676).
+        """Block neural autoregressive flow (https://arxiv.org/abs/1904.04676). Condition is 
 
         Args:
             key (random.PRNGKey): Random key.

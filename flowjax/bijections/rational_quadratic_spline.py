@@ -1,6 +1,7 @@
 from flowjax.bijections.abc import ParameterisedBijection
 import jax.numpy as jnp
 import jax
+from typing import Optional
 
 
 class _RationalQuadraticSpline1D(ParameterisedBijection):
@@ -62,7 +63,7 @@ class _RationalQuadraticSpline1D(ParameterisedBijection):
         derivative = self._derivative(sk, xi, dk, dk1)
         return y, jnp.log(derivative)
 
-    def num_params(self, dim: int = None):
+    def num_params(self, dim: Optional[int] = None):
         return self.K * 3 - 1
 
     def get_args(self, params):

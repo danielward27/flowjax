@@ -48,7 +48,7 @@ class Coupling(Bijection, eqx.Module):
 
         self.condition_dim = condition_dim
 
-    def transform(self, x, condition=jnp.array([])):
+    def transform(self, x: jnp.ndarray, condition=jnp.array([])):
         x_cond, x_trans = x[: self.d], x[self.d :]
         cond = jnp.concatenate((x_cond, condition))
         bijection_params = self.conditioner(cond)
@@ -57,7 +57,9 @@ class Coupling(Bijection, eqx.Module):
         y = jnp.concatenate((x_cond, y_trans))
         return y
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=jnp.array([])):
+    def transform_and_log_abs_det_jacobian(
+        self, x: jnp.ndarray, condition=jnp.array([])
+    ):
         x_cond, x_trans = x[: self.d], x[self.d :]
         cond = jnp.concatenate((x_cond, condition))
 
@@ -106,11 +108,12 @@ class CouplingStack(Chain):
             bijection (ParameterisedBijection): Bijection to transform variables
                 in coupling layers.
             D (int): Dimension of the target distribution.
+            condition_dim (int, optional): Dimension of additional conditioning
+                variables (for learning conditional distributions). Defaults to 0.
             num_layers (int): Number of layers (1 layer = coupling layer + permute).
             nn_width (int, optional): Conditioner network width. Defaults to 40.
             nn_depth (int, optional): Conditioner network depth. Defaults to 2.
-            condition_dim (int, optional): Dimension of additional conditioning
-                variables (for learning conditional distributions). Defaults to 0.
+            permute_strategy: "flip" or "random".
         """
         d = D // 2
         permute_key, *layer_keys = random.split(key, num_layers + 1)
