@@ -7,24 +7,41 @@ class Bijection(ABC):
     (even if ignored)."""
 
     @abstractmethod
-    def transform(self, x: jnp.ndarray, *args, condition: jnp.ndarray = jnp.array([])):
+    def transform(self, x: jnp.ndarray, condition: jnp.ndarray = jnp.array([])):
         """Apply transformation."""
         pass
 
     @abstractmethod
-    def transform_and_log_abs_det_jacobian(self, x, *args, condition=jnp.array([])):
+    def transform_and_log_abs_det_jacobian(
+        self, x: jnp.ndarray, condition=jnp.array([])
+    ):
         """Apply transformation and compute log absolute value of the Jacobian determinant."""
         pass
 
     @abstractmethod
-    def inverse(self, y, *args, condition=jnp.array([])):
+    def inverse(self, y: jnp.ndarray, condition=jnp.array([])):
         """Invert the transformation."""
         pass
 
 
-class ParameterisedBijection(Bijection, ABC):
-    """Bijection with additional methods facilitating parameterisation with a
-    neural network."""
+class ParameterisedBijection(ABC):
+    """Bijection which facilitates parameterisation with a
+    neural network (e.g. as in coupling flows). Generally, """
+
+    @abstractmethod
+    def transform(self, x: jnp.ndarray, *args):
+        """Apply transformation."""
+        pass
+
+    @abstractmethod
+    def transform_and_log_abs_det_jacobian(self, x: jnp.ndarray, *args):
+        """Apply transformation and compute log absolute value of the Jacobian determinant."""
+        pass
+
+    @abstractmethod
+    def inverse(self, y: jnp.ndarray, *args):
+        """Invert the transformation."""
+        pass
 
     @abstractmethod
     def num_params(self, dim: int):
@@ -32,6 +49,6 @@ class ParameterisedBijection(Bijection, ABC):
         pass
 
     @abstractmethod
-    def get_args(self, params):
+    def get_args(self, params: jnp.ndarray):
         "Transform unconstrained vector of params (e.g. nn output) into args for transformation."
         pass
