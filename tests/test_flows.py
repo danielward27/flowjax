@@ -34,12 +34,19 @@ def test_Flow():
 
 def test_RealNVPFlow():
     key = random.PRNGKey(1)
-    flow = RealNVPFlow(key, 5)
+    flow = RealNVPFlow(key, 3)
     x = flow.sample(key, n=10)
-    assert x.shape == (10, 5)
+    assert x.shape == (10, 3)
+
+    lp = flow.log_prob(x)
+    assert lp.shape == (10,)
 
 
 def test_NeuralSplineFlow():
     key = random.PRNGKey(2)
-    flow = NeuralSplineFlow(key, 5)
-    assert True
+    flow = NeuralSplineFlow(key, 3, num_layers=2)
+    x = flow.sample(key, n=10)
+    assert x.shape == (10, 3)
+
+    lp = flow.log_prob(x)
+    assert lp.shape == (10,)
