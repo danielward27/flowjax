@@ -107,8 +107,9 @@ class NeuralSplineFlow(Flow):
         base_log_prob: Optional[Callable] = None,
         base_sample: Optional[Callable] = None,
     ):
-        """Neural spline flow (Durkan et al. 2019; https://arxiv.org/abs/1906.04032).
-        Note that the transformation is on the interval [-B, B]!
+        """Convenience constructor for Neural spline flow (Durkan et al. 2019;
+        https://arxiv.org/abs/1906.04032). Note that the transformation is on
+        the interval [-B, B].
 
         Args:
             key (random.PRNGKey): Random key.
@@ -116,10 +117,10 @@ class NeuralSplineFlow(Flow):
             condition_dim (int, optional): Dimension of extra conditioning variables. Defaults to 0.
             K (int, optional): Number of (inner) spline segments. Defaults to 10.
             B (int, optional): Interval to transform [-B, B]. Defaults to 5.
-            num_layers (int, optional): _description_. Defaults to 5.
-            nn_width (int, optional): _description_. Defaults to 40.
-            nn_depth (int, optional): _description_. Defaults to 2.
-            permute_strategy (str, optional): _description_. Defaults to "flip".
+            num_layers (int, optional): Number of coupling layers. Defaults to 5.
+            nn_width (int, optional): Conditioner network width. Defaults to 40.
+            nn_depth (int, optional): Conditioner network depth. Defaults to 2.
+            permute_strategy (str, optional): How to permute between layers. Either "flip" or "random". Defaults to "flip".
             base_log_prob (Optional[Callable], optional): Log probability in base distribution. Defaults to standard normal.
             base_sample (Optional[Callable], optional): Sample function in base distribution. Defaults to standard normal.
         """
@@ -157,18 +158,20 @@ class RealNVPFlow(Flow):
         base_log_prob: Optional[Callable] = None,
         base_sample: Optional[Callable] = None,
     ):
-        """Convenience constructor for a RealNVP style flow. Note this
-        implementation differs slightly from the original, e.g. it does not use
-        batch normaliziation.
+        """Convenience constructor for a RealNVP style flow (Dinh et al, 2017;
+        https://arxiv.org/abs/1605.08803). Note this implementation differs slightly
+        from the original, e.g. it does not use batch normaliziation.
 
         Args:
             key (random.PRNGKey): Random key.
             target_dim (int): Dimension of the target distribution.
-            condition_dim (int, optional): _description_. Defaults to 0.
-            num_layers (int, optional): _description_. Defaults to 5.
-            permute_strategy (str, optional): _description_. Defaults to "flip".
-            base_log_prob (Callable, optional): _description_. Defaults to None.
-            base_sample (Callable, optional): _description_. Defaults to None.
+            condition_dim (int, optional): Dimension of extra conditioning variables. Defaults to 0.
+            num_layers (int, optional): Number of coupling layers. Defaults to 5.
+            nn_width (int, optional): Conditioner network width. Defaults to 40.
+            nn_depth (int, optional): Conditioner network depth. Defaults to 2.
+            permute_strategy (str, optional): How to permute between layers. Either "flip" or "random". Defaults to "flip".
+            base_log_prob (Optional[Callable], optional): Log probability in base distribution. Defaults to standard normal.
+            base_sample (Optional[Callable], optional): Sample function in base distribution. Defaults to standard normal.
         """
         d = target_dim // 2
         permute_key, *layer_keys = random.split(key, num_layers + 1)
@@ -202,14 +205,15 @@ class BlockNeuralAutoregressiveFlow(Flow):
         base_log_prob: Optional[Callable] = None,
         base_sample: Optional[Callable] = None,
     ):
-        """Block neural autoregressive flow (https://arxiv.org/abs/1904.04676).
+        """Convenience constructor for a block neural autoregressive flow
+        (https://arxiv.org/abs/1904.04676).
 
         Args:
             key (random.PRNGKey): Random key.
             target_dim (int): Dimension of the target distribution.
-            flow_layers (int, optional): Number of flow layers (autoregressive 1 layer = neural network + TanH activation) . Defaults to 1.
             nn_layers (int, optional): Number of layers within autoregressive neural networks. Defaults to 3.
             block_size (tuple, optional): Block size in lower triangular blocks of autoregressive neural network. Defaults to (8, 8).
+            flow_layers (int, optional): Number of flow layers (1 layer = autoregressive neural network + TanH activation) . Defaults to 1.
             permute_strategy (str, optional): Permutation between flow layers, should be "flip" or "random". Defaults to "flip".
             base_log_prob (Callable, optional): Base distribution log probability function. Defaults to standard normal.
             base_sample (Callable, optional): Base distribution sample function. Defaults to standard normal.
