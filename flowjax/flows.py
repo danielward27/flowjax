@@ -33,9 +33,10 @@ class Flow(eqx.Module):
         Args:
             bijection (Bijection): Bijection mapping from target distribution to
                 the base distribution.
-            base_log_prob (Callable, optional): log probability in the base
+            target_dim: (int): Dimension of the target distribution.
+            base_log_prob (Optional[Callable], optional): log probability in the base
                 distribution. Defaults to standard normal.
-            base_sample (Callable, optional): sample function with signature
+            base_sample (Optional[Callable], optional): sample function with signature
                 (key : PRNGKey, n : int). Defaults to standard normal.
         """
         self.bijection = bijection
@@ -221,8 +222,8 @@ class BlockNeuralAutoregressiveFlow(Flow):
             block_size (tuple, optional): Block size in lower triangular blocks of autoregressive neural network. Defaults to (8, 8).
             flow_layers (int, optional): Number of flow layers (1 layer = autoregressive neural network + TanH activation) . Defaults to 1.
             permute_strategy (Optional[str], optional): How to permute between layers. Either "flip" or "random". Defaults to "flip" if target_dim <=2, otherwise "random".
-            base_log_prob (Callable, optional): Base distribution log probability function. Defaults to standard normal.
-            base_sample (Callable, optional): Base distribution sample function. Defaults to standard normal.
+            base_log_prob (Optional[Callable], optional): Base distribution log probability function. Defaults to standard normal.
+            base_sample (Optional[Callable], optional): Base distribution sample function. Defaults to standard normal.
         """
         assert nn_layers >= 2
 
