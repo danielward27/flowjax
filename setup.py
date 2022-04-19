@@ -15,7 +15,7 @@ def read(filename):
 
 setup(
     name="flowjax",
-    version="0.3.0",
+    version="0.4.0",
     url="https://github.com/danielward27/flowjax.git",
     license="MIT",
     author="Daniel Ward",
