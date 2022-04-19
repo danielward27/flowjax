@@ -34,7 +34,7 @@ class RationalQuadraticSpline(ParameterisedBijection):
     def pos_pad(self):
         return jax.lax.stop_gradient(self._pos_pad)
 
-    @partial(jax.vmap, in_axes=[None, 0, 0, 0, 0])  # across dimensions of x.
+    @partial(jax.vmap, in_axes=[None, 0, 0, 0, 0])
     def transform(self, x, x_pos, y_pos, derivatives):
         k = self._get_bin(x, x_pos)
         yk, yk1, xk, xk1 = y_pos[k], y_pos[k + 1], x_pos[k], x_pos[k + 1]
@@ -57,8 +57,14 @@ class RationalQuadraticSpline(ParameterisedBijection):
         x = xi * (xk1 - xk) + xk
         return x
 
-    @partial(jax.vmap, in_axes=[None, 0, 0, 0, 0])
     def transform_and_log_abs_det_jacobian(self, x, x_pos, y_pos, derivatives):
+        f = jax.vmap(self._transform_and_log_abs_det_jacobian)
+        y, log_det = f(x, x_pos, y_pos, derivatives)
+        return y, log_det.sum()
+
+    # Methods prepended with _ are defined for scalar x, and are vmapped as appropriate.
+    def _transform_and_log_abs_det_jacobian(self, x, x_pos, y_pos, derivatives):
+        "Defined for single dimensional x."
         k = self._get_bin(x, x_pos)
         yk, yk1, xk, xk1 = y_pos[k], y_pos[k + 1], x_pos[k], x_pos[k + 1]
         dk, dk1 = derivatives[k], derivatives[k + 1]
