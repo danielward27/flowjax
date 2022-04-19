@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 import jax.numpy as jnp
+from typing import Optional
 
 
 class Bijection(ABC):
@@ -7,19 +8,19 @@ class Bijection(ABC):
     (even if ignored)."""
 
     @abstractmethod
-    def transform(self, x: jnp.ndarray, condition: jnp.ndarray = jnp.array([])):
+    def transform(self, x: jnp.ndarray, condition: Optional[jnp.ndarray] = None):
         """Apply transformation."""
         pass
 
     @abstractmethod
     def transform_and_log_abs_det_jacobian(
-        self, x: jnp.ndarray, condition=jnp.array([])
+        self, x: jnp.ndarray, condition: Optional[jnp.ndarray] = None
     ):
         """Apply transformation and compute log absolute value of the Jacobian determinant."""
         pass
 
     @abstractmethod
-    def inverse(self, y: jnp.ndarray, condition=jnp.array([])):
+    def inverse(self, y: jnp.ndarray, condition: Optional[jnp.ndarray] = None):
         """Invert the transformation."""
         pass
 

@@ -47,7 +47,8 @@ class Coupling(Bijection, eqx.Module):
 
         self.condition_dim = condition_dim
 
-    def transform(self, x: jnp.ndarray, condition=jnp.array([])):
+    def transform(self, x: jnp.ndarray, condition=None):
+        condition = jnp.array([]) if condition is None else condition
         x_cond, x_trans = x[: self.d], x[self.d :]
         cond = jnp.concatenate((x_cond, condition))
         bijection_params = self.conditioner(cond)
@@ -56,9 +57,8 @@ class Coupling(Bijection, eqx.Module):
         y = jnp.concatenate((x_cond, y_trans))
         return y
 
-    def transform_and_log_abs_det_jacobian(
-        self, x: jnp.ndarray, condition=jnp.array([])
-    ):
+    def transform_and_log_abs_det_jacobian(self, x: jnp.ndarray, condition=None):
+        condition = jnp.array([]) if condition is None else condition
         x_cond, x_trans = x[: self.d], x[self.d :]
         cond = jnp.concatenate((x_cond, condition))
 
@@ -70,7 +70,8 @@ class Coupling(Bijection, eqx.Module):
         y = jnp.concatenate([x_cond, y_trans])
         return y, log_abs_det
 
-    def inverse(self, y: jnp.ndarray, condition=jnp.array([])):
+    def inverse(self, y: jnp.ndarray, condition=None):
+        condition = jnp.array([]) if condition is None else condition
         x_cond, y_trans = y[: self.d], y[self.d :]
         cond = jnp.concatenate((x_cond, condition))
         bijection_params = self.conditioner(cond)

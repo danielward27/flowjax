@@ -39,7 +39,6 @@ def test_RealNVPFlow():
     assert x.shape == (10, 5)
 
 
-
 def test_NeuralSplineFlow():
     key = random.PRNGKey(2)
     flow = NeuralSplineFlow(key, 5)

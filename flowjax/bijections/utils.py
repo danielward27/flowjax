@@ -16,13 +16,13 @@ class Chain(Bijection, eqx.Module):
         """
         self.bijections = bijections
 
-    def transform(self, x, condition=jnp.array([])):
+    def transform(self, x, condition=None):
         z = x
         for bijection in self.bijections:
             z = bijection.transform(z, condition)
         return z
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=jnp.array([])):
+    def transform_and_log_abs_det_jacobian(self, x, condition=None):
         log_abs_det_jac = 0
         z = x
         for bijection in self.bijections:
@@ -32,7 +32,7 @@ class Chain(Bijection, eqx.Module):
             log_abs_det_jac += log_abs_det_jac_i
         return z, log_abs_det_jac
 
-    def inverse(self, z, condition=jnp.array([])):
+    def inverse(self, z: jnp.ndarray, condition=None):
         x = z
         for bijection in reversed(self.bijections):
             x = bijection.inverse(x, condition)
@@ -43,7 +43,7 @@ class Permute(Bijection):
     permutation: jnp.ndarray
     inverse_permutation: jnp.ndarray
 
-    def __init__(self, permutation):
+    def __init__(self, permutation: jnp.ndarray):
         """Permutation transformation. Note condition is ignored.
 
         Args:
@@ -53,26 +53,26 @@ class Permute(Bijection):
         self.permutation = permutation
         self.inverse_permutation = jnp.argsort(permutation)
 
-    def transform(self, x, condition=jnp.array([])):
+    def transform(self, x, condition=None):
         return x[self.permutation]
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=jnp.array([])):
+    def transform_and_log_abs_det_jacobian(self, x, condition=None):
         return x[self.permutation], jnp.array(0)
 
-    def inverse(self, y, condition=jnp.array([])):
+    def inverse(self, y, condition=None):
         return y[self.inverse_permutation]
 
 
 class Flip(Bijection):
-    """Flip the input array."""
+    """Flip the input array. Condition argument is ignored."""
 
-    def transform(self, x, condition=jnp.array([])):
+    def transform(self, x, condition=None):
         return jnp.flip(x)
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=jnp.array([])):
+    def transform_and_log_abs_det_jacobian(self, x, condition=None):
         return jnp.flip(x), jnp.array(0)
 
-    def inverse(self, y, condition=jnp.array([])):
+    def inverse(self, y, condition=None):
         return jnp.flip(y)
 
 
@@ -109,4 +109,3 @@ def intertwine_permute(
 
     else:
         ValueError("permute strategy should be 'flip' or 'random'")
-

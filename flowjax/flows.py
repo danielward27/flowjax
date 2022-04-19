@@ -49,7 +49,7 @@ class Flow(eqx.Module):
             self.base_sample = lambda key, n: random.normal(key, (n, target_dim))
 
     @eqx.filter_jit
-    def log_prob(self, x: jnp.ndarray, condition: jnp.ndarray = jnp.array([[]])):
+    def log_prob(self, x: jnp.ndarray, condition: Optional[jnp.ndarray] = None):
         "Evaluate the log probability of the target distribution. Condition must broadcast to x in dimension 0."
         x, condition = jnp.atleast_2d(x), jnp.atleast_2d(condition)
         condition = jnp.broadcast_to(condition, (x.shape[0], condition.shape[1]))
@@ -63,7 +63,7 @@ class Flow(eqx.Module):
     def sample(
         self,
         key: random.PRNGKey,
-        condition: jnp.ndarray = jnp.array([[]]),
+        condition: Optional[jnp.ndarray] = None,
         n: Optional[int] = None,
     ):
         """Sample from the target distribution. If `condition.ndim==2`, n is
@@ -77,10 +77,12 @@ class Flow(eqx.Module):
         Returns:
             jnp.ndarray: Samples from the target distribution.
         """
-        condition = jnp.atleast_2d(condition)
-        if n is None:
-            n = condition.shape[0]
-        condition = jnp.broadcast_to(condition, (n, condition.shape[1]))
+        if condition is not None:
+            condition = jnp.atleast_2d(condition)
+            if n is None:
+                n = condition.shape[0]
+            condition = jnp.broadcast_to(condition, (n, condition.shape[1]))
+
         z = self.base_sample(key, n)
         x = jax.vmap(self.bijection.inverse)(z, condition)
         return x
@@ -224,4 +226,3 @@ class BlockNeuralAutoregressiveFlow(Flow):
         )
         bijection = Chain(bijections)
         super().__init__(bijection, target_dim, base_log_prob, base_sample)
-
