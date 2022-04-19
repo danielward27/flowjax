@@ -103,8 +103,9 @@ def intertwine_permute(
         )
         permutations = random.permutation(key, permutations, 1, True)
         bijections = []
+
         for bijection, permutation in zip(bijection_list, permutations):
-            bijections.extend(bijection, Permute(permutation))
+            bijections.extend([bijection, Permute(permutation)])
         return bijections[:-1]
 
     else:

@@ -103,7 +103,7 @@ class NeuralSplineFlow(Flow):
         num_layers: int = 5,
         nn_width: int = 40,
         nn_depth: int = 2,
-        permute_strategy: str = "flip",
+        permute_strategy: Optional[str] = None,
         base_log_prob: Optional[Callable] = None,
         base_sample: Optional[Callable] = None,
     ):
@@ -120,11 +120,14 @@ class NeuralSplineFlow(Flow):
             num_layers (int, optional): Number of coupling layers. Defaults to 5.
             nn_width (int, optional): Conditioner network width. Defaults to 40.
             nn_depth (int, optional): Conditioner network depth. Defaults to 2.
-            permute_strategy (str, optional): How to permute between layers. Either "flip" or "random". Defaults to "flip".
+            permute_strategy (Optional[str], optional): How to permute between layers. Either "flip" or "random". Defaults to "flip" if target_dim <=2, otherwise "random".
             base_log_prob (Optional[Callable], optional): Log probability in base distribution. Defaults to standard normal.
             base_sample (Optional[Callable], optional): Sample function in base distribution. Defaults to standard normal.
         """
         d = target_dim // 2
+        if permute_strategy is None:
+            permute_strategy = "flip" if target_dim <= 2 else "random"
+
         permute_key, *layer_keys = random.split(key, num_layers + 1)
         layers = [
             Coupling(
@@ -154,7 +157,7 @@ class RealNVPFlow(Flow):
         num_layers: int = 5,
         nn_width: int = 40,
         nn_depth: int = 2,
-        permute_strategy: str = "flip",
+        permute_strategy: Optional[str] = None,
         base_log_prob: Optional[Callable] = None,
         base_sample: Optional[Callable] = None,
     ):
@@ -169,11 +172,14 @@ class RealNVPFlow(Flow):
             num_layers (int, optional): Number of coupling layers. Defaults to 5.
             nn_width (int, optional): Conditioner network width. Defaults to 40.
             nn_depth (int, optional): Conditioner network depth. Defaults to 2.
-            permute_strategy (str, optional): How to permute between layers. Either "flip" or "random". Defaults to "flip".
+            permute_strategy (Optional[str], optional): How to permute between layers. Either "flip" or "random". Defaults to "flip" if target_dim <=2, otherwise "random".
             base_log_prob (Optional[Callable], optional): Log probability in base distribution. Defaults to standard normal.
             base_sample (Optional[Callable], optional): Sample function in base distribution. Defaults to standard normal.
         """
         d = target_dim // 2
+        if permute_strategy is None:
+            permute_strategy = "flip" if target_dim <= 2 else "random"
+
         permute_key, *layer_keys = random.split(key, num_layers + 1)
         layers = [
             Coupling(
@@ -201,7 +207,7 @@ class BlockNeuralAutoregressiveFlow(Flow):
         nn_layers: int = 3,
         block_size: tuple = (8, 8),
         flow_layers: int = 1,
-        permute_strategy: str = "flip",
+        permute_strategy: Optional[str] = None,
         base_log_prob: Optional[Callable] = None,
         base_sample: Optional[Callable] = None,
     ):
@@ -214,11 +220,14 @@ class BlockNeuralAutoregressiveFlow(Flow):
             nn_layers (int, optional): Number of layers within autoregressive neural networks. Defaults to 3.
             block_size (tuple, optional): Block size in lower triangular blocks of autoregressive neural network. Defaults to (8, 8).
             flow_layers (int, optional): Number of flow layers (1 layer = autoregressive neural network + TanH activation) . Defaults to 1.
-            permute_strategy (str, optional): Permutation between flow layers, should be "flip" or "random". Defaults to "flip".
+            permute_strategy (Optional[str], optional): How to permute between layers. Either "flip" or "random". Defaults to "flip" if target_dim <=2, otherwise "random".
             base_log_prob (Callable, optional): Base distribution log probability function. Defaults to standard normal.
             base_sample (Callable, optional): Base distribution sample function. Defaults to standard normal.
         """
         assert nn_layers >= 2
+
+        if permute_strategy is None:
+            permute_strategy = "flip" if target_dim <= 2 else "random"
 
         permute_key, *layer_keys = random.split(key, flow_layers + 1)
 
