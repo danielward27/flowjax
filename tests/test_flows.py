@@ -1,4 +1,3 @@
-from gzip import READ
 from flowjax.flows import Flow, RealNVPFlow, NeuralSplineFlow
 from flowjax.bijections.utils import Permute
 import jax.numpy as jnp
