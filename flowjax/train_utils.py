@@ -17,22 +17,22 @@ def train_flow(
     learning_rate: float = 5e-4,
     batch_size: int = 256,
     val_prop: float = 0.1,
+    show_progress: bool = True,
 ):
-    if condition is None:
-        condition = jnp.empty((x.shape[0], 0))  # Note zero dim col
-
-    def loss(flow, x, condition):
+    def loss(flow, x, condition=None):
         return -flow.log_prob(x, condition).mean()
 
     @eqx.filter_jit
-    def step(flow, x, condition, optimizer, opt_state):
+    def step(flow, optimizer, opt_state, x, condition=None):
         loss_val, grads = eqx.filter_value_and_grad(loss)(flow, x, condition)
         updates, opt_state = optimizer.update(grads, opt_state)
         flow = eqx.apply_updates(flow, updates)
         return flow, opt_state, loss_val
 
     key, subkey = random.split(key)
-    train_args, val_args = train_val_split(subkey, (x, condition), val_prop=val_prop)
+
+    inputs = (x,) if condition is None else (x, condition)
+    train_args, val_args = train_val_split(subkey, inputs, val_prop=val_prop)
 
     optimizer = optax.adam(learning_rate=learning_rate)
     best_params, static = eqx.partition(flow, eqx.is_array)
@@ -40,24 +40,19 @@ def train_flow(
     opt_state = optimizer.init(best_params)
     losses = []
 
-    pbar = tqdm(range(max_epochs))
-
     losses = {"train": [], "val": []}
 
-    for epoch in pbar:
+    loop = tqdm(range(max_epochs)) if show_progress is True else range(max_epochs)
+    for epoch in loop:
         key, subkey = random.split(key)
         train_args = random_permutation_multiple(subkey, train_args)
         batches = range(0, train_args[0].shape[0] - batch_size, batch_size)
 
         epoch_train_loss = 0
         for i in batches:
-            x_batch, cond_batch = (
-                train_args[0][i : i + batch_size],
-                train_args[1][i : i + batch_size],
-            )
-            flow, opt_state, loss_val = step(
-                flow, x_batch, cond_batch, optimizer, opt_state
-            )
+            batch = tuple(a[i : i + batch_size] for a in train_args)
+
+            flow, opt_state, loss_val = step(flow, optimizer, opt_state, *batch)
             epoch_train_loss += loss_val.item()
 
         val_loss = loss(flow, *val_args).item()
@@ -71,7 +66,8 @@ def train_flow(
             print("Max patience reached.")
             break
 
-        pbar.set_postfix({k: v[-1] for k, v in losses.items()})
+        if show_progress:
+            loop.set_postfix({k: v[-1] for k, v in losses.items()})
 
     flow = eqx.combine(best_params, static)
     return flow, losses
