@@ -70,4 +70,3 @@ def test__TanhBNAF():
     assert block_diag(*jnp.exp(log_det_3d)) == pytest.approx(
         auto_jacobian * mask, abs=1e-7
     )
-

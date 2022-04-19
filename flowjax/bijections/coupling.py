@@ -2,7 +2,6 @@ from flowjax.bijections.abc import ParameterisedBijection
 import equinox as eqx
 import jax.numpy as jnp
 from jax import random
-from flowjax.bijections.utils import Chain, intertwine_permute
 from flowjax.bijections.abc import Bijection
 
 
@@ -19,9 +18,9 @@ class Coupling(Bijection, eqx.Module):
         bijection: ParameterisedBijection,
         d: int,
         D: int,
+        condition_dim: int,
         nn_width: int,
         nn_depth: int,
-        condition_dim: int = 0,
     ):
         """Coupling layer implementation.
 
@@ -48,28 +47,31 @@ class Coupling(Bijection, eqx.Module):
 
         self.condition_dim = condition_dim
 
-    def transform(self, x, condition=jnp.array([])):
+    def transform(self, x: jnp.ndarray, condition=None):
+        condition = jnp.array([]) if condition is None else condition
         x_cond, x_trans = x[: self.d], x[self.d :]
         cond = jnp.concatenate((x_cond, condition))
         bijection_params = self.conditioner(cond)
         bijection_args = self.bijection.get_args(bijection_params)
-        y_trans = self.bijection.transform(x_trans, *bijection_args, condition)
+        y_trans = self.bijection.transform(x_trans, *bijection_args)
         y = jnp.concatenate((x_cond, y_trans))
         return y
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=jnp.array([])):
+    def transform_and_log_abs_det_jacobian(self, x: jnp.ndarray, condition=None):
+        condition = jnp.array([]) if condition is None else condition
         x_cond, x_trans = x[: self.d], x[self.d :]
         cond = jnp.concatenate((x_cond, condition))
 
         bijection_params = self.conditioner(cond)
         bijection_args = self.bijection.get_args(bijection_params)
         y_trans, log_abs_det = self.bijection.transform_and_log_abs_det_jacobian(
-            x_trans, *bijection_args, condition
+            x_trans, *bijection_args
         )
         y = jnp.concatenate([x_cond, y_trans])
         return y, log_abs_det
 
-    def inverse(self, y: jnp.ndarray, condition=jnp.array([])):
+    def inverse(self, y: jnp.ndarray, condition=None):
+        condition = jnp.array([]) if condition is None else condition
         x_cond, y_trans = y[: self.d], y[self.d :]
         cond = jnp.concatenate((x_cond, condition))
         bijection_params = self.conditioner(cond)
@@ -77,61 +79,3 @@ class Coupling(Bijection, eqx.Module):
         x_trans = self.bijection.inverse(y_trans, *bijection_args)
         x = jnp.concatenate((x_cond, x_trans))
         return x
-
-
-class CouplingStack(Chain):
-    layers: list
-    d: int
-    D: int
-    condition_dim: int
-
-    def __init__(
-        self,
-        key: random.PRNGKey,
-        bijection: ParameterisedBijection,
-        D: int,
-        condition_dim: int = 0,
-        num_layers: int = 5,
-        nn_width: int = 40,
-        nn_depth: int = 2,
-        permute_strategy: str = "flip",
-    ):
-        """
-        A stack of bijections, alternating a coupling layer, and a permutation.
-        To learn a conditional distribution, condition_dim should be >0,
-        and conditioning variables should be passed when transforming.
-        
-        Args:
-            key (random.PRNGKey): Random key.
-            bijection (ParameterisedBijection): Bijection to transform variables
-                in coupling layers.
-            D (int): Dimension of the target distribution.
-            num_layers (int): Number of layers (1 layer = coupling layer + permute).
-            nn_width (int, optional): Conditioner network width. Defaults to 40.
-            nn_depth (int, optional): Conditioner network depth. Defaults to 2.
-            condition_dim (int, optional): Dimension of additional conditioning
-                variables (for learning conditional distributions). Defaults to 0.
-        """
-        d = D // 2
-        key, *subkeys = random.split(key, num_layers + 1)
-        layers = [
-            Coupling(
-                key=subkey,
-                bijection=bijection,
-                d=d,
-                D=D,
-                nn_width=nn_width,
-                nn_depth=nn_depth,
-                condition_dim=condition_dim,
-            )
-            for subkey in subkeys
-        ]
-
-        key, subkey = random.split(key)
-        layers = intertwine_permute(layers, permute_strategy, subkey, D)
-
-        self.layers = layers
-        self.d = d
-        self.D = D
-        self.condition_dim = condition_dim
-        super().__init__(layers)

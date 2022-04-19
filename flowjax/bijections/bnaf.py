@@ -103,9 +103,7 @@ class BlockAutoregressiveLinear(eqx.Module):
         return jax.lax.stop_gradient(self._b_tril_mask)
 
 
-def logmatmulexp(
-    x, y
-):  # TODO consider version like paper eq. 11 or are they equivilent?
+def logmatmulexp(x, y):
     """
     Numerically stable version of ``(x.log() @ y.log()).exp()``. From numpyro https://github.com/pyro-ppl/numpyro/blob/f2ff89a3a7147617e185eb51148eb15d56d44661/numpyro/distributions/util.py#L387
     """
@@ -125,7 +123,7 @@ class _TanhBNAF:
     def __init__(self, n_blocks: int):
         self.n_blocks = n_blocks
 
-    def __call__(self, x, condition=jnp.array([])):
+    def __call__(self, x, condition=None):
         d = x.shape[0] // self.n_blocks
         log_det_vals = -2 * (x + jax.nn.softplus(-2 * x) - jnp.log(2.0))
         log_det = jnp.full((self.n_blocks, d, d), -jnp.inf)
@@ -166,13 +164,13 @@ class BlockAutoregressiveNetwork(eqx.Module, Bijection):
         self.layers = layers[:-1]
         self.activation = activation
 
-    def transform(self, x: jnp.ndarray, condition: jnp.ndarray = jnp.array([])):
+    def transform(self, x: jnp.ndarray, condition=None):
         y = x
         for layer in self.layers:
             y = layer(y)[0]
         return y
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=jnp.array([])):
+    def transform_and_log_abs_det_jacobian(self, x: jnp.ndarray, condition=None):
         y = x
         log_det_3ds = []
 
@@ -191,4 +189,3 @@ class BlockAutoregressiveNetwork(eqx.Module, Bijection):
         This transform would require numerical methods for inversion..
         """
         )
-

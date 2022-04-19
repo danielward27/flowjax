@@ -1,9 +1,10 @@
 from flowjax.bijections.abc import ParameterisedBijection
 import jax.numpy as jnp
 import jax
+from functools import partial
 
 
-class _RationalQuadraticSpline1D(ParameterisedBijection):
+class RationalQuadraticSpline(ParameterisedBijection):
     K: int
     B: float
     _pos_pad: jnp.ndarray  # End knots and beyond
@@ -16,29 +17,35 @@ class _RationalQuadraticSpline1D(ParameterisedBijection):
         pad_vals = jnp.array(
             [-B * 1e4, -B, B, B * 1e4]
         )  # Avoids jax control flow for identity tails
-        """One dimensional rational quadratic spline, following Durkin et al.
-        (2019), https://arxiv.org/abs/1906.04032. RationalQuadraticSpline
-        provides a vmapped version for multidimensional transformations. See
-        RationalQuadraticSpline for more information. Note condition argument is ignored.
         """
+        RationalQuadraticSpline following Durkin et al. (2019),
+        https://arxiv.org/abs/1906.04032. Each row of parameter matrices (x_pos,
+        y_pos, derivatives) corresponds to a column (axis=1) in x. Ouside the interval
+        [-B, B], the identity transform is used.
 
+        Args:
+            K (int): Number of inner knots B: (int):
+            B: (int): Interval to transform [-B, B]
+        """
         pos_pad = pos_pad.at[pad_idxs].set(pad_vals)
         self._pos_pad = pos_pad
 
-    @property  # TODO update to Buffer when introduced to eqx: https://github.com/patrick-kidger/equinox/issues/31
+    @property
     def pos_pad(self):
         return jax.lax.stop_gradient(self._pos_pad)
 
-    def transform(self, x, x_pos, y_pos, derivatives, condition=jnp.array([])):
-        k = self.get_bin(x, x_pos)
+    @partial(jax.vmap, in_axes=[None, 0, 0, 0, 0])
+    def transform(self, x, x_pos, y_pos, derivatives):
+        k = self._get_bin(x, x_pos)
         yk, yk1, xk, xk1 = y_pos[k], y_pos[k + 1], x_pos[k], x_pos[k + 1]
         dk, dk1 = derivatives[k], derivatives[k + 1]
         sk = (yk1 - yk) / (xk1 - xk)
         xi = (x - xk) / (xk1 - xk)
         return self._rational_quadratic(sk, xi, dk, dk1, yk, yk1)
 
-    def inverse(self, y, x_pos, y_pos, derivatives, condition=jnp.array([])):
-        k = self.get_bin(y, y_pos)
+    @partial(jax.vmap, in_axes=[None, 0, 0, 0, 0])
+    def inverse(self, y, x_pos, y_pos, derivatives):
+        k = self._get_bin(y, y_pos)
         xk, xk1, yk = x_pos[k], x_pos[k + 1], y_pos[k]
         sk = (y_pos[k + 1] - yk) / (xk1 - xk)
         y_delta_s_term = (y - yk) * (derivatives[k + 1] + derivatives[k] - 2 * sk)
@@ -46,16 +53,19 @@ class _RationalQuadraticSpline1D(ParameterisedBijection):
         b = (y_pos[k + 1] - yk) * derivatives[k] - y_delta_s_term
         c = -sk * (y - yk)
         sqrt_term = jnp.sqrt(b ** 2 - 4 * a * c)
-
         xi = (2 * c) / (-b - sqrt_term)
-
         x = xi * (xk1 - xk) + xk
         return x
 
-    def transform_and_log_abs_det_jacobian(
-        self, x, x_pos, y_pos, derivatives, condition=jnp.array([])
-    ):
-        k = self.get_bin(x, x_pos)
+    def transform_and_log_abs_det_jacobian(self, x, x_pos, y_pos, derivatives):
+        f = jax.vmap(self._transform_and_log_abs_det_jacobian)
+        y, log_det = f(x, x_pos, y_pos, derivatives)
+        return y, log_det.sum()
+
+    # Methods prepended with _ are defined for scalar x, and are vmapped as appropriate.
+    def _transform_and_log_abs_det_jacobian(self, x, x_pos, y_pos, derivatives):
+        "Defined for single dimensional x."
+        k = self._get_bin(x, x_pos)
         yk, yk1, xk, xk1 = y_pos[k], y_pos[k + 1], x_pos[k], x_pos[k + 1]
         dk, dk1 = derivatives[k], derivatives[k + 1]
         sk = (yk1 - yk) / (xk1 - xk)
@@ -64,10 +74,15 @@ class _RationalQuadraticSpline1D(ParameterisedBijection):
         derivative = self._derivative(sk, xi, dk, dk1)
         return y, jnp.log(derivative)
 
-    def num_params(self, dim: int = None):
-        return self.K * 3 - 1
+    def num_params(self, dim: int):
+        return (self.K * 3 - 1) * dim
 
     def get_args(self, params):
+        params = params.reshape((-1, self.K * 3 - 1))
+        return jax.vmap(self._get_args)(params)
+
+    def _get_args(self, params):
+        "Gets the arguments for a single dimension of x."
         widths = jax.nn.softmax(params[: self.K]) * 2 * self.B
         heights = jax.nn.softmax(params[self.K : self.K * 2]) * 2 * self.B
         derivatives = jax.nn.softplus(params[self.K * 2 :])
@@ -79,63 +94,20 @@ class _RationalQuadraticSpline1D(ParameterisedBijection):
         return x_pos, y_pos, derivatives
 
     @staticmethod
-    def get_bin(target, positions):
+    def _get_bin(target, positions):
+        "Finds which bin/spline segment the target is in (defined for 1d)."
         cond1 = target <= positions[1:]
         cond2 = target > positions[:-1]
         return jnp.where(cond1 & cond2, size=1)[0][0]
 
     @staticmethod
-    def _rational_quadratic(
-        sk, xi, dk, dk1, yk, yk1
-    ):  # eq. 4 https://arxiv.org/pdf/1906.04032.pdf
+    def _rational_quadratic(sk, xi, dk, dk1, yk, yk1):  # eq. 4
         num = (yk1 - yk) * (sk * xi ** 2 + dk * xi * (1 - xi))
         den = sk + (dk1 + dk - 2 * sk) * xi * (1 - xi)
         return yk + num / den
 
     @staticmethod
-    def _derivative(sk, xi, dk, dk1):  # eq. 5 https://arxiv.org/pdf/1906.04032.pdf
+    def _derivative(sk, xi, dk, dk1):  # eq. 5
         num = sk ** 2 * (dk1 * xi ** 2 + 2 * sk * xi * (1 - xi) + dk * (1 - xi) ** 2)
         den = (sk + (dk1 + dk - 2 * sk) * xi * (1 - xi)) ** 2
         return num / den
-
-
-class RationalQuadraticSpline(ParameterisedBijection):
-    K: int
-    B: int
-    spline: _RationalQuadraticSpline1D
-
-    def __init__(self, K, B):
-        """
-        RationalQuadraticSpline following Durkin et al. (2019),
-        https://arxiv.org/abs/1906.04032. Each row of parameter matrices (x_pos,
-        y_pos, derivatives) corresponds to a column (axis=1) in x
-
-        Args:
-            K (int): Number of inner knots B: (int): Interval to transform ([-B,
-            B])
-        """
-        self.K = K
-        self.B = B
-        self.spline = _RationalQuadraticSpline1D(K, B)
-
-    def transform(self, x, x_pos, y_pos, derivatives, condition=jnp.array([])):
-        return jax.vmap(self.spline.transform)(x, x_pos, y_pos, derivatives)
-
-    def transform_and_log_abs_det_jacobian(
-        self, x, x_pos, y_pos, derivatives, condition=jnp.array([])
-    ):
-        y, log_abs_det_jacobian = jax.vmap(
-            self.spline.transform_and_log_abs_det_jacobian
-        )(x, x_pos, y_pos, derivatives)
-        return y, log_abs_det_jacobian.sum()
-
-    def inverse(self, y, x_pos, y_pos, derivatives, condition=jnp.array([])):
-        return jax.vmap(self.spline.inverse)(y, x_pos, y_pos, derivatives)
-
-    def num_params(self, dim: int):
-        return (self.K * 3 - 1) * dim
-
-    def get_args(self, params):
-        params = params.reshape((-1, self.K * 3 - 1))
-        return jax.vmap(self.spline.get_args)(params)
-

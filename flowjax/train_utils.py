@@ -4,13 +4,14 @@ import jax.numpy as jnp
 import equinox as eqx
 import optax
 from tqdm import tqdm
+from typing import Optional
 
 
 def train_flow(
     key: random.PRNGKey,
     flow: Flow,
     x: jnp.ndarray,
-    condition: jnp.ndarray = None,
+    condition: Optional[jnp.ndarray] = None,
     max_epochs: int = 50,
     max_patience: int = 5,
     learning_rate: float = 5e-4,
