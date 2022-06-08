@@ -5,13 +5,13 @@ from functools import partial
 
 
 class RationalQuadraticSpline(ParameterisedBijection):
-    K: int
-    B: float
-    _pos_pad: jnp.ndarray  # End knots and beyond
 
-    def __init__(self, K, B):
+    def __init__(self, K, B, min_bin_width=1e-3, min_bin_height=1e-3, min_derivative=1e-3):
         self.K = K
         self.B = B
+        self.min_bin_width = min_bin_width
+        self.min_bin_height = min_bin_height
+        self.min_derivative = min_derivative
         pos_pad = jnp.zeros(self.K + 4)
         pad_idxs = jnp.array([0, 1, -2, -1])
         pad_vals = jnp.array(
@@ -28,7 +28,7 @@ class RationalQuadraticSpline(ParameterisedBijection):
             B: (int): Interval to transform [-B, B]
         """
         pos_pad = pos_pad.at[pad_idxs].set(pad_vals)
-        self._pos_pad = pos_pad
+        self._pos_pad = pos_pad # End knots and beyond
 
     @property
     def pos_pad(self):
@@ -58,8 +58,9 @@ class RationalQuadraticSpline(ParameterisedBijection):
         return x
 
     def transform_and_log_abs_det_jacobian(self, x, x_pos, y_pos, derivatives):
-        f = jax.vmap(self._transform_and_log_abs_det_jacobian)
-        y, log_det = f(x, x_pos, y_pos, derivatives)
+        y, log_det = jax.vmap(self._transform_and_log_abs_det_jacobian)(
+            x, x_pos, y_pos, derivatives
+        )
         return y, log_det.sum()
 
     # Methods prepended with _ are defined for scalar x, and are vmapped as appropriate.
@@ -84,8 +85,12 @@ class RationalQuadraticSpline(ParameterisedBijection):
     def _get_args(self, params):
         "Gets the arguments for a single dimension of x."
         widths = jax.nn.softmax(params[: self.K]) * 2 * self.B
+        widths = self.min_bin_width + (1 - self.min_bin_width * self.K) * widths
+
         heights = jax.nn.softmax(params[self.K : self.K * 2]) * 2 * self.B
-        derivatives = jax.nn.softplus(params[self.K * 2 :])
+        heights = self.min_bin_height + (1 - self.min_bin_height * self.K) * heights
+
+        derivatives = jax.nn.softplus(params[self.K * 2 :]) + self.min_derivative
         derivatives = jnp.pad(derivatives, 2, constant_values=1)
         x_pos = jnp.cumsum(widths) - self.B
         x_pos = self.pos_pad.at[2:-2].set(x_pos)
