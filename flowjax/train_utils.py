@@ -19,6 +19,20 @@ def train_flow(
     val_prop: float = 0.1,
     show_progress: bool = True,
 ):
+    """Train flow with Adam optimizer.
+
+    Args:
+        key (random.PRNGKey): Jax key.
+        flow (Flow): Flow to train.
+        x (jnp.ndarray): Samples from the target distribution (each row being a sample).
+        condition (Optional[jnp.ndarray], optional): Conditioning variables corresponding to x if learning a conditional distribution. Defaults to None.
+        max_epochs (int, optional): Maximum number of epochs. Defaults to 50.
+        max_patience (int, optional): Number of consecutive epochs with no validation loss improvement after which training is terminated. Defaults to 5.
+        learning_rate (float, optional): Adam learning rate. Defaults to 5e-4.
+        batch_size (int, optional): Batch size. Defaults to 256.
+        val_prop (float, optional): Proportion of data to use for validation. Defaults to 0.1.
+        show_progress (bool, optional): Whether to show progress bar. Defaults to True.
+    """
     def loss(flow, x, condition=None):
         return -flow.log_prob(x, condition).mean()
 
@@ -35,10 +49,10 @@ def train_flow(
     train_args, val_args = train_val_split(subkey, inputs, val_prop=val_prop)
 
     optimizer = optax.adam(learning_rate=learning_rate)
+
     best_params, static = eqx.partition(flow, eqx.is_array)
 
     opt_state = optimizer.init(best_params)
-    losses = []
 
     losses = {"train": [], "val": []}
 
@@ -51,7 +65,6 @@ def train_flow(
         epoch_train_loss = 0
         for i in batches:
             batch = tuple(a[i : i + batch_size] for a in train_args)
-
             flow, opt_state, loss_val = step(flow, optimizer, opt_state, *batch)
             epoch_train_loss += loss_val.item()
 
