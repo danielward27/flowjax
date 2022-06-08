@@ -50,7 +50,7 @@ class BlockAutoregressiveLinear(eqx.Module):
         Args:
             key (random.PRNGKey): Random key
             n_blocks (int): Number of diagonal blocks (dimension of input layer).
-            block_shape (tuple): The shape of the blocks.
+            block_shape (tuple): The shape of the (unconstrained) blocks.
             init (Callable, optional): Default initialisation method for the weight matrix. Defaults to glorot_uniform().
         """
         self.block_shape = block_shape
@@ -117,7 +117,7 @@ class _TanhBNAF:
     """
     Tanh transformation compatible with BNAF (log_abs_det provided as 3D array).
     Condition is ignored. Output shape is (n_blocks, *block_size), where
-    output[i] is the log jacobian for the iith block.
+    output[i] is the log jacobian for the ii-th block.
     """
 
     def __init__(self, n_blocks: int):
@@ -185,7 +185,5 @@ class BlockAutoregressiveNetwork(eqx.Module, Bijection):
 
     def inverse(*args, **kwargs):
         return NotImplementedError(
-            """
-        This transform would require numerical methods for inversion..
-        """
+            "This transform would require numerical methods for inversion."
         )
