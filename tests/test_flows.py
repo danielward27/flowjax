@@ -8,25 +8,28 @@ import pytest
 def test_Flow():
     key = random.PRNGKey(0)
     bijection = Permute(jnp.array([2, 1, 0]))
-    flow = Flow(bijection, 3)
+    dim = 3
+    flow = Flow(bijection, dim)
     x = flow.sample(key, n=1)
-    assert x.shape == (1, 3)
+    assert x.shape == (1, dim)
 
     x = flow.sample(random.PRNGKey(0), n=2)
-    assert x.shape == (2, 3)
+    assert x.shape == (2, dim)
 
-    # Note condition is ignored for transformation (but used to infer sample size)
-    x = flow.sample(key, condition=jnp.zeros((0,)))
-    assert x.shape == (1, 3)
+    # Note condition is ignored for transformation (but can be used to infer sample size)
+    x = flow.sample(key, condition=jnp.zeros((0,)), n=5)
+    assert x.shape == (5, dim)
 
-    x = flow.sample(key, condition=jnp.zeros((2, 0)))
-    assert x.shape == (2, 3)
+    x = flow.sample(key, condition=jnp.zeros((5, 0)))
+    assert x.shape == (5, dim)
 
-    x = flow.sample(key, n=3, condition=jnp.zeros((0,)))
-    assert x.shape == (3, 3)
-    assert jnp.all(x[0] != x[1])
+    with pytest.raises(AssertionError):
+        flow.sample(key, condition=jnp.zeros((5, 0)), n=3)
 
-    # Test works for vector input too
+    with pytest.raises(AssertionError):
+        flow.sample(key, condition=jnp.zeros((0,)))
+
+    # Test log prob work for vector and matrices input too
     x1, x2 = x[0], x[None, 0]
     lp1, lp2 = [flow.log_prob(x).item() for x in (x1, x2)]
     assert lp1 == pytest.approx(lp2)
