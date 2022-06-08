@@ -55,7 +55,6 @@ class Flow(eqx.Module):
         x = jnp.atleast_2d(x)
 
         if condition is not None:
-            condition = jnp.atleast_2d(condition)
             condition = jnp.broadcast_to(condition, (x.shape[0], condition.shape[1]))
 
         z, log_abs_det = jax.vmap(self.bijection.transform_and_log_abs_det_jacobian)(
@@ -71,22 +70,27 @@ class Flow(eqx.Module):
         condition: Optional[jnp.ndarray] = None,
         n: Optional[int] = None,
     ):
-        """Sample from the target distribution. If `condition.ndim==2`, n is
-        inferred from dimension 0.
+        """Sample from the (conditional or unconditional) flow. For repeated sampling using
+        a particular instance of the conditioning variable, use a vector condition and n to
+        specify the number of samples. To sample once for may different conditioning variables
+        provide a matrix of conditioning variables (n is inferred from axis 0).
 
         Args:
             key (random.PRNGKey): Random key.
-            condition (jnp.ndarray, optional): Conditioning variables. Defaults to jnp.array([[]]).
+            condition (jnp.ndarray, optional): Conditioning variables. Defaults to None.
             n (Optional[int], optional): Number of samples. Defaults to None.
 
         Returns:
             jnp.ndarray: Samples from the target distribution.
         """
+
         if condition is not None:
-            condition = jnp.atleast_2d(condition)
-            if n is None:
+            if condition.ndim == 1:
+                assert n is not None, "n must be provided with a vector condition."
+                condition = jnp.broadcast_to(condition, (n, condition.shape[0]))
+            else:
+                assert n is None, "n should not be provided if a matrix of conditioning variables is used."
                 n = condition.shape[0]
-            condition = jnp.broadcast_to(condition, (n, condition.shape[1]))
 
         z = self.base_sample(key, n)
         x = jax.vmap(self.bijection.inverse)(z, condition)
