@@ -15,7 +15,7 @@ def read(filename):
 
 setup(
     name="flowjax",
-    version="0.4.0",
+    version="0.5.0",
     url="https://github.com/danielward27/flowjax.git",
     license="MIT",
     author="Daniel Ward",
@@ -24,7 +24,10 @@ setup(
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
     packages=find_packages(exclude=("tests",)),
-    install_requires=["jax", "jaxlib>=0.3", "equinox", "pytest", "tqdm", "optax"],
+    install_requires=["jax", "jaxlib>=0.3", "equinox", "tqdm", "optax"],
+    extras_require={
+        'dev': ['pytest']
+    },
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "License :: OSI Approved :: MIT License",
