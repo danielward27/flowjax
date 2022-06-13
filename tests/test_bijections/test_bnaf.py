@@ -8,7 +8,7 @@ import jax.numpy as jnp
 from jax import random
 import jax
 import pytest
-from flowjax.bijections.bnaf import _TanhBNAF
+from flowjax.bijections.bnaf import TanhBNAF
 from jax.scipy.linalg import block_diag
 from flowjax.bijections.bnaf import b_diag_mask
 
@@ -43,7 +43,7 @@ def test_BlockAutoregressiveNetwork():
     dim = 3
     x = jnp.ones(dim)
 
-    barn = BlockAutoregressiveNetwork(random.PRNGKey(0), dim, activation=_TanhBNAF)
+    barn = BlockAutoregressiveNetwork(random.PRNGKey(0), dim, activation=TanhBNAF)
     y = barn.transform(x)
     assert y.shape == (dim,)
     auto_jacobian = jax.jacobian(barn.transform)(x)
@@ -58,11 +58,11 @@ def test_BlockAutoregressiveNetwork():
     assert log_abs_det_jacobian == pytest.approx(expected, abs=1e-5)
 
 
-def test__TanhBNAF():
+def test_TanhBNAF():
     n_blocks = 2
     block_size = 3
     x = random.uniform(random.PRNGKey(0), (n_blocks * block_size,))
-    tanh = _TanhBNAF(n_blocks)
+    tanh = TanhBNAF(n_blocks)
 
     y, log_det_3d = tanh(x)
     auto_jacobian = jax.jacobian(lambda a: tanh(a)[0])(x)

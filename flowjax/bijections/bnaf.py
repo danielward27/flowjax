@@ -113,7 +113,7 @@ def logmatmulexp(x, y):
     return xy + x_shift + y_shift
 
 
-class _TanhBNAF:
+class TanhBNAF:
     """
     Tanh transformation compatible with BNAF (log_abs_det provided as 3D array).
     Condition is ignored. Output shape is (n_blocks, *block_size), where
@@ -144,7 +144,7 @@ class BlockAutoregressiveNetwork(eqx.Module, Bijection):
         dim: int,
         n_layers: int = 3,
         block_size: tuple = (8, 8),
-        activation=_TanhBNAF,
+        activation=TanhBNAF,
     ):
 
         self.n_layers = n_layers
