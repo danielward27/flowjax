@@ -27,7 +27,7 @@ class Bijection(ABC):
 
 class ParameterisedBijection(ABC):
     """Bijection which facilitates parameterisation with a
-    neural network (e.g. as in coupling flows). Generally, """
+    neural network output (e.g. as in coupling flows)."""
 
     @abstractmethod
     def transform(self, x: jnp.ndarray, *args):
