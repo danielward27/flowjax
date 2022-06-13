@@ -1,10 +1,8 @@
 from flowjax.bijections.abc import ParameterisedBijection
 import jax.numpy as jnp
 
-"""Note condition is ignored"""
-
-
 class Affine(ParameterisedBijection):
+    "Affine transformation compatible with neural network parameterisation."
     def transform(self, x, loc, log_scale):
         return x * jnp.exp(log_scale) + loc
 
