@@ -123,7 +123,7 @@ class _TanhBNAF:
     def __init__(self, n_blocks: int):
         self.n_blocks = n_blocks
 
-    def __call__(self, x, condition=None):
+    def __call__(self, x):
         d = x.shape[0] // self.n_blocks
         log_det_vals = -2 * (x + jax.nn.softplus(-2 * x) - jnp.log(2.0))
         log_det = jnp.full((self.n_blocks, d, d), -jnp.inf)
