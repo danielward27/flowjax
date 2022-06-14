@@ -34,20 +34,48 @@ def test_Flow():
     lp1, lp2 = [flow.log_prob(x).item() for x in (x1, x2)]
     assert lp1 == pytest.approx(lp2)
 
+def test_broadcast():
+    # Matrices
+    size_pairs = [((5,2), (5,3)), ((1,2), (5,3)), ((5,2), (1,3)), ((2,), (5,3)), ((5,2), (3,))]
+    out_sizes = [((5,2), (5,3))] * len(size_pairs)
+
+    for in_s, out_s in zip(size_pairs, out_sizes):
+        a,b = Flow._broadcast(jnp.ones(in_s[0]), jnp.ones(in_s[1]))
+        assert (a.shape, b.shape) == out_s
+
+
+def test_NeuralSplineFlow():
+    # Unconditional
+    n = 10
+    dim = 3
+    key = random.PRNGKey(2)
+    flow = NeuralSplineFlow(key, dim, num_layers=2)
+    x = flow.sample(key, n=n)
+    assert x.shape == (n, dim)
+
+    lp = flow.log_prob(x)
+    assert lp.shape == (n,)
+
+    # Conditional
+    cond_dim = 2
+    flow = NeuralSplineFlow(key, dim, condition_dim=cond_dim, num_layers=2)
+    cond = random.uniform(key, (n, cond_dim))
+    x = flow.sample(key, condition=cond)
+    lp = flow.log_prob(x, cond)
+    assert lp.shape == (n,)
+
+    lp = flow.log_prob(x, jnp.ones(cond_dim))
+    assert lp.shape == (n,)
+
+    lp = flow.log_prob(jnp.ones(dim), cond)
+    assert lp.shape == (n,)
+
+    x = flow.sample(key, condition=jnp.ones(2), n=n)
+    assert x.shape == (n, dim)
 
 def test_RealNVPFlow():
     key = random.PRNGKey(1)
     flow = RealNVPFlow(key, 3)
-    x = flow.sample(key, n=10)
-    assert x.shape == (10, 3)
-
-    lp = flow.log_prob(x)
-    assert lp.shape == (10,)
-
-
-def test_NeuralSplineFlow():
-    key = random.PRNGKey(2)
-    flow = NeuralSplineFlow(key, 3, num_layers=2)
     x = flow.sample(key, n=10)
     assert x.shape == (10, 3)
 

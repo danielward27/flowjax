@@ -1,5 +1,6 @@
 from typing import Callable, Optional
 import jax.numpy as jnp
+from numpy import broadcast_shapes
 from flowjax.bijections.abc import Bijection
 from jax.scipy.stats import norm
 from jax import random
@@ -55,13 +56,21 @@ class Flow(eqx.Module):
         x = jnp.atleast_2d(x)
 
         if condition is not None:
-            x, condition = jnp.broadcast_arrays(x, condition)
+            x, condition = self._broadcast(x, condition)
 
         z, log_abs_det = jax.vmap(self.bijection.transform_and_log_abs_det_jacobian)(
             x, condition
         )
         p_z = self.base_log_prob(z)
         return p_z + log_abs_det
+
+    @staticmethod
+    def _broadcast(x: jnp.ndarray, condition: jnp.ndarray):
+        "Broadcast arrays, excluding last axis."
+        s = broadcast_shapes(x.shape[:-1], condition.shape[:-1])
+        x = jnp.broadcast_to(x, s + (x.shape[-1],))
+        condition = jnp.broadcast_to(condition, s + (condition.shape[-1],))
+        return x, condition
 
     @eqx.filter_jit
     def sample(
