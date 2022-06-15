@@ -1,4 +1,4 @@
-from flowjax.flows import Flow, RealNVPFlow, NeuralSplineFlow
+from flowjax.flows import Flow, RealNVPFlow, NeuralSplineFlow, BlockNeuralAutoregressiveFlow
 from flowjax.bijections.utils import Permute
 import jax.numpy as jnp
 from jax import random
@@ -81,3 +81,17 @@ def test_RealNVPFlow():
 
     lp = flow.log_prob(x)
     assert lp.shape == (10,)
+
+def test_BlockNeuralAutoregressiveFlow():
+    key = random.PRNGKey(1)
+    dim, n, cond_dim = 3, 10, 2
+    flow = BlockNeuralAutoregressiveFlow(key, dim, flow_layers=2)
+    x = random.uniform(key, (n, dim))
+    lps = flow.log_prob(x)
+    assert lps.shape == (n,)
+
+    flow = BlockNeuralAutoregressiveFlow(key, dim, condition_dim=cond_dim, flow_layers=2)
+    x = random.uniform(key, (n, dim))
+    cond = random.normal(key, (n, cond_dim))
+    lps = flow.log_prob(x, cond)
+    assert lps.shape == (n,)

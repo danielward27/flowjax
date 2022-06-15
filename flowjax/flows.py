@@ -218,6 +218,7 @@ class BlockNeuralAutoregressiveFlow(Flow):
         self,
         key: random.PRNGKey,
         target_dim: int,
+        condition_dim: int = 0,
         nn_layers: int = 3,
         block_size: tuple = (8, 8),
         flow_layers: int = 1,
@@ -247,7 +248,8 @@ class BlockNeuralAutoregressiveFlow(Flow):
 
         bijections = [
             BlockAutoregressiveNetwork(
-                key, dim=target_dim, n_layers=nn_layers, block_size=block_size
+                key, dim=target_dim, condition_dim=condition_dim,
+                n_layers=nn_layers, block_size=block_size
             )
             for key in layer_keys
         ]
