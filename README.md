@@ -18,13 +18,13 @@ flow, losses = train_flow(train_key, flow, x, learning_rate=0.05)
 flow.log_prob(x)
 ```
 
-So far the package supports:
+So far the package supports the following:
 
 - Affine coupling flows/RealNVP for conditional/unconditional density estimation ([Dinh *et al.*](https://arxiv.org/abs/1605.08803))
 
 - Neural spline coupling flows for conditional/unconditional density estimation ([Durkan *et al.*](https://arxiv.org/abs/1906.04032/))
 
-- Block neural autoregressive flows for unconditional density estimation ([De Cao *et al.*](https://arxiv.org/abs/1904.04676))
+- Block neural autoregressive flows for conditional/unconditional density estimation ([De Cao *et al.*](https://arxiv.org/abs/1904.04676))
 
 
 For more detailed examples, see [examples](https://github.com/danielward27/flowjax/blob/main/examples/).

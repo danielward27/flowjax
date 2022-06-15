@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Optional
 import equinox as eqx
 import jax
 import jax.numpy as jnp
@@ -29,6 +29,7 @@ def b_tril_mask(block_shape: tuple, n_blocks: int):
 class BlockAutoregressiveLinear(eqx.Module):
     n_blocks: int
     block_shape: tuple
+    condition_dim: int
     W: jnp.ndarray
     bias: jnp.ndarray
     W_log_scale: jnp.ndarray
@@ -43,25 +44,33 @@ class BlockAutoregressiveLinear(eqx.Module):
         key: random.PRNGKey,
         n_blocks: int,
         block_shape: tuple,
+        condition_dim: int = 0,
         init: Callable = glorot_uniform(),
     ):
         """Block autoregressive neural netork layer (https://arxiv.org/abs/1904.04676).
+        Conditioning variables are incorporated by appending columns (one for each
+        conditioning variable) to the left of the block diagonal weight matrix.
 
         Args:
             key (random.PRNGKey): Random key
             n_blocks (int): Number of diagonal blocks (dimension of input layer).
             block_shape (tuple): The shape of the (unconstrained) blocks.
+            condition_dim (int): Number of additional conditioning variables. Defaults to 0.
             init (Callable, optional): Default initialisation method for the weight matrix. Defaults to glorot_uniform().
         """
-        self.block_shape = block_shape
-        self.n_blocks = n_blocks
+        cond_size = (block_shape[0] * n_blocks, condition_dim)
 
-        self._b_diag_mask = b_diag_mask(block_shape, n_blocks)
+        self._b_diag_mask = jnp.column_stack(
+            (jnp.zeros(cond_size), b_diag_mask(block_shape, n_blocks))
+            )
+
+        self._b_tril_mask = jnp.column_stack(
+            (jnp.ones(cond_size), b_tril_mask(block_shape, n_blocks))
+            )
         self._b_diag_mask_idxs = jnp.where(self._b_diag_mask)
-        self._b_tril_mask = b_tril_mask(block_shape, n_blocks)
 
         in_features, out_features = (
-            block_shape[1] * n_blocks,
+            block_shape[1] * n_blocks + condition_dim,
             block_shape[0] * n_blocks,
         )
 
@@ -73,6 +82,10 @@ class BlockAutoregressiveLinear(eqx.Module):
         self.bias = (random.uniform(bias_key, (out_features,)) - 0.5) * (
             2 / jnp.sqrt(out_features)
         )
+
+        self.n_blocks = n_blocks
+        self.block_shape = block_shape
+        self.condition_dim = condition_dim
         self.W_log_scale = jnp.log(random.uniform(scale_key, (out_features, 1)))
         self.in_features = in_features
         self.out_features = out_features
@@ -83,9 +96,11 @@ class BlockAutoregressiveLinear(eqx.Module):
         W_norms = jnp.linalg.norm(W, axis=-1, keepdims=True)
         return jnp.exp(self.W_log_scale) * W / W_norms
 
-    def __call__(self, x):
+    def __call__(self, x, condition=None):
         "returns output y, and components of weight matrix needed log_det component (n_blocks, block_shape[0], block_shape[1])"
         W = self.get_normalised_weights()
+        if condition is not None:
+            x = jnp.concatenate((condition, x))
         y = W @ x + self.bias
         jac_3d = W[self.b_diag_mask_idxs].reshape(self.n_blocks, *self.block_shape)
         return y, jnp.log(jac_3d)
@@ -142,6 +157,7 @@ class BlockAutoregressiveNetwork(eqx.Module, Bijection):
         self,
         key: random.PRNGKey,
         dim: int,
+        condition_dim: int = 0,
         n_layers: int = 3,
         block_size: tuple = (8, 8),
         activation=TanhBNAF,
@@ -156,25 +172,26 @@ class BlockAutoregressiveNetwork(eqx.Module, Bijection):
             *[block_size] * (n_layers - 2),
             (1, block_size[1]),
         ]
-        for size in block_sizes:
+        condition_dims = [condition_dim if i==0 else 0 for i in range(n_layers)]
+        for size, c_d in zip(block_sizes, condition_dims):
             key, subkey = random.split(key)
             layers.extend(
-                [BlockAutoregressiveLinear(subkey, dim, size), activation(dim)]
+                [BlockAutoregressiveLinear(subkey, dim, size, c_d), activation(dim)]
             )
         self.layers = layers[:-1]
         self.activation = activation
 
     def transform(self, x: jnp.ndarray, condition=None):
-        y = x
-        for layer in self.layers:
+        y = self.layers[0](x, condition)[0]
+        for layer in self.layers[1:]:
             y = layer(y)[0]
         return y
 
     def transform_and_log_abs_det_jacobian(self, x: jnp.ndarray, condition=None):
-        y = x
-        log_det_3ds = []
+        y, log_det_3d_0 = self.layers[0](x, condition)
+        log_det_3ds = [log_det_3d_0]
 
-        for layer in self.layers:
+        for layer in self.layers[1:]:
             y, log_det_3d = layer(y)
             log_det_3ds.append(log_det_3d)
 
