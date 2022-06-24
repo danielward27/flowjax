@@ -2,17 +2,17 @@ from flowjax.bijections.abc import Bijection
 import jax.numpy as jnp
 import equinox as eqx
 from jax import random
-from typing import Optional
+from typing import Optional, List
 
 
 class Chain(Bijection, eqx.Module):
-    bijections: list[Bijection]
+    bijections: List[Bijection]
 
-    def __init__(self, bijections: list):
+    def __init__(self, bijections: List[Bijection]):
         """Chain together bijections to form another bijection.
 
         Args:
-            bijections (list): List of bijections.
+            bijections (List[Bijection]): List of bijections.
         """
         self.bijections = bijections
 
@@ -77,7 +77,7 @@ class Flip(Bijection):
 
 
 def intertwine_permute(
-    bijection_list: list[Bijection],
+    bijection_list: List[Bijection],
     strategy: str,
     key: Optional[random.PRNGKey] = None,
     dim: Optional[int] = None,
