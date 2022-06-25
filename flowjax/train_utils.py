@@ -60,19 +60,24 @@ def train_flow(
     for epoch in loop:
         key, subkey = random.split(key)
         train_args = random_permutation_multiple(subkey, train_args)
-        batches = range(0, train_args[0].shape[0] - batch_size, batch_size)
 
         epoch_train_loss = 0
+        batches = range(0, train_args[0].shape[0] - batch_size, batch_size)
         for i in batches:
             batch = tuple(a[i : i + batch_size] for a in train_args)
-            flow, opt_state, loss_val = step(flow, optimizer, opt_state, *batch)
-            epoch_train_loss += loss_val.item()
+            flow, opt_state, loss_i = step(flow, optimizer, opt_state, *batch)
+            epoch_train_loss += loss_i.item() / len(batches)
 
-        val_loss = loss(flow, *val_args).item()
-        losses["train"].append(epoch_train_loss / len(batches))
-        losses["val"].append(val_loss)
+        epoch_val_loss = 0
+        batches = range(0, val_args[0].shape[0] - batch_size, batch_size)
+        for i in batches:
+            batch = tuple(a[i : i + batch_size] for a in val_args)
+            epoch_val_loss += loss(flow, *val_args).item() / len(batches)
 
-        if val_loss == min(losses["val"]):
+        losses["train"].append(epoch_train_loss)
+        losses["val"].append(epoch_val_loss)
+
+        if epoch_val_loss == min(losses["val"]):
             best_params, _ = eqx.partition(flow, eqx.is_array)
 
         elif count_fruitless(losses["val"]) > max_patience:
