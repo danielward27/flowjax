@@ -24,7 +24,14 @@ setup(
     long_description=read("README.md"),
     long_description_content_type="text/markdown",
     packages=find_packages(exclude=("tests",)),
-    install_requires=["jax", "jaxlib>=0.3", "equinox", "tqdm", "optax"],
+    install_requires=[
+        "jax",
+        "jaxlib>=0.3",
+        "equinox",
+        "tqdm",
+        "optax",
+        "numpy<=1.22.4"  # https://github.com/google/jax/issues/11241
+        ],
     extras_require={
         'dev': ['pytest']
     },
