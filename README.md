@@ -29,6 +29,12 @@ So far the package supports the following:
 
 For more detailed examples, see [examples](https://github.com/danielward27/flowjax/blob/main/examples/).
 
+## Installation
+-------
+```
+pip install flowjax
+```
+
 ## Authors
 -------
 
