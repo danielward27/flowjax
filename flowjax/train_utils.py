@@ -72,7 +72,7 @@ def train_flow(
         batches = range(0, val_args[0].shape[0] - batch_size, batch_size)
         for i in batches:
             batch = tuple(a[i : i + batch_size] for a in val_args)
-            epoch_val_loss += loss(flow, *val_args).item() / len(batches)
+            epoch_val_loss += loss(flow, *batch).item() / len(batches)
 
         losses["train"].append(epoch_train_loss)
         losses["val"].append(epoch_val_loss)
