@@ -60,7 +60,7 @@ def test_BlockAutoregressiveNetwork():
     assert log_abs_det_jacobian == pytest.approx(expected, abs=1e-5)
 
     # Check conditioning works
-    barn = BlockAutoregressiveNetwork(key, dim, condition_dim=cond_dim, activation=TanhBNAF)
+    barn = BlockAutoregressiveNetwork(key, dim, cond_dim=cond_dim, activation=TanhBNAF)
     y1, y2 = barn.transform(x, jnp.ones(cond_dim)), barn.transform(x, jnp.zeros(cond_dim))
     assert jnp.all(y1 != y2)
 

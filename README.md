@@ -11,7 +11,7 @@ from jax import random
 data_key, flow_key, train_key = random.split(random.PRNGKey(0), 3)
 
 x = random.uniform(data_key, (10000, 3))  # Toy data
-flow = BlockNeuralAutoregressiveFlow(flow_key, target_dim=3)
+flow = BlockNeuralAutoregressiveFlow(flow_key, dim=3)
 flow, losses = train_flow(train_key, flow, x, learning_rate=0.05)
 
 # We can now evaluate the log-probability of arbitrary points
