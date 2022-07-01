@@ -10,7 +10,7 @@ class Coupling(Bijection, eqx.Module):
     D: int
     bijection: ParameterisedBijection
     conditioner: eqx.nn.MLP
-    condition_dim: int
+    cond_dim: int
 
     def __init__(
         self,
@@ -18,7 +18,7 @@ class Coupling(Bijection, eqx.Module):
         bijection: ParameterisedBijection,
         d: int,
         D: int,
-        condition_dim: int,
+        cond_dim: int,
         nn_width: int,
         nn_depth: int,
     ):
@@ -32,20 +32,21 @@ class Coupling(Bijection, eqx.Module):
             nn_width (int): Number of nodes in hidden layers.
             nn_depth (int): Number of hidden layers.
         """
+        self.bijection = bijection
         self.d = d
         self.D = D
-        self.bijection = bijection
+        self.cond_dim = cond_dim
+
         output_size = self.bijection.num_params(D - d)
 
         self.conditioner = eqx.nn.MLP(
-            in_size=d + condition_dim,
+            in_size=d + cond_dim,
             out_size=output_size,
             width_size=nn_width,
             depth=nn_depth,
             key=key,
         )
 
-        self.condition_dim = condition_dim
 
     def transform(self, x: jnp.ndarray, condition=None):
         condition = jnp.array([]) if condition is None else condition

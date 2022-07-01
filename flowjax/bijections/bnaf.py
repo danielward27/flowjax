@@ -29,7 +29,7 @@ def b_tril_mask(block_shape: tuple, n_blocks: int):
 class BlockAutoregressiveLinear(eqx.Module):
     n_blocks: int
     block_shape: tuple
-    condition_dim: int
+    cond_dim: int
     W: jnp.ndarray
     bias: jnp.ndarray
     W_log_scale: jnp.ndarray
@@ -44,7 +44,7 @@ class BlockAutoregressiveLinear(eqx.Module):
         key: random.PRNGKey,
         n_blocks: int,
         block_shape: tuple,
-        condition_dim: int = 0,
+        cond_dim: int = 0,
         init: Callable = glorot_uniform(),
     ):
         """Block autoregressive neural netork layer (https://arxiv.org/abs/1904.04676).
@@ -55,10 +55,10 @@ class BlockAutoregressiveLinear(eqx.Module):
             key (random.PRNGKey): Random key
             n_blocks (int): Number of diagonal blocks (dimension of input layer).
             block_shape (tuple): The shape of the (unconstrained) blocks.
-            condition_dim (int): Number of additional conditioning variables. Defaults to 0.
+            cond_dim (int): Number of additional conditioning variables. Defaults to 0.
             init (Callable, optional): Default initialisation method for the weight matrix. Defaults to glorot_uniform().
         """
-        cond_size = (block_shape[0] * n_blocks, condition_dim)
+        cond_size = (block_shape[0] * n_blocks, cond_dim)
 
         self._b_diag_mask = jnp.column_stack(
             (jnp.zeros(cond_size), b_diag_mask(block_shape, n_blocks))
@@ -70,7 +70,7 @@ class BlockAutoregressiveLinear(eqx.Module):
         self._b_diag_mask_idxs = jnp.where(self._b_diag_mask)
 
         in_features, out_features = (
-            block_shape[1] * n_blocks + condition_dim,
+            block_shape[1] * n_blocks + cond_dim,
             block_shape[0] * n_blocks,
         )
 
@@ -85,7 +85,7 @@ class BlockAutoregressiveLinear(eqx.Module):
 
         self.n_blocks = n_blocks
         self.block_shape = block_shape
-        self.condition_dim = condition_dim
+        self.cond_dim = cond_dim
         self.W_log_scale = jnp.log(random.uniform(scale_key, (out_features, 1)))
         self.in_features = in_features
         self.out_features = out_features
@@ -151,18 +151,19 @@ class TanhBNAF:
 class BlockAutoregressiveNetwork(eqx.Module, Bijection):
     n_layers: int
     layers: list
+    cond_dim: int
     activation: Callable
 
     def __init__(
         self,
         key: random.PRNGKey,
         dim: int,
-        condition_dim: int = 0,
+        cond_dim: int = 0,
         n_layers: int = 3,
         block_size: tuple = (8, 8),
         activation=TanhBNAF,
     ):
-
+        self.cond_dim = cond_dim
         self.n_layers = n_layers
 
         layers = []
@@ -172,8 +173,8 @@ class BlockAutoregressiveNetwork(eqx.Module, Bijection):
             *[block_size] * (n_layers - 2),
             (1, block_size[1]),
         ]
-        condition_dims = [condition_dim if i==0 else 0 for i in range(n_layers)]
-        for size, c_d in zip(block_sizes, condition_dims):
+        cond_dims = [cond_dim if i==0 else 0 for i in range(n_layers)]
+        for size, c_d in zip(block_sizes, cond_dims):
             key, subkey = random.split(key)
             layers.extend(
                 [BlockAutoregressiveLinear(subkey, dim, size, c_d), activation(dim)]
