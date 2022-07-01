@@ -6,6 +6,7 @@ from typing import Optional
 class Bijection(ABC):
     """Basic bijection class. All bijections should support conditioning variables
     (even if ignored)."""
+    cond_dim: int
 
     @abstractmethod
     def transform(self, x: jnp.ndarray, condition: Optional[jnp.ndarray] = None):

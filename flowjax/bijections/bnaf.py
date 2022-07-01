@@ -151,6 +151,7 @@ class TanhBNAF:
 class BlockAutoregressiveNetwork(eqx.Module, Bijection):
     n_layers: int
     layers: list
+    cond_dim: int
     activation: Callable
 
     def __init__(
@@ -162,7 +163,7 @@ class BlockAutoregressiveNetwork(eqx.Module, Bijection):
         block_size: tuple = (8, 8),
         activation=TanhBNAF,
     ):
-
+        self.cond_dim = cond_dim
         self.n_layers = n_layers
 
         layers = []

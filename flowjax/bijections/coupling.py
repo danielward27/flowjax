@@ -32,9 +32,11 @@ class Coupling(Bijection, eqx.Module):
             nn_width (int): Number of nodes in hidden layers.
             nn_depth (int): Number of hidden layers.
         """
+        self.bijection = bijection
         self.d = d
         self.D = D
-        self.bijection = bijection
+        self.cond_dim = cond_dim
+
         output_size = self.bijection.num_params(D - d)
 
         self.conditioner = eqx.nn.MLP(
@@ -45,7 +47,6 @@ class Coupling(Bijection, eqx.Module):
             key=key,
         )
 
-        self.cond_dim = cond_dim
 
     def transform(self, x: jnp.ndarray, condition=None):
         condition = jnp.array([]) if condition is None else condition

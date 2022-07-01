@@ -7,6 +7,7 @@ from typing import Optional, List
 
 class Chain(Bijection, eqx.Module):
     bijections: List[Bijection]
+    cond_dim: int
 
     def __init__(self, bijections: List[Bijection]):
         """Chain together bijections to form another bijection.
@@ -15,6 +16,7 @@ class Chain(Bijection, eqx.Module):
             bijections (List[Bijection]): List of bijections.
         """
         self.bijections = bijections
+        self.cond_dim = max([b.cond_dim for b in bijections])
 
     def transform(self, x, condition=None):
         z = x
@@ -42,6 +44,7 @@ class Chain(Bijection, eqx.Module):
 class Permute(Bijection):
     permutation: jnp.ndarray
     inverse_permutation: jnp.ndarray
+    cond_dim: int
 
     def __init__(self, permutation: jnp.ndarray):
         """Permutation transformation. Note condition is ignored.
@@ -52,6 +55,7 @@ class Permute(Bijection):
         assert (permutation.sort() == jnp.arange(len(permutation))).all()
         self.permutation = permutation
         self.inverse_permutation = jnp.argsort(permutation)
+        self.cond_dim = 0
 
     def transform(self, x, condition=None):
         return x[self.permutation]
@@ -65,6 +69,7 @@ class Permute(Bijection):
 
 class Flip(Bijection):
     """Flip the input array. Condition argument is ignored."""
+    cond_dim: int = 0
 
     def transform(self, x, condition=None):
         return jnp.flip(x)

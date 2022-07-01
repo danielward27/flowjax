@@ -10,24 +10,25 @@ from flowjax.bijections.affine import Affine
 from flowjax.bijections.utils import Chain
 from flowjax.bijections.bnaf import BlockAutoregressiveNetwork
 from flowjax.bijections.utils import intertwine_permute
-from flowjax.distributions import Distribution, Normal
+from flowjax.distributions import Distribution
 
 
 class Flow(eqx.Module, Distribution):
     bijection: Bijection
-    dim: int
     base_dist: Distribution
+    dim: int
     cond_dim: int
 
     def __init__(
         self,
-        bijection: Bijection,
-        base_dist: Distribution = None,
-        cond_dim: int = 0
+        base_dist: Distribution,
+        bijection: Bijection,   # TODO can the bijection can specify the cond dim?
     ):
         """Form a distribution like object using a base distribution and a
         bijection. Operations are generally assumed to be batched along
-        dimension 0.
+        dimension 0. dim is ignored if a base distribution is specified.
+        Either dim or base_dist should be specified. If dim is specified,
+        the base distribution
 
         Args:
             bijection (Bijection): Bijection mapping from target distribution to
@@ -37,24 +38,21 @@ class Flow(eqx.Module, Distribution):
                 distribution. Defaults to standard normal.
             base_sample (Optional[Callable], optional): sample function with signature
                 (key : PRNGKey, n : int). Defaults to standard normal.
-        """
+        """  # TODO update these docs
+        self.base_dist = base_dist
         self.bijection = bijection
-        self.base_dist = Normal(self.dim) if base_dist is None else base_dist
         self.dim = self.base_dist.dim
-        self.cond_dim = cond_dim
+        self.cond_dim = max(self.bijection.cond_dim, self.base_dist.cond_dim) # TODO bit odd, but either could be conditional or unconditional...
 
-    @eqx.filter_jit
-    def log_prob(self, x: jnp.ndarray, condition: Optional[jnp.ndarray] = None):
+    def _log_prob(self, x: jnp.ndarray, condition: Optional[jnp.ndarray] = None):
         "Evaluate the log probability of the target distribution."
-        x, condition = self.broadcast_x_and_condition(x, condition)
         z, log_abs_det = self.bijection.transform_and_log_abs_det_jacobian(
             x, condition
         )
-        p_z = self.base_dist.log_prob(z)
+        p_z = self.base_dist._log_prob(z, condition)
         return p_z + log_abs_det
 
-    @eqx.filter_jit
-    def sample(
+    def _sample(
         self,
         key: random.PRNGKey,
         condition: Optional[jnp.ndarray] = None,
@@ -72,10 +70,9 @@ class Flow(eqx.Module, Distribution):
         Returns:
             jnp.ndarray: Samples from the target distribution.
         """ # TODO update these docs
-        z = self.base_dist.sample(key)
+        z = self.base_dist._sample(key, condition)
         x = self.bijection.inverse(z, condition)
         return x
-
 
 
 
@@ -83,7 +80,7 @@ class NeuralSplineFlow(Flow):
     def __init__(
         self,
         key: random.PRNGKey,
-        dim: int,
+        base_dist: Distribution,
         cond_dim: int = 0,
         K: int = 10,
         B: int = 5,
@@ -91,8 +88,6 @@ class NeuralSplineFlow(Flow):
         nn_width: int = 40,
         nn_depth: int = 2,
         permute_strategy: Optional[str] = None,
-        base_log_prob: Optional[Callable] = None,
-        base_sample: Optional[Callable] = None,
     ):
         """Convenience constructor for Neural spline flow (Durkan et al. 2019;
         https://arxiv.org/abs/1906.04032). Note that the transformation is on
@@ -110,10 +105,10 @@ class NeuralSplineFlow(Flow):
             permute_strategy (Optional[str], optional): How to permute between layers. Either "flip" or "random". Defaults to "flip" if dim <=2, otherwise "random".
             base_log_prob (Optional[Callable], optional): Log probability in base distribution. Defaults to standard normal.
             base_sample (Optional[Callable], optional): Sample function in base distribution. Defaults to standard normal.
-        """
-        d = dim // 2
+        """ # TODO update docs
+        d = base_dist.dim // 2
         if permute_strategy is None:
-            permute_strategy = "flip" if dim <= 2 else "random"
+            permute_strategy = "flip" if base_dist.dim <= 2 else "random"
 
         permute_key, *layer_keys = random.split(key, num_layers + 1)
         layers = [
@@ -121,7 +116,7 @@ class NeuralSplineFlow(Flow):
                 key=key,
                 bijection=RationalQuadraticSpline(K=K, B=B),
                 d=d,
-                D=dim,
+                D=base_dist.dim,
                 nn_width=nn_width,
                 nn_depth=nn_depth,
                 cond_dim=cond_dim,
@@ -129,24 +124,21 @@ class NeuralSplineFlow(Flow):
             for key in layer_keys
         ]
 
-        layers = intertwine_permute(layers, permute_strategy, permute_key, dim)
+        layers = intertwine_permute(layers, permute_strategy, permute_key, base_dist.dim)
         bijection = Chain(layers)
-
-        super().__init__(bijection, dim, base_log_prob, base_sample, cond_dim)
+        super().__init__(base_dist, bijection)
 
 
 class RealNVPFlow(Flow):
     def __init__(
         self,
         key: random.PRNGKey,
-        dim: int,
+        base_dist: Distribution,
         cond_dim: int = 0,
         num_layers: int = 5,
         nn_width: int = 40,
         nn_depth: int = 2,
         permute_strategy: Optional[str] = None,
-        base_log_prob: Optional[Callable] = None,
-        base_sample: Optional[Callable] = None,
     ):
         """Convenience constructor for a RealNVP style flow (Dinh et al, 2017;
         https://arxiv.org/abs/1605.08803). Note this implementation differs slightly
@@ -162,10 +154,10 @@ class RealNVPFlow(Flow):
             permute_strategy (Optional[str], optional): How to permute between layers. Either "flip" or "random". Defaults to "flip" if dim <=2, otherwise "random".
             base_log_prob (Optional[Callable], optional): Log probability in base distribution. Defaults to standard normal.
             base_sample (Optional[Callable], optional): Sample function in base distribution. Defaults to standard normal.
-        """
-        d = dim // 2
+        """  # TODO update docs
+        d = base_dist.dim // 2
         if permute_strategy is None:
-            permute_strategy = "flip" if dim <= 2 else "random"
+            permute_strategy = "flip" if base_dist.dim <= 2 else "random"
 
         permute_key, *layer_keys = random.split(key, num_layers + 1)
         layers = [
@@ -173,7 +165,7 @@ class RealNVPFlow(Flow):
                 key=key,
                 bijection=Affine(),
                 d=d,
-                D=dim,
+                D=base_dist.dim,
                 nn_width=nn_width,
                 nn_depth=nn_depth,
                 cond_dim=cond_dim,
@@ -181,23 +173,21 @@ class RealNVPFlow(Flow):
             for key in layer_keys
         ]
 
-        layers = intertwine_permute(layers, permute_strategy, permute_key, dim)
+        layers = intertwine_permute(layers, permute_strategy, permute_key, base_dist.dim)
         bijection = Chain(layers)
-        super().__init__(bijection, dim, base_log_prob, base_sample)
+        super().__init__(base_dist, bijection)
 
 
 class BlockNeuralAutoregressiveFlow(Flow):
     def __init__(
         self,
         key: random.PRNGKey,
-        dim: int,
+        base_dist: Distribution,
         cond_dim: int = 0,
         nn_layers: int = 3,
         block_size: tuple = (8, 8),
         flow_layers: int = 1,
         permute_strategy: Optional[str] = None,
-        base_log_prob: Optional[Callable] = None,
-        base_sample: Optional[Callable] = None,
     ):
         """Convenience constructor for a block neural autoregressive flow
         (https://arxiv.org/abs/1904.04676).
@@ -215,20 +205,20 @@ class BlockNeuralAutoregressiveFlow(Flow):
         assert nn_layers >= 2
 
         if permute_strategy is None:
-            permute_strategy = "flip" if dim <= 2 else "random"
+            permute_strategy = "flip" if base_dist.dim <= 2 else "random"
 
         permute_key, *layer_keys = random.split(key, flow_layers + 1)
 
         bijections = [
             BlockAutoregressiveNetwork(
-                key, dim=dim, cond_dim=cond_dim,
+                key, dim=base_dist.dim, cond_dim=cond_dim,
                 n_layers=nn_layers, block_size=block_size
             )
             for key in layer_keys
         ]
 
         bijections = intertwine_permute(
-            bijections, permute_strategy, permute_key, dim
+            bijections, permute_strategy, permute_key, base_dist.dim
         )
         bijection = Chain(bijections)
-        super().__init__(bijection, dim, base_log_prob, base_sample)
+        super().__init__(base_dist, bijection)
