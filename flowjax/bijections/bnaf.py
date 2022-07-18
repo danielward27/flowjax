@@ -5,19 +5,19 @@ import jax.numpy as jnp
 from flowjax.bijections.abc import Bijection
 from jax import random
 from jax.nn.initializers import glorot_uniform
-from jax import lax
+import jax.numpy as jnp
 
 
 def b_diag_mask(block_shape: tuple, n_blocks: int):
     "Block diagonal mask."
     return jax.scipy.linalg.block_diag(
-        *[jnp.ones(block_shape, int) for _ in range(n_blocks)]
+        *[jnp.ones(block_shape, jnp.int32) for _ in range(n_blocks)]
     )
 
 
 def b_tril_mask(block_shape: tuple, n_blocks: int):
     "Upper triangular block mask, excluding diagonal blocks."
-    mask = jnp.zeros((block_shape[0] * n_blocks, block_shape[1] * n_blocks))
+    mask = jnp.zeros((block_shape[0] * n_blocks, block_shape[1] * n_blocks), jnp.int32)
 
     for i in range(n_blocks):
         mask = mask.at[
@@ -35,9 +35,9 @@ class BlockAutoregressiveLinear(eqx.Module):
     W_log_scale: jnp.ndarray
     in_features: int
     out_features: int
-    _b_diag_mask: jnp.ndarray
-    _b_diag_mask_idxs: jnp.ndarray
-    _b_tril_mask: jnp.ndarray
+    b_diag_mask: jnp.ndarray
+    b_diag_mask_idxs: jnp.ndarray
+    b_tril_mask: jnp.ndarray
 
     def __init__(
         self,
@@ -60,14 +60,14 @@ class BlockAutoregressiveLinear(eqx.Module):
         """
         cond_size = (block_shape[0] * n_blocks, cond_dim)
 
-        self._b_diag_mask = jnp.column_stack(
-            (jnp.zeros(cond_size), b_diag_mask(block_shape, n_blocks))
-            )
+        self.b_diag_mask = jnp.column_stack(
+            (jnp.zeros(cond_size, jnp.int32), b_diag_mask(block_shape, n_blocks))
+        )
 
-        self._b_tril_mask = jnp.column_stack(
-            (jnp.ones(cond_size), b_tril_mask(block_shape, n_blocks))
-            )
-        self._b_diag_mask_idxs = jnp.where(self._b_diag_mask)
+        self.b_tril_mask = jnp.column_stack(
+            (jnp.ones(cond_size, jnp.int32), b_tril_mask(block_shape, n_blocks))
+        )
+        self.b_diag_mask_idxs = jnp.where(self.b_diag_mask)
 
         in_features, out_features = (
             block_shape[1] * n_blocks + cond_dim,
@@ -105,25 +105,13 @@ class BlockAutoregressiveLinear(eqx.Module):
         jac_3d = W[self.b_diag_mask_idxs].reshape(self.n_blocks, *self.block_shape)
         return y, jnp.log(jac_3d)
 
-    @property
-    def b_diag_mask(self):
-        return jax.lax.stop_gradient(self._b_diag_mask)
-
-    @property
-    def b_diag_mask_idxs(self):
-        return jax.lax.stop_gradient(self._b_diag_mask_idxs)
-
-    @property
-    def b_tril_mask(self):
-        return jax.lax.stop_gradient(self._b_tril_mask)
-
 
 def logmatmulexp(x, y):
     """
     Numerically stable version of ``(x.log() @ y.log()).exp()``. From numpyro https://github.com/pyro-ppl/numpyro/blob/f2ff89a3a7147617e185eb51148eb15d56d44661/numpyro/distributions/util.py#L387
     """
-    x_shift = lax.stop_gradient(jnp.amax(x, -1, keepdims=True))
-    y_shift = lax.stop_gradient(jnp.amax(y, -2, keepdims=True))
+    x_shift = jax.lax.stop_gradient(jnp.amax(x, -1, keepdims=True))
+    y_shift = jax.lax.stop_gradient(jnp.amax(y, -2, keepdims=True))
     xy = jnp.log(jnp.matmul(jnp.exp(x - x_shift), jnp.exp(y - y_shift)))
     return xy + x_shift + y_shift
 
@@ -173,7 +161,7 @@ class BlockAutoregressiveNetwork(eqx.Module, Bijection):
             *[block_size] * (n_layers - 2),
             (1, block_size[1]),
         ]
-        cond_dims = [cond_dim if i==0 else 0 for i in range(n_layers)]
+        cond_dims = [cond_dim if i == 0 else 0 for i in range(n_layers)]
         for size, c_d in zip(block_sizes, cond_dims):
             key, subkey = random.split(key)
             layers.extend(
