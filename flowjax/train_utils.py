@@ -32,6 +32,7 @@ def train_flow(
         learning_rate (float, optional): Adam learning rate. Defaults to 5e-4.
         batch_size (int, optional): Batch size. Defaults to 256.
         val_prop (float, optional): Proportion of data to use for validation. Defaults to 0.1.
+        clip_norm (float, optional): Maximum gradient norm before clipping.
         show_progress (bool, optional): Whether to show progress bar. Defaults to True.
     """
 
