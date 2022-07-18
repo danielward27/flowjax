@@ -22,7 +22,7 @@ class Flow(eqx.Module, Distribution):
     def __init__(
         self,
         base_dist: Distribution,
-        bijection: Bijection,   # TODO can the bijection can specify the cond dim?
+        bijection: Bijection,  # TODO can the bijection can specify the cond dim?
     ):
         """Form a distribution like object using a base distribution and a
         bijection. Operations are generally assumed to be batched along
@@ -42,20 +42,18 @@ class Flow(eqx.Module, Distribution):
         self.base_dist = base_dist
         self.bijection = bijection
         self.dim = self.base_dist.dim
-        self.cond_dim = max(self.bijection.cond_dim, self.base_dist.cond_dim) # TODO bit odd, but either could be conditional or unconditional...
+        self.cond_dim = max(
+            self.bijection.cond_dim, self.base_dist.cond_dim
+        )  # TODO bit odd, but either could be conditional or unconditional...
 
     def _log_prob(self, x: jnp.ndarray, condition: Optional[jnp.ndarray] = None):
         "Evaluate the log probability of the target distribution."
-        z, log_abs_det = self.bijection.transform_and_log_abs_det_jacobian(
-            x, condition
-        )
+        z, log_abs_det = self.bijection.transform_and_log_abs_det_jacobian(x, condition)
         p_z = self.base_dist._log_prob(z, condition)
         return p_z + log_abs_det
 
     def _sample(
-        self,
-        key: random.PRNGKey,
-        condition: Optional[jnp.ndarray] = None,
+        self, key: random.PRNGKey, condition: Optional[jnp.ndarray] = None,
     ):
         """Sample from the (conditional or unconditional) flow. For repeated sampling using
         a particular instance of the conditioning variable, use a vector condition and n to
@@ -69,11 +67,10 @@ class Flow(eqx.Module, Distribution):
 
         Returns:
             jnp.ndarray: Samples from the target distribution.
-        """ # TODO update these docs
+        """  # TODO update these docs
         z = self.base_dist._sample(key, condition)
         x = self.bijection.inverse(z, condition)
         return x
-
 
 
 class NeuralSplineFlow(Flow):
@@ -105,7 +102,7 @@ class NeuralSplineFlow(Flow):
             permute_strategy (Optional[str], optional): How to permute between layers. Either "flip" or "random". Defaults to "flip" if dim <=2, otherwise "random".
             base_log_prob (Optional[Callable], optional): Log probability in base distribution. Defaults to standard normal.
             base_sample (Optional[Callable], optional): Sample function in base distribution. Defaults to standard normal.
-        """ # TODO update docs
+        """  # TODO update docs
         d = base_dist.dim // 2
         if permute_strategy is None:
             permute_strategy = "flip" if base_dist.dim <= 2 else "random"
@@ -124,7 +121,9 @@ class NeuralSplineFlow(Flow):
             for key in layer_keys
         ]
 
-        layers = intertwine_permute(layers, permute_strategy, permute_key, base_dist.dim)
+        layers = intertwine_permute(
+            layers, permute_strategy, permute_key, base_dist.dim
+        )
         bijection = Chain(layers)
         super().__init__(base_dist, bijection)
 
@@ -173,7 +172,9 @@ class RealNVPFlow(Flow):
             for key in layer_keys
         ]
 
-        layers = intertwine_permute(layers, permute_strategy, permute_key, base_dist.dim)
+        layers = intertwine_permute(
+            layers, permute_strategy, permute_key, base_dist.dim
+        )
         bijection = Chain(layers)
         super().__init__(base_dist, bijection)
 
@@ -185,7 +186,7 @@ class BlockNeuralAutoregressiveFlow(Flow):
         base_dist: Distribution,
         cond_dim: int = 0,
         nn_layers: int = 3,
-        block_size: tuple = (8, 8),
+        block_dim: int = 8,
         flow_layers: int = 1,
         permute_strategy: Optional[str] = None,
     ):
@@ -196,7 +197,7 @@ class BlockNeuralAutoregressiveFlow(Flow):
             key (random.PRNGKey): Random key.
             dim (int): Dimension of the target distribution.
             nn_layers (int, optional): Number of layers within autoregressive neural networks. Defaults to 3.
-            block_size (tuple, optional): Block size in lower triangular blocks of autoregressive neural network. Defaults to (8, 8).
+            block_dim (int, optional): Block size in lower triangular blocks of autoregressive neural network. Defaults to 8.
             flow_layers (int, optional): Number of flow layers (1 layer = autoregressive neural network + TanH activation) . Defaults to 1.
             permute_strategy (Optional[str], optional): How to permute between layers. Either "flip" or "random". Defaults to "flip" if dim <=2, otherwise "random".
             base_log_prob (Optional[Callable], optional): Base distribution log probability function. Defaults to standard normal.
@@ -211,8 +212,11 @@ class BlockNeuralAutoregressiveFlow(Flow):
 
         bijections = [
             BlockAutoregressiveNetwork(
-                key, dim=base_dist.dim, cond_dim=cond_dim,
-                n_layers=nn_layers, block_size=block_size
+                key,
+                dim=base_dist.dim,
+                cond_dim=cond_dim,
+                n_layers=nn_layers,
+                block_dim=block_dim,
             )
             for key in layer_keys
         ]

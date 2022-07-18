@@ -47,13 +47,13 @@ class BlockAutoregressiveLinear(eqx.Module):
         cond_dim: int = 0,
         init: Callable = glorot_uniform(),
     ):
-        """Block autoregressive neural netork layer (https://arxiv.org/abs/1904.04676).
+        """Block autoregressive neural network layer (https://arxiv.org/abs/1904.04676).
         Conditioning variables are incorporated by appending columns (one for each
         conditioning variable) to the left of the block diagonal weight matrix.
 
         Args:
             key (random.PRNGKey): Random key
-            n_blocks (int): Number of diagonal blocks (dimension of input layer).
+            n_blocks (int): Number of diagonal blocks (dimension of original input).
             block_shape (tuple): The shape of the (unconstrained) blocks.
             cond_dim (int): Number of additional conditioning variables. Defaults to 0.
             init (Callable, optional): Default initialisation method for the weight matrix. Defaults to glorot_uniform().
@@ -148,7 +148,7 @@ class BlockAutoregressiveNetwork(eqx.Module, Bijection):
         dim: int,
         cond_dim: int = 0,
         n_layers: int = 3,
-        block_size: tuple = (8, 8),
+        block_dim: int = 8,
         activation=TanhBNAF,
     ):
         self.cond_dim = cond_dim
@@ -157,9 +157,9 @@ class BlockAutoregressiveNetwork(eqx.Module, Bijection):
         layers = []
 
         block_sizes = [
-            (block_size[0], 1),
-            *[block_size] * (n_layers - 2),
-            (1, block_size[1]),
+            (block_dim, 1),
+            *[(block_dim, block_dim)] * (n_layers - 2),
+            (1, block_dim),
         ]
         cond_dims = [cond_dim if i == 0 else 0 for i in range(n_layers)]
         for size, c_d in zip(block_sizes, cond_dims):
