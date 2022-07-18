@@ -17,6 +17,7 @@ def train_flow(
     learning_rate: float = 5e-4,
     batch_size: int = 256,
     val_prop: float = 0.1,
+    clip_norm: float = 0.5,
     show_progress: bool = True,
 ):
     """Train flow with Adam optimizer.
@@ -33,6 +34,7 @@ def train_flow(
         val_prop (float, optional): Proportion of data to use for validation. Defaults to 0.1.
         show_progress (bool, optional): Whether to show progress bar. Defaults to True.
     """
+
     def loss(flow, x, condition=None):
         return -flow.log_prob(x, condition).mean()
 
@@ -48,10 +50,11 @@ def train_flow(
     inputs = (x,) if condition is None else (x, condition)
     train_args, val_args = train_val_split(subkey, inputs, val_prop=val_prop)
 
-    optimizer = optax.adam(learning_rate=learning_rate)
+    optimizer = optax.chain(
+        optax.clip_by_global_norm(clip_norm), optax.adam(learning_rate=learning_rate)
+    )
 
-    best_params, static = eqx.partition(flow, eqx.is_array)
-
+    best_params, static = eqx.partition(flow, eqx.is_inexact_array)
     opt_state = optimizer.init(best_params)
 
     losses = {"train": [], "val": []}
@@ -78,7 +81,7 @@ def train_flow(
         losses["val"].append(epoch_val_loss)
 
         if epoch_val_loss == min(losses["val"]):
-            best_params, _ = eqx.partition(flow, eqx.is_array)
+            best_params = eqx.filter(flow, eqx.is_inexact_array)
 
         elif count_fruitless(losses["val"]) > max_patience:
             print("Max patience reached.")
