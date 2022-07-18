@@ -13,8 +13,10 @@ from numpy import ndarray
 # Note that unconditional distributions should allow, but ignore the passing of conditional variables
 # (to facilitate easy composing of conditional and unconditional distributions)
 
+
 class Distribution(ABC):
     """Distribution base class."""
+
     dim: int
     cond_dim: int
     in_axes: tuple
@@ -25,8 +27,7 @@ class Distribution(ABC):
         pass
 
     @abstractmethod
-    def _sample(
-        self, key: random.PRNGKey, condition: Optional[jnp.ndarray] = None):
+    def _sample(self, key: random.PRNGKey, condition: Optional[jnp.ndarray] = None):
         "Sample the distribution."
         pass
 
@@ -44,26 +45,28 @@ class Distribution(ABC):
         self,
         key: random.PRNGKey,
         condition: Optional[jnp.ndarray] = None,
-        n: Optional[int] = None
-        ):
+        n: Optional[int] = None,
+    ):
         self._argcheck(condition=condition)
         condition = jnp.empty((0,)) if condition is None else condition
-        if n is None and condition.ndim == 1: # No need to vmap in this case
+        if n is None and condition.ndim == 1:  # No need to vmap in this case
             return self._sample(key, condition)
         else:
-            in_axes, n = ((0, 0), condition.shape[0]) if condition.ndim==2 else ((0, None), n)
+            in_axes, n = (
+                ((0, 0), condition.shape[0]) if condition.ndim == 2 else ((0, None), n)
+            )
             keys = random.split(key, n)
             return jax.vmap(self._sample, in_axes)(keys, condition)
-    
+
     def log_prob(self, x: jnp.ndarray, condition: Optional[jnp.ndarray] = None):
         """Evaluate the log probability. If a matrix/matrices are passed,
         we vmap over the leading axis."""
         self._argcheck(x, condition)
         condition = jnp.empty((0,)) if condition is None else condition
-        if x.ndim==1 and condition.ndim==1:  # No need to vmap in this case
+        if x.ndim == 1 and condition.ndim == 1:  # No need to vmap in this case
             return self._log_prob(x, condition)
         else:
-            in_axes = [0 if a.ndim==2 else None for a in (x, condition)]
+            in_axes = [0 if a.ndim == 2 else None for a in (x, condition)]
             return jax.vmap(self._log_prob, in_axes)(x, condition)
 
     def _argcheck(self, x=None, condition=None):
@@ -85,4 +88,4 @@ class Normal(Distribution):
         return norm.logpdf(x).sum()
 
     def _sample(self, key: random.PRNGKey, condition: Optional[jnp.ndarray] = None):
-        return random.normal(key, (self.dim, ))
+        return random.normal(key, (self.dim,))
