@@ -6,7 +6,6 @@ import jax.numpy as jnp
 from jax import random
 from jax.scipy.stats import norm
 import jax
-from numpy import ndarray
 
 # To construct a distribution, we define _log_prob and _sample, which take in vector arguments.
 # More friendly methods are then created from these, supporting batches of inputs.
