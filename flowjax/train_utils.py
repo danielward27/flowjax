@@ -1,17 +1,19 @@
 from flowjax.flows import Flow
 from jax import random
+from jax.random import KeyArray
 import jax.numpy as jnp
 import equinox as eqx
 import optax
 from tqdm import tqdm
-from typing import Optional
+from typing import Optional, List, Dict
+from flowjax.utils import Array
 
 
 def train_flow(
-    key: random.PRNGKey,
+    key: KeyArray,
     flow: Flow,
-    x: jnp.ndarray,
-    condition: Optional[jnp.ndarray] = None,
+    x: Array,
+    condition: Optional[Array] = None,
     max_epochs: int = 50,
     max_patience: int = 5,
     learning_rate: float = 5e-4,
@@ -25,8 +27,8 @@ def train_flow(
     Args:
         key (random.PRNGKey): Jax key.
         flow (Flow): Flow to train.
-        x (jnp.ndarray): Samples from the target distribution (each row being a sample).
-        condition (Optional[jnp.ndarray], optional): Conditioning variables corresponding to x if learning a conditional distribution. Defaults to None.
+        x (Array): Samples from the target distribution (each row being a sample).
+        condition (Optional[Array], optional): Conditioning variables corresponding to x if learning a conditional distribution. Defaults to None.
         max_epochs (int, optional): Maximum number of epochs. Defaults to 50.
         max_patience (int, optional): Number of consecutive epochs with no validation loss improvement after which training is terminated. Defaults to 5.
         learning_rate (float, optional): Adam learning rate. Defaults to 5e-4.
@@ -58,7 +60,7 @@ def train_flow(
     best_params, static = eqx.partition(flow, eqx.is_inexact_array)
     opt_state = optimizer.init(best_params)
 
-    losses = {"train": [], "val": []}
+    losses = {"train": [], "val": []}  # type: Dict[str, List[float]]
 
     loop = tqdm(range(max_epochs)) if show_progress is True else range(max_epochs)
     for epoch in loop:
@@ -95,7 +97,7 @@ def train_flow(
     return flow, losses
 
 
-def train_val_split(key: random.PRNGKey, arrays, val_prop: float = 0.1):
+def train_val_split(key: KeyArray, arrays, val_prop: float = 0.1):
     "Returns ((train_x, train_y), (val_x, val_y), ...)). Split on axis 0."
     assert 0 <= val_prop <= 1
     key, subkey = random.split(key)

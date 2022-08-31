@@ -1,11 +1,13 @@
 from flowjax.bijections.abc import ParameterisedBijection
 import equinox as eqx
 import jax.numpy as jnp
-from jax import random
 from flowjax.bijections.abc import Bijection
+from jax.random import KeyArray
+from flowjax.utils import Array
 
 
-class Coupling(Bijection, eqx.Module):
+
+class Coupling(Bijection):
     d: int
     D: int
     bijection: ParameterisedBijection
@@ -14,7 +16,7 @@ class Coupling(Bijection, eqx.Module):
 
     def __init__(
         self,
-        key: random.PRNGKey,
+        key: KeyArray,
         bijection: ParameterisedBijection,
         d: int,
         D: int,
@@ -47,8 +49,7 @@ class Coupling(Bijection, eqx.Module):
             key=key,
         )
 
-
-    def transform(self, x: jnp.ndarray, condition=None):
+    def transform(self, x: Array, condition=None):
         condition = jnp.array([]) if condition is None else condition
         x_cond, x_trans = x[: self.d], x[self.d :]
         cond = jnp.concatenate((x_cond, condition))
@@ -58,7 +59,7 @@ class Coupling(Bijection, eqx.Module):
         y = jnp.concatenate((x_cond, y_trans))
         return y
 
-    def transform_and_log_abs_det_jacobian(self, x: jnp.ndarray, condition=None):
+    def transform_and_log_abs_det_jacobian(self, x: Array, condition=None):
         condition = jnp.array([]) if condition is None else condition
         x_cond, x_trans = x[: self.d], x[self.d :]
         cond = jnp.concatenate((x_cond, condition))
@@ -71,7 +72,7 @@ class Coupling(Bijection, eqx.Module):
         y = jnp.concatenate([x_cond, y_trans])
         return y, log_abs_det
 
-    def inverse(self, y: jnp.ndarray, condition=None):
+    def inverse(self, y: Array, condition=None):
         condition = jnp.array([]) if condition is None else condition
         x_cond, y_trans = y[: self.d], y[self.d :]
         cond = jnp.concatenate((x_cond, condition))

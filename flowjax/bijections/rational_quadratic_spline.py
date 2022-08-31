@@ -5,8 +5,9 @@ from functools import partial
 
 
 class RationalQuadraticSpline(ParameterisedBijection):
-
-    def __init__(self, K, B, min_bin_width=1e-3, min_bin_height=1e-3, min_derivative=1e-3):
+    def __init__(
+        self, K, B, min_bin_width=1e-3, min_bin_height=1e-3, min_derivative=1e-3
+    ):
         self.K = K
         self.B = B
         self.min_bin_width = min_bin_width
@@ -28,7 +29,7 @@ class RationalQuadraticSpline(ParameterisedBijection):
             B: (int): Interval to transform [-B, B]
         """
         pos_pad = pos_pad.at[pad_idxs].set(pad_vals)
-        self._pos_pad = pos_pad # End knots and beyond
+        self._pos_pad = pos_pad  # End knots and beyond
 
     @property
     def pos_pad(self):
@@ -77,6 +78,9 @@ class RationalQuadraticSpline(ParameterisedBijection):
 
     def num_params(self, dim: int):
         return (self.K * 3 - 1) * dim
+
+    def get_ranks(self, dim: int):
+        return jnp.repeat(jnp.arange(dim), self.K * 3 - 1)
 
     def get_args(self, params):
         params = params.reshape((-1, self.K * 3 - 1))

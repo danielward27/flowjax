@@ -4,8 +4,10 @@ import jax
 import jax.numpy as jnp
 from flowjax.bijections.abc import Bijection
 from jax import random
+from jax.random import KeyArray
 from jax.nn.initializers import glorot_uniform
 import jax.numpy as jnp
+from flowjax.utils import Array
 
 
 def b_diag_mask(block_shape: tuple, n_blocks: int):
@@ -30,18 +32,18 @@ class BlockAutoregressiveLinear(eqx.Module):
     n_blocks: int
     block_shape: tuple
     cond_dim: int
-    W: jnp.ndarray
-    bias: jnp.ndarray
-    W_log_scale: jnp.ndarray
+    W: Array
+    bias: Array
+    W_log_scale: Array
     in_features: int
     out_features: int
-    b_diag_mask: jnp.ndarray
-    b_diag_mask_idxs: jnp.ndarray
-    b_tril_mask: jnp.ndarray
+    b_diag_mask: Array
+    b_diag_mask_idxs: Array
+    b_tril_mask: Array
 
     def __init__(
         self,
-        key: random.PRNGKey,
+        key: KeyArray,
         n_blocks: int,
         block_shape: tuple,
         cond_dim: int = 0,
@@ -136,7 +138,7 @@ class TanhBNAF:
         return jnp.tanh(x), log_det
 
 
-class BlockAutoregressiveNetwork(eqx.Module, Bijection):
+class BlockAutoregressiveNetwork(Bijection):
     n_layers: int
     layers: list
     cond_dim: int
@@ -144,7 +146,7 @@ class BlockAutoregressiveNetwork(eqx.Module, Bijection):
 
     def __init__(
         self,
-        key: random.PRNGKey,
+        key,
         dim: int,
         cond_dim: int = 0,
         n_layers: int = 3,
@@ -170,13 +172,13 @@ class BlockAutoregressiveNetwork(eqx.Module, Bijection):
         self.layers = layers[:-1]
         self.activation = activation
 
-    def transform(self, x: jnp.ndarray, condition=None):
+    def transform(self, x: Array, condition=None):
         y = self.layers[0](x, condition)[0]
         for layer in self.layers[1:]:
             y = layer(y)[0]
         return y
 
-    def transform_and_log_abs_det_jacobian(self, x: jnp.ndarray, condition=None):
+    def transform_and_log_abs_det_jacobian(self, x: Array, condition=None):
         y, log_det_3d_0 = self.layers[0](x, condition)
         log_det_3ds = [log_det_3d_0]
 
