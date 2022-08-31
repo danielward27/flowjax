@@ -2,10 +2,13 @@ from flowjax.bijections.abc import Bijection
 import jax.numpy as jnp
 import equinox as eqx
 from jax import random
+from jax.random import KeyArray
 from typing import Optional, List
+from flowjax.bijections.abc import Bijection
+from flowjax.utils import Array
 
 
-class Chain(Bijection, eqx.Module):
+class Chain(Bijection):
     bijections: List[Bijection]
     cond_dim: int
 
@@ -34,7 +37,7 @@ class Chain(Bijection, eqx.Module):
             log_abs_det_jac += log_abs_det_jac_i
         return z, log_abs_det_jac
 
-    def inverse(self, z: jnp.ndarray, condition=None):
+    def inverse(self, z: Array, condition=None):
         x = z
         for bijection in reversed(self.bijections):
             x = bijection.inverse(x, condition)
@@ -42,15 +45,15 @@ class Chain(Bijection, eqx.Module):
 
 
 class Permute(Bijection):
-    permutation: jnp.ndarray
-    inverse_permutation: jnp.ndarray
+    permutation: Array
+    inverse_permutation: Array
     cond_dim: int
 
-    def __init__(self, permutation: jnp.ndarray):
+    def __init__(self, permutation: Array):
         """Permutation transformation. Note condition is ignored.
 
         Args:
-            permutation (jnp.ndarray): Indexes 0-(dim-1) representing new order.
+            permutation (Array): Indexes 0-(dim-1) representing new order.
         """
         assert (permutation.sort() == jnp.arange(len(permutation))).all()
         self.permutation = permutation
@@ -69,6 +72,7 @@ class Permute(Bijection):
 
 class Flip(Bijection):
     """Flip the input array. Condition argument is ignored."""
+
     cond_dim: int = 0
 
     def transform(self, x, condition=None):
@@ -82,16 +86,16 @@ class Flip(Bijection):
 
 
 def intertwine_permute(
-    bijection_list: List[Bijection],
+    bijection_list: List,
     strategy: str,
-    key: Optional[random.PRNGKey] = None,
+    key: Optional[KeyArray] = None,
     dim: Optional[int] = None,
-):
+) -> List[Bijection]:
     """Given a list of bijections, add permutations between layers. i.e.
     with bijections [a,b,c], returns [a, perm1, b, perm2, c].
 
     Args:
-        bijection_list (list[Bijection]): List of bijections.
+        bijection_list (List[Bijection]): List of bijections.
         strategy (str): Either "flip" or "random".
         key (random.PRNGKey, optional): Random key (ignored for flip). Defaults to None.
         dim (int, optional): Dimension (ignored for flip). Defaults to None.
@@ -100,8 +104,6 @@ def intertwine_permute(
     if strategy.lower() == "flip":
         for b in bijection_list:
             bijections.extend([b, Flip()])
-        return bijections[:-1]
-
     elif strategy.lower() == "random":
         permutations = jnp.row_stack(
             [jnp.arange(dim) for _ in range(len(bijection_list))]
@@ -111,7 +113,7 @@ def intertwine_permute(
 
         for bijection, permutation in zip(bijection_list, permutations):
             bijections.extend([bijection, Permute(permutation)])
-        return bijections[:-1]
-
     else:
         ValueError("permute strategy should be 'flip' or 'random'")
+
+    return bijections[:-1]

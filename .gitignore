@@ -37,6 +37,8 @@ nosetests.xml
 
 # Personal
 .ipynb_checkpoints
+.mypy*
+.vscode/
 
 timing_tests.ipynb
 _temp*

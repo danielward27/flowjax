@@ -2,15 +2,20 @@ from typing import Callable, Optional
 import jax.numpy as jnp
 from flowjax.bijections.abc import Bijection
 from jax import random
+import jax.nn as jnn
 import equinox as eqx
-import jax
+from jax.random import KeyArray
 from flowjax.bijections.coupling import Coupling
 from flowjax.bijections.rational_quadratic_spline import RationalQuadraticSpline
 from flowjax.bijections.affine import Affine
 from flowjax.bijections.utils import Chain
 from flowjax.bijections.bnaf import BlockAutoregressiveNetwork
 from flowjax.bijections.utils import intertwine_permute
+from flowjax.bijections.masked_autoregressive import MaskedAutoregressive
 from flowjax.distributions import Distribution
+from flowjax.utils import Array
+
+# TODO There is some code duplication in definition of coupling (and potentially MAF) flows that should be improved.
 
 
 class Flow(eqx.Module, Distribution):
@@ -46,14 +51,14 @@ class Flow(eqx.Module, Distribution):
             self.bijection.cond_dim, self.base_dist.cond_dim
         )  # TODO bit odd, but either could be conditional or unconditional...
 
-    def _log_prob(self, x: jnp.ndarray, condition: Optional[jnp.ndarray] = None):
+    def _log_prob(self, x: Array, condition: Optional[Array] = None):
         "Evaluate the log probability of the target distribution."
         z, log_abs_det = self.bijection.transform_and_log_abs_det_jacobian(x, condition)
         p_z = self.base_dist._log_prob(z, condition)
         return p_z + log_abs_det
 
     def _sample(
-        self, key: random.PRNGKey, condition: Optional[jnp.ndarray] = None,
+        self, key: KeyArray, condition: Optional[Array] = None,
     ):
         """Sample from the (conditional or unconditional) flow. For repeated sampling using
         a particular instance of the conditioning variable, use a vector condition and n to
@@ -62,11 +67,11 @@ class Flow(eqx.Module, Distribution):
 
         Args:
             key (random.PRNGKey): Random key.
-            condition (jnp.ndarray, optional): Conditioning variables. Defaults to None.
+            condition (Array, optional): Conditioning variables. Defaults to None.
             n (Optional[int], optional): Number of samples. Defaults to None.
 
         Returns:
-            jnp.ndarray: Samples from the target distribution.
+            Array: Samples from the target distribution.
         """  # TODO update these docs
         z = self.base_dist._sample(key, condition)
         x = self.bijection.inverse(z, condition)
@@ -76,7 +81,7 @@ class Flow(eqx.Module, Distribution):
 class NeuralSplineFlow(Flow):
     def __init__(
         self,
-        key: random.PRNGKey,
+        key: KeyArray,
         base_dist: Distribution,
         cond_dim: int = 0,
         K: int = 10,
@@ -131,7 +136,7 @@ class NeuralSplineFlow(Flow):
 class RealNVPFlow(Flow):
     def __init__(
         self,
-        key: random.PRNGKey,
+        key: KeyArray,
         base_dist: Distribution,
         cond_dim: int = 0,
         num_layers: int = 5,
@@ -182,7 +187,7 @@ class RealNVPFlow(Flow):
 class BlockNeuralAutoregressiveFlow(Flow):
     def __init__(
         self,
-        key: random.PRNGKey,
+        key: KeyArray,
         base_dist: Distribution,
         cond_dim: int = 0,
         nn_layers: int = 3,
@@ -217,6 +222,53 @@ class BlockNeuralAutoregressiveFlow(Flow):
                 cond_dim=cond_dim,
                 n_layers=nn_layers,
                 block_dim=block_dim,
+            )
+            for key in layer_keys
+        ]
+
+        bijections = intertwine_permute(
+            bijections, permute_strategy, permute_key, base_dist.dim
+        )  # TODO this could probably be neater?
+        bijection = Chain(bijections)
+        super().__init__(base_dist, bijection)
+
+
+class AffineMaskedAutoregressiveFlow(Flow):
+    def __init__(
+        self,
+        key: KeyArray,
+        base_dist: Distribution,
+        nn_depth: int = 2,
+        nn_width: int = 60,
+        nn_activation: Callable = jnn.relu,
+        flow_layers: int = 5,
+        permute_strategy: Optional[str] = None,
+    ):
+        """It is reccomended if feasible that the hidden dimension is at least
+        the distribution dimension, to ensure all ranks can be represented.
+
+        Args:
+            key (KeyArray): Random seed.
+            base_dist (Distribution): Base distribution
+            nn_depth (int, optional): Depth of autoregressive neural network. Defaults to 2.
+            nn_width (int, optional): _description_. Defaults to 60.
+            nn_activation (Callable, optional): _description_. Defaults to jnn.relu.
+            flow_layers (int, optional): _description_. Defaults to 5.
+            permute_strategy (Optional[str], optional): "flip" or "random". Defaults to None.
+        """
+        # TODO Support conditional MAFs, and implement the inverse
+
+        if permute_strategy is None:
+            permute_strategy = "flip" if base_dist.dim <= 2 else "random"
+
+        if nn_width < (base_dist.dim - 1):
+            print("")
+
+        permute_key, *layer_keys = random.split(key, flow_layers + 1)
+
+        bijections = [
+            MaskedAutoregressive(
+                key, Affine(), base_dist.dim, nn_width, nn_depth, nn_activation
             )
             for key in layer_keys
         ]
