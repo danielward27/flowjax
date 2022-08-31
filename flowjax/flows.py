@@ -15,6 +15,8 @@ from flowjax.bijections.masked_autoregressive import MaskedAutoregressive
 from flowjax.distributions import Distribution
 from flowjax.utils import Array
 
+# TODO There is some code duplication in definition of coupling (and potentially MAF) flows that should be improved.
+
 
 class Flow(eqx.Module, Distribution):
     bijection: Bijection
