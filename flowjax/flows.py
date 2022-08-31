@@ -226,7 +226,7 @@ class BlockNeuralAutoregressiveFlow(Flow):
 
         bijections = intertwine_permute(
             bijections, permute_strategy, permute_key, base_dist.dim
-        )
+        )  # TODO this could probably be neater?
         bijection = Chain(bijections)
         super().__init__(base_dist, bijection)
 
@@ -252,9 +252,9 @@ class AffineMaskedAutoregressiveFlow(Flow):
             nn_width (int, optional): _description_. Defaults to 60.
             nn_activation (Callable, optional): _description_. Defaults to jnn.relu.
             flow_layers (int, optional): _description_. Defaults to 5.
-            permute_strategy (Optional[str], optional): _description_. Defaults to None.
+            permute_strategy (Optional[str], optional): "flip" or "random". Defaults to None.
         """
-        # TODO document
+        # TODO Support conditional MAFs, and implement the inverse
 
         if permute_strategy is None:
             permute_strategy = "flip" if base_dist.dim <= 2 else "random"
