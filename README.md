@@ -1,7 +1,7 @@
 ## flowjax
 -------
 
-Normalising flow implementations in jax. Training a flow can be done in a few lines of code
+Normalising flow implementations in JAX. Training a flow can be done in a few lines of code
 
 ```
 from flowjax.flows import BlockNeuralAutoregressiveFlow
@@ -34,6 +34,16 @@ For more detailed examples, see [examples](https://github.com/danielward27/flowj
 ```
 pip install flowjax
 ```
+
+## Warning
+This package is new so may have substantial breaking changes between major releases.
+
+## TODO
+A few limitations / things that still need to be implemented:
+
+- Support embedding networks (for dimensionality reduction of conditioning variables).
+- Batch normalisation - can we use `equinox.experimental.BatchNorm`?
+- Add documentation.
 
 ## Authors
 `flowjax` was written by `Daniel Ward <danielward27@outlook.com>`.
