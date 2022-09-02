@@ -1,4 +1,4 @@
-from flowjax.bijections.affine import Affine
+from flowjax.bijections.parameterised import Affine
 import jax.numpy as jnp
 import pytest
 

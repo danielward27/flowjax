@@ -2,8 +2,7 @@ from flowjax.flows import (
     CouplingFlow,
     BlockNeuralAutoregressiveFlow,
 )
-from flowjax.bijections.affine import Affine
-from flowjax.bijections.rational_quadratic_spline import RationalQuadraticSpline
+from flowjax.bijections.parameterised import Affine, RationalQuadraticSpline
 from flowjax.distributions import Normal
 import jax.numpy as jnp
 from jax import random

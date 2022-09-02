@@ -1,6 +1,6 @@
 import jax.numpy as jnp
 from jax import random
-from flowjax.bijections.rational_quadratic_spline import RationalQuadraticSpline
+from flowjax.bijections.parameterised import RationalQuadraticSpline
 import pytest
 
 

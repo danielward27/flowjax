@@ -1,7 +1,7 @@
 import pytest
 from jax import random
 from flowjax.bijections.coupling import Coupling
-from flowjax.bijections.affine import Affine
+from flowjax.bijections.parameterised import Affine
 
 
 def test_Coupling():
