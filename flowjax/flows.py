@@ -42,9 +42,7 @@ class Flow(eqx.Module, Distribution):
         self.base_dist = base_dist
         self.bijection = bijection
         self.dim = self.base_dist.dim
-        self.cond_dim = max(
-            self.bijection.cond_dim, self.base_dist.cond_dim
-        )  # TODO bit odd, but either could be conditional or unconditional...
+        self.cond_dim = max(self.bijection.cond_dim, self.base_dist.cond_dim)
 
     def _log_prob(self, x: Array, condition: Optional[Array] = None):
         "Evaluate the log probability of the target distribution."
