@@ -6,7 +6,6 @@ from jax.random import KeyArray
 from flowjax.utils import Array
 
 
-
 class Coupling(Bijection):
     d: int
     D: int
@@ -27,7 +26,7 @@ class Coupling(Bijection):
         """Coupling layer implementation.
 
         Args:
-            key (random.PRNGKey): Key
+            key KeyArray: Key
             bijection (ParameterisedBijection): Bijection to be parameterised by the conditioner neural netork.
             d (int): Number of untransformed conditioning variables.
             D (int): Total dimension.

@@ -25,7 +25,7 @@ def train_flow(
     """Train flow with Adam optimizer.
 
     Args:
-        key (random.PRNGKey): Jax key.
+        key KeyArray: Jax key.
         flow (Flow): Flow to train.
         x (Array): Samples from the target distribution (each row being a sample).
         condition (Optional[Array], optional): Conditioning variables corresponding to x if learning a conditional distribution. Defaults to None.
