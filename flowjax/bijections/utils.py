@@ -130,5 +130,5 @@ def intertwine_permute(
         elif permute_strategy == "random":
             bijections = intertwine_random_permutation(key, bijections, dim)
         else:
-            ValueError("Permute strategy should be 'flip' or 'random' if provided.")
+            raise ValueError("Permute strategy should be 'flip' or 'random' if provided.")
     return bijections

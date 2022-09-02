@@ -192,6 +192,6 @@ class BlockAutoregressiveNetwork(Bijection):
         return y, logdet.sum()
 
     def inverse(*args, **kwargs):
-        return NotImplementedError(
+        raise NotImplementedError(
             "This transform would require numerical methods for inversion."
         )
