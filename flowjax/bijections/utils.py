@@ -85,35 +85,50 @@ class Flip(Bijection):
         return jnp.flip(y)
 
 
-def intertwine_permute(
-    bijection_list: List,
-    strategy: str,
-    key: Optional[KeyArray] = None,
-    dim: Optional[int] = None,
+def intertwine_flip(bijections: List[Bijection]) -> List[Bijection]:
+    """Given a list of bijections, add 'flips' between layers. i.e.
+    with bijections [a,b,c], returns [a, flip, b, flip, c]."""
+    new_bijections = []
+    for b in bijections[:-1]:
+        new_bijections.extend([b, Flip()])
+    new_bijections.append(bijections[-1])
+    return bijections
+
+
+def intertwine_random_permutation(
+    key: KeyArray, bijections: List[Bijection], dim: int
 ) -> List[Bijection]:
     """Given a list of bijections, add permutations between layers. i.e.
     with bijections [a,b,c], returns [a, perm1, b, perm2, c].
 
     Args:
+        key (KeyArray, optional): Random key (ignored for flip). Defaults to None.
         bijection_list (List[Bijection]): List of bijections.
-        strategy (str): Either "flip" or "random".
-        key (random.PRNGKey, optional): Random key (ignored for flip). Defaults to None.
         dim (int, optional): Dimension (ignored for flip). Defaults to None.
     """
-    bijections = []
-    if strategy.lower() == "flip":
-        for b in bijection_list:
-            bijections.extend([b, Flip()])
-    elif strategy.lower() == "random":
-        permutations = jnp.row_stack(
-            [jnp.arange(dim) for _ in range(len(bijection_list))]
-        )
-        permutations = random.permutation(key, permutations, 1, True)
-        bijections = []
+    permutations = jnp.row_stack([jnp.arange(dim) for _ in range(len(bijections) - 1)])
+    permutations = random.permutation(key, permutations, 1, True)
 
-        for bijection, permutation in zip(bijection_list, permutations):
-            bijections.extend([bijection, Permute(permutation)])
-    else:
-        ValueError("permute strategy should be 'flip' or 'random'")
+    new_bijections = []
+    for bijection, permutation in zip(bijections[:-1], permutations):
+        new_bijections.extend([bijection, Permute(permutation)])
+    new_bijections.append(bijections[-1])
+    return new_bijections
 
-    return bijections[:-1]
+
+def intertwine_permute(
+    key: KeyArray,
+    bijections: List[Bijection],
+    dim: int,
+    permute_strategy: Optional[str] = None,
+):
+    if dim > 1:
+        if permute_strategy is None:
+            permute_strategy = "flip" if dim == 2 else "random"
+        if permute_strategy == "flip":
+            bijections = intertwine_flip(bijections)
+        elif permute_strategy == "random":
+            bijections = intertwine_random_permutation(key, bijections, dim)
+        else:
+            ValueError("Permute strategy should be 'flip' or 'random' if provided.")
+    return bijections

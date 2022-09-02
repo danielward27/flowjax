@@ -1,9 +1,15 @@
-from flowjax.flows import Flow, RealNVPFlow, NeuralSplineFlow, BlockNeuralAutoregressiveFlow
+from flowjax.flows import (
+    Flow,
+    AffineCouplingFlow,
+    SplineCouplingFlow,
+    BlockNeuralAutoregressiveFlow,
+)
 from flowjax.bijections.utils import Permute
 from flowjax.distributions import Normal
 import jax.numpy as jnp
 from jax import random
 import pytest
+
 
 def test_unconditional_Flow():
     key = random.PRNGKey(0)
@@ -23,12 +29,12 @@ def test_unconditional_Flow():
 
     # Test wrong dimensions
     with pytest.raises(ValueError):
-        flow.log_prob(jnp.ones((5,5)))
+        flow.log_prob(jnp.ones((5, 5)))
 
 
-def test_RealNVPFlow():
+def test_AffineCouplingFlow():
     key = random.PRNGKey(1)
-    flow = RealNVPFlow(key, Normal(3), num_layers=2)
+    flow = AffineCouplingFlow(key, Normal(3), num_layers=2)
     x = flow.sample(key, n=10)
     assert x.shape == (10, 3)
 
@@ -36,7 +42,8 @@ def test_RealNVPFlow():
     assert lp.shape == (10,)
 
     lp2 = flow.log_prob(x[0])
-    assert lp[0] == pytest.approx(lp2) 
+    assert lp[0] == pytest.approx(lp2)
+
 
 # def test_Flow():
 #     flow=1
@@ -54,12 +61,12 @@ def test_RealNVPFlow():
 #         flow.sample(key, condition=jnp.zeros((0,)))
 
 
-def test_NeuralSplineFlow():
+def test_SplineCouplingFlow():
     # Unconditional
     n = 10
     dim = 3
     key = random.PRNGKey(2)
-    flow = NeuralSplineFlow(key, Normal(dim), num_layers=2)
+    flow = SplineCouplingFlow(key, Normal(dim), num_layers=2)
     x = flow.sample(key, n=n)
     assert x.shape == (n, dim)
 
@@ -68,7 +75,7 @@ def test_NeuralSplineFlow():
 
     # Conditional
     cond_dim = 2
-    flow = NeuralSplineFlow(key, Normal(dim), cond_dim=cond_dim, num_layers=2)
+    flow = SplineCouplingFlow(key, Normal(dim), cond_dim=cond_dim, num_layers=2)
     cond = random.uniform(key, (n, cond_dim))
     x = flow.sample(key, condition=cond)
     lp = flow.log_prob(x, cond)
@@ -92,7 +99,9 @@ def test_BlockNeuralAutoregressiveFlow():
     lps = flow.log_prob(x)
     assert lps.shape == (n,)
 
-    flow = BlockNeuralAutoregressiveFlow(key, Normal(dim), cond_dim=cond_dim, flow_layers=2)
+    flow = BlockNeuralAutoregressiveFlow(
+        key, Normal(dim), cond_dim=cond_dim, flow_layers=2
+    )
     x = random.uniform(key, (n, dim))
     cond = random.normal(key, (n, cond_dim))
     lps = flow.log_prob(x, cond)

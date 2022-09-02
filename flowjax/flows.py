@@ -1,22 +1,17 @@
 from typing import Callable, Optional
 import jax.numpy as jnp
-from flowjax.bijections.abc import Bijection
+from flowjax.bijections.abc import Bijection, ParameterisedBijection
 from jax import random
 import jax.nn as jnn
 import equinox as eqx
 from jax.random import KeyArray
 from flowjax.bijections.coupling import Coupling
-from flowjax.bijections.rational_quadratic_spline import RationalQuadraticSpline
-from flowjax.bijections.affine import Affine
-from flowjax.bijections.utils import Chain
+from flowjax.bijections.utils import Chain, intertwine_permute
 from flowjax.bijections.bnaf import BlockAutoregressiveNetwork
-from flowjax.bijections.utils import intertwine_permute
 from flowjax.bijections.masked_autoregressive import MaskedAutoregressive
 from flowjax.distributions import Distribution
 from flowjax.utils import Array
-
-# TODO There is some code duplication in definition of coupling (and potentially MAF) flows that should be improved.
-
+from typing import List
 
 class Flow(eqx.Module, Distribution):
     bijection: Bijection
@@ -27,7 +22,7 @@ class Flow(eqx.Module, Distribution):
     def __init__(
         self,
         base_dist: Distribution,
-        bijection: Bijection,  # TODO can the bijection can specify the cond dim?
+        bijection: Bijection,  # TODO can/should the bijection can specify the cond dim?
     ):
         """Form a distribution like object using a base distribution and a
         bijection. Operations are generally assumed to be batched along
@@ -66,7 +61,7 @@ class Flow(eqx.Module, Distribution):
         provide a matrix of conditioning variables (n is inferred from axis 0).
 
         Args:
-            key (random.PRNGKey): Random key.
+            key KeyArray: Random key (jax.random.PRNGKey).
             condition (Array, optional): Conditioning variables. Defaults to None.
             n (Optional[int], optional): Number of samples. Defaults to None.
 
@@ -78,110 +73,55 @@ class Flow(eqx.Module, Distribution):
         return x
 
 
-class NeuralSplineFlow(Flow):
+class CouplingFlow(Flow):
     def __init__(
         self,
         key: KeyArray,
         base_dist: Distribution,
-        cond_dim: int = 0,
-        K: int = 10,
-        B: int = 5,
-        num_layers: int = 5,
-        nn_width: int = 40,
-        nn_depth: int = 2,
-        permute_strategy: Optional[str] = None,
-    ):
-        """Convenience constructor for Neural spline flow (Durkan et al. 2019;
-        https://arxiv.org/abs/1906.04032). Note that the transformation is on
-        the interval [-B, B].
-
-        Args:
-            key (random.PRNGKey): Random key.
-            dim (int): Dimension of the target distribution.
-            cond_dim (int, optional): Dimension of extra conditioning variables. Defaults to 0.
-            K (int, optional): Number of (inner) spline segments. Defaults to 10.
-            B (int, optional): Interval to transform [-B, B]. Defaults to 5.
-            num_layers (int, optional): Number of coupling layers. Defaults to 5.
-            nn_width (int, optional): Conditioner network width. Defaults to 40.
-            nn_depth (int, optional): Conditioner network depth. Defaults to 2.
-            permute_strategy (Optional[str], optional): How to permute between layers. Either "flip" or "random". Defaults to "flip" if dim <=2, otherwise "random".
-            base_log_prob (Optional[Callable], optional): Log probability in base distribution. Defaults to standard normal.
-            base_sample (Optional[Callable], optional): Sample function in base distribution. Defaults to standard normal.
-        """  # TODO update docs
-        d = base_dist.dim // 2
-        if permute_strategy is None:
-            permute_strategy = "flip" if base_dist.dim <= 2 else "random"
-
-        permute_key, *layer_keys = random.split(key, num_layers + 1)
-        layers = [
-            Coupling(
-                key=key,
-                bijection=RationalQuadraticSpline(K=K, B=B),
-                d=d,
-                D=base_dist.dim,
-                nn_width=nn_width,
-                nn_depth=nn_depth,
-                cond_dim=cond_dim,
-            )
-            for key in layer_keys
-        ]
-
-        layers = intertwine_permute(
-            layers, permute_strategy, permute_key, base_dist.dim
-        )
-        bijection = Chain(layers)
-        super().__init__(base_dist, bijection)
-
-
-class RealNVPFlow(Flow):
-    def __init__(
-        self,
-        key: KeyArray,
-        base_dist: Distribution,
+        bijection: ParameterisedBijection,
         cond_dim: int = 0,
         num_layers: int = 5,
         nn_width: int = 40,
         nn_depth: int = 2,
         permute_strategy: Optional[str] = None,
     ):
-        """Convenience constructor for a RealNVP style flow (Dinh et al, 2017;
-        https://arxiv.org/abs/1605.08803). Note this implementation differs slightly
-        from the original, e.g. it does not use batch normaliziation.
+        """Creates a flow with multiple Coupling Layers, with permutations inbetween.
+        A RealNVP-style flow (Dinh et al, 2017; https://arxiv.org/abs/1605.08803) can
+        be created by passing an `Affine` bijection instance. A neural spline flow
+        (Durkan et al. 2019; https://arxiv.org/abs/1906.04032) can be created by
+        passing a `RationalQuadraticSpline` instance. Note that the same bijection
+        instance is used throughout, so if they contain trainable attributes, these
+        will be shared (this is not an issue for bijections parameterised solely by
+        neural networks).
 
         Args:
-            key (random.PRNGKey): Random key.
-            dim (int): Dimension of the target distribution.
-            cond_dim (int, optional): Dimension of extra conditioning variables. Defaults to 0.
-            num_layers (int, optional): Number of coupling layers. Defaults to 5.
-            nn_width (int, optional): Conditioner network width. Defaults to 40.
-            nn_depth (int, optional): Conditioner network depth. Defaults to 2.
-            permute_strategy (Optional[str], optional): How to permute between layers. Either "flip" or "random". Defaults to "flip" if dim <=2, otherwise "random".
-            base_log_prob (Optional[Callable], optional): Log probability in base distribution. Defaults to standard normal.
-            base_sample (Optional[Callable], optional): Sample function in base distribution. Defaults to standard normal.
-        """  # TODO update docs
-        d = base_dist.dim // 2
-        if permute_strategy is None:
-            permute_strategy = "flip" if base_dist.dim <= 2 else "random"
+            key (KeyArray): Jax PRNGKey.
+            base_dist (Distribution): Base distribution.
+            bijection (ParameterisedBijection): Bijection parameterised by neural network.
+            cond_dim (int, optional): Dimension of extra variables to condition on. Defaults to 0.
+            num_layers (int, optional): Flow coupling layers. Defaults to 5.
+            nn_width (int, optional): Conditioner hidden layer size. Defaults to 40.
+            nn_depth (int, optional): Conditioner depth. Defaults to 2.
+            permute_strategy (Optional[str], optional): "flip" or "random". Defaults to "flip" for 2 dimensional distributions, otherwise "random".
+        """
 
         permute_key, *layer_keys = random.split(key, num_layers + 1)
         layers = [
             Coupling(
                 key=key,
-                bijection=Affine(),
-                d=d,
+                bijection=bijection,
+                d=base_dist.dim // 2,
                 D=base_dist.dim,
                 nn_width=nn_width,
                 nn_depth=nn_depth,
                 cond_dim=cond_dim,
             )
             for key in layer_keys
-        ]
-
+        ]  # type: List[Bijection]
         layers = intertwine_permute(
-            layers, permute_strategy, permute_key, base_dist.dim
+            permute_key, layers, base_dist.dim, permute_strategy,
         )
-        bijection = Chain(layers)
-        super().__init__(base_dist, bijection)
+        super().__init__(base_dist, Chain(layers))
 
 
 class BlockNeuralAutoregressiveFlow(Flow):
@@ -199,7 +139,7 @@ class BlockNeuralAutoregressiveFlow(Flow):
         (https://arxiv.org/abs/1904.04676).
 
         Args:
-            key (random.PRNGKey): Random key.
+            key KeyArray: Random key.
             dim (int): Dimension of the target distribution.
             nn_layers (int, optional): Number of layers within autoregressive neural networks. Defaults to 3.
             block_dim (int, optional): Block size in lower triangular blocks of autoregressive neural network. Defaults to 8.
@@ -209,9 +149,6 @@ class BlockNeuralAutoregressiveFlow(Flow):
             base_sample (Optional[Callable], optional): Base distribution sample function. Defaults to standard normal.
         """
         assert nn_layers >= 2
-
-        if permute_strategy is None:
-            permute_strategy = "flip" if base_dist.dim <= 2 else "random"
 
         permute_key, *layer_keys = random.split(key, flow_layers + 1)
 
@@ -224,20 +161,21 @@ class BlockNeuralAutoregressiveFlow(Flow):
                 block_dim=block_dim,
             )
             for key in layer_keys
-        ]
+        ]  # type: List[Bijection]
 
         bijections = intertwine_permute(
-            bijections, permute_strategy, permute_key, base_dist.dim
-        )  # TODO this could probably be neater?
+            permute_key, bijections, base_dist.dim, permute_strategy,
+        )
         bijection = Chain(bijections)
         super().__init__(base_dist, bijection)
 
 
-class AffineMaskedAutoregressiveFlow(Flow):
+class MaskedAutoregressiveFlow(Flow):
     def __init__(
         self,
         key: KeyArray,
         base_dist: Distribution,
+        bijection: ParameterisedBijection,
         nn_depth: int = 2,
         nn_width: int = 60,
         nn_activation: Callable = jnn.relu,
@@ -258,23 +196,17 @@ class AffineMaskedAutoregressiveFlow(Flow):
         """
         # TODO Support conditional MAFs, and implement the inverse
 
-        if permute_strategy is None:
-            permute_strategy = "flip" if base_dist.dim <= 2 else "random"
-
-        if nn_width < (base_dist.dim - 1):
-            print("")
-
         permute_key, *layer_keys = random.split(key, flow_layers + 1)
 
         bijections = [
             MaskedAutoregressive(
-                key, Affine(), base_dist.dim, nn_width, nn_depth, nn_activation
+                key, bijection, base_dist.dim, nn_width, nn_depth, nn_activation
             )
             for key in layer_keys
         ]
 
         bijections = intertwine_permute(
-            bijections, permute_strategy, permute_key, base_dist.dim
+            permute_key, bijections, base_dist.dim, permute_strategy,
         )
         bijection = Chain(bijections)
         super().__init__(base_dist, bijection)
