@@ -1,19 +1,24 @@
+"""Contains 'parameterised bijections', i.e. bijections that have methods
+that facilitate parameterisation with neural networks.
+"""
+
 import jax
 import jax.numpy as jnp
 from flowjax.bijections.abc import ParameterisedBijection
 from functools import partial
 
+
 class Affine(ParameterisedBijection):
     "Affine transformation compatible with neural network parameterisation."
 
-    def transform(self, x, loc, log_scale):
-        return x * jnp.exp(log_scale) + loc
+    def transform(self, x, loc, scale):
+        return x * scale + loc
 
-    def transform_and_log_abs_det_jacobian(self, x, loc, log_scale):
-        return x * jnp.exp(log_scale) + loc, jnp.sum(log_scale)
+    def transform_and_log_abs_det_jacobian(self, x, loc, scale):
+        return x * scale + loc, jnp.sum(jnp.log(scale))
 
-    def inverse(self, y, loc, log_scale):
-        return (y - loc) / jnp.exp(log_scale)
+    def inverse(self, y, loc, scale):
+        return (y - loc) / scale
 
     def num_params(self, dim: int):
         return dim * 2
@@ -23,7 +28,7 @@ class Affine(ParameterisedBijection):
 
     def get_args(self, params):
         loc, log_scale = params.split(2)
-        return loc, log_scale
+        return loc, jnp.exp(log_scale)
 
 
 class RationalQuadraticSpline(ParameterisedBijection):
