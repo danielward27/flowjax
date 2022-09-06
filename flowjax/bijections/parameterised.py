@@ -1,5 +1,5 @@
 """Contains 'parameterised bijections', i.e. bijections that have methods
-that facilitate parameterisation with neural networks.
+that facilitate parameterisation with neural networks. 
 """
 
 import jax
@@ -62,7 +62,7 @@ class RationalQuadraticSpline(ParameterisedBijection):
     def pos_pad(self):
         return jax.lax.stop_gradient(self._pos_pad)
 
-    @partial(jax.vmap, in_axes=[None, 0, 0, 0, 0])
+    @partial(jax.vmap, in_axes=[None, 0, 0, 0, 0]) # type: ignore
     def transform(self, x, x_pos, y_pos, derivatives):
         k = self._get_bin(x, x_pos)
         yk, yk1, xk, xk1 = y_pos[k], y_pos[k + 1], x_pos[k], x_pos[k + 1]
@@ -71,7 +71,7 @@ class RationalQuadraticSpline(ParameterisedBijection):
         xi = (x - xk) / (xk1 - xk)
         return self._rational_quadratic(sk, xi, dk, dk1, yk, yk1)
 
-    @partial(jax.vmap, in_axes=[None, 0, 0, 0, 0])
+    @partial(jax.vmap, in_axes=[None, 0, 0, 0, 0]) # type: ignore
     def inverse(self, y, x_pos, y_pos, derivatives):
         k = self._get_bin(y, y_pos)
         xk, xk1, yk = x_pos[k], x_pos[k + 1], y_pos[k]
