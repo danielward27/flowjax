@@ -46,20 +46,20 @@ def _identity(x):
 class AutoregressiveMLP(Module):
     in_size: int
     out_size: int
+    width_size: int
     in_ranks: Array
     out_ranks: Array
     hidden_ranks: Array
     layers: List[MaskedLinear]
-    width_size: int
     depth: int
     activation: Callable
     final_activation: Callable
 
     def __init__(
         self,
-        in_size: int,
+        in_ranks: Array,
+        hidden_ranks: Array,
         out_ranks: Array,
-        width_size: int,
         depth: int,
         activation: Callable = jnn.relu,
         final_activation: Callable = _identity,
@@ -79,9 +79,6 @@ class AutoregressiveMLP(Module):
             activation (Callable, optional): Activation function. Defaults to jnn.relu.
             final_activation (Callable, optional): Final activation function. Defaults to _identity.
         """
-        in_ranks = jnp.arange(in_size)
-        hidden_ranks = tile_until_length(jnp.arange(0, in_size), width_size)
-
         masks = []
         if depth == 0:
             masks.append(rank_based_mask(in_ranks, out_ranks, eq=False))
@@ -95,12 +92,12 @@ class AutoregressiveMLP(Module):
         layers = [MaskedLinear(mask, key=key) for mask, key in zip(masks, keys)]
 
         self.layers = layers
-        self.in_size = in_size
+        self.in_size = len(in_ranks)
         self.out_size = len(out_ranks)
+        self.width_size = len(hidden_ranks)
         self.in_ranks = in_ranks
         self.hidden_ranks = hidden_ranks
         self.out_ranks = out_ranks
-        self.width_size = width_size
         self.depth = depth
         self.activation = activation
         self.final_activation = final_activation
@@ -128,27 +125,38 @@ class MaskedAutoregressive(Bijection):
         key: KeyArray,
         bijection: ParameterisedBijection,
         dim: int,
+        cond_dim: int,
         nn_width: int,
         nn_depth: int,
         nn_activation: Callable = jnn.relu,
     ) -> None:
 
-        # TODO Support conditioning variables
-        self.cond_dim = 0
+        self.cond_dim = cond_dim
 
         out_ranks = bijection.get_ranks(dim)
         self.bijection = bijection
+
+        in_ranks = jnp.concatenate(
+            (jnp.arange(dim), -jnp.ones(cond_dim))
+        )  # conditioning variables rank -1
+        hidden_ranks = tile_until_length(jnp.arange(dim), nn_width)
+
         self.autoregressive_mlp = AutoregressiveMLP(
-            dim, out_ranks, nn_width, nn_depth, nn_activation, key=key
+            in_ranks, hidden_ranks, out_ranks, nn_depth, nn_activation, key=key,
         )
 
     def transform(self, x, condition=None):
-        bijection_params = self.autoregressive_mlp(x)
+        if condition is not None:
+            x = jnp.concatenate((x, condition))
+        x_condition = jnp.concatenate((x, condition))
+        bijection_params = self.autoregressive_mlp(x_condition)
         bijection_args = self.bijection.get_args(bijection_params)
         y = self.bijection.transform(x, *bijection_args)
         return y
 
     def transform_and_log_abs_det_jacobian(self, x, condition=None):
+        if condition is not None:
+            x = jnp.concatenate((x, condition))
         bijection_params = self.autoregressive_mlp(x)
         bijection_args = self.bijection.get_args(bijection_params)
         y, log_abs_det = self.bijection.transform_and_log_abs_det_jacobian(
