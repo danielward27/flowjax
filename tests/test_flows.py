@@ -12,7 +12,7 @@ from typing import Dict, Any
 coupling_kwargs = {
     "key": random.PRNGKey(0),
     "base_dist": Normal(3),
-    "num_layers": 2,
+    "n_layers": 2,
     "nn_width": 10,
     "nn_depth": 1
     } # type: Dict[str, Any]

@@ -78,7 +78,7 @@ class CouplingFlow(Flow):
         base_dist: Distribution,
         bijection: ParameterisedBijection,
         cond_dim: int = 0,
-        num_layers: int = 5,
+        n_layers: int = 5,
         nn_width: int = 40,
         nn_depth: int = 2,
         permute_strategy: Optional[str] = None,
@@ -97,13 +97,13 @@ class CouplingFlow(Flow):
             base_dist (Distribution): Base distribution.
             bijection (ParameterisedBijection): Bijection parameterised by neural network.
             cond_dim (int, optional): Dimension of extra variables to condition on. Defaults to 0.
-            num_layers (int, optional): Flow coupling layers. Defaults to 5.
+            n_layers (int, optional): Flow coupling layers. Defaults to 5.
             nn_width (int, optional): Conditioner hidden layer size. Defaults to 40.
             nn_depth (int, optional): Conditioner depth. Defaults to 2.
             permute_strategy (Optional[str], optional): "flip" or "random". Defaults to "flip" for 2 dimensional distributions, otherwise "random".
         """
 
-        permute_key, *layer_keys = random.split(key, num_layers + 1)
+        permute_key, *layer_keys = random.split(key, n_layers + 1)
         layers = [
             Coupling(
                 key=key,
