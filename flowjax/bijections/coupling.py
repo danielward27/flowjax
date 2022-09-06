@@ -49,21 +49,20 @@ class Coupling(Bijection):
         )
 
     def transform(self, x: Array, condition=None):
-        condition = jnp.array([]) if condition is None else condition
         x_cond, x_trans = x[: self.d], x[self.d :]
-        cond = jnp.concatenate((x_cond, condition))
-        bijection_params = self.conditioner(cond)
+        if condition is not None:
+            x_cond = jnp.concatenate((x_cond, condition))
+        bijection_params = self.conditioner(x_cond)
         bijection_args = self.bijection.get_args(bijection_params)
         y_trans = self.bijection.transform(x_trans, *bijection_args)
         y = jnp.concatenate((x_cond, y_trans))
         return y
 
     def transform_and_log_abs_det_jacobian(self, x: Array, condition=None):
-        condition = jnp.array([]) if condition is None else condition
         x_cond, x_trans = x[: self.d], x[self.d :]
-        cond = jnp.concatenate((x_cond, condition))
-
-        bijection_params = self.conditioner(cond)
+        if condition is not None:
+            x_cond = jnp.concatenate((x_cond, condition))
+        bijection_params = self.conditioner(x_cond)
         bijection_args = self.bijection.get_args(bijection_params)
         y_trans, log_abs_det = self.bijection.transform_and_log_abs_det_jacobian(
             x_trans, *bijection_args
@@ -72,10 +71,10 @@ class Coupling(Bijection):
         return y, log_abs_det
 
     def inverse(self, y: Array, condition=None):
-        condition = jnp.array([]) if condition is None else condition
         x_cond, y_trans = y[: self.d], y[self.d :]
-        cond = jnp.concatenate((x_cond, condition))
-        bijection_params = self.conditioner(cond)
+        if condition is not None:
+            x_cond = jnp.concatenate((x_cond, condition))
+        bijection_params = self.conditioner(x_cond)
         bijection_args = self.bijection.get_args(bijection_params)
         x_trans = self.bijection.inverse(y_trans, *bijection_args)
         x = jnp.concatenate((x_cond, x_trans))
