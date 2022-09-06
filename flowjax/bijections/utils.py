@@ -92,7 +92,7 @@ def intertwine_flip(bijections: List[Bijection]) -> List[Bijection]:
     for b in bijections[:-1]:
         new_bijections.extend([b, Flip()])
     new_bijections.append(bijections[-1])
-    return bijections
+    return new_bijections
 
 
 def intertwine_random_permutation(
