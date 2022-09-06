@@ -2,12 +2,10 @@ import pytest
 import jax.numpy as jnp
 import jax
 from jax import random
-import equinox as eqx
 from flowjax.bijections.masked_autoregressive import (
     AutoregressiveMLP,
     MaskedLinear,
     rank_based_mask,
-    # rank_based_mask_expand,
 )
 
 

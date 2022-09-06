@@ -54,7 +54,7 @@ class BlockAutoregressiveLinear(eqx.Module):
         conditioning variable) to the left of the block diagonal weight matrix.
 
         Args:
-            key (random.PRNGKey): Random key
+            key KeyArray: Random key
             n_blocks (int): Number of diagonal blocks (dimension of original input).
             block_shape (tuple): The shape of the (unconstrained) blocks.
             cond_dim (int): Number of additional conditioning variables. Defaults to 0.
@@ -192,6 +192,6 @@ class BlockAutoregressiveNetwork(Bijection):
         return y, logdet.sum()
 
     def inverse(*args, **kwargs):
-        return NotImplementedError(
+        raise NotImplementedError(
             "This transform would require numerical methods for inversion."
         )

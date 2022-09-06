@@ -1,99 +1,102 @@
-from flowjax.flows import Flow, RealNVPFlow, NeuralSplineFlow, BlockNeuralAutoregressiveFlow
-from flowjax.bijections.utils import Permute
+from flowjax.flows import (
+    CouplingFlow,
+    BlockNeuralAutoregressiveFlow,
+)
+from flowjax.bijections.parameterised import Affine, RationalQuadraticSpline
 from flowjax.distributions import Normal
 import jax.numpy as jnp
 from jax import random
 import pytest
+from typing import Dict, Any
 
-def test_unconditional_Flow():
+coupling_kwargs = {
+    "key": random.PRNGKey(0),
+    "base_dist": Normal(3),
+    "num_layers": 2,
+    "nn_width": 10,
+    "nn_depth": 1
+    } # type: Dict[str, Any]
+
+testcases = [
+    # (name, type, kwargs)}
+    ("Affine_Coupling", CouplingFlow, {"bijection": Affine()} | coupling_kwargs),
+    ("RationalQuadraticSpline_Coupling", CouplingFlow, {"bijection": RationalQuadraticSpline(5,3)} | coupling_kwargs),
+    ("BNAF", BlockNeuralAutoregressiveFlow, {"key": random.PRNGKey(0), "base_dist": Normal(3), "flow_layers": 2})
+]
+
+uncond_testcases = {n: t(**kwargs) for n, t, kwargs in testcases}
+
+@pytest.mark.parametrize("flow", uncond_testcases.values(), ids=uncond_testcases.keys())
+def test_unconditional_flow_sample(flow):
     key = random.PRNGKey(0)
-    bijection = Permute(jnp.array([2, 1, 0]))
-    dim = 3
-    flow = Flow(Normal(dim), bijection)
-    x = flow.sample(key, n=1)
-    assert x.shape == (1, dim)
+    n = 5
+    try:
+        assert flow.sample(key, n=n).shape == (n, flow.dim)
+        assert flow.sample(key).shape == (flow.dim,)
+    except NotImplementedError:
+        pass
 
-    x = flow.sample(random.PRNGKey(0), n=2)
-    assert x.shape == (2, dim)
-
-    # Test log prob work for vector and matrices input
-    x1, x2 = x[0], x[None, 0]
-    lp1, lp2 = [flow.log_prob(x).item() for x in (x1, x2)]
-    assert lp1 == pytest.approx(lp2)
-
-    # Test wrong dimensions
-    with pytest.raises(ValueError):
-        flow.log_prob(jnp.ones((5,5)))
-
-
-def test_RealNVPFlow():
-    key = random.PRNGKey(1)
-    flow = RealNVPFlow(key, Normal(3), num_layers=2)
-    x = flow.sample(key, n=10)
-    assert x.shape == (10, 3)
-
+@pytest.mark.parametrize("flow", uncond_testcases.values(), ids=uncond_testcases.keys())
+def test_unconditional_flow_log_prob(flow):
+    n = 5
+    x = random.normal(random.PRNGKey(0), (n, flow.dim))
     lp = flow.log_prob(x)
-    assert lp.shape == (10,)
+    assert lp.shape == (n,)
 
     lp2 = flow.log_prob(x[0])
-    assert lp[0] == pytest.approx(lp2) 
+    assert lp[0] == pytest.approx(lp2)
 
-# def test_Flow():
-#     flow=1
-#     # Note condition is ignored for transformation (but can be used to infer sample size)
-#     x = flow.sample(key, condition=jnp.zeros((0,)), n=5)
-#     assert x.shape == (5, dim)
+    # Test wrong dimensions raises error
+    with pytest.raises(ValueError):
+        flow.log_prob(jnp.ones((n, flow.dim + 1)))
 
-#     x = flow.sample(key, condition=jnp.zeros((5, 0)))
-#     assert x.shape == (5, dim)
+    with pytest.raises(ValueError):
+        flow.log_prob(jnp.ones((flow.dim + 1,)))
 
-#     with pytest.raises(AssertionError):
-#         flow.sample(key, condition=jnp.zeros((5, 0)), n=3)
-
-#     with pytest.raises(AssertionError):
-#         flow.sample(key, condition=jnp.zeros((0,)))
+cond_testcases = {n: t(**kwargs, cond_dim=2) for n, t, kwargs in testcases}
 
 
-def test_NeuralSplineFlow():
-    # Unconditional
-    n = 10
-    dim = 3
-    key = random.PRNGKey(2)
-    flow = NeuralSplineFlow(key, Normal(dim), num_layers=2)
-    x = flow.sample(key, n=n)
-    assert x.shape == (n, dim)
+@pytest.mark.parametrize("flow", cond_testcases.values(), ids=cond_testcases.keys())
+def test_conditional_flow_sample(flow):
+    n = 5
+    key = random.PRNGKey(0)
+    cond_1d = jnp.ones(flow.cond_dim)
+    cond_2d = jnp.ones((n, flow.cond_dim))
 
-    lp = flow.log_prob(x)
-    assert lp.shape == (n,)
+    try:
+        x = flow.sample(key, condition=cond_1d)
+        assert x.shape == (flow.dim,)
 
-    # Conditional
-    cond_dim = 2
-    flow = NeuralSplineFlow(key, Normal(dim), cond_dim=cond_dim, num_layers=2)
-    cond = random.uniform(key, (n, cond_dim))
-    x = flow.sample(key, condition=cond)
-    lp = flow.log_prob(x, cond)
-    assert lp.shape == (n,)
+        x = flow.sample(key, condition=cond_1d, n=n)
+        assert x.shape == (n, flow.dim)
 
-    lp = flow.log_prob(x, jnp.ones(cond_dim))
-    assert lp.shape == (n,)
+        x = flow.sample(key, condition=cond_2d)
+        assert x.shape == (n, flow.dim)
 
-    lp = flow.log_prob(jnp.ones(dim), cond)
-    assert lp.shape == (n,)
-
-    x = flow.sample(key, condition=jnp.ones(2), n=n)
-    assert x.shape == (n, dim)
+        with pytest.raises(ValueError):
+            x = flow.sample(key, condition=cond_2d, n=n)
+        
+    except NotImplementedError:
+        pass
 
 
-def test_BlockNeuralAutoregressiveFlow():
-    key = random.PRNGKey(1)
-    dim, n, cond_dim = 3, 10, 2
-    flow = BlockNeuralAutoregressiveFlow(key, Normal(dim), flow_layers=2)
-    x = random.uniform(key, (n, dim))
-    lps = flow.log_prob(x)
-    assert lps.shape == (n,)
+@pytest.mark.parametrize("flow", cond_testcases.values(), ids=cond_testcases.keys())
+def test_conditional_flow_log_prob(flow):
+    n = 5
 
-    flow = BlockNeuralAutoregressiveFlow(key, Normal(dim), cond_dim=cond_dim, flow_layers=2)
-    x = random.uniform(key, (n, dim))
-    cond = random.normal(key, (n, cond_dim))
-    lps = flow.log_prob(x, cond)
-    assert lps.shape == (n,)
+    x_1d = jnp.ones(flow.dim)
+    x_2d = jnp.ones((n, flow.dim))
+
+    cond_1d = jnp.ones(flow.cond_dim)
+    cond_2d = jnp.ones((n, flow.cond_dim))
+
+    assert flow.log_prob(x_1d, cond_1d).shape == ()
+    assert flow.log_prob(x_1d, cond_2d).shape == (n,)
+    assert flow.log_prob(x_2d, cond_2d).shape == (n,)
+    assert flow.log_prob(x_2d, cond_1d).shape == (n,)
+
+    with pytest.raises(ValueError):
+        flow.log_prob(x_1d, condition=jnp.ones(flow.cond_dim + 1))
+
+    with pytest.raises(ValueError):
+        flow.log_prob(x_1d, condition=jnp.ones((n, flow.cond_dim + 1)))

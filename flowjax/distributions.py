@@ -57,45 +57,55 @@ class Distribution(ABC):
         Returns:
             Array: Jax array of samples.
         """
-        self._argcheck(condition=condition)
+        self._argcheck_condition(condition)
+        condition = jnp.empty((0,)) if condition is None else condition
 
-        if condition is None:
-            condition = jnp.empty((0,))
-
-        if n is None and condition.ndim == 1:  # No need to vmap in this case
-            return self._sample(key, condition)
-        else:
-            if condition.ndim == 2:
-                assert n is None, "n should not be provided when condition.ndim==2."
-                in_axes = (0, 0)  # type: tuple[Any, Any]
-                n = condition.shape[0]
+        if n is None:
+            if condition.ndim == 1:  # No need to vmap in this case
+                return self._sample(key, condition)
             else:
-                assert n is not None, "n should be provided when condition.ndim==1."
-                in_axes = (0, None)
-
-            keys = random.split(key, n)
-            return jax.vmap(self._sample, in_axes)(keys, condition)
+                n = condition.shape[0]
+                in_axes = (0, 0)  # type: tuple[Any, Any]
+        else:
+            if condition.ndim != 1:
+                raise ValueError("condition must be 1d if n is provided.")
+            in_axes = (0, None)
+            
+        keys = random.split(key, n)
+        return jax.vmap(self._sample, in_axes)(keys, condition)
 
     def log_prob(self, x: Array, condition: Optional[Array] = None):
         """Evaluate the log probability. If a matrix/matrices are passed,
         we vmap over the leading axis."""
-        self._argcheck(x, condition)
+        self._argcheck_x(x)
+        self._argcheck_condition(condition)
         condition = jnp.empty((0,)) if condition is None else condition
+
         if x.ndim == 1 and condition.ndim == 1:  # No need to vmap in this case
             return self._log_prob(x, condition)
         else:
             in_axes = [0 if a.ndim == 2 else None for a in (x, condition)]
             return jax.vmap(self._log_prob, in_axes)(x, condition)
+        
+    def _argcheck_x(self, x: Array):
+        if x.ndim not in (1,2):
+            raise ValueError("x.ndim should be 1 or 2")
 
-    def _argcheck(self, x=None, condition=None):
-        if x is not None and x.shape[-1] != self.dim:
-            raise ValueError(f"Expected x.shape[-1]=={self.dim}")
-        if self.conditional:
-            assert condition is not None
+        if x.shape[-1] != self.dim:
+            raise ValueError(f"Expected x.shape[-1]=={self.dim}.")
+
+    def _argcheck_condition(self, condition: Optional[Array] = None):
+        if condition is None:
+            if self.conditional:
+                raise ValueError(f"condition must be provided.")
+        else:
+            if condition.ndim not in (1,2):
+                raise ValueError("condition.ndim should be 1 or 2")
             if condition.shape[-1] != self.cond_dim:
-                raise ValueError(f"Expected condition.shape[-1]=={self.cond_dim}")
-            if condition.ndim > 2:
-                raise ValueError("Expected condition.ndim to be 1 or 2.")
+                raise ValueError(f"Expected condition.shape[-1]=={self.cond_dim}.")
+
+        
+
 
 
 class Normal(Distribution):
