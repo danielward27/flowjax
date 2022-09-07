@@ -1,9 +1,11 @@
+from typing import Callable
 from flowjax.bijections.abc import ParameterisedBijection
 import equinox as eqx
 import jax.numpy as jnp
 from flowjax.bijections.abc import Bijection
 from jax.random import KeyArray
 from flowjax.utils import Array
+import jax.nn as jnn
 
 
 class Coupling(Bijection):
@@ -22,6 +24,7 @@ class Coupling(Bijection):
         cond_dim: int,
         nn_width: int,
         nn_depth: int,
+        nn_activation: Callable = jnn.relu
     ):
         """Coupling layer implementation.
 
@@ -45,6 +48,7 @@ class Coupling(Bijection):
             out_size=output_size,
             width_size=nn_width,
             depth=nn_depth,
+            activation=nn_activation,
             key=key,
         )
 

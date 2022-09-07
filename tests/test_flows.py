@@ -1,7 +1,4 @@
-from flowjax.flows import (
-    CouplingFlow,
-    BlockNeuralAutoregressiveFlow,
-)
+from flowjax.flows import CouplingFlow, BlockNeuralAutoregressiveFlow, MaskedAutoregressiveFlow
 from flowjax.bijections.parameterised import Affine, RationalQuadraticSpline
 from flowjax.distributions import Normal
 import jax.numpy as jnp
@@ -9,19 +6,21 @@ from jax import random
 import pytest
 from typing import Dict, Any
 
-coupling_kwargs = {
+dim = 3
+common_kwargs = {
     "key": random.PRNGKey(0),
-    "base_dist": Normal(3),
-    "n_layers": 2,
+    "base_dist": Normal(dim),
+    "flow_layers": 2,
     "nn_width": 10,
     "nn_depth": 1
     } # type: Dict[str, Any]
 
 testcases = [
     # (name, type, kwargs)}
-    ("Affine_Coupling", CouplingFlow, {"bijection": Affine()} | coupling_kwargs),
-    ("RationalQuadraticSpline_Coupling", CouplingFlow, {"bijection": RationalQuadraticSpline(5,3)} | coupling_kwargs),
-    ("BNAF", BlockNeuralAutoregressiveFlow, {"key": random.PRNGKey(0), "base_dist": Normal(3), "flow_layers": 2})
+    ("Affine_Coupling", CouplingFlow, {"bijection": Affine()} | common_kwargs),
+    ("RationalQuadraticSpline_Coupling", CouplingFlow, {"bijection": RationalQuadraticSpline(5,3)} | common_kwargs),
+    ("BNAF", BlockNeuralAutoregressiveFlow, {"key": random.PRNGKey(0), "base_dist": Normal(dim), "flow_layers": 2}),
+    ("Affine_MaskedAutoregessive", MaskedAutoregressiveFlow, {"bijection": Affine()} | common_kwargs)
 ]
 
 uncond_testcases = {n: t(**kwargs) for n, t, kwargs in testcases}

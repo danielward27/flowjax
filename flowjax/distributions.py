@@ -58,16 +58,17 @@ class Distribution(ABC):
             Array: Jax array of samples.
         """
         self._argcheck_condition(condition)
-        condition = jnp.empty((0,)) if condition is None else condition
 
         if n is None:
-            if condition.ndim == 1:  # No need to vmap in this case
+            if condition is None:
+                return self._sample(key)
+            elif condition.ndim == 1:
                 return self._sample(key, condition)
             else:
                 n = condition.shape[0]
                 in_axes = (0, 0)  # type: tuple[Any, Any]
         else:
-            if condition.ndim != 1:
+            if condition is not None and condition.ndim != 1:
                 raise ValueError("condition must be 1d if n is provided.")
             in_axes = (0, None)
             
@@ -79,14 +80,19 @@ class Distribution(ABC):
         we vmap over the leading axis."""
         self._argcheck_x(x)
         self._argcheck_condition(condition)
-        condition = jnp.empty((0,)) if condition is None else condition
 
-        if x.ndim == 1 and condition.ndim == 1:  # No need to vmap in this case
-            return self._log_prob(x, condition)
+        if condition is None:
+            if x.ndim == 1:
+                return self._log_prob(x)
+            else:
+                return jax.vmap(self._log_prob)(x)
         else:
-            in_axes = [0 if a.ndim == 2 else None for a in (x, condition)]
-            return jax.vmap(self._log_prob, in_axes)(x, condition)
-        
+            if (x.ndim == 1) and (condition.ndim == 1):
+                return self._log_prob(x, condition)
+            else:
+                in_axes = [0 if a.ndim == 2 else None for a in (x, condition)]
+                return jax.vmap(self._log_prob, in_axes)(x, condition)
+
     def _argcheck_x(self, x: Array):
         if x.ndim not in (1,2):
             raise ValueError("x.ndim should be 1 or 2")
@@ -105,8 +111,6 @@ class Distribution(ABC):
                 raise ValueError(f"Expected condition.shape[-1]=={self.cond_dim}.")
 
         
-
-
 
 class Normal(Distribution):
     "Standard normal distribution, condition is ignored."

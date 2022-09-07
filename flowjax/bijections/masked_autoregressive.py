@@ -1,4 +1,4 @@
-from typing import Callable, Optional
+from typing import Callable, Optional, Tuple
 from equinox import Module
 from equinox.nn import Linear
 from jax import random
@@ -9,7 +9,7 @@ import jax.nn as jnn
 from flowjax.bijections.abc import Bijection, ParameterisedBijection
 from typing import List
 from flowjax.utils import Array
-
+import jax
 
 def rank_based_mask(in_ranks, out_ranks, eq=False):
     """Mask with shape `(len(out_ranks), len(in_ranks))`, with 1s where the
@@ -133,31 +133,26 @@ class MaskedAutoregressive(Bijection):
 
         self.cond_dim = cond_dim
 
-        out_ranks = bijection.get_ranks(dim)
-        self.bijection = bijection
-
         in_ranks = jnp.concatenate(
             (jnp.arange(dim), -jnp.ones(cond_dim))
         )  # conditioning variables rank -1
         hidden_ranks = tile_until_length(jnp.arange(dim), nn_width)
-
+        out_ranks = bijection.get_ranks(dim)
+        self.bijection = bijection
         self.autoregressive_mlp = AutoregressiveMLP(
             in_ranks, hidden_ranks, out_ranks, nn_depth, nn_activation, key=key,
         )
 
     def transform(self, x, condition=None):
-        if condition is not None:
-            x = jnp.concatenate((x, condition))
-        x_condition = jnp.concatenate((x, condition))
-        bijection_params = self.autoregressive_mlp(x_condition)
+        nn_input = x if condition is None else jnp.concatenate((x, condition))
+        bijection_params = self.autoregressive_mlp(nn_input)
         bijection_args = self.bijection.get_args(bijection_params)
         y = self.bijection.transform(x, *bijection_args)
         return y
 
     def transform_and_log_abs_det_jacobian(self, x, condition=None):
-        if condition is not None:
-            x = jnp.concatenate((x, condition))
-        bijection_params = self.autoregressive_mlp(x)
+        nn_input = x if condition is None else jnp.concatenate((x, condition))
+        bijection_params = self.autoregressive_mlp(nn_input)
         bijection_args = self.bijection.get_args(bijection_params)
         y, log_abs_det = self.bijection.transform_and_log_abs_det_jacobian(
             x, *bijection_args
@@ -165,4 +160,15 @@ class MaskedAutoregressive(Bijection):
         return y, log_abs_det
 
     def inverse(self, y: Array, condition: Optional[Array] = None):
-        raise NotImplementedError("Not yet implemented")
+        scan_fn = lambda init, _: ((self.inverse_step(init[0], init[1], condition), init[1] + 1), None)
+        (x, _), _ = jax.lax.scan(scan_fn, (y,0), None, length=len(y))
+        return x
+
+    def inverse_step(self, y: Array, rank: int, condition: Optional[Array] = None):
+        "One 'step' in computing the inverse"
+        nn_input = y if condition is None else jnp.concatenate((y, condition))
+        bijection_params = self.autoregressive_mlp(nn_input)
+        bijection_args = self.bijection.get_args(bijection_params)
+        xi = self.bijection.inverse(y, *bijection_args)
+        return y.at[rank].set(xi[rank])
+

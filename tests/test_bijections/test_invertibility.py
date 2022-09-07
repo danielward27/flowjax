@@ -2,6 +2,7 @@ import pytest
 from jax import random
 import jax.numpy as jnp
 from flowjax.bijections.coupling import Coupling
+from flowjax.bijections.masked_autoregressive import MaskedAutoregressive
 from flowjax.bijections.parameterised import Affine
 from flowjax.bijections.utils import Flip, Permute
 from flowjax.bijections.parameterised import Affine, RationalQuadraticSpline
@@ -26,11 +27,13 @@ def test_parameterised_bijection_invertibility(bijection):
 
 
 dim = 5
+cond_dim = 2
+key = random.PRNGKey(0)
 cases2 = {
     "Flip": Flip(),
     "Permute": Permute(jnp.flip(jnp.arange(dim))),
     "Coupling (unconditional)": Coupling(
-        random.PRNGKey(0),
+        key,
         Affine(),
         d=dim // 2,
         D=dim,
@@ -39,20 +42,31 @@ cases2 = {
         nn_depth=2,
     ),
     "Coupling (conditional)": Coupling(
-        random.PRNGKey(0),
+        key,
         Affine(),
         d=dim // 2,
         D=dim,
-        cond_dim=2,
+        cond_dim=cond_dim,
         nn_width=10,
         nn_depth=2,
     ),
+    "MaskedAutoregressive_Affine (unconditional)": MaskedAutoregressive(
+        key, Affine(), cond_dim=0, dim=dim, nn_width=10, nn_depth=2
+    ),
+    "MaskedAutoregressive_Affine (conditional)": MaskedAutoregressive(
+        key, Affine(), cond_dim=cond_dim, dim=dim, nn_width=10, nn_depth=2
+    ),
+    "MaskedAutoregressive_RationalQuadraticSpline (unconditional)": MaskedAutoregressive(
+        key, RationalQuadraticSpline(5, 3), cond_dim=0, dim=dim, nn_width=10, nn_depth=2
+    ),
+    "MaskedAutoregressive_RationalQuadraticSpline (conditional)": MaskedAutoregressive(
+        key, RationalQuadraticSpline(5, 3), cond_dim=cond_dim, dim=dim, nn_width=10, nn_depth=2
+    )
 }
 
 
 @pytest.mark.parametrize("bijection", cases2.values(), ids=cases2.keys())
 def test_bijection_invertibility(bijection):
-    dim = 5
     x = random.normal(random.PRNGKey(0), (dim,))
     if bijection.cond_dim > 0:
         cond = random.normal(random.PRNGKey(0), (bijection.cond_dim,))
@@ -60,4 +74,4 @@ def test_bijection_invertibility(bijection):
         cond = None
     y = bijection.transform(x, cond)
     x_reconstructed = bijection.inverse(y, cond)
-    assert x == pytest.approx(x_reconstructed)
+    assert x == pytest.approx(x_reconstructed, abs=1e-6)

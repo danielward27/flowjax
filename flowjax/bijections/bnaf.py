@@ -147,7 +147,7 @@ class BlockAutoregressiveNetwork(Bijection):
 
     def __init__(
         self,
-        key,
+        key: KeyArray,
         dim: int,
         cond_dim: int,
         depth: int,

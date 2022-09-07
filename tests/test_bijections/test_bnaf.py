@@ -45,7 +45,7 @@ def test_BlockAutoregressiveNetwork():
     x = jnp.ones(dim)
     key = random.PRNGKey(0)
 
-    barn = BlockAutoregressiveNetwork(key, dim, activation=TanhBNAF)
+    barn = BlockAutoregressiveNetwork(key, dim, 0, depth=1, block_dim=4)
     y = barn.transform(x)
     assert y.shape == (dim,)
     auto_jacobian = jax.jacobian(barn.transform)(x)
@@ -60,7 +60,7 @@ def test_BlockAutoregressiveNetwork():
     assert log_abs_det_jacobian == pytest.approx(expected, abs=1e-5)
 
     # Check conditioning works
-    barn = BlockAutoregressiveNetwork(key, dim, cond_dim=cond_dim, activation=TanhBNAF)
+    barn = BlockAutoregressiveNetwork(key, dim, cond_dim, depth=1, block_dim=4)
     y1, y2 = barn.transform(x, jnp.ones(cond_dim)), barn.transform(x, jnp.zeros(cond_dim))
     assert jnp.all(y1 != y2)
 
