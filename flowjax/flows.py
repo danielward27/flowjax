@@ -1,5 +1,5 @@
 from typing import Optional
-from flowjax.bijections.abc import Bijection, ParameterisedBijection
+from flowjax.bijections.abc import Bijection, Transformer
 from jax import random
 import jax.nn as jnn
 import equinox as eqx
@@ -51,7 +51,7 @@ class CouplingFlow(Flow):
         self,
         key: KeyArray,
         base_dist: Distribution,
-        bijection: ParameterisedBijection,
+        transformer: Transformer,
         cond_dim: int = 0,
         flow_layers: int = 5,
         nn_width: int = 40,
@@ -64,7 +64,7 @@ class CouplingFlow(Flow):
         Args:
             key (KeyArray): Jax PRNGKey.
             base_dist (Distribution): Base distribution.
-            bijection (ParameterisedBijection): Bijection parameterised by conditioner.
+            transformer (Transformer): Transformer parameterised by conditioner.
             cond_dim (int, optional): Dimension of conditioning variables. Defaults to 0.
             flow_layers (int, optional): Number of coupling layers. Defaults to 5.
             nn_width (int, optional): Conditioner hidden layer size. Defaults to 40.
@@ -77,7 +77,7 @@ class CouplingFlow(Flow):
         layers = [
             Coupling(
                 key=key,
-                bijection=bijection,
+                transformer=transformer,
                 d=base_dist.dim // 2,
                 D=base_dist.dim,
                 cond_dim=cond_dim,
@@ -98,7 +98,7 @@ class MaskedAutoregressiveFlow(Flow):
         self,
         key: KeyArray,
         base_dist: Distribution,
-        bijection: ParameterisedBijection,
+        transformer: Transformer,
         cond_dim: int = 0,
         flow_layers: int = 5,
         nn_width: int = 40,
@@ -107,12 +107,13 @@ class MaskedAutoregressiveFlow(Flow):
         nn_activation: int = jnn.relu
     ):
         """Masked autoregressive flow (https://arxiv.org/abs/1705.07057v4). Parameterises a
-        a bijection with a neural network with masking of weights to enforces the
+        a transformer with a neural network with masking of weights to enforces the
         autoregressive property.
 
         Args:
             key (KeyArray): Random seed.
             base_dist (Distribution): Base distribution
+            transformer (Transformer): Transformer parameterised by conditioner.
             nn_depth (int, optional): Depth of neural network. Defaults to 2.
             nn_width (int, optional): Number of hidden layers in neural network. Defaults to 60.
             flow_layers (int, optional): Number of `MaskedAutoregressive` layers. Defaults to 5.
@@ -122,7 +123,7 @@ class MaskedAutoregressiveFlow(Flow):
 
         bijections = [
             MaskedAutoregressive(
-                key, bijection, base_dist.dim, cond_dim, nn_width, nn_depth, nn_activation
+                key, transformer, base_dist.dim, cond_dim, nn_width, nn_depth, nn_activation
             )
             for key in layer_keys
         ]
@@ -130,8 +131,8 @@ class MaskedAutoregressiveFlow(Flow):
         bijections = intertwine_permute(
             permute_key, bijections, base_dist.dim, permute_strategy,
         )
-        bijection = Chain(bijections)
-        super().__init__(base_dist, bijection)
+        transformer = Chain(bijections)
+        super().__init__(base_dist, transformer)
 
 
 

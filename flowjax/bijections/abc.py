@@ -1,5 +1,5 @@
 """
-Abstact base classes for the `Bijection` and `ParameterisedBijection` types
+Abstact base classes for the `Bijection` and `Transformer` types
 """
 
 from abc import ABC, abstractmethod
@@ -33,7 +33,7 @@ class Bijection(ABC, Module):
         pass
 
 
-class ParameterisedBijection(ABC):
+class Transformer(ABC):
     """Bijection which facilitates parameterisation with a neural network output
     (e.g. as in coupling flows, or masked autoressive flows)."""
 

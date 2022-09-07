@@ -1,5 +1,5 @@
 from typing import Callable
-from flowjax.bijections.abc import ParameterisedBijection
+from flowjax.bijections.abc import Transformer
 import equinox as eqx
 import jax.numpy as jnp
 from flowjax.bijections.abc import Bijection
@@ -11,14 +11,14 @@ import jax.nn as jnn
 class Coupling(Bijection):
     d: int
     D: int
-    bijection: ParameterisedBijection
+    transformer: Transformer
     conditioner: eqx.nn.MLP
     cond_dim: int
 
     def __init__(
         self,
         key: KeyArray,
-        bijection: ParameterisedBijection,
+        transformer: Transformer,
         d: int,
         D: int,
         cond_dim: int,
@@ -30,7 +30,7 @@ class Coupling(Bijection):
 
         Args:
             key (KeyArray): Jax PRNGKey
-            bijection (ParameterisedBijection): Bijection to be parameterised by the conditioner neural netork.
+            transformer (Transformer): Transformer to be parameterised by the conditioner neural netork.
             d (int): Number of untransformed conditioning variables.
             D (int): Total dimension.
             cond_dim (int): Dimension of additional conditioning variables.
@@ -39,12 +39,12 @@ class Coupling(Bijection):
             nn_activation (Callable, optional): Neural network activation function. Defaults to jnn.relu.
         """
         
-        self.bijection = bijection
+        self.transformer = transformer
         self.d = d
         self.D = D
         self.cond_dim = cond_dim
 
-        output_size = self.bijection.num_params(D - d)
+        output_size = self.transformer.num_params(D - d)
 
         self.conditioner = eqx.nn.MLP(
             in_size=d + cond_dim,
@@ -59,8 +59,8 @@ class Coupling(Bijection):
         x_cond, x_trans = x[: self.d], x[self.d :]
         nn_input = x_cond if condition is None else jnp.concatenate((x_cond, condition))
         bijection_params = self.conditioner(nn_input)
-        bijection_args = self.bijection.get_args(bijection_params)
-        y_trans = self.bijection.transform(x_trans, *bijection_args)
+        bijection_args = self.transformer.get_args(bijection_params)
+        y_trans = self.transformer.transform(x_trans, *bijection_args)
         y = jnp.concatenate((x_cond, y_trans))
         return y
 
@@ -68,8 +68,8 @@ class Coupling(Bijection):
         x_cond, x_trans = x[: self.d], x[self.d :]
         nn_input = x_cond if condition is None else jnp.concatenate((x_cond, condition))
         bijection_params = self.conditioner(nn_input)
-        bijection_args = self.bijection.get_args(bijection_params)
-        y_trans, log_abs_det = self.bijection.transform_and_log_abs_det_jacobian(
+        bijection_args = self.transformer.get_args(bijection_params)
+        y_trans, log_abs_det = self.transformer.transform_and_log_abs_det_jacobian(
             x_trans, *bijection_args
         )
         y = jnp.concatenate([x_cond, y_trans])
@@ -79,7 +79,7 @@ class Coupling(Bijection):
         x_cond, y_trans = y[: self.d], y[self.d :]
         nn_input = x_cond if condition is None else jnp.concatenate((x_cond, condition))
         bijection_params = self.conditioner(nn_input)
-        bijection_args = self.bijection.get_args(bijection_params)
-        x_trans = self.bijection.inverse(y_trans, *bijection_args)
+        bijection_args = self.transformer.get_args(bijection_params)
+        x_trans = self.transformer.inverse(y_trans, *bijection_args)
         x = jnp.concatenate((x_cond, x_trans))
         return x
