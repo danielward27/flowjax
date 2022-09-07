@@ -3,18 +3,17 @@ from jax import random
 import jax.numpy as jnp
 from flowjax.bijections.coupling import Coupling
 from flowjax.bijections.masked_autoregressive import MaskedAutoregressive
-from flowjax.bijections.parameterised import Affine
+from flowjax.bijections.transformers import Affine
 from flowjax.bijections.utils import Flip, Permute
-from flowjax.bijections.parameterised import Affine, RationalQuadraticSpline
+from flowjax.bijections.transformers import Affine, RationalQuadraticSpline
 
-cases1 = {
+transformers = {
     "Affine": Affine(),
     "RationalQuadraticSpline": RationalQuadraticSpline(K=5, B=3),
 }
 
-
-@pytest.mark.parametrize("bijection", cases1.values(), ids=cases1.keys())
-def test_parameterised_bijection_invertibility(bijection):
+@pytest.mark.parametrize("bijection", transformers.values(), ids=transformers.keys())
+def test_transformer_invertibility(bijection):
     d = 5
     x = random.normal(random.PRNGKey(0), (d,))
     params = random.normal(random.PRNGKey(1), (bijection.num_params(d),))
@@ -29,7 +28,7 @@ def test_parameterised_bijection_invertibility(bijection):
 dim = 5
 cond_dim = 2
 key = random.PRNGKey(0)
-cases2 = {
+bijections = {
     "Flip": Flip(),
     "Permute": Permute(jnp.flip(jnp.arange(dim))),
     "Coupling (unconditional)": Coupling(
@@ -65,7 +64,7 @@ cases2 = {
 }
 
 
-@pytest.mark.parametrize("bijection", cases2.values(), ids=cases2.keys())
+@pytest.mark.parametrize("bijection", bijections.values(), ids=bijections.keys())
 def test_bijection_invertibility(bijection):
     x = random.normal(random.PRNGKey(0), (dim,))
     if bijection.cond_dim > 0:

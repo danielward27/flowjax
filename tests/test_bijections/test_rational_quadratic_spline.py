@@ -1,5 +1,5 @@
 import pytest
-from flowjax.bijections.parameterised import RationalQuadraticSpline
+from flowjax.bijections.transformers import RationalQuadraticSpline
 from jax import random
 import jax.numpy as jnp
 

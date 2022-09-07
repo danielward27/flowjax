@@ -8,7 +8,7 @@ from jax.random import KeyArray
 import jax.numpy as jnp
 from flowjax.utils import tile_until_length
 import jax.nn as jnn
-from flowjax.bijections.abc import Bijection, ParameterisedBijection
+from flowjax.bijections.abc import Bijection, Transformer
 from typing import List
 from flowjax.utils import Array
 import jax
@@ -132,14 +132,14 @@ class AutoregressiveMLP(Module):
 
 
 class MaskedAutoregressive(Bijection):
-    bijection: ParameterisedBijection
+    transformer: Transformer
     autoregressive_mlp: AutoregressiveMLP
     cond_dim: int
 
     def __init__(
         self,
         key: KeyArray,
-        bijection: ParameterisedBijection,
+        transformer: Transformer,
         dim: int,
         cond_dim: int,
         nn_width: int,
@@ -147,12 +147,12 @@ class MaskedAutoregressive(Bijection):
         nn_activation: Callable = jnn.relu,
     ) -> None:
         """Masked autoregressive bijection implementation (https://arxiv.org/abs/1705.07057v4).
-        The `bijection` argument is parameterised by a neural network, with weights masked to ensure
+        The transformer is parameterised by a neural network, with weights masked to ensure
         an autoregressive structure.
 
         Args:
             key (KeyArray): Jax PRNGKey
-            bijection (ParameterisedBijection): Bijection to be parameterised by the autoregressive network.
+            transformer (Transformer): Transformer to be parameterised by the autoregressive network.
             dim (int): Dimension.
             cond_dim (int): Dimension of any conditioning variables.
             nn_width (int): Neural network width.
@@ -166,8 +166,8 @@ class MaskedAutoregressive(Bijection):
             (jnp.arange(dim), -jnp.ones(cond_dim))
         )  # we give conditioning variables rank -1
         hidden_ranks = tile_until_length(jnp.arange(dim), nn_width)
-        out_ranks = bijection.get_ranks(dim)
-        self.bijection = bijection
+        out_ranks = transformer.get_ranks(dim)
+        self.transformer = transformer
         self.autoregressive_mlp = AutoregressiveMLP(
             in_ranks, hidden_ranks, out_ranks, nn_depth, nn_activation, key=key,
         )
@@ -175,15 +175,15 @@ class MaskedAutoregressive(Bijection):
     def transform(self, x, condition=None):
         nn_input = x if condition is None else jnp.concatenate((x, condition))
         bijection_params = self.autoregressive_mlp(nn_input)
-        bijection_args = self.bijection.get_args(bijection_params)
-        y = self.bijection.transform(x, *bijection_args)
+        bijection_args = self.transformer.get_args(bijection_params)
+        y = self.transformer.transform(x, *bijection_args)
         return y
 
     def transform_and_log_abs_det_jacobian(self, x, condition=None):
         nn_input = x if condition is None else jnp.concatenate((x, condition))
         bijection_params = self.autoregressive_mlp(nn_input)
-        bijection_args = self.bijection.get_args(bijection_params)
-        y, log_abs_det = self.bijection.transform_and_log_abs_det_jacobian(
+        bijection_args = self.transformer.get_args(bijection_params)
+        y, log_abs_det = self.transformer.transform_and_log_abs_det_jacobian(
             x, *bijection_args
         )
         return y, log_abs_det
@@ -197,7 +197,7 @@ class MaskedAutoregressive(Bijection):
         "One 'step' in computing the inverse"
         nn_input = y if condition is None else jnp.concatenate((y, condition))
         bijection_params = self.autoregressive_mlp(nn_input)
-        bijection_args = self.bijection.get_args(bijection_params)
-        xi = self.bijection.inverse(y, *bijection_args)
+        bijection_args = self.transformer.get_args(bijection_params)
+        xi = self.transformer.inverse(y, *bijection_args)
         return y.at[rank].set(xi[rank])
 

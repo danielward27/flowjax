@@ -1,14 +1,18 @@
-"""Contains 'parameterised bijections', i.e. bijections that have methods
-that facilitate parameterisation with neural networks. 
+"""Contains transformers, which are bijections that have methods that facilitate
+parameterisation with neural networks.
+
+Note if implementing a transformer, users should consider if any array
+attributes within the transformer could/should be updated during training and to
+e.g. block gradient computation if required.
 """
 
 import jax
 import jax.numpy as jnp
-from flowjax.bijections.abc import ParameterisedBijection
+from flowjax.bijections.abc import Transformer
 from functools import partial
 
 
-class Affine(ParameterisedBijection):
+class Affine(Transformer):
     "Affine transformation compatible with neural network parameterisation."
 
     def transform(self, x, loc, scale):
@@ -31,7 +35,7 @@ class Affine(ParameterisedBijection):
         return loc, jnp.exp(log_scale)
 
 
-class RationalQuadraticSpline(ParameterisedBijection):
+class RationalQuadraticSpline(Transformer):
     def __init__(
         self, K, B, min_bin_width=1e-3, min_bin_height=1e-3, min_derivative=1e-3
     ):
