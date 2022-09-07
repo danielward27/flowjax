@@ -139,57 +139,60 @@ class TanhBNAF:
 
 
 class BlockAutoregressiveNetwork(Bijection):
-    n_layers: int
+    depth: int
     layers: list
     cond_dim: int
+    block_dim: int
     activation: Callable
 
     def __init__(
         self,
-        key,
+        key: KeyArray,
         dim: int,
-        cond_dim: int = 0,
-        n_layers: int = 3,
-        block_dim: int = 8,
-        activation=TanhBNAF,
-    ):
-        self.cond_dim = cond_dim
-        self.n_layers = n_layers
-
+        cond_dim: int,
+        depth: int,
+        block_dim: int,
+        activation: Callable = None,
+    ):            
+        activation = TanhBNAF(dim) if activation is None else activation
         layers = []
+        if depth == 0:
+            layers.append(BlockAutoregressiveLinear(key, dim, (1, 1), cond_dim))
+        else:
+            keys = random.split(key, depth + 1)
+            block_shapes = [(block_dim, 1), *(block_dim, block_dim)*(depth-1), (1, block_dim)]
+            cond_dims = [cond_dim] + [0]*depth
 
-        block_sizes = [
-            (block_dim, 1),
-            *[(block_dim, block_dim)] * (n_layers - 2),
-            (1, block_dim),
-        ]
-        cond_dims = [cond_dim if i == 0 else 0 for i in range(n_layers)]
-        for size, c_d in zip(block_sizes, cond_dims):
-            key, subkey = random.split(key)
-            layers.extend(
-                [BlockAutoregressiveLinear(subkey, dim, size, c_d), activation(dim)]
-            )
-        self.layers = layers[:-1]
+            for key, block_shape, cd in zip(keys, block_shapes, cond_dims):
+                layers.extend([
+                    BlockAutoregressiveLinear(key, dim, block_shape, cd),
+                    activation
+                ])
+            layers = layers[:-1] # remove last activation
+                    
+        self.depth = depth
+        self.layers = layers
+        self.cond_dim = cond_dim
+        self.block_dim = block_dim
         self.activation = activation
 
     def transform(self, x: Array, condition=None):
-        y = self.layers[0](x, condition)[0]
+        x = self.layers[0](x, condition)[0]
         for layer in self.layers[1:]:
-            y = layer(y)[0]
-        return y
+            x = layer(x)[0]
+        return x
 
     def transform_and_log_abs_det_jacobian(self, x: Array, condition=None):
-        y, log_det_3d_0 = self.layers[0](x, condition)
+        x, log_det_3d_0 = self.layers[0](x, condition)
         log_det_3ds = [log_det_3d_0]
-
         for layer in self.layers[1:]:
-            y, log_det_3d = layer(y)
+            x, log_det_3d = layer(x)
             log_det_3ds.append(log_det_3d)
 
         logdet = log_det_3ds[-1]
         for ld in reversed(log_det_3ds[:-1]):
             logdet = logmatmulexp(logdet, ld)
-        return y, logdet.sum()
+        return x, logdet.sum()
 
     def inverse(*args, **kwargs):
         raise NotImplementedError(

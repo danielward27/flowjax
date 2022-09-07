@@ -78,10 +78,11 @@ class CouplingFlow(Flow):
         base_dist: Distribution,
         bijection: ParameterisedBijection,
         cond_dim: int = 0,
-        num_layers: int = 5,
+        flow_layers: int = 5,
         nn_width: int = 40,
         nn_depth: int = 2,
         permute_strategy: Optional[str] = None,
+        nn_activation: int = jnn.relu
     ):
         """Creates a flow with multiple Coupling Layers, with permutations inbetween.
         A RealNVP-style flow (Dinh et al, 2017; https://arxiv.org/abs/1605.08803) can
@@ -97,22 +98,23 @@ class CouplingFlow(Flow):
             base_dist (Distribution): Base distribution.
             bijection (ParameterisedBijection): Bijection parameterised by neural network.
             cond_dim (int, optional): Dimension of extra variables to condition on. Defaults to 0.
-            num_layers (int, optional): Flow coupling layers. Defaults to 5.
+            flow_layers (int, optional): Flow coupling layers. Defaults to 5.
             nn_width (int, optional): Conditioner hidden layer size. Defaults to 40.
             nn_depth (int, optional): Conditioner depth. Defaults to 2.
             permute_strategy (Optional[str], optional): "flip" or "random". Defaults to "flip" for 2 dimensional distributions, otherwise "random".
         """
 
-        permute_key, *layer_keys = random.split(key, num_layers + 1)
+        permute_key, *layer_keys = random.split(key, flow_layers + 1)
         layers = [
             Coupling(
                 key=key,
                 bijection=bijection,
                 d=base_dist.dim // 2,
                 D=base_dist.dim,
+                cond_dim=cond_dim,
                 nn_width=nn_width,
                 nn_depth=nn_depth,
-                cond_dim=cond_dim,
+                nn_activation=nn_activation
             )
             for key in layer_keys
         ]  # type: List[Bijection]
@@ -122,14 +124,54 @@ class CouplingFlow(Flow):
         super().__init__(base_dist, Chain(layers))
 
 
+class MaskedAutoregressiveFlow(Flow):
+    def __init__(
+        self,
+        key: KeyArray,
+        base_dist: Distribution,
+        bijection: ParameterisedBijection,
+        cond_dim: int = 0,
+        flow_layers: int = 5,
+        nn_width: int = 40,
+        nn_depth: int = 2,
+        permute_strategy: Optional[str] = None,
+        nn_activation: int = jnn.relu
+    ):
+        """Masked autoregressive flow.
+
+        Args:
+            key (KeyArray): Random seed.
+            base_dist (Distribution): Base distribution
+            nn_depth (int, optional): Depth of autoregressive neural network. Defaults to 2.
+            nn_width (int, optional): _description_. Defaults to 60.
+            flow_layers (int, optional): _description_. Defaults to 5.
+            permute_strategy (Optional[str], optional): "flip" or "random". Defaults to None.
+        """
+        permute_key, *layer_keys = random.split(key, flow_layers + 1)
+
+        bijections = [
+            MaskedAutoregressive(
+                key, bijection, base_dist.dim, cond_dim, nn_width, nn_depth, nn_activation
+            )
+            for key in layer_keys
+        ]
+
+        bijections = intertwine_permute(
+            permute_key, bijections, base_dist.dim, permute_strategy,
+        )
+        bijection = Chain(bijections)
+        super().__init__(base_dist, bijection)
+
+
+
 class BlockNeuralAutoregressiveFlow(Flow):
     def __init__(
         self,
         key: KeyArray,
         base_dist: Distribution,
         cond_dim: int = 0,
-        nn_layers: int = 3,
-        block_dim: int = 8,
+        nn_depth: int = 1,
+        nn_block_dim: int = 8,
         flow_layers: int = 1,
         permute_strategy: Optional[str] = None,
     ):
@@ -139,15 +181,13 @@ class BlockNeuralAutoregressiveFlow(Flow):
         Args:
             key KeyArray: Random key.
             dim (int): Dimension of the target distribution.
-            nn_layers (int, optional): Number of layers within autoregressive neural networks. Defaults to 3.
+            nn_depth (int, optional): Number of layers within autoregressive neural networks. Defaults to 3.
             block_dim (int, optional): Block size in lower triangular blocks of autoregressive neural network. Defaults to 8.
             flow_layers (int, optional): Number of flow layers (1 layer = autoregressive neural network + TanH activation) . Defaults to 1.
             permute_strategy (Optional[str], optional): How to permute between layers. Either "flip" or "random". Defaults to "flip" if dim <=2, otherwise "random".
             base_log_prob (Optional[Callable], optional): Base distribution log probability function. Defaults to standard normal.
             base_sample (Optional[Callable], optional): Base distribution sample function. Defaults to standard normal.
         """
-        assert nn_layers >= 2
-
         permute_key, *layer_keys = random.split(key, flow_layers + 1)
 
         bijections = [
@@ -155,8 +195,8 @@ class BlockNeuralAutoregressiveFlow(Flow):
                 key,
                 dim=base_dist.dim,
                 cond_dim=cond_dim,
-                n_layers=nn_layers,
-                block_dim=block_dim,
+                depth=nn_depth,
+                block_dim=nn_block_dim,
             )
             for key in layer_keys
         ]  # type: List[Bijection]
@@ -168,43 +208,3 @@ class BlockNeuralAutoregressiveFlow(Flow):
         super().__init__(base_dist, bijection)
 
 
-class MaskedAutoregressiveFlow(Flow):
-    def __init__(
-        self,
-        key: KeyArray,
-        base_dist: Distribution,
-        bijection: ParameterisedBijection,
-        nn_depth: int = 2,
-        nn_width: int = 60,
-        nn_activation: Callable = jnn.relu,
-        flow_layers: int = 5,
-        permute_strategy: Optional[str] = None,
-    ):
-        """It is reccomended if feasible that the hidden dimension is at least
-        the distribution dimension, to ensure all ranks can be represented.
-
-        Args:
-            key (KeyArray): Random seed.
-            base_dist (Distribution): Base distribution
-            nn_depth (int, optional): Depth of autoregressive neural network. Defaults to 2.
-            nn_width (int, optional): _description_. Defaults to 60.
-            nn_activation (Callable, optional): _description_. Defaults to jnn.relu.
-            flow_layers (int, optional): _description_. Defaults to 5.
-            permute_strategy (Optional[str], optional): "flip" or "random". Defaults to None.
-        """
-        # TODO Support conditional MAFs, and implement the inverse
-
-        permute_key, *layer_keys = random.split(key, flow_layers + 1)
-
-        bijections = [
-            MaskedAutoregressive(
-                key, bijection, base_dist.dim, nn_width, nn_depth, nn_activation
-            )
-            for key in layer_keys
-        ]
-
-        bijections = intertwine_permute(
-            permute_key, bijections, base_dist.dim, permute_strategy,
-        )
-        bijection = Chain(bijections)
-        super().__init__(base_dist, bijection)
