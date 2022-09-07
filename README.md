@@ -20,14 +20,11 @@ flow, losses = train_flow(train_key, flow, x, learning_rate=0.05)
 flow.log_prob(x)
 ```
 
-The package currently has the following features:
+The package currently supports the following:
 
-- Easy composition of transformers with **coupling** or **masked autoregressive** conditioner architectures, e.g. allowing construction of
-    - [Affine coupling flows](https://arxiv.org/abs/1906.04032/) (i.e. RealNVP)
-    - [Rational quadratic spline coupling flows](https://arxiv.org/abs/1906.04032/) (i.e. neural spline flows)
-    - [Affine masked autoregressive flows](https://arxiv.org/abs/1705.07057v4)
-    - Rational quadratic spline masked autoregressive flows
-- [Block neural autoregressive flows](https://arxiv.org/abs/1904.04676)
+- Supports both `CouplingFlow` ([Dinh et al., 2017](https://arxiv.org/abs/1605.08803)) and `MaskedAutoregressiveFlow` ([Papamakarios et al., 2017](https://arxiv.org/abs/1705.07057v4))  architectures
+- Supports common transformers, such as `Affine` and `RationalQuadraticSpline` (the latter used in neural spline flows; [Durkan et al., 2019](https://arxiv.org/abs/1906.04032))
+- `BlockNeuralAutoregressiveFlow`, as introduced by [De Cao et al., 2019](https://arxiv.org/abs/1904.04676)
 
 For more detailed examples, see [examples](https://github.com/danielward27/flowjax/blob/main/examples/).
 
@@ -52,3 +49,4 @@ We make use of the [Equinox](https://arxiv.org/abs/2111.00254) package, which fa
 
 ## Authors
 `flowjax` was written by `Daniel Ward <danielward27@outlook.com>`.
+
