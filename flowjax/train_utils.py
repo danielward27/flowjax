@@ -5,7 +5,7 @@ import jax.numpy as jnp
 import equinox as eqx
 import optax
 from tqdm import tqdm
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Tuple
 from flowjax.utils import Array
 
 
@@ -22,19 +22,19 @@ def train_flow(
     clip_norm: float = 0.5,
     show_progress: bool = True,
 ):
-    """Train flow with Adam optimizer.
+    """Train flow by maximum likelihood with Adam optimizer.
 
     Args:
-        key KeyArray: Jax key.
-        flow (Flow): Flow to train.
-        x (Array): Samples from the target distribution (each row being a sample).
-        condition (Optional[Array], optional): Conditioning variables corresponding to x if learning a conditional distribution. Defaults to None.
+        key (KeyArray): Jax PRNGKey.
+        flow (Flow): Flow.
+        x (Array): Samples from target distribution.
+        condition (Optional[Array], optional): Conditioning variables. Defaults to None.
         max_epochs (int, optional): Maximum number of epochs. Defaults to 50.
         max_patience (int, optional): Number of consecutive epochs with no validation loss improvement after which training is terminated. Defaults to 5.
         learning_rate (float, optional): Adam learning rate. Defaults to 5e-4.
         batch_size (int, optional): Batch size. Defaults to 256.
-        val_prop (float, optional): Proportion of data to use for validation. Defaults to 0.1.
-        clip_norm (float, optional): Maximum gradient norm before clipping.
+        val_prop (float, optional): Proportion of data to use in validation set. Defaults to 0.1.
+        clip_norm (float, optional): Maximum gradient norm before clipping occurs. Defaults to 0.5.
         show_progress (bool, optional): Whether to show progress bar. Defaults to True.
     """
 
@@ -97,9 +97,19 @@ def train_flow(
     return flow, losses
 
 
-def train_val_split(key: KeyArray, arrays, val_prop: float = 0.1):
-    "Returns ((train_x, train_y), (val_x, val_y), ...)). Split on axis 0."
-    assert 0 <= val_prop <= 1
+def train_val_split(key: KeyArray, arrays: List[Array], val_prop: float = 0.1):
+    """Train validation split along axis 0.
+
+    Args:
+        key (KeyArray): Jax PRNGKey
+        arrays List[Array]: List of arrays.
+        val_prop (float, optional): Proportion of data to use for validation. Defaults to 0.1.
+
+    Returns:
+        Tuple[Tuple]: (train_arrays, validation_arrays)
+    """
+    if not (0 <= val_prop <= 1):
+        raise ValueError("val_prop should be between 0 and 1.")
     key, subkey = random.split(key)
     arrays = random_permutation_multiple(subkey, arrays)
     n_val = round(val_prop * arrays[0].shape[0])
@@ -108,16 +118,29 @@ def train_val_split(key: KeyArray, arrays, val_prop: float = 0.1):
     return train, val
 
 
-def random_permutation_multiple(key, arrays):
-    "Randomly permute multiple arrays on axis 0 (consistent between arrays)."
+def random_permutation_multiple(key: KeyArray, arrays: List[Array]) -> Tuple[Array]:
+    """Randomly permute multiple arrays on axis 0 (consistent between arrays)
+
+    Args:
+        key (KeyArray): Jax PRNGKey
+        arrays (List[Array]): List of arrays.
+
+    Returns:
+        List[Array]: List of permuted arrays.
+    """
     n = arrays[0].shape[0]
     shuffle = random.permutation(key, jnp.arange(n))
     arrays = tuple(a[shuffle] for a in arrays)
     return arrays
 
 
-def count_fruitless(losses: list):
+def count_fruitless(losses: List[float]) -> int:
     """Given a list of losses from each epoch, count the number of epochs since
-    the minimum loss"""
+    the minimum loss.
+
+    Args:
+        losses (List[float]): List of losses.
+
+    """
     min_idx = jnp.array(losses).argmin().item()
     return len(losses) - min_idx - 1

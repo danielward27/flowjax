@@ -20,10 +20,10 @@ class Affine(ParameterisedBijection):
     def inverse(self, y, loc, scale):
         return (y - loc) / scale
 
-    def num_params(self, dim: int):
+    def num_params(self, dim):
         return dim * 2
 
-    def get_ranks(self, dim: int):
+    def get_ranks(self, dim):
         return jnp.tile(jnp.arange(dim), 2)
 
     def get_args(self, params):
@@ -46,13 +46,12 @@ class RationalQuadraticSpline(ParameterisedBijection):
             [-B * 1e4, -B, B, B * 1e4]
         )  # Avoids jax control flow for identity tails
         """
-        RationalQuadraticSpline following Durkin et al. (2019),
-        https://arxiv.org/abs/1906.04032. Each row of parameter matrices (x_pos,
-        y_pos, derivatives) corresponds to a column (axis=1) in x. Ouside the interval
-        [-B, B], the identity transform is used.
+        RationalQuadraticSpline (https://arxiv.org/abs/1906.04032). Ouside the interval
+        [-B, B], the identity transform is used. Each row of parameter matrices
+        (x_pos, y_pos, derivatives) corresponds to a column in x. 
 
         Args:
-            K (int): Number of inner knots B: (int):
+            K (int): Number of inner knots
             B: (int): Interval to transform [-B, B]
         """
         pos_pad = pos_pad.at[pad_idxs].set(pad_vals)

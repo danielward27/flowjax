@@ -22,26 +22,23 @@ class Chain(Bijection):
         self.cond_dim = max([b.cond_dim for b in bijections])
 
     def transform(self, x, condition=None):
-        z = x
         for bijection in self.bijections:
-            z = bijection.transform(z, condition)
-        return z
+            x = bijection.transform(x, condition)
+        return x
 
     def transform_and_log_abs_det_jacobian(self, x, condition=None):
         log_abs_det_jac = 0
-        z = x
         for bijection in self.bijections:
-            z, log_abs_det_jac_i = bijection.transform_and_log_abs_det_jacobian(
-                z, condition
+            x, log_abs_det_jac_i = bijection.transform_and_log_abs_det_jacobian(
+                x, condition
             )
             log_abs_det_jac += log_abs_det_jac_i
-        return z, log_abs_det_jac
+        return x, log_abs_det_jac
 
-    def inverse(self, z: Array, condition=None):
-        x = z
+    def inverse(self, y: Array, condition=None):
         for bijection in reversed(self.bijections):
-            x = bijection.inverse(x, condition)
-        return x
+            y = bijection.inverse(y, condition)
+        return y
 
 
 class Permute(Bijection):
@@ -50,12 +47,13 @@ class Permute(Bijection):
     cond_dim: int
 
     def __init__(self, permutation: Array):
-        """Permutation transformation. Note condition is ignored.
+        """Permutation transformation. condition is ignored.
 
         Args:
             permutation (Array): Indexes 0-(dim-1) representing new order.
         """
-        assert (permutation.sort() == jnp.arange(len(permutation))).all()
+        if not (permutation.sort() == jnp.arange(len(permutation))).all():
+            raise ValueError("Invalid permutation array provided.")
         self.permutation = permutation
         self.inverse_permutation = jnp.argsort(permutation)
         self.cond_dim = 0
@@ -86,8 +84,15 @@ class Flip(Bijection):
 
 
 def intertwine_flip(bijections: List[Bijection]) -> List[Bijection]:
-    """Given a list of bijections, add 'flips' between layers. i.e.
-    with bijections [a,b,c], returns [a, flip, b, flip, c]."""
+    """Given a list of bijections, add 'flips' between layers, i.e.
+    with bijections [a,b,c], returns [a, flip, b, flip, c].
+
+    Args:
+        bijections (List[Bijection]): List of bijections.
+
+    Returns:
+        List[Bijection]: List of bijections with flips inbetween.
+    """
     new_bijections = []
     for b in bijections[:-1]:
         new_bijections.extend([b, Flip()])
@@ -98,13 +103,16 @@ def intertwine_flip(bijections: List[Bijection]) -> List[Bijection]:
 def intertwine_random_permutation(
     key: KeyArray, bijections: List[Bijection], dim: int
 ) -> List[Bijection]:
-    """Given a list of bijections, add permutations between layers. i.e.
+    """Given a list of bijections, add random permutations between layers. i.e.
     with bijections [a,b,c], returns [a, perm1, b, perm2, c].
 
     Args:
-        key (KeyArray, optional): Random key (ignored for flip). Defaults to None.
-        bijection_list (List[Bijection]): List of bijections.
-        dim (int, optional): Dimension (ignored for flip). Defaults to None.
+        key (KeyArray): Jax PRNGKey
+        bijections (List[Bijection]): List of bijections.
+        dim (int): Dimension.
+
+    Returns:
+        List[Bijection]: List of bijections with random permutations inbetween.
     """
     permutations = jnp.row_stack([jnp.arange(dim) for _ in range(len(bijections) - 1)])
     permutations = random.permutation(key, permutations, 1, True)
@@ -121,7 +129,18 @@ def intertwine_permute(
     bijections: List[Bijection],
     dim: int,
     permute_strategy: Optional[str] = None,
-):
+) -> List[Bijection]:
+    """Intertwines either flips or random permutations.
+
+    Args:
+        key (KeyArray): Jax PRNGKey.
+        bijections (List[Bijection]): List of bijections.
+        dim (int): Dimension.
+        permute_strategy (Optional[str], optional): "flip" or "random". Defaults to flip when dim==2, otherwise random.
+
+    Returns:
+        List[Bijection]: Bijection with permutes inbetween.
+    """
     if dim > 1:
         if permute_strategy is None:
             permute_strategy = "flip" if dim == 2 else "random"

@@ -1,4 +1,8 @@
-from typing import Callable, Optional
+"""
+Block Neural Autoregressive bijection implementation.
+"""
+
+from typing import Callable
 import equinox as eqx
 import jax
 import jax.numpy as jnp
@@ -121,14 +125,18 @@ def logmatmulexp(x, y):
 class TanhBNAF:
     """
     Tanh transformation compatible with BNAF (log_abs_det provided as 3D array).
-    Condition is ignored. Output shape is (n_blocks, *block_size), where
-    output[i] is the log jacobian for the ii-th block.
     """
 
     def __init__(self, n_blocks: int):
         self.n_blocks = n_blocks
 
     def __call__(self, x):
+        """Applies the activation and computes the Jacobian. Jacobian shape is
+        (n_blocks, *block_size).
+
+        Returns:
+            Tuple: output, jacobian
+        """
         d = x.shape[0] // self.n_blocks
         log_det_vals = -2 * (x + jax.nn.softplus(-2 * x) - jnp.log(2.0))
         log_det = jnp.full((self.n_blocks, d, d), -jnp.inf)
@@ -153,7 +161,18 @@ class BlockAutoregressiveNetwork(Bijection):
         depth: int,
         block_dim: int,
         activation: Callable = None,
-    ):            
+    ):
+        """Block Neural Autoregressive Network (see https://arxiv.org/abs/1904.04676).
+
+        Args:
+            key (KeyArray): Jax PRNGKey
+            dim (int): Dimension of the distribution.
+            cond_dim (int): Dimension of extra conditioning variables.
+            depth (int): Number of hidden layers in the network.
+            block_dim (int): Block dimension (hidden layer size is roughly dim*block_dim).
+            activation (Callable, optional): Activation function. Defaults to TanhBNAF.
+        """
+                
         activation = TanhBNAF(dim) if activation is None else activation
         layers = []
         if depth == 0:
@@ -176,13 +195,13 @@ class BlockAutoregressiveNetwork(Bijection):
         self.block_dim = block_dim
         self.activation = activation
 
-    def transform(self, x: Array, condition=None):
+    def transform(self, x, condition=None):
         x = self.layers[0](x, condition)[0]
         for layer in self.layers[1:]:
             x = layer(x)[0]
         return x
 
-    def transform_and_log_abs_det_jacobian(self, x: Array, condition=None):
+    def transform_and_log_abs_det_jacobian(self, x, condition=None):
         x, log_det_3d_0 = self.layers[0](x, condition)
         log_det_3ds = [log_det_3d_0]
         for layer in self.layers[1:]:

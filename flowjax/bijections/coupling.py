@@ -26,16 +26,19 @@ class Coupling(Bijection):
         nn_depth: int,
         nn_activation: Callable = jnn.relu
     ):
-        """Coupling layer implementation.
+        """Coupling layer implementation (https://arxiv.org/abs/1605.08803).
 
         Args:
-            key KeyArray: Key
+            key (KeyArray): Jax PRNGKey
             bijection (ParameterisedBijection): Bijection to be parameterised by the conditioner neural netork.
             d (int): Number of untransformed conditioning variables.
             D (int): Total dimension.
-            nn_width (int): Number of nodes in hidden layers.
-            nn_depth (int): Number of hidden layers.
+            cond_dim (int): Dimension of additional conditioning variables.
+            nn_width (int): Neural network hidden layer width.
+            nn_depth (int): Neural network hidden layer size.
+            nn_activation (Callable, optional): Neural network activation function. Defaults to jnn.relu.
         """
+        
         self.bijection = bijection
         self.d = d
         self.D = D
@@ -52,7 +55,7 @@ class Coupling(Bijection):
             key=key,
         )
 
-    def transform(self, x: Array, condition=None):
+    def transform(self, x, condition=None):
         x_cond, x_trans = x[: self.d], x[self.d :]
         nn_input = x_cond if condition is None else jnp.concatenate((x_cond, condition))
         bijection_params = self.conditioner(nn_input)
@@ -61,7 +64,7 @@ class Coupling(Bijection):
         y = jnp.concatenate((x_cond, y_trans))
         return y
 
-    def transform_and_log_abs_det_jacobian(self, x: Array, condition=None):
+    def transform_and_log_abs_det_jacobian(self, x, condition=None):
         x_cond, x_trans = x[: self.d], x[self.d :]
         nn_input = x_cond if condition is None else jnp.concatenate((x_cond, condition))
         bijection_params = self.conditioner(nn_input)
@@ -72,7 +75,7 @@ class Coupling(Bijection):
         y = jnp.concatenate([x_cond, y_trans])
         return y, log_abs_det
 
-    def inverse(self, y: Array, condition=None):
+    def inverse(self, y, condition=None):
         x_cond, y_trans = y[: self.d], y[self.d :]
         nn_input = x_cond if condition is None else jnp.concatenate((x_cond, condition))
         bijection_params = self.conditioner(nn_input)

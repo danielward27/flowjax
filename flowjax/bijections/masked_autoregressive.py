@@ -1,3 +1,5 @@
+"""Masked autoregressive network and bijection."""
+
 from typing import Callable, Optional, Tuple
 from equinox import Module
 from equinox.nn import Linear
@@ -11,10 +13,18 @@ from typing import List
 from flowjax.utils import Array
 import jax
 
-def rank_based_mask(in_ranks, out_ranks, eq=False):
-    """Mask with shape `(len(out_ranks), len(in_ranks))`, with 1s where the
-    out_ranks > or >= in_ranks. If eq=True, then >= is used for comparison
-    (i.e. allows connections between equal ranks)."""
+def rank_based_mask(in_ranks: Array, out_ranks: Array, eq: bool = False):
+    """Forms mask matrix, with 1s where the out_ranks > or >= in_ranks.
+
+    Args:
+        in_ranks (Array): Ranks of the inputs.
+        out_ranks (Array): Ranks of the outputs.
+        eq (bool): If true, compares with >= instead of >. Defaults to False.
+
+    Returns:
+        Array: Mask with shape `(len(out_ranks), len(in_ranks))`
+    """
+    
     assert (in_ranks.ndim) == 1 and (out_ranks.ndim == 1)
     if eq:
         mask = out_ranks[:, None] >= in_ranks
@@ -27,8 +37,14 @@ class MaskedLinear(Module):
     linear: Linear
     mask: Array
 
-    def __init__(self, mask: Array, use_bias: bool = True, *, key):
-        "Mask should have shape (out_features, in_features)."
+    def __init__(self, mask: Array, use_bias: bool = True, *, key: KeyArray):
+        """Masked linear layer.
+
+        Args:
+            mask (Array): Mask with shape (out_features, in_features).
+            key (KeyArray): Jax PRNGKey
+            use_bias (bool, optional): Whether to include bias terms. Defaults to True.
+        """
         self.linear = Linear(mask.shape[1], mask.shape[0], use_bias, key=key)
         self.mask = mask
 
@@ -47,11 +63,11 @@ class AutoregressiveMLP(Module):
     in_size: int
     out_size: int
     width_size: int
+    depth: int
     in_ranks: Array
     out_ranks: Array
     hidden_ranks: Array
     layers: List[MaskedLinear]
-    depth: int
     activation: Callable
     final_activation: Callable
 
@@ -67,18 +83,18 @@ class AutoregressiveMLP(Module):
         key
     ) -> None:
         """An autoregressive multilayer perceptron, similar to equinox.nn.composed.MLP.
-        out_ranks controls the dependencies - paths will only exist between inputs and
-        outputs if the input index is less than output rank.
+        Connections will only exist where in_ranks < out_ranks.
 
         Args:
-            in_size (int): Input dimension.
-            out_ranks (Array): Ranks of the output. Connections will only exist where the input index < out_ranks.
-            width_size (int): Hidden layer dimension.
-            depth (int): Number of layers.
-            key (jax.random.PRNGKey): Jax random key.
+            in_ranks (Array): Ranks of the inputs.
+            hidden_ranks (Array): Ranks of the hidden layer(s).
+            out_ranks (Array): Ranks of the outputs.
+            depth (int): Number of hidden layers.
             activation (Callable, optional): Activation function. Defaults to jnn.relu.
             final_activation (Callable, optional): Final activation function. Defaults to _identity.
+            key (KeyArray): Jax PRNGKey
         """
+        
         masks = []
         if depth == 0:
             masks.append(rank_based_mask(in_ranks, out_ranks, eq=False))
@@ -95,10 +111,10 @@ class AutoregressiveMLP(Module):
         self.in_size = len(in_ranks)
         self.out_size = len(out_ranks)
         self.width_size = len(hidden_ranks)
+        self.depth = depth
         self.in_ranks = in_ranks
         self.hidden_ranks = hidden_ranks
         self.out_ranks = out_ranks
-        self.depth = depth
         self.activation = activation
         self.final_activation = final_activation
 
@@ -130,12 +146,25 @@ class MaskedAutoregressive(Bijection):
         nn_depth: int,
         nn_activation: Callable = jnn.relu,
     ) -> None:
+        """Masked autoregressive bijection implementation (https://arxiv.org/abs/1705.07057v4).
+        The `bijection` argument is parameterised by a neural network, with weights masked to ensure
+        an autoregressive structure.
+
+        Args:
+            key (KeyArray): Jax PRNGKey
+            bijection (ParameterisedBijection): Bijection to be parameterised by the autoregressive network.
+            dim (int): Dimension.
+            cond_dim (int): Dimension of any conditioning variables.
+            nn_width (int): Neural network width.
+            nn_depth (int): Neural network depth.
+            nn_activation (Callable, optional): Neural network activation. Defaults to jnn.relu.
+        """
 
         self.cond_dim = cond_dim
 
         in_ranks = jnp.concatenate(
             (jnp.arange(dim), -jnp.ones(cond_dim))
-        )  # conditioning variables rank -1
+        )  # we give conditioning variables rank -1
         hidden_ranks = tile_until_length(jnp.arange(dim), nn_width)
         out_ranks = bijection.get_ranks(dim)
         self.bijection = bijection
@@ -159,7 +188,7 @@ class MaskedAutoregressive(Bijection):
         )
         return y, log_abs_det
 
-    def inverse(self, y: Array, condition: Optional[Array] = None):
+    def inverse(self, y, condition = None):
         scan_fn = lambda init, _: ((self.inverse_step(init[0], init[1], condition), init[1] + 1), None)
         (x, _), _ = jax.lax.scan(scan_fn, (y,0), None, length=len(y))
         return x

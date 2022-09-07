@@ -29,13 +29,8 @@ class Distribution(ABC):
 
     @abstractmethod
     def _sample(self, key: KeyArray, condition: Optional[Array] = None):
-        "Sample the distribution."
+        "Sample a point from the distribution."
         pass
-
-    @property
-    def in_axes(self):
-        "Controls whether to vmap over the conditioning variable."
-        return (0, 0) if self.cond_dim > 0 else (0, None)
 
     @property
     def conditional(self):
@@ -51,8 +46,8 @@ class Distribution(ABC):
 
         Args:
             key (KeyArray): Jax PRNGKey.
-            condition (Optional[Array], optional): _description_. Defaults to None.
-            n (Optional[int], optional): _description_. Defaults to None.
+            condition (Optional[Array], optional): Conditioning variables. Defaults to None.
+            n (Optional[int], optional): Number of samples (if condition.ndim==1). Defaults to None.
 
         Returns:
             Array: Jax array of samples.
@@ -77,7 +72,15 @@ class Distribution(ABC):
 
     def log_prob(self, x: Array, condition: Optional[Array] = None):
         """Evaluate the log probability. If a matrix/matrices are passed,
-        we vmap over the leading axis."""
+        we vmap (vectorise) over the leading axis.
+
+        Args:
+            x (Array): Points at which to evaluate density.
+            condition (Optional[Array], optional): Conditioning variables. Defaults to None.
+
+        Returns:
+            Array: Jax array of log probabilities.
+        """
         self._argcheck_x(x)
         self._argcheck_condition(condition)
 
@@ -113,9 +116,13 @@ class Distribution(ABC):
         
 
 class Normal(Distribution):
-    "Standard normal distribution, condition is ignored."
 
-    def __init__(self, dim):
+    def __init__(self, dim: int):
+        """Standard normal distribution, condition is ignored.
+
+        Args:
+            dim (int): Dimension of the normal distribution.
+        """
         self.dim = dim
         self.cond_dim = 0
 

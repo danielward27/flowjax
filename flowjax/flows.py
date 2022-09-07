@@ -1,5 +1,4 @@
-from typing import Callable, Optional
-import jax.numpy as jnp
+from typing import Optional
 from flowjax.bijections.abc import Bijection, ParameterisedBijection
 from jax import random
 import jax.nn as jnn
@@ -22,50 +21,26 @@ class Flow(eqx.Module, Distribution):
     def __init__(
         self,
         base_dist: Distribution,
-        bijection: Bijection,  # TODO can/should the bijection can specify the cond dim?
+        bijection: Bijection,
     ):
         """Form a distribution like object using a base distribution and a
-        bijection. Operations are generally assumed to be batched along
-        dimension 0. dim is ignored if a base distribution is specified.
-        Either dim or base_dist should be specified. If dim is specified,
-        the base distribution
+        bijection. The bijection is defined in the "normalising" direction.
 
         Args:
-            bijection (Bijection): Bijection mapping from target distribution to
-                the base distribution.
-            dim: (int): Dimension of the target distribution.
-            base_log_prob (Optional[Callable], optional): log probability in the base
-                distribution. Defaults to standard normal.
-            base_sample (Optional[Callable], optional): sample function with signature
-                (key : PRNGKey, n : int). Defaults to standard normal.
-        """  # TODO update these docs
+            base_dist (Distribution): Base distribution.
+            bijection (Bijection): Bijection defined in "normalising" direction.
+        """
         self.base_dist = base_dist
         self.bijection = bijection
         self.dim = self.base_dist.dim
         self.cond_dim = max(self.bijection.cond_dim, self.base_dist.cond_dim)
 
     def _log_prob(self, x: Array, condition: Optional[Array] = None):
-        "Evaluate the log probability of the target distribution."
         z, log_abs_det = self.bijection.transform_and_log_abs_det_jacobian(x, condition)
         p_z = self.base_dist._log_prob(z, condition)
         return p_z + log_abs_det
 
-    def _sample(
-        self, key: KeyArray, condition: Optional[Array] = None,
-    ):
-        """Sample from the (conditional or unconditional) flow. For repeated sampling using
-        a particular instance of the conditioning variable, use a vector condition and n to
-        specify the number of samples. To sample once for may different conditioning variables
-        provide a matrix of conditioning variables (n is inferred from axis 0).
-
-        Args:
-            key KeyArray: Random key (jax.random.PRNGKey).
-            condition (Array, optional): Conditioning variables. Defaults to None.
-            n (Optional[int], optional): Number of samples. Defaults to None.
-
-        Returns:
-            Array: Samples from the target distribution.
-        """  # TODO update these docs
+    def _sample(self, key: KeyArray, condition: Optional[Array] = None):
         z = self.base_dist._sample(key, condition)
         x = self.bijection.inverse(z, condition)
         return x
@@ -84,24 +59,18 @@ class CouplingFlow(Flow):
         permute_strategy: Optional[str] = None,
         nn_activation: int = jnn.relu
     ):
-        """Creates a flow with multiple Coupling Layers, with permutations inbetween.
-        A RealNVP-style flow (Dinh et al, 2017; https://arxiv.org/abs/1605.08803) can
-        be created by passing an `Affine` bijection instance. A neural spline flow
-        (Durkan et al. 2019; https://arxiv.org/abs/1906.04032) can be created by
-        passing a `RationalQuadraticSpline` instance. Note that the same bijection
-        instance is used throughout, so if they contain trainable attributes, these
-        will be shared (this is not an issue for bijections parameterised solely by
-        neural networks).
+        """Coupling flow (https://arxiv.org/abs/1605.08803).
 
         Args:
             key (KeyArray): Jax PRNGKey.
             base_dist (Distribution): Base distribution.
-            bijection (ParameterisedBijection): Bijection parameterised by neural network.
-            cond_dim (int, optional): Dimension of extra variables to condition on. Defaults to 0.
-            flow_layers (int, optional): Flow coupling layers. Defaults to 5.
+            bijection (ParameterisedBijection): Bijection parameterised by conditioner.
+            cond_dim (int, optional): Dimension of conditioning variables. Defaults to 0.
+            flow_layers (int, optional): Number of coupling layers. Defaults to 5.
             nn_width (int, optional): Conditioner hidden layer size. Defaults to 40.
             nn_depth (int, optional): Conditioner depth. Defaults to 2.
             permute_strategy (Optional[str], optional): "flip" or "random". Defaults to "flip" for 2 dimensional distributions, otherwise "random".
+            nn_activation (int, optional): Conditioner activation function. Defaults to jnn.relu.
         """
 
         permute_key, *layer_keys = random.split(key, flow_layers + 1)
@@ -137,14 +106,16 @@ class MaskedAutoregressiveFlow(Flow):
         permute_strategy: Optional[str] = None,
         nn_activation: int = jnn.relu
     ):
-        """Masked autoregressive flow.
+        """Masked autoregressive flow (https://arxiv.org/abs/1705.07057v4). Parameterises a
+        a bijection with a neural network with masking of weights to enforces the
+        autoregressive property.
 
         Args:
             key (KeyArray): Random seed.
             base_dist (Distribution): Base distribution
-            nn_depth (int, optional): Depth of autoregressive neural network. Defaults to 2.
-            nn_width (int, optional): _description_. Defaults to 60.
-            flow_layers (int, optional): _description_. Defaults to 5.
+            nn_depth (int, optional): Depth of neural network. Defaults to 2.
+            nn_width (int, optional): Number of hidden layers in neural network. Defaults to 60.
+            flow_layers (int, optional): Number of `MaskedAutoregressive` layers. Defaults to 5.
             permute_strategy (Optional[str], optional): "flip" or "random". Defaults to None.
         """
         permute_key, *layer_keys = random.split(key, flow_layers + 1)
@@ -175,18 +146,16 @@ class BlockNeuralAutoregressiveFlow(Flow):
         flow_layers: int = 1,
         permute_strategy: Optional[str] = None,
     ):
-        """Convenience constructor for a block neural autoregressive flow
-        (https://arxiv.org/abs/1904.04676).
+        """Block neural autoregressive flow (BNAF) (https://arxiv.org/abs/1904.04676).
 
         Args:
-            key KeyArray: Random key.
-            dim (int): Dimension of the target distribution.
-            nn_depth (int, optional): Number of layers within autoregressive neural networks. Defaults to 3.
-            block_dim (int, optional): Block size in lower triangular blocks of autoregressive neural network. Defaults to 8.
-            flow_layers (int, optional): Number of flow layers (1 layer = autoregressive neural network + TanH activation) . Defaults to 1.
-            permute_strategy (Optional[str], optional): How to permute between layers. Either "flip" or "random". Defaults to "flip" if dim <=2, otherwise "random".
-            base_log_prob (Optional[Callable], optional): Base distribution log probability function. Defaults to standard normal.
-            base_sample (Optional[Callable], optional): Base distribution sample function. Defaults to standard normal.
+            key (KeyArray): Jax PRNGKey.
+            base_dist (Distribution): Base distribution.
+            cond_dim (int): Dimension of conditional variables.
+            nn_depth (int, optional): Number of hidden layers within the networks. Defaults to 1.
+            nn_block_dim (int, optional): Block size. Hidden layer width is dim*nn_block_dim. Defaults to 8.
+            flow_layers (int, optional): Number of BNAF layers. Defaults to 1.
+            permute_strategy (Optional[str], optional): How to permute between layers. Either "flip" or "random". Defaults to "flip" if dim==2, otherwise "random".
         """
         permute_key, *layer_keys = random.split(key, flow_layers + 1)
 
@@ -206,5 +175,4 @@ class BlockNeuralAutoregressiveFlow(Flow):
         )
         bijection = Chain(bijections)
         super().__init__(base_dist, bijection)
-
 
