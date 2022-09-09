@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 import jax.numpy as jnp
 from jax import random
-from jax.scipy.stats import norm
+from jax.scipy.stats import norm, uniform
 import jax
 from jax.random import KeyArray
 from flowjax.utils import Array
@@ -111,3 +111,21 @@ class Normal(Distribution):
 
     def _sample(self, key: KeyArray, condition: Optional[Array] = None):
         return random.normal(key, (self.dim,))
+
+
+class Uniform(Distribution):
+    "Standard uniform distribution, condition is ignored."
+    def __init__(self, dim, minval=0.0, maxval=1.0):
+        self.dim = dim
+        self.cond_dim = 0
+        self.loc = minval
+        self.scale = maxval - minval
+
+    def _log_prob(self, x: Array, condition: Optional[Array] = None):
+        assert x.shape == (self.dim,)
+        return uniform.logpdf(x, loc=self.loc, scale=self.scale).sum()
+
+    def _sample(self, key: KeyArray, condition: Optional[Array] = None):
+        return random.uniform(
+            key, shape=(self.dim,), minval=self.minval, maxval=self.maxval
+        )
