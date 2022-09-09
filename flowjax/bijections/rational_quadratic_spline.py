@@ -5,6 +5,16 @@ from functools import partial
 
 
 class RationalQuadraticSpline(ParameterisedBijection):
+    """
+    RationalQuadraticSpline following Durkin et al. (2019),
+    https://arxiv.org/abs/1906.04032. Each row of parameter matrices (x_pos,
+    y_pos, derivatives) corresponds to a column (axis=1) in x. Ouside the interval
+    [-B, B], the identity transform is used.
+
+    Args:
+        K (int): Number of inner knots B: (int):
+        B: (int): Interval to transform [-B, B]
+    """
     def __init__(
         self, K, B, min_bin_width=1e-3, min_bin_height=1e-3, min_derivative=1e-3
     ):
@@ -13,21 +23,15 @@ class RationalQuadraticSpline(ParameterisedBijection):
         self.min_bin_width = min_bin_width
         self.min_bin_height = min_bin_height
         self.min_derivative = min_derivative
+
+        # Padding logic avoids jax control flow for identity tails,
+        # by setting up a linear spline from the edge of the bounding box
+        # to B * 1e4
         pos_pad = jnp.zeros(self.K + 4)
         pad_idxs = jnp.array([0, 1, -2, -1])
         pad_vals = jnp.array(
             [-B * 1e4, -B, B, B * 1e4]
-        )  # Avoids jax control flow for identity tails
-        """
-        RationalQuadraticSpline following Durkin et al. (2019),
-        https://arxiv.org/abs/1906.04032. Each row of parameter matrices (x_pos,
-        y_pos, derivatives) corresponds to a column (axis=1) in x. Ouside the interval
-        [-B, B], the identity transform is used.
-
-        Args:
-            K (int): Number of inner knots B: (int):
-            B: (int): Interval to transform [-B, B]
-        """
+        ) 
         pos_pad = pos_pad.at[pad_idxs].set(pad_vals)
         self._pos_pad = pos_pad  # End knots and beyond
 
