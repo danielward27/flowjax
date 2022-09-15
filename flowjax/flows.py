@@ -60,9 +60,9 @@ class CouplingFlow(Transformed):
             for key in layer_keys
         ]  # type: List[Bijection]
         
-        if permute_strategy is "flip":
+        if permute_strategy == "flip":
             bijections = intertwine_flip(bijections)
-        elif permute_strategy is "random":
+        elif permute_strategy == "random":
             bijections = intertwine_random_permutation(permute_key, bijections, base_dist.dim)
         elif permute_strategy != "none":
             raise ValueError("Permute strategy should be 'flip', 'random' or 'none', if specified.")
@@ -112,9 +112,9 @@ class MaskedAutoregressiveFlow(Transformed):
             for key in layer_keys
         ]
         
-        if permute_strategy is "flip":
+        if permute_strategy == "flip":
             bijections = intertwine_flip(bijections)
-        elif permute_strategy is "random":
+        elif permute_strategy == "random":
             bijections = intertwine_random_permutation(permute_key, bijections, base_dist.dim)
         elif permute_strategy != "none":
             raise ValueError("Permute strategy should be 'flip', 'random' or 'none', if specified.")
@@ -167,9 +167,9 @@ class BlockNeuralAutoregressiveFlow(Transformed):
             for key in layer_keys
         ]  # type: List[Bijection]
 
-        if permute_strategy is "flip":
+        if permute_strategy == "flip":
             bijections = intertwine_flip(bijections)
-        elif permute_strategy is "random":
+        elif permute_strategy == "random":
             bijections = intertwine_random_permutation(permute_key, bijections, base_dist.dim)
         elif permute_strategy != "none":
             raise ValueError("Permute strategy should be 'flip', 'random' or 'none', if specified.")
