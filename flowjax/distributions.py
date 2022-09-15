@@ -2,13 +2,14 @@
 
 from abc import ABC, abstractmethod
 from typing import Optional
-import jax.numpy as jnp
+from flowjax.bijections.abc import Bijection
 from jax import random
 from jax.scipy.stats import norm
 import jax
 from jax.random import KeyArray
 from flowjax.utils import Array
 from typing import Any
+import equinox as eqx
 
 # To construct a distribution, we define _log_prob and _sample, which take in vector arguments.
 # More friendly methods are then created from these, supporting batches of inputs.
@@ -16,7 +17,7 @@ from typing import Any
 # (to facilitate easy composing of conditional and unconditional distributions)
 
 
-class Distribution(ABC):
+class Distribution(eqx.Module, ABC):
     """Distribution base class."""
 
     dim: int
@@ -113,7 +114,42 @@ class Distribution(ABC):
             if condition.shape[-1] != self.cond_dim:
                 raise ValueError(f"Expected condition.shape[-1]=={self.cond_dim}.")
 
-        
+
+class Transformed(Distribution):
+    base_dist: Distribution
+    bijection: Bijection
+    dim: int
+    cond_dim: int
+
+    def __init__(
+        self,
+        base_dist: Distribution,
+        bijection: Bijection,
+    ):
+        """Form a distribution like object using a base distribution and a
+        bijection. We take the forward bijection for use in sampling, and the inverse
+        bijection for use in density evaluation.
+
+        Args:
+            base_dist (Distribution): Base distribution.
+            bijection (Bijection): Bijection defined in "normalising" direction.
+        """
+        self.base_dist = base_dist
+        self.bijection = bijection
+        self.dim = self.base_dist.dim
+        self.cond_dim = max(self.bijection.cond_dim, self.base_dist.cond_dim)
+
+    def _log_prob(self, x: Array, condition: Optional[Array] = None):
+        z, log_abs_det = self.bijection.inverse_and_log_abs_det_jacobian(x, condition)
+        p_z = self.base_dist._log_prob(z, condition)
+        return p_z + log_abs_det
+
+    def _sample(self, key: KeyArray, condition: Optional[Array] = None):
+        z = self.base_dist._sample(key, condition)
+        x = self.bijection.transform(z, condition)
+        return x
+
+
 
 class Normal(Distribution):
 
