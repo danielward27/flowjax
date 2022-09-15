@@ -1,10 +1,10 @@
 import pytest
-from flowjax.bijections.transformers import RationalQuadraticSpline
+from flowjax.bijections.transformers import RationalQuadraticSplineTransformer
 from jax import random
 import jax.numpy as jnp
 
 def test_RationalQuadraticSpline_tails():
-    spline = RationalQuadraticSpline(K=5, B=3)
+    spline = RationalQuadraticSplineTransformer(K=5, B=3)
     x = jnp.array([-20, 0.1, 2, 20])
     params = random.normal(random.PRNGKey(0), (spline.num_params(x.shape[0]),))
     transform_args = spline.get_args(params)

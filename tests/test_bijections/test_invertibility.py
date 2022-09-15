@@ -3,13 +3,13 @@ from jax import random
 import jax.numpy as jnp
 from flowjax.bijections.coupling import Coupling
 from flowjax.bijections.masked_autoregressive import MaskedAutoregressive
-from flowjax.bijections.transformers import Affine
+from flowjax.bijections.transformers import AffineTransformer
 from flowjax.bijections.utils import Flip, Permute
-from flowjax.bijections.transformers import Affine, RationalQuadraticSpline
+from flowjax.bijections.transformers import AffineTransformer, RationalQuadraticSplineTransformer
 
 transformers = {
-    "Affine": Affine(),
-    "RationalQuadraticSpline": RationalQuadraticSpline(K=5, B=3),
+    "AffineTransformer": AffineTransformer(),
+    "RationalQuadraticSplineTransformer": RationalQuadraticSplineTransformer(K=5, B=3),
 }
 
 @pytest.mark.parametrize("bijection", transformers.values(), ids=transformers.keys())
@@ -44,7 +44,7 @@ bijections = {
     "Permute": Permute(jnp.flip(jnp.arange(dim))),
     "Coupling (unconditional)": Coupling(
         key,
-        Affine(),
+        AffineTransformer(),
         d=dim // 2,
         D=dim,
         cond_dim=0,
@@ -53,7 +53,7 @@ bijections = {
     ),
     "Coupling (conditional)": Coupling(
         key,
-        Affine(),
+        AffineTransformer(),
         d=dim // 2,
         D=dim,
         cond_dim=cond_dim,
@@ -61,16 +61,16 @@ bijections = {
         nn_depth=2,
     ),
     "MaskedAutoregressive_Affine (unconditional)": MaskedAutoregressive(
-        key, Affine(), cond_dim=0, dim=dim, nn_width=10, nn_depth=2
+        key, AffineTransformer(), cond_dim=0, dim=dim, nn_width=10, nn_depth=2
     ),
     "MaskedAutoregressive_Affine (conditional)": MaskedAutoregressive(
-        key, Affine(), cond_dim=cond_dim, dim=dim, nn_width=10, nn_depth=2
+        key, AffineTransformer(), cond_dim=cond_dim, dim=dim, nn_width=10, nn_depth=2
     ),
     "MaskedAutoregressive_RationalQuadraticSpline (unconditional)": MaskedAutoregressive(
-        key, RationalQuadraticSpline(5, 3), cond_dim=0, dim=dim, nn_width=10, nn_depth=2
+        key, RationalQuadraticSplineTransformer(5, 3), cond_dim=0, dim=dim, nn_width=10, nn_depth=2
     ),
     "MaskedAutoregressive_RationalQuadraticSpline (conditional)": MaskedAutoregressive(
-        key, RationalQuadraticSpline(5, 3), cond_dim=cond_dim, dim=dim, nn_width=10, nn_depth=2
+        key, RationalQuadraticSplineTransformer(5, 3), cond_dim=cond_dim, dim=dim, nn_width=10, nn_depth=2
     )
 }
 
