@@ -1,4 +1,4 @@
-from flowjax.flows import Flow
+from flowjax.distributions import Distribution
 from jax import random
 from jax.random import KeyArray
 import jax.numpy as jnp
@@ -11,7 +11,7 @@ from flowjax.utils import Array
 
 def train_flow(
     key: KeyArray,
-    flow: Flow,
+    dist: Distribution,
     x: Array,
     condition: Optional[Array] = None,
     max_epochs: int = 50,
@@ -22,11 +22,11 @@ def train_flow(
     clip_norm: float = 0.5,
     show_progress: bool = True,
 ):
-    """Train flow by maximum likelihood with Adam optimizer.
+    """Train a distribution (e.g. a flow) by maximum likelihood with Adam optimizer.
 
     Args:
         key (KeyArray): Jax PRNGKey.
-        flow (Flow): Flow.
+        dist (Distribution): Distribution object, trainable parameters are found using equinox.is_inexact_array.
         x (Array): Samples from target distribution.
         condition (Optional[Array], optional): Conditioning variables. Defaults to None.
         max_epochs (int, optional): Maximum number of epochs. Defaults to 50.
@@ -38,15 +38,15 @@ def train_flow(
         show_progress (bool, optional): Whether to show progress bar. Defaults to True.
     """
 
-    def loss(flow, x, condition=None):
-        return -flow.log_prob(x, condition).mean()
+    def loss(dist, x, condition=None):
+        return -dist.log_prob(x, condition).mean()
 
     @eqx.filter_jit
-    def step(flow, optimizer, opt_state, x, condition=None):
-        loss_val, grads = eqx.filter_value_and_grad(loss)(flow, x, condition)
+    def step(dist, optimizer, opt_state, x, condition=None):
+        loss_val, grads = eqx.filter_value_and_grad(loss)(dist, x, condition)
         updates, opt_state = optimizer.update(grads, opt_state)
-        flow = eqx.apply_updates(flow, updates)
-        return flow, opt_state, loss_val
+        dist = eqx.apply_updates(dist, updates)
+        return dist, opt_state, loss_val
 
     key, subkey = random.split(key)
 
@@ -57,7 +57,7 @@ def train_flow(
         optax.clip_by_global_norm(clip_norm), optax.adam(learning_rate=learning_rate)
     )
 
-    best_params, static = eqx.partition(flow, eqx.is_inexact_array)
+    best_params, static = eqx.partition(dist, eqx.is_inexact_array)
     opt_state = optimizer.init(best_params)
 
     losses = {"train": [], "val": []}  # type: Dict[str, List[float]]
@@ -71,20 +71,20 @@ def train_flow(
         batches = range(0, train_args[0].shape[0] - batch_size, batch_size)
         for i in batches:
             batch = tuple(a[i : i + batch_size] for a in train_args)
-            flow, opt_state, loss_i = step(flow, optimizer, opt_state, *batch)
+            dist, opt_state, loss_i = step(dist, optimizer, opt_state, *batch)
             epoch_train_loss += loss_i.item() / len(batches)
 
         epoch_val_loss = 0
         batches = range(0, val_args[0].shape[0] - batch_size, batch_size)
         for i in batches:
             batch = tuple(a[i : i + batch_size] for a in val_args)
-            epoch_val_loss += loss(flow, *batch).item() / len(batches)
+            epoch_val_loss += loss(dist, *batch).item() / len(batches)
 
         losses["train"].append(epoch_train_loss)
         losses["val"].append(epoch_val_loss)
 
         if epoch_val_loss == min(losses["val"]):
-            best_params = eqx.filter(flow, eqx.is_inexact_array)
+            best_params = eqx.filter(dist, eqx.is_inexact_array)
 
         elif count_fruitless(losses["val"]) > max_patience:
             print("Max patience reached.")
@@ -93,8 +93,8 @@ def train_flow(
         if show_progress:
             loop.set_postfix({k: v[-1] for k, v in losses.items()})
 
-    flow = eqx.combine(best_params, static)
-    return flow, losses
+    dist = eqx.combine(best_params, static)
+    return dist, losses
 
 
 def train_val_split(key: KeyArray, arrays: List[Array], val_prop: float = 0.1):
