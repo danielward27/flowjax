@@ -1,6 +1,7 @@
 """Masked autoregressive network and bijection."""
 
-from typing import Callable, Optional, Tuple
+from functools import partial
+from typing import Callable, Optional
 from equinox import Module
 from equinox.nn import Linear
 from jax import random
@@ -173,31 +174,40 @@ class MaskedAutoregressive(Bijection):
         )
 
     def transform(self, x, condition=None):
-        nn_input = x if condition is None else jnp.concatenate((x, condition))
-        bijection_params = self.autoregressive_mlp(nn_input)
-        bijection_args = self.transformer.get_args(bijection_params)
-        y = self.transformer.transform(x, *bijection_args)
+        transformer_args = self.get_transformer_args(x, condition)
+        y = self.transformer.transform(x, *transformer_args)
         return y
 
     def transform_and_log_abs_det_jacobian(self, x, condition=None):
-        nn_input = x if condition is None else jnp.concatenate((x, condition))
-        bijection_params = self.autoregressive_mlp(nn_input)
-        bijection_args = self.transformer.get_args(bijection_params)
+        transformer_args = self.get_transformer_args(x, condition)
         y, log_abs_det = self.transformer.transform_and_log_abs_det_jacobian(
-            x, *bijection_args
+            x, *transformer_args
         )
         return y, log_abs_det
 
     def inverse(self, y, condition = None):
-        scan_fn = lambda init, _: ((self.inverse_step(init[0], init[1], condition), init[1] + 1), None)
-        (x, _), _ = jax.lax.scan(scan_fn, (y,0), None, length=len(y))
+        init = (y, 0)
+        fn = partial(self.inv_scan_fn, condition = condition)
+        (x, _), _ = jax.lax.scan(fn, init, None, length=len(y))
         return x
 
-    def inverse_step(self, y: Array, rank: int, condition: Optional[Array] = None):
+    def inv_scan_fn(self, init, _, condition):
         "One 'step' in computing the inverse"
-        nn_input = y if condition is None else jnp.concatenate((y, condition))
-        bijection_params = self.autoregressive_mlp(nn_input)
-        bijection_args = self.transformer.get_args(bijection_params)
-        xi = self.transformer.inverse(y, *bijection_args)
-        return y.at[rank].set(xi[rank])
+        y, rank = init
+        transformer_args = self.get_transformer_args(y, condition)
+        x = self.transformer.inverse(y, *transformer_args)
+        x = y.at[rank].set(x[rank])
+        return (x, rank + 1), None
 
+    def inverse_and_log_abs_det_jacobian(self, y, condition = None):
+        x = self.inverse(y, condition)
+        log_det = self.transform_and_log_abs_det_jacobian(x, condition)[1]
+        return x, -log_det
+
+    def get_transformer_args(self, x: Array, condition: Optional[Array] = None):
+        nn_input = x if condition is None else jnp.concatenate((x, condition))
+        transformer_params = self.autoregressive_mlp(nn_input)
+        transformer_args = self.transformer.get_args(transformer_params)
+        return transformer_args
+
+    

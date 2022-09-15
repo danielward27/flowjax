@@ -1,9 +1,5 @@
 """Contains transformers, which are bijections that have methods that facilitate
 parameterisation with neural networks.
-
-Note if implementing a transformer, users should consider if any array
-attributes within the transformer could/should be updated during training and to
-e.g. block gradient computation if required.
 """
 
 import jax
@@ -23,6 +19,9 @@ class Affine(Transformer):
 
     def inverse(self, y, loc, scale):
         return (y - loc) / scale
+
+    def inverse_and_log_abs_det_jacobian(self, x, loc, scale):
+        return self.inverse(x, loc, scale), -jnp.log(scale).sum()
 
     def num_params(self, dim):
         return dim * 2
@@ -65,46 +64,39 @@ class RationalQuadraticSpline(Transformer):
     def pos_pad(self):
         return jax.lax.stop_gradient(self._pos_pad)
 
-    @partial(jax.vmap, in_axes=[None, 0, 0, 0, 0]) # type: ignore
+    @partial(jax.vmap, in_axes=[None, 0, 0, 0, 0])
     def transform(self, x, x_pos, y_pos, derivatives):
         k = self._get_bin(x, x_pos)
-        yk, yk1, xk, xk1 = y_pos[k], y_pos[k + 1], x_pos[k], x_pos[k + 1]
-        dk, dk1 = derivatives[k], derivatives[k + 1]
-        sk = (yk1 - yk) / (xk1 - xk)
-        xi = (x - xk) / (xk1 - xk)
-        return self._rational_quadratic(sk, xi, dk, dk1, yk, yk1)
+        xi = (x - x_pos[k]) / (x_pos[k + 1] - x_pos[k])
+        sk = (y_pos[k + 1] - y_pos[k]) / (x_pos[k + 1] - x_pos[k])
+        dk, dk1, yk, yk1 = derivatives[k], derivatives[k + 1], y_pos[k], y_pos[k + 1]
+        num = (yk1 - yk) * (sk * xi ** 2 + dk * xi * (1 - xi))
+        den = sk + (dk1 + dk - 2 * sk) * xi * (1 - xi)
+        return yk + num / den # eq. 4
 
-    @partial(jax.vmap, in_axes=[None, 0, 0, 0, 0]) # type: ignore
+    def transform_and_log_abs_det_jacobian(self, x, x_pos, y_pos, derivatives):
+        y = self.transform(x, x_pos, y_pos, derivatives)
+        derivative = self.derivative(x, x_pos, y_pos, derivatives)
+        return y, jnp.log(derivative).sum()
+
+    @partial(jax.vmap, in_axes=[None, 0, 0, 0, 0])
     def inverse(self, y, x_pos, y_pos, derivatives):
         k = self._get_bin(y, y_pos)
-        xk, xk1, yk = x_pos[k], x_pos[k + 1], y_pos[k]
-        sk = (y_pos[k + 1] - yk) / (xk1 - xk)
+        xk, xk1, yk, yk1 = x_pos[k], x_pos[k + 1], y_pos[k], y_pos[k + 1]
+        sk = (yk1 - yk) / (xk1 - xk)
         y_delta_s_term = (y - yk) * (derivatives[k + 1] + derivatives[k] - 2 * sk)
-        a = (y_pos[k + 1] - yk) * (sk - derivatives[k]) + y_delta_s_term
-        b = (y_pos[k + 1] - yk) * derivatives[k] - y_delta_s_term
+        a = (yk1 - yk) * (sk - derivatives[k]) + y_delta_s_term
+        b = (yk1 - yk) * derivatives[k] - y_delta_s_term
         c = -sk * (y - yk)
         sqrt_term = jnp.sqrt(b ** 2 - 4 * a * c)
         xi = (2 * c) / (-b - sqrt_term)
         x = xi * (xk1 - xk) + xk
         return x
 
-    def transform_and_log_abs_det_jacobian(self, x, x_pos, y_pos, derivatives):
-        y, log_det = jax.vmap(self._transform_and_log_abs_det_jacobian)(
-            x, x_pos, y_pos, derivatives
-        )
-        return y, log_det.sum()
-
-    # Methods prepended with _ are defined for scalar x, and are vmapped as appropriate.
-    def _transform_and_log_abs_det_jacobian(self, x, x_pos, y_pos, derivatives):
-        "Defined for single dimensional x."
-        k = self._get_bin(x, x_pos)
-        yk, yk1, xk, xk1 = y_pos[k], y_pos[k + 1], x_pos[k], x_pos[k + 1]
-        dk, dk1 = derivatives[k], derivatives[k + 1]
-        sk = (yk1 - yk) / (xk1 - xk)
-        xi = (x - xk) / (xk1 - xk)
-        y = self._rational_quadratic(sk, xi, dk, dk1, yk, yk1)
-        derivative = self._derivative(sk, xi, dk, dk1)
-        return y, jnp.log(derivative)
+    def inverse_and_log_abs_det_jacobian(self, y, x_pos, y_pos, derivatives):
+        x = self.inverse(y, x_pos, y_pos, derivatives)
+        derivative = self.derivative(x, x_pos, y_pos, derivatives)
+        return x, -jnp.log(derivative).sum()
 
     def num_params(self, dim: int):
         return (self.K * 3 - 1) * dim
@@ -117,7 +109,7 @@ class RationalQuadraticSpline(Transformer):
         return jax.vmap(self._get_args)(params)
 
     def _get_args(self, params):
-        "Gets the arguments for a single dimension of x."
+        "Gets the arguments for a single dimension of x (defined for 1d)."
         widths = jax.nn.softmax(params[: self.K]) * 2 * self.B
         widths = self.min_bin_width + (1 - self.min_bin_width * self.K) * widths
 
@@ -134,19 +126,17 @@ class RationalQuadraticSpline(Transformer):
 
     @staticmethod
     def _get_bin(target, positions):
-        "Finds which bin/spline segment the target is in (defined for 1d)."
+        "Get the bin (defined for 1D)"
         cond1 = target <= positions[1:]
         cond2 = target > positions[:-1]
         return jnp.where(cond1 & cond2, size=1)[0][0]
 
-    @staticmethod
-    def _rational_quadratic(sk, xi, dk, dk1, yk, yk1):  # eq. 4
-        num = (yk1 - yk) * (sk * xi ** 2 + dk * xi * (1 - xi))
-        den = sk + (dk1 + dk - 2 * sk) * xi * (1 - xi)
-        return yk + num / den
-
-    @staticmethod
-    def _derivative(sk, xi, dk, dk1):  # eq. 5
+    @partial(jax.vmap, in_axes=[None, 0, 0, 0, 0])
+    def derivative(self, x, x_pos, y_pos, derivatives):  # eq. 5
+        k = self._get_bin(x, x_pos)
+        xi = (x - x_pos[k]) / (x_pos[k + 1] - x_pos[k])
+        sk = (y_pos[k + 1] - y_pos[k]) / (x_pos[k + 1] - x_pos[k])
+        dk, dk1 = derivatives[k], derivatives[k + 1]
         num = sk ** 2 * (dk1 * xi ** 2 + 2 * sk * xi * (1 - xi) + dk * (1 - xi) ** 2)
         den = (sk + (dk1 + dk - 2 * sk) * xi * (1 - xi)) ** 2
         return num / den

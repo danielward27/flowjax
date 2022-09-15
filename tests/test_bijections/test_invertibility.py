@@ -22,7 +22,18 @@ def test_transformer_invertibility(bijection):
     x_reconstructed = bijection.inverse(y, *args)
 
     assert jnp.any(x != y)  # Check change occurs
-    assert x == pytest.approx(x_reconstructed, abs=1e-5)
+    assert x == pytest.approx(x_reconstructed, abs=1e-5)  # Check invertibility
+
+    # Check log dets
+    y, log_det1 = bijection.transform_and_log_abs_det_jacobian(x, *args)
+    x_reconstructed, log_det2 = bijection.inverse_and_log_abs_det_jacobian(y, *args)
+    
+    assert x == pytest.approx(x_reconstructed, abs=1e-5)  # Check invertibility
+    assert log_det1 == pytest.approx(-log_det2, abs=1e-5)
+
+
+
+
 
 
 dim = 5
@@ -73,4 +84,10 @@ def test_bijection_invertibility(bijection):
         cond = None
     y = bijection.transform(x, cond)
     x_reconstructed = bijection.inverse(y, cond)
-    assert x == pytest.approx(x_reconstructed, abs=1e-6)
+    assert x == pytest.approx(x_reconstructed, abs=1e-5)
+
+    y, log_det1 = bijection.transform_and_log_abs_det_jacobian(x, cond)
+    x_reconstructed, log_det2 = bijection.inverse_and_log_abs_det_jacobian(y, cond)
+    
+    assert x == pytest.approx(x_reconstructed, abs=1e-5)  # Check invertibility
+    assert log_det1 == pytest.approx(-log_det2, abs=1e-5)
