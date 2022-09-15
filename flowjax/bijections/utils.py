@@ -1,11 +1,38 @@
 from flowjax.bijections.abc import Bijection
 import jax.numpy as jnp
-import equinox as eqx
 from jax import random
 from jax.random import KeyArray
-from typing import Optional, List
-from flowjax.bijections.abc import Bijection
 from flowjax.utils import Array
+from typing import Optional, List
+
+
+class Invert(Bijection):
+    bijection: Bijection
+    cond_dim: int
+
+    def __init__(self, bijection: Bijection):
+        """Invert a bijection, such that the transform methods become the inverse methods and vice versa.
+        Note that in general, we define bijections such that the forward methods are preffered, i.e.
+        faster/actually implemented. For training flows, we generally want the inverse method (used in
+        density evaluation), to be faster. Hence it is often useful to use this class to achieve this aim.
+
+        Args:
+            bijection (Bijection): Bijection to "invert".
+        """
+        self.bijection = bijection
+        self.cond_dim = bijection.cond_dim
+
+    def transform(self, x, condition = None):
+        return self.bijection.inverse(x, condition)
+
+    def transform_and_log_abs_det_jacobian(self, x, condition = None):
+        return self.bijection.inverse_and_log_abs_det_jacobian(x, condition)
+
+    def inverse(self, y, condition = None):
+        return self.bijection.transform(y, condition)
+
+    def inverse_and_log_abs_det_jacobian(self, y, condition = None):
+        return self.bijection.transform_and_log_abs_det_jacobian(y, condition)
 
 
 class Chain(Bijection):
@@ -40,6 +67,15 @@ class Chain(Bijection):
             y = bijection.inverse(y, condition)
         return y
 
+    def inverse_and_log_abs_det_jacobian(self, y, condition=None):
+        log_abs_det_jac = 0
+        for bijection in reversed(self.bijections):
+            y, log_abs_det_jac_i = bijection.inverse_and_log_abs_det_jacobian(
+                y, condition
+            )
+            log_abs_det_jac += log_abs_det_jac_i
+        return y, log_abs_det_jac
+
 
 class Permute(Bijection):
     permutation: Array
@@ -67,6 +103,9 @@ class Permute(Bijection):
     def inverse(self, y, condition=None):
         return y[self.inverse_permutation]
 
+    def inverse_and_log_abs_det_jacobian(self, y, condition=None):
+        return y[self.inverse_permutation], jnp.array(0)
+
 
 class Flip(Bijection):
     """Flip the input array. Condition argument is ignored."""
@@ -81,6 +120,9 @@ class Flip(Bijection):
 
     def inverse(self, y, condition=None):
         return jnp.flip(y)
+
+    def inverse_and_log_abs_det_jacobian(self, y, condition=None):
+        return jnp.flip(y), jnp.array(0)
 
 
 def intertwine_flip(bijections: List[Bijection]) -> List[Bijection]:

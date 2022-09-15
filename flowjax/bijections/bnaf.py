@@ -213,7 +213,12 @@ class BlockAutoregressiveNetwork(Bijection):
             logdet = logmatmulexp(logdet, ld)
         return x, logdet.sum()
 
-    def inverse(*args, **kwargs):
+    def inverse(self, *args, **kwargs):
+        raise NotImplementedError(
+            "This transform would require numerical methods for inversion."
+        )
+
+    def inverse_and_log_abs_det_jacobian(self, *args, **kwargs):
         raise NotImplementedError(
             "This transform would require numerical methods for inversion."
         )
