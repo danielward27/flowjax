@@ -1,5 +1,6 @@
 """Contains transformers, which are bijections that have methods that facilitate
-parameterisation with neural networks.
+parameterisation with neural networks. All transformers have the "Transformer"
+suffix, to avoid potential name clashes with bijections.
 """
 
 import jax
@@ -8,7 +9,7 @@ from flowjax.bijections.abc import Transformer
 from functools import partial
 
 
-class Affine(Transformer):
+class AffineTransformer(Transformer):
     "Affine transformation compatible with neural network parameterisation."
 
     def transform(self, x, loc, scale):
@@ -34,7 +35,7 @@ class Affine(Transformer):
         return loc, jnp.exp(log_scale)
 
 
-class RationalQuadraticSpline(Transformer):
+class RationalQuadraticSplineTransformer(Transformer):
     def __init__(
         self, K, B, min_bin_width=1e-3, min_bin_height=1e-3, min_derivative=1e-3
     ):
@@ -49,7 +50,7 @@ class RationalQuadraticSpline(Transformer):
             [-B * 1e4, -B, B, B * 1e4]
         )  # Avoids jax control flow for identity tails
         """
-        RationalQuadraticSpline (https://arxiv.org/abs/1906.04032). Ouside the interval
+        RationalQuadraticSplineTransformer (https://arxiv.org/abs/1906.04032). Ouside the interval
         [-B, B], the identity transform is used. Each row of parameter matrices
         (x_pos, y_pos, derivatives) corresponds to a column in x. 
 
