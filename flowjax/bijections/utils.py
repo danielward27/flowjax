@@ -164,32 +164,3 @@ def intertwine_random_permutation(
         new_bijections.extend([bijection, Permute(permutation)])
     new_bijections.append(bijections[-1])
     return new_bijections
-
-
-def intertwine_permute(
-    key: KeyArray,
-    bijections: List[Bijection],
-    dim: int,
-    permute_strategy: Optional[str] = None,
-) -> List[Bijection]:
-    """Intertwines either flips or random permutations.
-
-    Args:
-        key (KeyArray): Jax PRNGKey.
-        bijections (List[Bijection]): List of bijections.
-        dim (int): Dimension.
-        permute_strategy (Optional[str], optional): "flip" or "random". Defaults to flip when dim==2, otherwise random.
-
-    Returns:
-        List[Bijection]: Bijection with permutes inbetween.
-    """
-    if dim > 1:
-        if permute_strategy is None:
-            permute_strategy = "flip" if dim == 2 else "random"
-        if permute_strategy == "flip":
-            bijections = intertwine_flip(bijections)
-        elif permute_strategy == "random":
-            bijections = intertwine_random_permutation(key, bijections, dim)
-        else:
-            raise ValueError("Permute strategy should be 'flip' or 'random' if provided.")
-    return bijections

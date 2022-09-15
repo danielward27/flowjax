@@ -5,7 +5,7 @@ import jax.nn as jnn
 import equinox as eqx
 from jax.random import KeyArray
 from flowjax.bijections.coupling import Coupling
-from flowjax.bijections.utils import Chain, intertwine_permute
+from flowjax.bijections.utils import Chain, intertwine_random_permutation, intertwine_flip
 from flowjax.bijections.bnaf import BlockAutoregressiveNetwork
 from flowjax.bijections.masked_autoregressive import MaskedAutoregressive
 from flowjax.distributions import Distribution
@@ -39,13 +39,14 @@ class CouplingFlow(Transformed):
             flow_layers (int, optional): Number of coupling layers. Defaults to 5.
             nn_width (int, optional): Conditioner hidden layer size. Defaults to 40.
             nn_depth (int, optional): Conditioner depth. Defaults to 2.
-            permute_strategy (Optional[str], optional): "flip" or "random". Defaults to "flip" for 2 dimensional distributions, otherwise "random".
+            permute_strategy (Optional[str], optional): "flip", "random" or "none". Defaults to "flip" if dim==2, and "random" for dim > 2.
             nn_activation (int, optional): Conditioner activation function. Defaults to jnn.relu.
             invert: (bool, optional): Whether to invert the bijection. Broadly, True will prioritise a faster `inverse` methods, leading to faster `log_prob`, False will prioritise faster `transform` methods, leading to faster `sample`. Defaults to True
         """
-
         permute_key, *layer_keys = random.split(key, flow_layers + 1)
-        layers = [
+        if permute_strategy is None:
+            permute_strategy = default_permute_strategy(base_dist.dim)
+        bijections = [
             Coupling(
                 key=key,
                 transformer=transformer,
@@ -58,10 +59,15 @@ class CouplingFlow(Transformed):
             )
             for key in layer_keys
         ]  # type: List[Bijection]
-        layers = intertwine_permute(
-            permute_key, layers, base_dist.dim, permute_strategy,
-        )
-        bijection = Chain(layers)
+        
+        if permute_strategy == "flip":
+            bijections = intertwine_flip(bijections)
+        elif permute_strategy == "random":
+            bijections = intertwine_random_permutation(permute_key, bijections, base_dist.dim)
+        elif permute_strategy != "none":
+            raise ValueError("Permute strategy should be 'flip', 'random' or 'none', if specified.")
+
+        bijection = Chain(bijections)
         if invert is True:
             bijection = Invert(bijection)
         super().__init__(base_dist, bijection)
@@ -92,10 +98,12 @@ class MaskedAutoregressiveFlow(Transformed):
             nn_depth (int, optional): Depth of neural network. Defaults to 2.
             nn_width (int, optional): Number of hidden layers in neural network. Defaults to 60.
             flow_layers (int, optional): Number of `MaskedAutoregressive` layers. Defaults to 5.
-            permute_strategy (Optional[str], optional): "flip" or "random". Defaults to None.
+            permute_strategy (Optional[str], optional): "flip", "random" or "none". Defaults to "flip" if dim==2, and "random" for dim > 2.
             invert: (bool, optional): Whether to invert the bijection. Broadly, True will prioritise a faster inverse, leading to faster `log_prob`, False will prioritise faster forward, leading to faster `sample`. Defaults to True
         """
         permute_key, *layer_keys = random.split(key, flow_layers + 1)
+        if permute_strategy is None:
+            permute_strategy = default_permute_strategy(base_dist.dim)
 
         bijections = [
             MaskedAutoregressive(
@@ -103,10 +111,15 @@ class MaskedAutoregressiveFlow(Transformed):
             )
             for key in layer_keys
         ]
+        
+        if permute_strategy == "flip":
+            bijections = intertwine_flip(bijections)
+        elif permute_strategy == "random":
+            bijections = intertwine_random_permutation(permute_key, bijections, base_dist.dim)
+        elif permute_strategy != "none":
+            raise ValueError("Permute strategy should be 'flip', 'random' or 'none', if specified.")
 
-        bijections = intertwine_permute(
-            permute_key, bijections, base_dist.dim, permute_strategy,
-        )
+        
         bijection = Chain(bijections)
         if invert is True:
             bijection = Invert(bijection)
@@ -135,10 +148,13 @@ class BlockNeuralAutoregressiveFlow(Transformed):
             nn_depth (int, optional): Number of hidden layers within the networks. Defaults to 1.
             nn_block_dim (int, optional): Block size. Hidden layer width is dim*nn_block_dim. Defaults to 8.
             flow_layers (int, optional): Number of BNAF layers. Defaults to 1.
-            permute_strategy (Optional[str], optional): How to permute between layers. Either "flip" or "random". Defaults to "flip" if dim==2, otherwise "random".
+            permute_strategy (Optional[str], optional): How to permute between layers. "flip", "random" or "none". Defaults to "flip" if dim==2, and "random" for dim > 2.
             invert: (bool, optional): Use `True` for access of `log_prob` only (e.g. fitting by maximum likelihood), `False` for sampling only (e.g. fitting variationally)
         """
         permute_key, *layer_keys = random.split(key, flow_layers + 1)
+
+        if permute_strategy is None:
+            permute_strategy = default_permute_strategy(base_dist.dim)
 
         bijections = [
             BlockAutoregressiveNetwork(
@@ -151,11 +167,24 @@ class BlockNeuralAutoregressiveFlow(Transformed):
             for key in layer_keys
         ]  # type: List[Bijection]
 
-        bijections = intertwine_permute(
-            permute_key, bijections, base_dist.dim, permute_strategy,
-        )
+        if permute_strategy == "flip":
+            bijections = intertwine_flip(bijections)
+        elif permute_strategy == "random":
+            bijections = intertwine_random_permutation(permute_key, bijections, base_dist.dim)
+        elif permute_strategy != "none":
+            raise ValueError("Permute strategy should be 'flip', 'random' or 'none', if specified.")
+
         bijection = Chain(bijections)
         if invert is True:
             bijection = Invert(bijection)
         super().__init__(base_dist, bijection)
+
+
+def default_permute_strategy(dim):
+    if dim <= 2:
+        return {1: "none", 2: "flip"}[dim]
+    else:
+        return "random"
+
+
 
