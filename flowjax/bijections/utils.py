@@ -156,11 +156,11 @@ def intertwine_random_permutation(
     Returns:
         List[Bijection]: List of bijections with random permutations inbetween.
     """
-    permutations = jnp.row_stack([jnp.arange(dim) for _ in range(len(bijections) - 1)])
-    permutations = random.permutation(key, permutations, 1, True)
-
     new_bijections = []
-    for bijection, permutation in zip(bijections[:-1], permutations):
-        new_bijections.extend([bijection, Permute(permutation)])
+    for bijection in bijections[:-1]:
+        key, subkey = random.split(key)
+        perm = random.permutation(subkey, jnp.arange(dim))
+        new_bijections.extend([bijection, Permute(perm)])
+        
     new_bijections.append(bijections[-1])
     return new_bijections
