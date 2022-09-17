@@ -43,7 +43,7 @@ def test_unconditional_flow_log_prob(flow):
     assert lp.shape == (n,)
 
     lp2 = flow.log_prob(x[0])
-    assert lp[0] == pytest.approx(lp2)
+    assert lp[0] == pytest.approx(lp2, abs=1e-5)
 
     # Test wrong dimensions raises error
     with pytest.raises(ValueError):
