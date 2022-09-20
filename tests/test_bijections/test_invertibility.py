@@ -6,6 +6,7 @@ from flowjax.bijections.masked_autoregressive import MaskedAutoregressive
 from flowjax.bijections.transformers import AffineTransformer
 from flowjax.bijections.utils import Flip, Permute
 from flowjax.bijections.transformers import AffineTransformer, RationalQuadraticSplineTransformer
+from flowjax.bijections.affine import Affine
 
 transformers = {
     "AffineTransformer": AffineTransformer(),
@@ -42,6 +43,7 @@ key = random.PRNGKey(0)
 bijections = {
     "Flip": Flip(),
     "Permute": Permute(jnp.flip(jnp.arange(dim))),
+    "Affine": Affine(jnp.ones(dim), jnp.full(dim, 2)),
     "Coupling (unconditional)": Coupling(
         key,
         AffineTransformer(),
@@ -71,7 +73,7 @@ bijections = {
     ),
     "MaskedAutoregressive_RationalQuadraticSpline (conditional)": MaskedAutoregressive(
         key, RationalQuadraticSplineTransformer(5, 3), cond_dim=cond_dim, dim=dim, nn_width=10, nn_depth=2
-    )
+    ),
 }
 
 
