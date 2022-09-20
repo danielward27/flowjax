@@ -1,35 +1,33 @@
+"""Contains some common flow architectures. These act as convenience costructors,
+and examples of how flows can be constructed."""
+
 from typing import Optional
 from flowjax.bijections.abc import Bijection, Transformer
 from jax import random
 import jax.nn as jnn
-import equinox as eqx
 from jax.random import KeyArray
 from flowjax.bijections.coupling import Coupling
 from flowjax.bijections.utils import Chain, intertwine_random_permutation, intertwine_flip
 from flowjax.bijections.bnaf import BlockAutoregressiveNetwork
 from flowjax.bijections.masked_autoregressive import MaskedAutoregressive
 from flowjax.distributions import Distribution
-from flowjax.utils import Array
 from typing import List
-
 from flowjax.bijections.utils import Invert
 from flowjax.distributions import Transformed
 
-class CouplingFlow(Transformed):
-    def __init__(
-        self,
-        key: KeyArray,
-        base_dist: Distribution,
-        transformer: Transformer,
-        cond_dim: int = 0,
-        flow_layers: int = 5,
-        nn_width: int = 40,
-        nn_depth: int = 2,
-        permute_strategy: Optional[str] = None,
-        nn_activation: int = jnn.relu,
-        invert: bool = True
-    ):
-        """Coupling flow (https://arxiv.org/abs/1605.08803).
+def coupling_flow(
+    key: KeyArray,
+    base_dist: Distribution,
+    transformer: Transformer,
+    cond_dim: int = 0,
+    flow_layers: int = 5,
+    nn_width: int = 40,
+    nn_depth: int = 2,
+    permute_strategy: Optional[str] = None,
+    nn_activation: int = jnn.relu,
+    invert: bool = True
+):
+    """Coupling flow (https://arxiv.org/abs/1605.08803).
 
         Args:
             key (KeyArray): Jax PRNGKey.
@@ -42,40 +40,38 @@ class CouplingFlow(Transformed):
             permute_strategy (Optional[str], optional): "flip", "random" or "none". Defaults to "flip" if dim==2, and "random" for dim > 2.
             nn_activation (int, optional): Conditioner activation function. Defaults to jnn.relu.
             invert: (bool, optional): Whether to invert the bijection. Broadly, True will prioritise a faster `inverse` methods, leading to faster `log_prob`, False will prioritise faster `transform` methods, leading to faster `sample`. Defaults to True
-        """
-        permute_key, *layer_keys = random.split(key, flow_layers + 1)
-        if permute_strategy is None:
-            permute_strategy = default_permute_strategy(base_dist.dim)
-        bijections = [
-            Coupling(
-                key=key,
-                transformer=transformer,
-                d=base_dist.dim // 2,
-                D=base_dist.dim,
-                cond_dim=cond_dim,
-                nn_width=nn_width,
-                nn_depth=nn_depth,
-                nn_activation=nn_activation
-            )
-            for key in layer_keys
-        ]  # type: List[Bijection]
-        
-        if permute_strategy == "flip":
-            bijections = intertwine_flip(bijections)
-        elif permute_strategy == "random":
-            bijections = intertwine_random_permutation(permute_key, bijections, base_dist.dim)
-        elif permute_strategy != "none":
-            raise ValueError("Permute strategy should be 'flip', 'random' or 'none', if specified.")
+    """
+    permute_key, *layer_keys = random.split(key, flow_layers + 1)
+    if permute_strategy is None:
+        permute_strategy = default_permute_strategy(base_dist.dim)
+    bijections = [
+        Coupling(
+            key=key,
+            transformer=transformer,
+            d=base_dist.dim // 2,
+            D=base_dist.dim,
+            cond_dim=cond_dim,
+            nn_width=nn_width,
+            nn_depth=nn_depth,
+            nn_activation=nn_activation
+        )
+        for key in layer_keys
+    ]  # type: List[Bijection]
+    
+    if permute_strategy == "flip":
+        bijections = intertwine_flip(bijections)
+    elif permute_strategy == "random":
+        bijections = intertwine_random_permutation(permute_key, bijections, base_dist.dim)
+    elif permute_strategy != "none":
+        raise ValueError("Permute strategy should be 'flip', 'random' or 'none', if specified.")
 
-        bijection = Chain(bijections)
-        if invert is True:
-            bijection = Invert(bijection)
-        super().__init__(base_dist, bijection)
+    bijection = Chain(bijections)
+    if invert is True:
+        bijection = Invert(bijection)
+    return Transformed(base_dist, bijection)
 
 
-class MaskedAutoregressiveFlow(Transformed):
-    def __init__(
-        self,
+def masked_autoregressive_flow(
         key: KeyArray,
         base_dist: Distribution,
         transformer: Transformer,
@@ -119,17 +115,12 @@ class MaskedAutoregressiveFlow(Transformed):
         elif permute_strategy != "none":
             raise ValueError("Permute strategy should be 'flip', 'random' or 'none', if specified.")
 
-        
         bijection = Chain(bijections)
         if invert is True:
             bijection = Invert(bijection)
-        super().__init__(base_dist, bijection)
+        return Transformed(base_dist, bijection)
 
-
-
-class BlockNeuralAutoregressiveFlow(Transformed):
-    def __init__(
-        self,
+def block_neural_autoregressive_flow(
         key: KeyArray,
         base_dist: Distribution,
         cond_dim: int = 0,
@@ -149,7 +140,7 @@ class BlockNeuralAutoregressiveFlow(Transformed):
             nn_block_dim (int, optional): Block size. Hidden layer width is dim*nn_block_dim. Defaults to 8.
             flow_layers (int, optional): Number of BNAF layers. Defaults to 1.
             permute_strategy (Optional[str], optional): How to permute between layers. "flip", "random" or "none". Defaults to "flip" if dim==2, and "random" for dim > 2.
-            invert: (bool, optional): Use `True` for access of `log_prob` only (e.g. fitting by maximum likelihood), `False` for sampling only (e.g. fitting variationally)
+            invert: (bool, optional): Use `True` for access of `log_prob` only (e.g. fitting by maximum likelihood), `False` for the forward direction (sampling) only (e.g. for fitting variationally).
         """
         permute_key, *layer_keys = random.split(key, flow_layers + 1)
 
@@ -177,7 +168,7 @@ class BlockNeuralAutoregressiveFlow(Transformed):
         bijection = Chain(bijections)
         if invert is True:
             bijection = Invert(bijection)
-        super().__init__(base_dist, bijection)
+        return Transformed(base_dist, bijection)
 
 
 def default_permute_strategy(dim):

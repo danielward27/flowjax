@@ -1,4 +1,4 @@
-from flowjax.flows import CouplingFlow, BlockNeuralAutoregressiveFlow, MaskedAutoregressiveFlow
+from flowjax.flows import coupling_flow, block_neural_autoregressive_flow, masked_autoregressive_flow
 from flowjax.bijections.transformers import AffineTransformer, RationalQuadraticSplineTransformer
 from flowjax.distributions import Normal
 import jax.numpy as jnp
@@ -17,10 +17,10 @@ common_kwargs = {
 
 testcases = [
     # (name, type, kwargs)}
-    ("Affine_Coupling", CouplingFlow, {"transformer": AffineTransformer()} | common_kwargs),
-    ("RationalQuadraticSpline_Coupling", CouplingFlow, {"transformer": RationalQuadraticSplineTransformer(5,3)} | common_kwargs),
-    ("BNAF", BlockNeuralAutoregressiveFlow, {"key": random.PRNGKey(0), "base_dist": Normal(dim), "flow_layers": 2}),
-    ("Affine_MaskedAutoregessive", MaskedAutoregressiveFlow, {"transformer": AffineTransformer()} | common_kwargs)
+    ("Affine_Coupling", coupling_flow, {"transformer": AffineTransformer()} | common_kwargs),
+    ("RationalQuadraticSpline_Coupling", coupling_flow, {"transformer": RationalQuadraticSplineTransformer(5,3)} | common_kwargs),
+    ("BNAF", block_neural_autoregressive_flow, {"key": random.PRNGKey(0), "base_dist": Normal(dim), "flow_layers": 2}),
+    ("Affine_MaskedAutoregessive", masked_autoregressive_flow, {"transformer": AffineTransformer()} | common_kwargs)
 ]
 
 uncond_testcases = {n: t(**kwargs) for n, t, kwargs in testcases}
