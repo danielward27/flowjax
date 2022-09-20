@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from typing import Optional
 import jax.numpy as jnp
 from jax import random
-from jax.scipy.stats import norm, uniform
+from jax.scipy import stats
 import jax
 from jax.random import KeyArray
 from flowjax.utils import Array
@@ -100,18 +100,19 @@ class Distribution(ABC):
 
 class Normal(Distribution):
     "Standard normal distribution, condition is ignored."
-
     def __init__(self, dim):
         self.dim = dim
         self.cond_dim = 0
 
     def _log_prob(self, x: Array, condition: Optional[Array] = None):
         assert x.shape == (self.dim,)
-        return norm.logpdf(x).sum()
+        return stats.norm.logpdf(x).sum()
 
     def _sample(self, key: KeyArray, condition: Optional[Array] = None):
         return random.normal(key, (self.dim,))
 
+    def __repr__(self):
+        return f'<FlowJax StandardNormal>'
 
 class Uniform(Distribution):
     "Standard uniform distribution, condition is ignored."
@@ -123,9 +124,60 @@ class Uniform(Distribution):
 
     def _log_prob(self, x: Array, condition: Optional[Array] = None):
         assert x.shape == (self.dim,)
-        return uniform.logpdf(x, loc=self.loc, scale=self.scale).sum()
+        return stats.uniform.logpdf(x, loc=self.loc, scale=self.scale).sum()
 
     def _sample(self, key: KeyArray, condition: Optional[Array] = None):
         return random.uniform(
-            key, shape=(self.dim,), minval=self.minval, maxval=self.maxval
+            key, shape=(self.dim,), minval=self.loc, maxval=self.scale + self.loc
         )
+
+    def __repr__(self):
+        return f'<FlowJax Uniform({self.loc}, {self.scale + self.loc})>'
+
+class Gumbel(Distribution):
+    """
+    Implements standard gumbel distribution.
+    loc=0, scale=1
+    """
+    def __init__(self, dim):
+        self.dim = dim
+        self.cond_dim = 0
+
+    def _log_prob(self, x: Array, condition: Optional[Array] = None):
+        assert x.shape == (self.dim,)
+        return -(x + jnp.exp(-x))
+
+    def _sample(self, key: KeyArray, condition: Optional[Array] = None):
+        return random.gumbel(key, shape=(self.dim,))
+
+class Cauchy(Distribution):
+    """
+    Implements standard cauchy distribution.
+    loc=0, scale=1
+    """
+    def __init__(self, dim):
+        self.dim = dim
+        self.cond_dim = 0
+
+    def _log_prob(self, x: Array, condition: Optional[Array] = None):
+        assert x.shape == (self.dim,)
+        return stats.cauchy.logpdf(x)
+
+    def _sample(self, key: KeyArray, condition: Optional[Array] = None):
+        return random.cauchy(key, shape=(self.dim,))
+
+class Exponential(Distribution):
+    """
+    Implements standard exponential distribution.
+    loc=0, scale=1
+    """
+    def __init__(self, dim):
+        self.dim = dim
+        self.cond_dim = 0
+
+    def _log_prob(self, x: Array, condition: Optional[Array] = None):
+        assert x.shape == (self.dim,)
+        return stats.expon.logpdf(x)
+
+    def _sample(self, key: KeyArray, condition: Optional[Array] = None):
+        return random.exponential(key, shape=(self.dim,))

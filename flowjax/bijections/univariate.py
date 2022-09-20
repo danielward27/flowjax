@@ -4,7 +4,6 @@ import jax.numpy as jnp
 from flowjax.bijections.abc import Bijection
 from jax.random import KeyArray
 from flowjax.utils import Array
-from functools import partial
 import jax
 
 class Univariate(Bijection):
@@ -38,10 +37,6 @@ class Univariate(Bijection):
             key=key,
         )
 
-    def get_params(self, condition=None):
-        condition = jnp.empty((0,)) if condition is None else condition
-        return jax.vmap(self._get_params, [0])(condition)
-
     def _get_params(self, condition=None):
         x_cond = jnp.array([1]) # Constant input
         if condition is not None:
@@ -68,10 +63,7 @@ class Univariate(Bijection):
 
     def inverse(self, y: Array, condition=None):
         condition = jnp.array([]) if condition is None else condition
-        x_cond, y_trans = y[: self.d], y[self.d :]
-        cond = jnp.concatenate((x_cond, condition))
-        bijection_params = self.conditioner(cond)
+        bijection_params = self._get_params(condition)
         bijection_args = self.bijection.get_args(bijection_params)
-        x_trans = self.bijection.inverse(y_trans, *bijection_args)
-        x = jnp.concatenate((x_cond, x_trans))
-        return x
+        x_trans = self.bijection.inverse(y, *bijection_args)
+        return x_trans
