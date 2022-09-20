@@ -10,7 +10,12 @@ class Affine(Bijection):
     log_scale: Array
 
     def __init__(self, loc: Array, scale: Array):
-        "Elementwise affine transformation. Condition is ignored."
+        """Elementwise affine transformation. Condition is ignored.
+
+        Args:
+            loc (Array): Location parameter vector.
+            scale (Array): Scale parameter vector.
+        """
         self.loc = loc
         self.log_scale = jnp.log(scale)
         self.cond_dim = 0
@@ -73,7 +78,7 @@ class TriangularAffine(Bijection):
         
     @property
     def arr(self):
-        "Get triangular array, with "
+        "Get triangular array, (applies masking and min_diag constraint)."
         diag = self.diag_mask*jnp.exp(self._log_diag) + self.min_diag
         return self.tri_mask*self._arr + diag
 
@@ -90,12 +95,3 @@ class TriangularAffine(Bijection):
     def inverse_and_log_abs_det_jacobian(self, y, condition = None):
         a = self.arr
         return solve_triangular(a, y - self.loc, lower=self.lower), -jnp.diag(a).sum()
-
-    
-    
-
-
-
-        
-
-        
