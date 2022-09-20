@@ -1,4 +1,4 @@
-from flowjax.bijections.utils import Flip, Permute, intertwine_flip, intertwine_random_permutation
+from flowjax.bijections.utils import Chain, Flip, Permute, intertwine_flip, intertwine_random_permutation
 import pytest
 from jax import random
 import jax.numpy as jnp
@@ -28,3 +28,11 @@ def test_intertwine_random_permutation(bijections, expected):
     "Intertwine permutations (between Flip bijections)"
     bijections = intertwine_random_permutation(random.PRNGKey(0), bijections, dim=2)
     assert [type(b) == ex for b, ex in zip(bijections, expected)]
+
+
+def test_chain_dunders():
+    b = Chain([Flip(), Permute(jnp.array([0,1]))])
+    assert len(b) == 2
+    assert isinstance(b[0], Flip)
+    assert isinstance(b[1], Permute)
+    assert isinstance(b[:], Chain)

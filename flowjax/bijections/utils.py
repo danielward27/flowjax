@@ -3,7 +3,7 @@ import jax.numpy as jnp
 from jax import random
 from jax.random import KeyArray
 from flowjax.utils import Array
-from typing import Optional, List
+from typing import List, Sequence, Tuple, Union
 
 
 class Invert(Bijection):
@@ -36,16 +36,16 @@ class Invert(Bijection):
 
 
 class Chain(Bijection):
-    bijections: List[Bijection]
+    bijections: Tuple[Bijection]
     cond_dim: int
 
-    def __init__(self, bijections: List[Bijection]):
+    def __init__(self, bijections: Sequence[Bijection]):
         """Chain together bijections to form another bijection.
 
         Args:
-            bijections (List[Bijection]): List of bijections.
+            bijections (Sequence[Bijection]): Sequence of bijections.
         """
-        self.bijections = bijections
+        self.bijections = tuple(bijections)
         self.cond_dim = max([b.cond_dim for b in bijections])
 
     def transform(self, x, condition=None):
@@ -75,6 +75,20 @@ class Chain(Bijection):
             )
             log_abs_det_jac += log_abs_det_jac_i
         return y, log_abs_det_jac
+
+    def __getitem__(self, i: Union[int, slice]) -> Bijection:
+        if isinstance(i, int):
+            return self.bijections[i]
+        elif isinstance(i, slice):
+            return Chain(self.bijections[i])
+        else:
+            raise TypeError(f"Indexing with type {type(i)} is not supported.")
+
+    def __iter__(self):
+        yield from self.bijections
+
+    def __len__(self):
+        return len(self.bijections)
 
 
 class Permute(Bijection):
@@ -125,12 +139,12 @@ class Flip(Bijection):
         return jnp.flip(y), jnp.array(0)
 
 
-def intertwine_flip(bijections: List[Bijection]) -> List[Bijection]:
-    """Given a list of bijections, add 'flips' between layers, i.e.
+def intertwine_flip(bijections: Sequence[Bijection]) -> List[Bijection]:
+    """Given a sequence of bijections, add 'flips' between layers, i.e.
     with bijections [a,b,c], returns [a, flip, b, flip, c].
 
     Args:
-        bijections (List[Bijection]): List of bijections.
+        bijections (Sequence[Bijection]): Sequence of bijections.
 
     Returns:
         List[Bijection]: List of bijections with flips inbetween.
@@ -143,14 +157,14 @@ def intertwine_flip(bijections: List[Bijection]) -> List[Bijection]:
 
 
 def intertwine_random_permutation(
-    key: KeyArray, bijections: List[Bijection], dim: int
+    key: KeyArray, bijections: Sequence[Bijection], dim: int
 ) -> List[Bijection]:
     """Given a list of bijections, add random permutations between layers. i.e.
     with bijections [a,b,c], returns [a, perm1, b, perm2, c].
 
     Args:
         key (KeyArray): Jax PRNGKey
-        bijections (List[Bijection]): List of bijections.
+        bijections (Sequence[Bijection]): Sequence of bijections.
         dim (int): Dimension.
 
     Returns:
