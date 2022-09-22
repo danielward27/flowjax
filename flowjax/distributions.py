@@ -155,7 +155,7 @@ class StandardNormal(Distribution):
     """
     Implements a standard normal distribution, condition is ignored.
     """
-    def __init__(self, dim: int, mean: float=0.0, std: float=1.0):
+    def __init__(self, dim: int):
         """
         Args:
             dim (int): Dimension of the normal distribution.
@@ -169,6 +169,32 @@ class StandardNormal(Distribution):
 
     def _sample(self, key: KeyArray, condition: Optional[Array] = None):
         return random.normal(key, (self.dim,))
+
+
+class Normal(Distribution):
+    """
+    Implements a normal distribution with mean and std.
+    """
+    mean: float
+    std: float
+    def __init__(self, dim: int, mean: float=0.0, std: float=1.0):
+        """
+        Args:
+            dim (int): Dimension of the normal distribution.
+        """
+        self.dim = dim
+        self.cond_dim = 0
+        self.mean = mean
+        self.std = std
+
+    def _log_prob(self, x: Array, condition: Optional[Array] = None):
+        assert x.shape == (self.dim,)
+        std_x = (x - self.mean) / self.std
+        return jstats.norm.logpdf(std_x).sum()
+
+    def _sample(self, key: KeyArray, condition: Optional[Array] = None):
+        std_x = random.normal(key, (self.dim,))
+        return self.std * std_x + self.mean
 
 
 class Uniform(Distribution):

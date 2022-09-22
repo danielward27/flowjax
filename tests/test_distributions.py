@@ -4,6 +4,7 @@ import jax.numpy as jnp
 from jax import random
 from flowjax.distributions import (
     StandardNormal,
+    Normal,
     Uniform,
     Gumbel,
     Cauchy,
@@ -12,6 +13,7 @@ from flowjax.distributions import (
 
 _test_distributions = [
     pytest.param(StandardNormal, id='StandardNormal'),
+    pytest.param(Normal, id='Normal'),
     pytest.param(Uniform, id='Uniform'),
     pytest.param(Gumbel, id='Gumbel'),
     pytest.param(Cauchy, id='Cauchy'),
