@@ -31,7 +31,7 @@ setup(
         "tqdm",
         "optax",
         "numpy<=1.22.4"  # https://github.com/google/jax/issues/11241
-        ],
+    ],
     extras_require={
         'dev': ['pytest']
     },
