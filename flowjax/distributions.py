@@ -239,10 +239,10 @@ class Cauchy(Distribution):
 
 
 class StudentT(Distribution):
-    df: Array
     """
     Implements student T distribution with specified degree of freedom.
     """
+    df: Array
     def __init__(self, dim, df=1.):
         self.dim = dim
         self.cond_dim = 0
