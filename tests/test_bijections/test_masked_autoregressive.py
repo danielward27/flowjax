@@ -2,13 +2,12 @@ import pytest
 import jax.numpy as jnp
 import jax
 from jax import random
-import equinox as eqx
 from flowjax.bijections.masked_autoregressive import (
     AutoregressiveMLP,
     MaskedLinear,
     rank_based_mask,
-    # rank_based_mask_expand,
 )
+from flowjax.utils import tile_until_length
 
 
 def test_rank_based_mask():
@@ -45,8 +44,10 @@ def test_MaskedLinear():
 def test_AutoregressiveMLP():
     key = random.PRNGKey(0)
     in_size = 4
+    in_ranks = jnp.arange(in_size)
+    hidden_ranks = tile_until_length(in_ranks, 6)
     out_ranks = jnp.arange(in_size).repeat(2)
-    mlp = AutoregressiveMLP(in_size, out_ranks, width_size=6, depth=3, key=key)
+    mlp = AutoregressiveMLP(in_ranks, hidden_ranks, out_ranks, depth=3, key=key)
     x = jnp.ones(in_size)
     y = mlp(x)
     assert y.shape == out_ranks.shape

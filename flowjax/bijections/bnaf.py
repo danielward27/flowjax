@@ -1,4 +1,8 @@
-from typing import Callable, Optional
+"""
+Block Neural Autoregressive bijection implementation.
+"""
+
+from typing import Callable
 import equinox as eqx
 import jax
 import jax.numpy as jnp
@@ -54,7 +58,7 @@ class BlockAutoregressiveLinear(eqx.Module):
         conditioning variable) to the left of the block diagonal weight matrix.
 
         Args:
-            key (random.PRNGKey): Random key
+            key KeyArray: Random key
             n_blocks (int): Number of diagonal blocks (dimension of original input).
             block_shape (tuple): The shape of the (unconstrained) blocks.
             cond_dim (int): Number of additional conditioning variables. Defaults to 0.
@@ -121,14 +125,18 @@ def logmatmulexp(x, y):
 class TanhBNAF:
     """
     Tanh transformation compatible with BNAF (log_abs_det provided as 3D array).
-    Condition is ignored. Output shape is (n_blocks, *block_size), where
-    output[i] is the log jacobian for the ii-th block.
     """
 
     def __init__(self, n_blocks: int):
         self.n_blocks = n_blocks
 
     def __call__(self, x):
+        """Applies the activation and computes the Jacobian. Jacobian shape is
+        (n_blocks, *block_size).
+
+        Returns:
+            Tuple: output, jacobian
+        """
         d = x.shape[0] // self.n_blocks
         log_det_vals = -2 * (x + jax.nn.softplus(-2 * x) - jnp.log(2.0))
         log_det = jnp.full((self.n_blocks, d, d), -jnp.inf)
@@ -139,59 +147,78 @@ class TanhBNAF:
 
 
 class BlockAutoregressiveNetwork(Bijection):
-    n_layers: int
+    depth: int
     layers: list
     cond_dim: int
+    block_dim: int
     activation: Callable
 
     def __init__(
         self,
-        key,
+        key: KeyArray,
         dim: int,
-        cond_dim: int = 0,
-        n_layers: int = 3,
-        block_dim: int = 8,
-        activation=TanhBNAF,
+        cond_dim: int,
+        depth: int,
+        block_dim: int,
+        activation: Callable = None,
     ):
-        self.cond_dim = cond_dim
-        self.n_layers = n_layers
+        """Block Neural Autoregressive Network (see https://arxiv.org/abs/1904.04676).
 
+        Args:
+            key (KeyArray): Jax PRNGKey
+            dim (int): Dimension of the distribution.
+            cond_dim (int): Dimension of extra conditioning variables.
+            depth (int): Number of hidden layers in the network.
+            block_dim (int): Block dimension (hidden layer size is roughly dim*block_dim).
+            activation (Callable, optional): Activation function. Defaults to TanhBNAF.
+        """
+                
+        activation = TanhBNAF(dim) if activation is None else activation
         layers = []
+        if depth == 0:
+            layers.append(BlockAutoregressiveLinear(key, dim, (1, 1), cond_dim))
+        else:
+            keys = random.split(key, depth + 1)
+            block_shapes = [(block_dim, 1), *(block_dim, block_dim)*(depth-1), (1, block_dim)]
+            cond_dims = [cond_dim] + [0]*depth
 
-        block_sizes = [
-            (block_dim, 1),
-            *[(block_dim, block_dim)] * (n_layers - 2),
-            (1, block_dim),
-        ]
-        cond_dims = [cond_dim if i == 0 else 0 for i in range(n_layers)]
-        for size, c_d in zip(block_sizes, cond_dims):
-            key, subkey = random.split(key)
-            layers.extend(
-                [BlockAutoregressiveLinear(subkey, dim, size, c_d), activation(dim)]
-            )
-        self.layers = layers[:-1]
+            for key, block_shape, cd in zip(keys, block_shapes, cond_dims):
+                layers.extend([
+                    BlockAutoregressiveLinear(key, dim, block_shape, cd),
+                    activation
+                ])
+            layers = layers[:-1] # remove last activation
+                    
+        self.depth = depth
+        self.layers = layers
+        self.cond_dim = cond_dim
+        self.block_dim = block_dim
         self.activation = activation
 
-    def transform(self, x: Array, condition=None):
-        y = self.layers[0](x, condition)[0]
+    def transform(self, x, condition=None):
+        x = self.layers[0](x, condition)[0]
         for layer in self.layers[1:]:
-            y = layer(y)[0]
-        return y
+            x = layer(x)[0]
+        return x
 
-    def transform_and_log_abs_det_jacobian(self, x: Array, condition=None):
-        y, log_det_3d_0 = self.layers[0](x, condition)
+    def transform_and_log_abs_det_jacobian(self, x, condition=None):
+        x, log_det_3d_0 = self.layers[0](x, condition)
         log_det_3ds = [log_det_3d_0]
-
         for layer in self.layers[1:]:
-            y, log_det_3d = layer(y)
+            x, log_det_3d = layer(x)
             log_det_3ds.append(log_det_3d)
 
         logdet = log_det_3ds[-1]
         for ld in reversed(log_det_3ds[:-1]):
             logdet = logmatmulexp(logdet, ld)
-        return y, logdet.sum()
+        return x, logdet.sum()
 
-    def inverse(*args, **kwargs):
-        return NotImplementedError(
+    def inverse(self, *args, **kwargs):
+        raise NotImplementedError(
+            "This transform would require numerical methods for inversion."
+        )
+
+    def inverse_and_log_abs_det_jacobian(self, *args, **kwargs):
+        raise NotImplementedError(
             "This transform would require numerical methods for inversion."
         )

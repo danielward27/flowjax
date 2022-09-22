@@ -1,3 +1,6 @@
+"""Masked autoregressive network and bijection."""
+
+from functools import partial
 from typing import Callable, Optional
 from equinox import Module
 from equinox.nn import Linear
@@ -6,15 +9,23 @@ from jax.random import KeyArray
 import jax.numpy as jnp
 from flowjax.utils import tile_until_length
 import jax.nn as jnn
-from flowjax.bijections.abc import Bijection, ParameterisedBijection
+from flowjax.bijections.abc import Bijection, Transformer
 from typing import List
 from flowjax.utils import Array
+import jax
 
+def rank_based_mask(in_ranks: Array, out_ranks: Array, eq: bool = False):
+    """Forms mask matrix, with 1s where the out_ranks > or >= in_ranks.
 
-def rank_based_mask(in_ranks, out_ranks, eq=False):
-    """Mask with shape `(len(out_ranks), len(in_ranks))`, with 1s where the
-    out_ranks > or >= in_ranks. If eq=True, then >= is used for comparison
-    (i.e. allows connections between equal ranks)."""
+    Args:
+        in_ranks (Array): Ranks of the inputs.
+        out_ranks (Array): Ranks of the outputs.
+        eq (bool): If true, compares with >= instead of >. Defaults to False.
+
+    Returns:
+        Array: Mask with shape `(len(out_ranks), len(in_ranks))`
+    """
+    
     assert (in_ranks.ndim) == 1 and (out_ranks.ndim == 1)
     if eq:
         mask = out_ranks[:, None] >= in_ranks
@@ -27,8 +38,14 @@ class MaskedLinear(Module):
     linear: Linear
     mask: Array
 
-    def __init__(self, mask: Array, use_bias: bool = True, *, key):
-        "Mask should have shape (out_features, in_features)."
+    def __init__(self, mask: Array, use_bias: bool = True, *, key: KeyArray):
+        """Masked linear layer.
+
+        Args:
+            mask (Array): Mask with shape (out_features, in_features).
+            key (KeyArray): Jax PRNGKey
+            use_bias (bool, optional): Whether to include bias terms. Defaults to True.
+        """
         self.linear = Linear(mask.shape[1], mask.shape[0], use_bias, key=key)
         self.mask = mask
 
@@ -46,20 +63,20 @@ def _identity(x):
 class AutoregressiveMLP(Module):
     in_size: int
     out_size: int
+    width_size: int
+    depth: int
     in_ranks: Array
     out_ranks: Array
     hidden_ranks: Array
     layers: List[MaskedLinear]
-    width_size: int
-    depth: int
     activation: Callable
     final_activation: Callable
 
     def __init__(
         self,
-        in_size: int,
+        in_ranks: Array,
+        hidden_ranks: Array,
         out_ranks: Array,
-        width_size: int,
         depth: int,
         activation: Callable = jnn.relu,
         final_activation: Callable = _identity,
@@ -67,21 +84,18 @@ class AutoregressiveMLP(Module):
         key
     ) -> None:
         """An autoregressive multilayer perceptron, similar to equinox.nn.composed.MLP.
-        out_ranks controls the dependencies - paths will only exist between inputs and
-        outputs if the input index is less than output rank.
+        Connections will only exist where in_ranks < out_ranks.
 
         Args:
-            in_size (int): Input dimension.
-            out_ranks (Array): Ranks of the output. Connections will only exist where the input index < out_ranks.
-            width_size (int): Hidden layer dimension.
-            depth (int): Number of layers.
-            key (jax.random.PRNGKey): Jax random key.
+            in_ranks (Array): Ranks of the inputs.
+            hidden_ranks (Array): Ranks of the hidden layer(s).
+            out_ranks (Array): Ranks of the outputs.
+            depth (int): Number of hidden layers.
             activation (Callable, optional): Activation function. Defaults to jnn.relu.
             final_activation (Callable, optional): Final activation function. Defaults to _identity.
+            key (KeyArray): Jax PRNGKey
         """
-        in_ranks = jnp.arange(in_size)
-        hidden_ranks = tile_until_length(jnp.arange(0, in_size), width_size)
-
+        
         masks = []
         if depth == 0:
             masks.append(rank_based_mask(in_ranks, out_ranks, eq=False))
@@ -95,13 +109,13 @@ class AutoregressiveMLP(Module):
         layers = [MaskedLinear(mask, key=key) for mask, key in zip(masks, keys)]
 
         self.layers = layers
-        self.in_size = in_size
+        self.in_size = len(in_ranks)
         self.out_size = len(out_ranks)
+        self.width_size = len(hidden_ranks)
+        self.depth = depth
         self.in_ranks = in_ranks
         self.hidden_ranks = hidden_ranks
         self.out_ranks = out_ranks
-        self.width_size = width_size
-        self.depth = depth
         self.activation = activation
         self.final_activation = final_activation
 
@@ -119,131 +133,81 @@ class AutoregressiveMLP(Module):
 
 
 class MaskedAutoregressive(Bijection):
-    bijection: ParameterisedBijection
+    transformer: Transformer
     autoregressive_mlp: AutoregressiveMLP
     cond_dim: int
 
     def __init__(
         self,
         key: KeyArray,
-        bijection: ParameterisedBijection,
+        transformer: Transformer,
         dim: int,
+        cond_dim: int,
         nn_width: int,
         nn_depth: int,
         nn_activation: Callable = jnn.relu,
     ) -> None:
+        """Masked autoregressive bijection implementation (https://arxiv.org/abs/1705.07057v4).
+        The transformer is parameterised by a neural network, with weights masked to ensure
+        an autoregressive structure.
 
-        # TODO Support conditioning variables
-        self.cond_dim = 0
+        Args:
+            key (KeyArray): Jax PRNGKey
+            transformer (Transformer): Transformer to be parameterised by the autoregressive network.
+            dim (int): Dimension.
+            cond_dim (int): Dimension of any conditioning variables.
+            nn_width (int): Neural network width.
+            nn_depth (int): Neural network depth.
+            nn_activation (Callable, optional): Neural network activation. Defaults to jnn.relu.
+        """
 
-        out_ranks = bijection.get_ranks(dim)
-        self.bijection = bijection
+        self.cond_dim = cond_dim
+
+        in_ranks = jnp.concatenate(
+            (jnp.arange(dim), -jnp.ones(cond_dim))
+        )  # we give conditioning variables rank -1
+        hidden_ranks = tile_until_length(jnp.arange(dim), nn_width)
+        out_ranks = transformer.get_ranks(dim)
+        self.transformer = transformer
         self.autoregressive_mlp = AutoregressiveMLP(
-            dim, out_ranks, nn_width, nn_depth, nn_activation, key=key
+            in_ranks, hidden_ranks, out_ranks, nn_depth, nn_activation, key=key,
         )
 
     def transform(self, x, condition=None):
-        bijection_params = self.autoregressive_mlp(x)
-        bijection_args = self.bijection.get_args(bijection_params)
-        y = self.bijection.transform(x, *bijection_args)
+        transformer_args = self.get_transformer_args(x, condition)
+        y = self.transformer.transform(x, *transformer_args)
         return y
 
     def transform_and_log_abs_det_jacobian(self, x, condition=None):
-        bijection_params = self.autoregressive_mlp(x)
-        bijection_args = self.bijection.get_args(bijection_params)
-        y, log_abs_det = self.bijection.transform_and_log_abs_det_jacobian(
-            x, *bijection_args
+        transformer_args = self.get_transformer_args(x, condition)
+        y, log_abs_det = self.transformer.transform_and_log_abs_det_jacobian(
+            x, *transformer_args
         )
         return y, log_abs_det
 
-    def inverse(self, y: Array, condition: Optional[Array] = None):
-        raise NotImplementedError("Not yet implemented")
+    def inverse(self, y, condition = None):
+        init = (y, 0)
+        fn = partial(self.inv_scan_fn, condition = condition)
+        (x, _), _ = jax.lax.scan(fn, init, None, length=len(y))
+        return x
 
+    def inv_scan_fn(self, init, _, condition):
+        "One 'step' in computing the inverse"
+        y, rank = init
+        transformer_args = self.get_transformer_args(y, condition)
+        x = self.transformer.inverse(y, *transformer_args)
+        x = y.at[rank].set(x[rank])
+        return (x, rank + 1), None
 
-# class AutoregressiveMLP:
-#     """Multi-layer perceptron with dependency structure given by in_ranks and
-#     out_ranks. Connections only exist between nodes where out_ranks > in_ranks.
-#     The hidden ranks are formed by repeatedly tiling the input ranks.
-#     """
+    def inverse_and_log_abs_det_jacobian(self, y, condition = None):
+        x = self.inverse(y, condition)
+        log_det = self.transform_and_log_abs_det_jacobian(x, condition)[1]
+        return x, -log_det
 
-#     def __init__(
-#         self,
-#         mlp: MLP,
-#         out_ranks: Array,
-#         in_ranks: Optional[Array] = None):
+    def get_transformer_args(self, x: Array, condition: Optional[Array] = None):
+        nn_input = x if condition is None else jnp.concatenate((x, condition))
+        transformer_params = self.autoregressive_mlp(nn_input)
+        transformer_args = self.transformer.get_args(transformer_params)
+        return transformer_args
 
-#         in_ranks = jnp.arange(mlp.in_size) if in_ranks is None else in_ranks
-#         assert len(in_ranks) == mlp.in_size
-#         assert len(out_ranks) == mlp.out_size
-#         assert mlp.width_size >= in_ranks
-
-#         hidden_ranks = tile_until_length(in_ranks, mlp.width_size)
-
-#         self.mlp = mlp
-#         self.in_ranks = in_ranks
-#         self.hidden_ranks = hidden_ranks
-#         self.out_ranks = out_ranks
-#         self.first_mask = rank_based_mask(in_ranks, hidden_ranks)
-#         self.hidden_mask = rank_based_mask(hidden_ranks, hidden_ranks)
-#         self.last_mask = rank_based_mask(hidden_ranks, out_ranks)
-
-#         # self.mlp.layers = # replace with masked versions? Then you don't even need to change __call__ as much?
-
-#     def __call__(self, x: Array) -> Array:
-#         for layer in self.mlp.layers[:-1]:
-#             x = layer(x)  # TODO call masked_linear here?  Or just repeat equinox structure?
-#             x = self.mlp.activation(x)
-#         x = self.mlp.layers[-1](x)
-#         x = self.mlp.final_activation(x)
-#         return x
-
-#     def _masked_linear(linear, x, mask):
-#         x = self.linear.weight * self.mask @ x
-#         if self.linear.bias is not None:
-#             x = x + self.linear.bias
-#         return x
-
-
-# def rank_based_mask_expand_to(
-#     in_ranks: Array, dim: int
-# ):  # TODO What is we contract?
-#     "Autoregressive mask, with n outputs for each in rank. Returns mask, out_ranks"
-#     repeats = dim // len(in_ranks) + 1
-#     out_ranks = jnp.repeat(in_ranks, repeats)[:dim]
-#     mask = rank_based_mask(in_ranks, out_ranks)
-#     return mask, out_ranks
-
-# def mlp_masks_and_ranks(in_ranks: Array, ):  # will need conditioning variables
-#     dim = len(in_ranks)
-
-#     out_ranks = jnp.repeat()
-
-# def made_rank_based_mask(in_ranks: Array, out_features: int):
-#     """Create a MADE style mask.
-
-#     Args:
-#         in_ranks (Array): Ranks of inputs (weights are nonzero where output ranks are greater than the input rank)
-#         out_features (int): The number of output features.
-
-#     Returns:
-#         tuple: mask, out_ranks
-#     """
-#     num_ranks = max(in_ranks) + 1
-#     assert jnp.all(jnp.unique(in_ranks) == jnp.arange(num_ranks))
-#     assert out_features >= num_ranks
-#     out_ranks = tile_until_length(jnp.arange(num_ranks), out_features)
-#     mask = out_ranks[:, None] > in_ranks
-#     return mask.astype(jnp.int32), out_ranks
-
-# def rank_based_mask(in_features, out_features):
-#     return NotImplemented()
-
-
-# class AutoregressiveLinear:
-#     "Wrap equinox linear, masking "
-
-#     def __init__(linear: Linear, in_ranks, out_ranks):
-
-
-# %%
-
+    

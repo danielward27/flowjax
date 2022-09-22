@@ -2,13 +2,14 @@
 
 from abc import ABC, abstractmethod
 from typing import Optional
-import jax.numpy as jnp
+from flowjax.bijections.abc import Bijection
 from jax import random
 from jax.scipy import stats
 import jax
 from jax.random import KeyArray
 from flowjax.utils import Array
 from typing import Any
+import equinox as eqx
 
 # To construct a distribution, we define _log_prob and _sample, which take in vector arguments.
 # More friendly methods are then created from these, supporting batches of inputs.
@@ -16,7 +17,7 @@ from typing import Any
 # (to facilitate easy composing of conditional and unconditional distributions)
 
 
-class Distribution(ABC):
+class Distribution(eqx.Module, ABC):
     """Distribution base class."""
 
     dim: int
@@ -29,13 +30,8 @@ class Distribution(ABC):
 
     @abstractmethod
     def _sample(self, key: KeyArray, condition: Optional[Array] = None):
-        "Sample the distribution."
+        "Sample a point from the distribution."
         pass
-
-    @property
-    def in_axes(self):
-        "Controls whether to vmap over the conditioning variable."
-        return (0, 0) if self.cond_dim > 0 else (0, None)
 
     @property
     def conditional(self):
@@ -51,51 +47,108 @@ class Distribution(ABC):
 
         Args:
             key (KeyArray): Jax PRNGKey.
-            condition (Optional[Array], optional): _description_. Defaults to None.
-            n (Optional[int], optional): _description_. Defaults to None.
+            condition (Optional[Array], optional): Conditioning variables. Defaults to None.
+            n (Optional[int], optional): Number of samples (if condition.ndim==1). Defaults to None.
 
         Returns:
             Array: Jax array of samples.
         """
-        self._argcheck(condition=condition)
+        self._argcheck_condition(condition)
 
-        if condition is None:
-            condition = jnp.empty((0,))
-
-        if n is None and condition.ndim == 1:  # No need to vmap in this case
-            return self._sample(key, condition)
-        else:
-            if condition.ndim == 2:
-                assert n is None, "n should not be provided when condition.ndim==2."
-                in_axes = (0, 0)  # type: tuple[Any, Any]
-                n = condition.shape[0]
+        if n is None:
+            if condition is None:
+                return self._sample(key)
+            elif condition.ndim == 1:
+                return self._sample(key, condition)
             else:
-                assert n is not None, "n should be provided when condition.ndim==1."
-                in_axes = (0, None)
-
-            keys = random.split(key, n)
-            return jax.vmap(self._sample, in_axes)(keys, condition)
+                n = condition.shape[0]
+                in_axes = (0, 0)  # type: tuple[Any, Any]
+        else:
+            if condition is not None and condition.ndim != 1:
+                raise ValueError("condition must be 1d if n is provided.")
+            in_axes = (0, None)
+            
+        keys = random.split(key, n)
+        return jax.vmap(self._sample, in_axes)(keys, condition)
 
     def log_prob(self, x: Array, condition: Optional[Array] = None):
         """Evaluate the log probability. If a matrix/matrices are passed,
-        we vmap over the leading axis."""
-        self._argcheck(x, condition)
-        condition = jnp.empty((0,)) if condition is None else condition
-        if x.ndim == 1 and condition.ndim == 1:  # No need to vmap in this case
-            return self._log_prob(x, condition)
-        else:
-            in_axes = [0 if a.ndim == 2 else None for a in (x, condition)]
-            return jax.vmap(self._log_prob, in_axes)(x, condition)
+        we vmap (vectorise) over the leading axis.
 
-    def _argcheck(self, x=None, condition=None):
-        if x is not None and x.shape[-1] != self.dim:
-            raise ValueError(f"Expected x.shape[-1]=={self.dim}")
-        if self.conditional:
-            assert condition is not None
+        Args:
+            x (Array): Points at which to evaluate density.
+            condition (Optional[Array], optional): Conditioning variables. Defaults to None.
+
+        Returns:
+            Array: Jax array of log probabilities.
+        """
+        self._argcheck_x(x)
+        self._argcheck_condition(condition)
+
+        if condition is None:
+            if x.ndim == 1:
+                return self._log_prob(x)
+            else:
+                return jax.vmap(self._log_prob)(x)
+        else:
+            if (x.ndim == 1) and (condition.ndim == 1):
+                return self._log_prob(x, condition)
+            else:
+                in_axes = [0 if a.ndim == 2 else None for a in (x, condition)]
+                return jax.vmap(self._log_prob, in_axes)(x, condition)
+
+    def _argcheck_x(self, x: Array):
+        if x.ndim not in (1,2):
+            raise ValueError("x.ndim should be 1 or 2")
+
+        if x.shape[-1] != self.dim:
+            raise ValueError(f"Expected x.shape[-1]=={self.dim}.")
+
+    def _argcheck_condition(self, condition: Optional[Array] = None):
+        if condition is None:
+            if self.conditional:
+                raise ValueError(f"condition must be provided.")
+        else:
+            if condition.ndim not in (1,2):
+                raise ValueError("condition.ndim should be 1 or 2")
             if condition.shape[-1] != self.cond_dim:
-                raise ValueError(f"Expected condition.shape[-1]=={self.cond_dim}")
-            if condition.ndim > 2:
-                raise ValueError("Expected condition.ndim to be 1 or 2.")
+                raise ValueError(f"Expected condition.shape[-1]=={self.cond_dim}.")
+
+
+class Transformed(Distribution):
+    base_dist: Distribution
+    bijection: Bijection
+    dim: int
+    cond_dim: int
+
+    def __init__(
+        self,
+        base_dist: Distribution,
+        bijection: Bijection,
+    ):
+        """Form a distribution like object using a base distribution and a
+        bijection. We take the forward bijection for use in sampling, and the inverse
+        bijection for use in density evaluation.
+
+        Args:
+            base_dist (Distribution): Base distribution.
+            bijection (Bijection): Bijection defined in "normalising" direction.
+        """
+        self.base_dist = base_dist
+        self.bijection = bijection
+        self.dim = self.base_dist.dim
+        self.cond_dim = max(self.bijection.cond_dim, self.base_dist.cond_dim)
+
+    def _log_prob(self, x: Array, condition: Optional[Array] = None):
+        z, log_abs_det = self.bijection.inverse_and_log_abs_det_jacobian(x, condition)
+        p_z = self.base_dist._log_prob(z, condition)
+        return p_z + log_abs_det
+
+    def _sample(self, key: KeyArray, condition: Optional[Array] = None):
+        z = self.base_dist._sample(key, condition)
+        x = self.bijection.transform(z, condition)
+        return x
+
 
 
 class Normal(Distribution):
@@ -179,12 +232,9 @@ class Exponential(Distribution):
         assert x.shape == (self.dim,)
         return stats.expon.logpdf(x)
 
-    def _sample(self, key: KeyArray, condition: Optional[Array] = None):
-        return random.exponential(key, shape=(self.dim,))
-
-class StudentT(Distribution):
-    "Standard normal distribution, condition is ignored."
-    def __init__(self, dim):
+        Args:
+            dim (int): Dimension of the normal distribution.
+        """
         self.dim = dim
         self.cond_dim = 0
         self.df = jnp.array([5.])
@@ -195,6 +245,3 @@ class StudentT(Distribution):
 
     def _sample(self, key: KeyArray, condition: Optional[Array] = None):
         return random.t(key, self.df, shape=(self.dim,))
-
-    def __repr__(self):
-        return f'<FlowJax StandardNormal>'
