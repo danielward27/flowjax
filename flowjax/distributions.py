@@ -4,8 +4,9 @@ from abc import ABC, abstractmethod
 from typing import Optional
 from flowjax.bijections.abc import Bijection
 from jax import random
-from jax.scipy.stats import norm
+from jax.scipy import stats as jstats
 import jax
+import jax.numpy as jnp
 from jax.random import KeyArray
 from flowjax.utils import Array
 from typing import Any
@@ -150,12 +151,12 @@ class Transformed(Distribution):
         return x
 
 
-
-class Normal(Distribution):
-
-    def __init__(self, dim: int):
-        """Standard normal distribution, condition is ignored.
-
+class StandardNormal(Distribution):
+    """
+    Implements a standard normal distribution, condition is ignored.
+    """
+    def __init__(self, dim: int, mean: float=0.0, std: float=1.0):
+        """
         Args:
             dim (int): Dimension of the normal distribution.
         """
@@ -164,7 +165,92 @@ class Normal(Distribution):
 
     def _log_prob(self, x: Array, condition: Optional[Array] = None):
         assert x.shape == (self.dim,)
-        return norm.logpdf(x).sum()
+        return jstats.norm.logpdf(x).sum()
 
     def _sample(self, key: KeyArray, condition: Optional[Array] = None):
         return random.normal(key, (self.dim,))
+
+
+class Uniform(Distribution):
+    """
+    Implements a Uniform distribution defined over a min and max val.
+    X ~ Uniform([min, max])
+    """
+    min: float
+    max: float
+    def __init__(self, dim, min=0.0, max=1.0):
+        """
+        Args:
+            min (float): 
+            max (float): 
+        """
+        self.dim = dim
+        self.cond_dim = 0
+        self.min = min
+        self.max = max
+
+    def _log_prob(self, x: Array, condition: Optional[Array] = None):
+        assert x.shape == (self.dim,)
+        return jstats.uniform.logpdf(
+            x, loc=self.min, scale=self.max - self.min
+        ).sum()
+
+    def _sample(self, key: KeyArray, condition: Optional[Array] = None):
+        return random.uniform(
+            key, shape=(self.dim,), minval=self.min, maxval=self.max
+        )
+
+    def __repr__(self):
+        return f'<FlowJax Uniform([{self.min}, {self.max})>'
+
+
+class Gumbel(Distribution):
+    """
+    Implements standard gumbel distribution (loc=0, scale=1)
+    Ref: https://en.wikipedia.org/wiki/Gumbel_distribution
+    """
+    def __init__(self, dim):
+        self.dim = dim
+        self.cond_dim = 0
+
+    def _log_prob(self, x: Array, condition: Optional[Array] = None):
+        assert x.shape == (self.dim,)
+        return -(x + jnp.exp(-x)).sum()
+
+    def _sample(self, key: KeyArray, condition: Optional[Array] = None):
+        return random.gumbel(key, shape=(self.dim,))
+
+
+class Cauchy(Distribution):
+    """
+    Implements standard cauchy distribution (loc=0, scale=1)
+    Ref: https://en.wikipedia.org/wiki/Cauchy_distribution
+    """
+    def __init__(self, dim):
+        self.dim = dim
+        self.cond_dim = 0
+
+    def _log_prob(self, x: Array, condition: Optional[Array] = None):
+        assert x.shape == (self.dim,)
+        return jstats.cauchy.logpdf(x).sum()
+
+    def _sample(self, key: KeyArray, condition: Optional[Array] = None):
+        return random.cauchy(key, shape=(self.dim,))
+
+
+class StudentT(Distribution):
+    df: Array
+    """
+    Implements student T distribution with specified degree of freedom.
+    """
+    def __init__(self, dim, df=1.):
+        self.dim = dim
+        self.cond_dim = 0
+        self.df = jnp.array([df], dtype=jnp.float32)
+
+    def _log_prob(self, x: Array, condition: Optional[Array] = None):
+        assert x.shape == (self.dim,)
+        return jstats.t.logpdf(x, df=self.df).sum()
+
+    def _sample(self, key: KeyArray, condition: Optional[Array] = None):
+        return random.t(key, df=self.df, shape=(self.dim,))
