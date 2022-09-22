@@ -181,3 +181,20 @@ class Exponential(Distribution):
 
     def _sample(self, key: KeyArray, condition: Optional[Array] = None):
         return random.exponential(key, shape=(self.dim,))
+
+class StudentT(Distribution):
+    "Standard normal distribution, condition is ignored."
+    def __init__(self, dim):
+        self.dim = dim
+        self.cond_dim = 0
+        self.df = jnp.array([5.])
+
+    def _log_prob(self, x: Array, condition: Optional[Array] = None):
+        assert x.shape == (self.dim,)
+        return stats.norm.logpdf(x).sum()
+
+    def _sample(self, key: KeyArray, condition: Optional[Array] = None):
+        return random.t(key, self.df, shape=(self.dim,))
+
+    def __repr__(self):
+        return f'<FlowJax StandardNormal>'
