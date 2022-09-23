@@ -7,7 +7,8 @@ import optax
 from tqdm import tqdm
 from typing import Optional, List, Dict, Tuple
 from flowjax.utils import Array
-
+from equinox.custom_types import BoolAxisSpec
+from jaxtyping import PyTree
 
 def train_flow(
     key: KeyArray,
@@ -21,6 +22,7 @@ def train_flow(
     val_prop: float = 0.1,
     clip_norm: float = 0.5,
     show_progress: bool = True,
+    filter_spec: PyTree[BoolAxisSpec] = eqx.is_inexact_array
 ):
     """Train a distribution (e.g. a flow) by maximum likelihood with Adam optimizer.
 
@@ -36,6 +38,7 @@ def train_flow(
         val_prop (float, optional): Proportion of data to use in validation set. Defaults to 0.1.
         clip_norm (float, optional): Maximum gradient norm before clipping occurs. Defaults to 0.5.
         show_progress (bool, optional): Whether to show progress bar. Defaults to True.
+        filter_spec (PyTree[BoolAxisSpec], optional): Equinox `filter_spec` for specifying trainable parameters. Either a callable `leaf -> bool`, or a PyTree with prefix structure matching `dist` with True/False values. Defaults to `eqx.is_inexact_array`.
     """
 
     def loss(dist, x, condition=None):
@@ -43,7 +46,7 @@ def train_flow(
 
     @eqx.filter_jit
     def step(dist, optimizer, opt_state, x, condition=None):
-        loss_val, grads = eqx.filter_value_and_grad(loss)(dist, x, condition)
+        loss_val, grads = eqx.filter_value_and_grad(loss, arg=filter_spec)(dist, x, condition)
         updates, opt_state = optimizer.update(grads, opt_state)
         dist = eqx.apply_updates(dist, updates)
         return dist, opt_state, loss_val
@@ -57,7 +60,7 @@ def train_flow(
         optax.clip_by_global_norm(clip_norm), optax.adam(learning_rate=learning_rate)
     )
 
-    best_params, static = eqx.partition(dist, eqx.is_inexact_array)
+    best_params, static = eqx.partition(dist, filter_spec)
     opt_state = optimizer.init(best_params)
 
     losses = {"train": [], "val": []}  # type: Dict[str, List[float]]

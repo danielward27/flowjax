@@ -16,7 +16,7 @@ class AffineTransformer(Transformer):
         return x * scale + loc
 
     def transform_and_log_abs_det_jacobian(self, x, loc, scale):
-        return x * scale + loc, jnp.sum(jnp.log(scale))
+        return x * scale + loc, jnp.log(scale).sum()
 
     def inverse(self, y, loc, scale):
         return (y - loc) / scale
