@@ -1,9 +1,9 @@
-
 import pytest
 import jax.numpy as jnp
 from jax import random
 from flowjax.distributions import (
     StandardNormal,
+    StandardUniform,
     Normal,
     Uniform,
     Gumbel,
@@ -11,10 +11,19 @@ from flowjax.distributions import (
     StudentT,
 )
 
+# This sets up a number of constructors dim -> instance for testing 
+# the generic API of Distribution classes.
 _test_distributions = [
     pytest.param(StandardNormal, id='StandardNormal'),
-    pytest.param(Normal, id='Normal'),
-    pytest.param(Uniform, id='Uniform'),
+    pytest.param(
+        lambda dim: Normal(jnp.zeros(dim), jnp.ones(dim)),
+        id='Normal'
+    ),
+    pytest.param(StandardUniform, id='StandardUniform'),
+    pytest.param(
+        lambda dim: Uniform(jnp.zeros(dim), jnp.ones(dim)),
+        id='Uniform'
+    ),
     pytest.param(Gumbel, id='Gumbel'),
     pytest.param(Cauchy, id='Cauchy'),
     pytest.param(StudentT, id='StudentT'),

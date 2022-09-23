@@ -3,6 +3,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 from flowjax.bijections.abc import Bijection
+from flowjax.bijections.affine import Affine
 from jax import random
 from jax.scipy import stats as jstats
 import jax
@@ -171,63 +172,70 @@ class StandardNormal(Distribution):
         return random.normal(key, (self.dim,))
 
 
-class Normal(Distribution):
+class Normal(Transformed):
     """
-    Implements a normal distribution with mean and std.
+    Implements an independent Normal distribution with mean and std for
+    each dimension.
     """
-    mean: float
-    std: float
-    def __init__(self, dim: int, mean: float=0.0, std: float=1.0):
+    mean: Array
+    std: Array
+    def __init__(self, mean: Array=jnp.array([0.0]), std: Array=jnp.array([1.0])):
         """
         Args:
-            dim (int): Dimension of the normal distribution.
+            mean (Array): Array of the means of each dimension
+            std (Array): Array of the standard deviations of each dimension
         """
-        self.dim = dim
-        self.cond_dim = 0
+        assert mean.shape == std.shape
         self.mean = mean
         self.std = std
+        dim = mean.shape[0]
+        
+        super(Normal, self).__init__(
+            base_dist=StandardNormal(dim),
+            bijection=Affine(loc=mean, scale=std)
+        )
+
+
+class StandardUniform(Distribution):
+    """
+    Implements a standard independent Uniform distribution, ie X ~ Uniform([0, 1]^dim).
+    """
+    def __init__(self, dim):
+        self.dim = dim
+        self.cond_dim = 0
 
     def _log_prob(self, x: Array, condition: Optional[Array] = None):
         assert x.shape == (self.dim,)
-        std_x = (x - self.mean) / self.std
-        return jstats.norm.logpdf(std_x).sum()
+        return jstats.uniform.logpdf(x).sum()
 
     def _sample(self, key: KeyArray, condition: Optional[Array] = None):
-        std_x = random.normal(key, (self.dim,))
-        return self.std * std_x + self.mean
+        return random.uniform(key, shape=(self.dim,))
 
 
-class Uniform(Distribution):
+class Uniform(Transformed):
     """
-    Implements a Uniform distribution defined over a min and max val.
-    X ~ Uniform([min, max])
+    Implements an independent uniform distribution 
+    between min and max for each dimension.
     """
-    min: float
-    max: float
-    def __init__(self, dim, min=0.0, max=1.0):
+    min: Array
+    max: Array
+    def __init__(self, min: Array=jnp.array([0.0]), max: Array=jnp.array([1.0])):
         """
         Args:
-            min (float): 
-            max (float): 
+            min (Array): ith entry gives the min of the ith dimension
+            max (Array): ith entry gives the max of the ith dimension
         """
-        self.dim = dim
+        assert min.shape == max.shape
+        self.dim = min.shape[0]
         self.cond_dim = 0
         self.min = min
         self.max = max
+        dim = min.shape[0]
 
-    def _log_prob(self, x: Array, condition: Optional[Array] = None):
-        assert x.shape == (self.dim,)
-        return jstats.uniform.logpdf(
-            x, loc=self.min, scale=self.max - self.min
-        ).sum()
-
-    def _sample(self, key: KeyArray, condition: Optional[Array] = None):
-        return random.uniform(
-            key, shape=(self.dim,), minval=self.min, maxval=self.max
+        super(Uniform, self).__init__(
+            base_dist=StandardUniform(dim),
+            bijection=Affine(loc=min, scale=max - min)
         )
-
-    def __repr__(self):
-        return f'<FlowJax Uniform([{self.min}, {self.max})>'
 
 
 class Gumbel(Distribution):
