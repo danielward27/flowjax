@@ -65,16 +65,18 @@ class TriangularAffine(Bijection):
         if jnp.any(jnp.diag(arr) < min_diag):
             ValueError("arr diagonal entries must be greater than min_diag")
         
-        self.loc = loc
         self.dim = arr.shape[0]
         self.cond_dim = 0
-        self._arr = arr
-        self.diag_mask = jnp.eye(self.dim)
-        tri_mask = rank_based_mask(jnp.arange(self.dim), jnp.arange(self.dim))
+        self.diag_mask = jnp.eye(self.dim, dtype=jnp.int32)
+        tri_mask = jnp.tril(jnp.ones((self.dim, self.dim), dtype=jnp.int32), k=-1)
         self.tri_mask = tri_mask if lower else tri_mask.T
         self.min_diag = min_diag
-        self._log_diag = jnp.log(jnp.diag(arr) - min_diag)
         self.lower = lower
+
+        # inexact arrays
+        self.loc = loc
+        self._arr = arr
+        self._log_diag = jnp.log(jnp.diag(arr) - min_diag)
         
     @property
     def arr(self):
