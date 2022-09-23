@@ -6,6 +6,7 @@ from flowjax.bijections.masked_autoregressive import MaskedAutoregressive
 from flowjax.bijections.transformers import AffineTransformer
 from flowjax.bijections.utils import Flip, Permute
 from flowjax.bijections.transformers import AffineTransformer, RationalQuadraticSplineTransformer
+from flowjax.bijections.affine import Affine, TriangularAffine
 
 transformers = {
     "AffineTransformer": AffineTransformer(),
@@ -32,16 +33,17 @@ def test_transformer_invertibility(bijection):
     assert log_det1 == pytest.approx(-log_det2, abs=1e-5)
 
 
-
-
-
-
 dim = 5
 cond_dim = 2
 key = random.PRNGKey(0)
+pos_def_triangles = jnp.full((dim,dim), 0.5) + jnp.diag(jnp.ones(dim))
+
 bijections = {
     "Flip": Flip(),
     "Permute": Permute(jnp.flip(jnp.arange(dim))),
+    "Affine": Affine(jnp.ones(dim), jnp.full(dim, 2)),
+    "TriangularAffine (lower)": TriangularAffine(jnp.arange(dim), pos_def_triangles),
+    "TriangularAffine (upper)": TriangularAffine(jnp.arange(dim), pos_def_triangles, lower=False),
     "Coupling (unconditional)": Coupling(
         key,
         AffineTransformer(),
@@ -71,7 +73,7 @@ bijections = {
     ),
     "MaskedAutoregressive_RationalQuadraticSpline (conditional)": MaskedAutoregressive(
         key, RationalQuadraticSplineTransformer(5, 3), cond_dim=cond_dim, dim=dim, nn_width=10, nn_depth=2
-    )
+    ),
 }
 
 
@@ -89,5 +91,5 @@ def test_bijection_invertibility(bijection):
     y, log_det1 = bijection.transform_and_log_abs_det_jacobian(x, cond)
     x_reconstructed, log_det2 = bijection.inverse_and_log_abs_det_jacobian(y, cond)
     
-    assert x == pytest.approx(x_reconstructed, abs=1e-5)  # Check invertibility
+    assert x == pytest.approx(x_reconstructed, abs=1e-5)
     assert log_det1 == pytest.approx(-log_det2, abs=1e-5)
