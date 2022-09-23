@@ -74,3 +74,21 @@ def test_dimension_mismatch(distribution_class, input_dimension):
 
     with pytest.raises(ValueError):
         d.log_prob(jnp.ones((2, input_dimension)))
+
+def test_normal_params():
+    dist = Normal(
+        jnp.array([1., 2.]),
+        jnp.array([3., 4.]),
+    )
+
+    assert jnp.all(dist.mean - jnp.array([1., 2.]) < 1e-6)
+    assert jnp.all(dist.std - jnp.array([3., 4.]) < 1e-6)
+
+def test_uniform_params():
+    dist = Uniform(
+        jnp.array([1., 2.]),
+        jnp.array([3., 4.]),
+    )
+
+    assert jnp.all(dist.min - jnp.array([1., 2.]) < 1e-6)
+    assert jnp.all(dist.max - jnp.array([3., 4.]) < 1e-6)

@@ -186,15 +186,20 @@ class Normal(Transformed):
             std (Array): Array of the standard deviations of each dimension
         """
         assert mean.shape == std.shape
-        self.mean = mean
-        self.std = std
         dim = mean.shape[0]
-        
+
         super(Normal, self).__init__(
             base_dist=StandardNormal(dim),
             bijection=Affine(loc=mean, scale=std)
         )
 
+    @property
+    def mean(self):
+        return self.bijection.loc
+
+    @property
+    def std(self):
+        return self.bijection.scale
 
 class StandardUniform(Distribution):
     """
@@ -226,16 +231,21 @@ class Uniform(Transformed):
             max (Array): ith entry gives the max of the ith dimension
         """
         assert min.shape == max.shape
-        self.dim = min.shape[0]
-        self.cond_dim = 0
-        self.min = min
-        self.max = max
+        assert jnp.all(min < max), 'Minimums must be less than maximums'
         dim = min.shape[0]
 
         super(Uniform, self).__init__(
             base_dist=StandardUniform(dim),
             bijection=Affine(loc=min, scale=max - min)
         )
+
+    @property
+    def min(self):
+        return self.bijection.loc
+
+    @property
+    def max(self):
+        return self.bijection.loc + self.bijection.scale
 
 
 class Gumbel(Distribution):
