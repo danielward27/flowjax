@@ -286,15 +286,15 @@ class StudentT(Distribution):
     """
     Implements student T distribution with specified degree of freedom.
     """
-    df: Array
-    def __init__(self, dim, df=1.):
+    dfs: Array
+    def __init__(self, dim, dfs: Array=jnp.array([1.])):
         self.dim = dim
         self.cond_dim = 0
-        self.df = jnp.array([df], dtype=jnp.float32)
+        self.df = dfs
 
     def _log_prob(self, x: Array, condition: Optional[Array] = None):
         assert x.shape == (self.dim,)
-        return jstats.t.logpdf(x, df=self.df).sum()
+        return jstats.t.logpdf(x, df=self.dfs).sum()
 
     def _sample(self, key: KeyArray, condition: Optional[Array] = None):
-        return random.t(key, df=self.df, shape=(self.dim,))
+        return random.t(key, df=self.dfs, shape=(self.dim,))
