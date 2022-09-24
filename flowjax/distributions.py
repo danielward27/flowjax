@@ -184,10 +184,7 @@ class Normal(Transformed):
         """
         dim = mean.shape[0]
 
-        super(Normal, self).__init__(
-            base_dist=StandardNormal(dim),
-            bijection=Affine(loc=mean, scale=std)
-        )
+        super().__init__(StandardNormal(dim), Affine(loc=mean, scale=std))
 
     @property
     def mean(self):
@@ -196,6 +193,7 @@ class Normal(Transformed):
     @property
     def std(self):
         return self.bijection.scale
+
 
 class StandardUniform(Distribution):
     """
@@ -217,27 +215,26 @@ class Uniform(Transformed):
     Implements an independent uniform distribution 
     between min and max for each dimension.
     """
-    def __init__(self, min: Array, max: Array):
+    def __init__(self, minval: Array, maxval: Array):
         """
         Args:
-            min (Array): ith entry gives the min of the ith dimension
-            max (Array): ith entry gives the max of the ith dimension
+            minvals (Array): ith entry gives the min of the ith dimension
+            maxvals (Array): ith entry gives the max of the ith dimension
         """
-        if jnp.any(max < min):
+        if jnp.any(maxval < minval):
             raise ValueError("Minimums must be less than maximums.")
-        dim = min.shape[0]
-
-        super(Uniform, self).__init__(
+        dim = minval.shape[0]
+        super().__init__(
             base_dist=StandardUniform(dim),
-            bijection=Affine(loc=min, scale=max - min)
-        )
+            bijection=Affine(loc=minval, scale=maxval - minval)
+            )
 
     @property
-    def min(self):
+    def maxval(self):
         return self.bijection.loc
 
     @property
-    def max(self):
+    def maxval(self):
         return self.bijection.loc + self.bijection.scale
 
 

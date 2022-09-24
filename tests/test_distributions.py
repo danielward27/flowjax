@@ -90,5 +90,5 @@ def test_uniform_params():
         jnp.array([3., 4.]),
     )
 
-    assert jnp.all(dist.min - jnp.array([1., 2.]) < 1e-6)
-    assert jnp.all(dist.max - jnp.array([3., 4.]) < 1e-6)
+    assert jnp.all(dist.minval - jnp.array([1., 2.]) < 1e-6)
+    assert jnp.all(dist.maxval - jnp.array([3., 4.]) < 1e-6)
