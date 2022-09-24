@@ -12,7 +12,7 @@ from jax import random
 data_key, flow_key, train_key = random.split(random.PRNGKey(0), 3)
 
 x = random.uniform(data_key, (10000, 3))  # Toy data
-base_dist = Normal(3)
+base_dist = Normal(jnp.zeros(x.shape[1]), jnp.ones(x.shape[1]))
 flow = block_neural_autoregressive_flow(flow_key, base_dist)
 flow, losses = train_flow(train_key, flow, x, learning_rate=0.05)
 

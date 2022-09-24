@@ -35,7 +35,8 @@ def test_random_permutation_multiple():
 
 def test_train_flow_filter_spec():
     dim = 3
-    base_dist = Transformed(Normal(dim), Affine(jnp.ones(dim), jnp.ones(dim)))
+    mean, std = jnp.ones(dim), jnp.ones(dim)
+    base_dist = Normal(mean, std)
     flow = Transformed(base_dist, Affine(jnp.ones(dim), jnp.ones(dim)))
 
     # All params should change by default

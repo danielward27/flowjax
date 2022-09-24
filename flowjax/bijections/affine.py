@@ -1,40 +1,52 @@
 from flowjax.bijections.abc import Bijection
 from flowjax.utils import Array
 import jax.numpy as jnp
-from flowjax.bijections.masked_autoregressive import rank_based_mask
 from jax.scipy.linalg import solve_triangular
 
 
 class Affine(Bijection):
     loc: Array
     log_scale: Array
-
+    dim: int
+    
     def __init__(self, loc: Array, scale: Array):
         """Elementwise affine transformation. Condition is ignored.
 
         Args:
             loc (Array): Location parameter vector.
-            scale (Array): Scale parameter vector.
+            scale (Array): Positive scale parameter vector.
         """
+
+        if loc.shape != scale.shape:
+            raise ValueError("loc and scale must have matching shapes.")
+
         self.loc = loc
         self.log_scale = jnp.log(scale)
+        self.dim = loc.shape[0]
         self.cond_dim = 0
 
     def transform(self, x, condition = None):
         return x * self.scale + self.loc
 
     def transform_and_log_abs_det_jacobian(self, x, condition = None):
+        self._argcheck(x)
         return x * self.scale + self.loc, self.log_scale.sum()
 
     def inverse(self, y, condition = None):
         return (y - self.loc) / self.scale
 
     def inverse_and_log_abs_det_jacobian(self, y, condition = None):
+        self._argcheck(y)
         return (y - self.loc) / self.scale, -self.log_scale.sum()
 
     @property
     def scale(self):
         return jnp.exp(self.log_scale)
+
+    def _argcheck(self, x: Array):
+        if x.shape != (self.dim, ):
+            raise ValueError(f"Expected shape {(self.dim, )}, got {x.shape}.")
+
 
 
 class TriangularAffine(Bijection):

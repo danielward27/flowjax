@@ -104,7 +104,7 @@ class Distribution(eqx.Module, ABC):
             raise ValueError("x.ndim should be 1 or 2")
 
         if x.shape[-1] != self.dim:
-            raise ValueError(f"Expected x.shape[-1]=={self.dim}.")
+            raise ValueError(f"Expected x.shape[-1]=={self.dim}, got {x.shape}.")
 
     def _argcheck_condition(self, condition: Optional[Array] = None):
         if condition is None:
@@ -152,7 +152,7 @@ class Transformed(Distribution):
         return x
 
 
-class StandardNormal(Distribution):
+class _StandardNormal(Distribution):
     """
     Implements a standard normal distribution, condition is ignored.
     """
@@ -165,7 +165,6 @@ class StandardNormal(Distribution):
         self.cond_dim = 0
 
     def _log_prob(self, x: Array, condition: Optional[Array] = None):
-        assert x.shape == (self.dim,)
         return jstats.norm.logpdf(x).sum()
 
     def _sample(self, key: KeyArray, condition: Optional[Array] = None):
@@ -177,31 +176,26 @@ class Normal(Transformed):
     Implements an independent Normal distribution with mean and std for
     each dimension.
     """
-    mean: Array
-    std: Array
-    def __init__(self, mean: Array=jnp.array([0.0]), std: Array=jnp.array([1.0])):
+    def __init__(self, loc: Array, scale: Array):
         """
         Args:
-            mean (Array): Array of the means of each dimension
-            std (Array): Array of the standard deviations of each dimension
+            loc (Array): Array of the means of each dimension.
+            scale (Array): Array of the standard deviations of each dimension.
         """
-        assert mean.shape == std.shape
-        dim = mean.shape[0]
-
-        super(Normal, self).__init__(
-            base_dist=StandardNormal(dim),
-            bijection=Affine(loc=mean, scale=std)
-        )
+        base_dist = _StandardNormal(loc.shape[0])
+        bijection = Affine(loc=loc, scale=scale)
+        super().__init__(base_dist, bijection)
 
     @property
-    def mean(self):
+    def loc(self):
         return self.bijection.loc
 
     @property
-    def std(self):
+    def scale(self):
         return self.bijection.scale
 
-class StandardUniform(Distribution):
+
+class _StandardUniform(Distribution):
     """
     Implements a standard independent Uniform distribution, ie X ~ Uniform([0, 1]^dim).
     """
@@ -210,7 +204,6 @@ class StandardUniform(Distribution):
         self.cond_dim = 0
 
     def _log_prob(self, x: Array, condition: Optional[Array] = None):
-        assert x.shape == (self.dim,)
         return jstats.uniform.logpdf(x).sum()
 
     def _sample(self, key: KeyArray, condition: Optional[Array] = None):
@@ -222,33 +215,28 @@ class Uniform(Transformed):
     Implements an independent uniform distribution 
     between min and max for each dimension.
     """
-    min: Array
-    max: Array
-    def __init__(self, min: Array=jnp.array([0.0]), max: Array=jnp.array([1.0])):
+    def __init__(self, minval: Array, maxval: Array):
         """
         Args:
-            min (Array): ith entry gives the min of the ith dimension
-            max (Array): ith entry gives the max of the ith dimension
+            minval (Array): ith entry gives the min of the ith dimension
+            maxval (Array): ith entry gives the max of the ith dimension
         """
-        assert min.shape == max.shape
-        assert jnp.all(min < max), 'Minimums must be less than maximums'
-        dim = min.shape[0]
-
-        super(Uniform, self).__init__(
-            base_dist=StandardUniform(dim),
-            bijection=Affine(loc=min, scale=max - min)
-        )
+        if jnp.any(maxval < minval):
+            raise ValueError("Minimums must be less than maximums.")
+        base_dist = _StandardUniform(minval.shape[0])
+        bijection = Affine(loc=minval, scale=maxval - minval)
+        super().__init__(base_dist, bijection)
 
     @property
-    def min(self):
+    def minval(self):
         return self.bijection.loc
 
     @property
-    def max(self):
+    def maxval(self):
         return self.bijection.loc + self.bijection.scale
 
 
-class Gumbel(Distribution):
+class _StandardGumbel(Distribution):
     """
     Implements standard gumbel distribution (loc=0, scale=1)
     Ref: https://en.wikipedia.org/wiki/Gumbel_distribution
@@ -258,14 +246,33 @@ class Gumbel(Distribution):
         self.cond_dim = 0
 
     def _log_prob(self, x: Array, condition: Optional[Array] = None):
-        assert x.shape == (self.dim,)
         return -(x + jnp.exp(-x)).sum()
 
     def _sample(self, key: KeyArray, condition: Optional[Array] = None):
         return random.gumbel(key, shape=(self.dim,))
 
 
-class Cauchy(Distribution):
+class Gumbel(Transformed):
+    """
+    Gumbel distribution.
+    Ref: https://en.wikipedia.org/wiki/Gumbel_distribution
+
+    """
+    def __init__(self, loc: Array, scale: Array):
+        base_dist = _StandardGumbel(loc.shape[0])
+        bijection = Affine(loc, scale)
+        super().__init__(base_dist, bijection)
+
+    @property
+    def loc(self):
+        return self.bijection.loc
+
+    @property
+    def scale(self):
+        return self.bijection.scale
+
+    
+class _StandardCauchy(Distribution):
     """
     Implements standard cauchy distribution (loc=0, scale=1)
     Ref: https://en.wikipedia.org/wiki/Cauchy_distribution
@@ -275,26 +282,71 @@ class Cauchy(Distribution):
         self.cond_dim = 0
 
     def _log_prob(self, x: Array, condition: Optional[Array] = None):
-        assert x.shape == (self.dim,)
         return jstats.cauchy.logpdf(x).sum()
 
     def _sample(self, key: KeyArray, condition: Optional[Array] = None):
         return random.cauchy(key, shape=(self.dim,))
 
 
-class StudentT(Distribution):
+class Cauchy(Transformed):
     """
-    Implements student T distribution with specified degree of freedom.
+    Cauchy distribution with loc and scale.
+    Ref: https://en.wikipedia.org/wiki/Cauchy_distribution
     """
-    dfs: Array
-    def __init__(self, dim, dfs: Array=jnp.array([1.])):
-        self.dim = dim
+    def __init__(self, loc: Array, scale: Array):
+        base_dist = _StandardCauchy(loc.shape[0])
+        bijection = Affine(loc, scale)
+        super().__init__(base_dist, bijection)
+
+    @property
+    def loc(self):
+        return self.bijection.loc
+
+    @property
+    def scale(self):
+        return self.bijection.scale
+
+
+class _StandardStudentT(Distribution):
+    """
+    Implements student T distribution with specified degrees of freedom.
+    """
+    log_df: Array
+
+    def __init__(self, df: Array):
+        self.dim = df.shape[0]
         self.cond_dim = 0
-        self.df = dfs
+        self.log_df = jnp.log(df)
 
     def _log_prob(self, x: Array, condition: Optional[Array] = None):
-        assert x.shape == (self.dim,)
-        return jstats.t.logpdf(x, df=self.dfs).sum()
+        return jstats.t.logpdf(x, df=self.df).sum()
 
     def _sample(self, key: KeyArray, condition: Optional[Array] = None):
-        return random.t(key, df=self.dfs, shape=(self.dim,))
+        return random.t(key, df=self.df, shape=(self.dim,))
+
+    @property
+    def df(self):
+        return jnp.exp(self.log_df)
+
+
+class StudentT(Transformed):
+    "Student T distribution with loc and scale."
+    def __init__(self, df: Array, loc: Array, scale: Array):
+        self.dim = df.shape[0]
+        self.cond_dim = 0
+
+        base_dist = _StandardStudentT(df)
+        bijection = Affine(loc, scale)
+        super().__init__(base_dist, bijection)
+
+    @property
+    def loc(self):
+        return self.bijection.loc
+
+    @property
+    def scale(self):
+        return self.bijection.scale
+
+    @property
+    def df(self):
+        return self.base_dist.df

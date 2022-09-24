@@ -2,32 +2,37 @@ import pytest
 import jax.numpy as jnp
 from jax import random
 from flowjax.distributions import (
-    StandardNormal,
-    StandardUniform,
+    _StandardNormal,
     Normal,
+    _StandardUniform,
     Uniform,
+    _StandardGumbel,
     Gumbel,
+    _StandardCauchy,
     Cauchy,
+    _StandardStudentT,
     StudentT,
 )
 
 # This sets up a number of constructors dim -> instance for testing 
 # the generic API of Distribution classes.
+
+
 _test_distributions = [
-    pytest.param(StandardNormal, id='StandardNormal'),
-    pytest.param(
-        lambda dim: Normal(jnp.zeros(dim), jnp.ones(dim)),
-        id='Normal'
-    ),
-    pytest.param(StandardUniform, id='StandardUniform'),
-    pytest.param(
-        lambda dim: Uniform(jnp.zeros(dim), jnp.ones(dim)),
-        id='Uniform'
-    ),
-    pytest.param(Gumbel, id='Gumbel'),
-    pytest.param(Cauchy, id='Cauchy'),
-    pytest.param(StudentT, id='StudentT'),
+    (_StandardNormal, '_StandardNormal'),
+    (lambda dim: Normal(jnp.zeros(dim), jnp.ones(dim)), 'Normal'),
+    (_StandardUniform, '_StandardUniform'),
+    (lambda dim: Uniform(jnp.zeros(dim), jnp.ones(dim)), 'Uniform'),
+    (_StandardGumbel, '_StandardGumbel'),
+    (lambda dim: Gumbel(jnp.zeros(dim), jnp.ones(dim)), 'Gumbel'),
+    (_StandardCauchy, '_StandardCauchy'),
+    (lambda dim: Cauchy(jnp.zeros(dim), jnp.ones(dim)), 'Cauchy'),
+    (lambda dim: _StandardStudentT(jnp.ones(dim)), "_StandardStudentT"),
+    (lambda dim: StudentT(jnp.ones(dim), jnp.zeros(dim), jnp.ones(dim)), 'StudentT')
 ]
+
+_test_distributions = [pytest.param(a[0], id=a[1]) for a in _test_distributions]
+
 
 @pytest.mark.parametrize('distribution_class', _test_distributions)
 @pytest.mark.parametrize('dimension', [1, 3])
@@ -81,8 +86,8 @@ def test_normal_params():
         jnp.array([3., 4.]),
     )
 
-    assert jnp.all(dist.mean - jnp.array([1., 2.]) < 1e-6)
-    assert jnp.all(dist.std - jnp.array([3., 4.]) < 1e-6)
+    assert dist.loc == pytest.approx(jnp.array([1., 2.]))
+    assert dist.scale == pytest.approx(jnp.array([3., 4.]))
 
 def test_uniform_params():
     dist = Uniform(
@@ -90,5 +95,5 @@ def test_uniform_params():
         jnp.array([3., 4.]),
     )
 
-    assert jnp.all(dist.min - jnp.array([1., 2.]) < 1e-6)
-    assert jnp.all(dist.max - jnp.array([3., 4.]) < 1e-6)
+    assert dist.minval == pytest.approx(jnp.array([1., 2.]))
+    assert dist.maxval == pytest.approx(jnp.array([3., 4.]))
