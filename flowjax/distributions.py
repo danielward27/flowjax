@@ -176,22 +176,22 @@ class Normal(Transformed):
     Implements an independent Normal distribution with mean and std for
     each dimension.
     """
-    def __init__(self, mean: Array, std: Array):
+    def __init__(self, loc: Array, scale: Array):
         """
         Args:
-            mean (Array): Array of the means of each dimension
-            std (Array): Array of the standard deviations of each dimension
+            loc (Array): Array of the means of each dimension.
+            scale (Array): Array of the standard deviations of each dimension.
         """
-        dim = mean.shape[0]
+        dim = loc.shape[0]
 
-        super().__init__(StandardNormal(dim), Affine(loc=mean, scale=std))
+        super().__init__(StandardNormal(dim), Affine(loc=loc, scale=scale))
 
     @property
-    def mean(self):
+    def loc(self):
         return self.bijection.loc
 
     @property
-    def std(self):
+    def scale(self):
         return self.bijection.scale
 
 
@@ -230,7 +230,7 @@ class Uniform(Transformed):
             )
 
     @property
-    def maxval(self):
+    def minval(self):
         return self.bijection.loc
 
     @property
@@ -278,7 +278,7 @@ class StudentT(Distribution):
     def __init__(self, dim, dfs: Array):
         self.dim = dim
         self.cond_dim = 0
-        self.df = dfs
+        self.dfs = dfs
 
     def _log_prob(self, x: Array, condition: Optional[Array] = None):
         return jstats.t.logpdf(x, df=self.dfs).sum()
