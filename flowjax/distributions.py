@@ -104,7 +104,7 @@ class Distribution(eqx.Module, ABC):
             raise ValueError("x.ndim should be 1 or 2")
 
         if x.shape[-1] != self.dim:
-            raise ValueError(f"Expected x.shape[-1]=={self.dim}.")
+            raise ValueError(f"Expected x.shape[-1]=={self.dim}, got {x.shape}.")
 
     def _argcheck_condition(self, condition: Optional[Array] = None):
         if condition is None:
@@ -165,7 +165,6 @@ class StandardNormal(Distribution):
         self.cond_dim = 0
 
     def _log_prob(self, x: Array, condition: Optional[Array] = None):
-        assert x.shape == (self.dim,)
         return jstats.norm.logpdf(x).sum()
 
     def _sample(self, key: KeyArray, condition: Optional[Array] = None):
@@ -183,7 +182,6 @@ class Normal(Transformed):
             mean (Array): Array of the means of each dimension
             std (Array): Array of the standard deviations of each dimension
         """
-        assert mean.shape == std.shape
         dim = mean.shape[0]
 
         super(Normal, self).__init__(
@@ -208,7 +206,6 @@ class StandardUniform(Distribution):
         self.cond_dim = 0
 
     def _log_prob(self, x: Array, condition: Optional[Array] = None):
-        assert x.shape == (self.dim,)
         return jstats.uniform.logpdf(x).sum()
 
     def _sample(self, key: KeyArray, condition: Optional[Array] = None):
@@ -226,8 +223,8 @@ class Uniform(Transformed):
             min (Array): ith entry gives the min of the ith dimension
             max (Array): ith entry gives the max of the ith dimension
         """
-        assert min.shape == max.shape
-        assert jnp.all(min < max), 'Minimums must be less than maximums'
+        if jnp.any(max < min):
+            raise ValueError("Minimums must be less than maximums.")
         dim = min.shape[0]
 
         super(Uniform, self).__init__(
@@ -254,7 +251,6 @@ class Gumbel(Distribution):
         self.cond_dim = 0
 
     def _log_prob(self, x: Array, condition: Optional[Array] = None):
-        assert x.shape == (self.dim,)
         return -(x + jnp.exp(-x)).sum()
 
     def _sample(self, key: KeyArray, condition: Optional[Array] = None):
@@ -271,7 +267,6 @@ class Cauchy(Distribution):
         self.cond_dim = 0
 
     def _log_prob(self, x: Array, condition: Optional[Array] = None):
-        assert x.shape == (self.dim,)
         return jstats.cauchy.logpdf(x).sum()
 
     def _sample(self, key: KeyArray, condition: Optional[Array] = None):
@@ -289,7 +284,6 @@ class StudentT(Distribution):
         self.df = dfs
 
     def _log_prob(self, x: Array, condition: Optional[Array] = None):
-        assert x.shape == (self.dim,)
         return jstats.t.logpdf(x, df=self.dfs).sum()
 
     def _sample(self, key: KeyArray, condition: Optional[Array] = None):

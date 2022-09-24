@@ -16,6 +16,8 @@ class Affine(Bijection):
             loc (Array): Location parameter vector.
             scale (Array): Scale parameter vector.
         """
+        if loc.shape != scale.shape:
+            raise ValueError("loc and scale must have matching shapes.")
         self.loc = loc
         self.log_scale = jnp.log(scale)
         self.cond_dim = 0
