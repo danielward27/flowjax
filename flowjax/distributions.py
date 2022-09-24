@@ -218,8 +218,8 @@ class Uniform(Transformed):
     def __init__(self, minval: Array, maxval: Array):
         """
         Args:
-            minvals (Array): ith entry gives the min of the ith dimension
-            maxvals (Array): ith entry gives the max of the ith dimension
+            minval (Array): ith entry gives the min of the ith dimension
+            maxval (Array): ith entry gives the max of the ith dimension
         """
         if jnp.any(maxval < minval):
             raise ValueError("Minimums must be less than maximums.")
