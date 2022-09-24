@@ -44,6 +44,10 @@ class RationalQuadraticSplineTransformer(Transformer):
         self.min_bin_width = min_bin_width
         self.min_bin_height = min_bin_height
         self.min_derivative = min_derivative
+
+        # Padding logic avoids jax control flow for identity tails,
+        # by setting up a linear spline from the edge of the bounding box
+        # to B * 1e4
         pos_pad = jnp.zeros(self.K + 4)
         pad_idxs = jnp.array([0, 1, -2, -1])
         pad_vals = jnp.array(

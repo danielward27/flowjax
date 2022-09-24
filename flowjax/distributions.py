@@ -3,9 +3,11 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 from flowjax.bijections.abc import Bijection
+from flowjax.bijections.affine import Affine
 from jax import random
-from jax.scipy.stats import norm
+from jax.scipy import stats as jstats
 import jax
+import jax.numpy as jnp
 from jax.random import KeyArray
 from flowjax.utils import Array
 from typing import Any
@@ -150,12 +152,12 @@ class Transformed(Distribution):
         return x
 
 
-
-class Normal(Distribution):
-
+class StandardNormal(Distribution):
+    """
+    Implements a standard normal distribution, condition is ignored.
+    """
     def __init__(self, dim: int):
-        """Standard normal distribution, condition is ignored.
-
+        """
         Args:
             dim (int): Dimension of the normal distribution.
         """
@@ -164,7 +166,135 @@ class Normal(Distribution):
 
     def _log_prob(self, x: Array, condition: Optional[Array] = None):
         assert x.shape == (self.dim,)
-        return norm.logpdf(x).sum()
+        return jstats.norm.logpdf(x).sum()
 
     def _sample(self, key: KeyArray, condition: Optional[Array] = None):
         return random.normal(key, (self.dim,))
+
+
+class Normal(Transformed):
+    """
+    Implements an independent Normal distribution with mean and std for
+    each dimension.
+    """
+    mean: Array
+    std: Array
+    def __init__(self, mean: Array=jnp.array([0.0]), std: Array=jnp.array([1.0])):
+        """
+        Args:
+            mean (Array): Array of the means of each dimension
+            std (Array): Array of the standard deviations of each dimension
+        """
+        assert mean.shape == std.shape
+        dim = mean.shape[0]
+
+        super(Normal, self).__init__(
+            base_dist=StandardNormal(dim),
+            bijection=Affine(loc=mean, scale=std)
+        )
+
+    @property
+    def mean(self):
+        return self.bijection.loc
+
+    @property
+    def std(self):
+        return self.bijection.scale
+
+class StandardUniform(Distribution):
+    """
+    Implements a standard independent Uniform distribution, ie X ~ Uniform([0, 1]^dim).
+    """
+    def __init__(self, dim):
+        self.dim = dim
+        self.cond_dim = 0
+
+    def _log_prob(self, x: Array, condition: Optional[Array] = None):
+        assert x.shape == (self.dim,)
+        return jstats.uniform.logpdf(x).sum()
+
+    def _sample(self, key: KeyArray, condition: Optional[Array] = None):
+        return random.uniform(key, shape=(self.dim,))
+
+
+class Uniform(Transformed):
+    """
+    Implements an independent uniform distribution 
+    between min and max for each dimension.
+    """
+    min: Array
+    max: Array
+    def __init__(self, min: Array=jnp.array([0.0]), max: Array=jnp.array([1.0])):
+        """
+        Args:
+            min (Array): ith entry gives the min of the ith dimension
+            max (Array): ith entry gives the max of the ith dimension
+        """
+        assert min.shape == max.shape
+        assert jnp.all(min < max), 'Minimums must be less than maximums'
+        dim = min.shape[0]
+
+        super(Uniform, self).__init__(
+            base_dist=StandardUniform(dim),
+            bijection=Affine(loc=min, scale=max - min)
+        )
+
+    @property
+    def min(self):
+        return self.bijection.loc
+
+    @property
+    def max(self):
+        return self.bijection.loc + self.bijection.scale
+
+
+class Gumbel(Distribution):
+    """
+    Implements standard gumbel distribution (loc=0, scale=1)
+    Ref: https://en.wikipedia.org/wiki/Gumbel_distribution
+    """
+    def __init__(self, dim):
+        self.dim = dim
+        self.cond_dim = 0
+
+    def _log_prob(self, x: Array, condition: Optional[Array] = None):
+        assert x.shape == (self.dim,)
+        return -(x + jnp.exp(-x)).sum()
+
+    def _sample(self, key: KeyArray, condition: Optional[Array] = None):
+        return random.gumbel(key, shape=(self.dim,))
+
+
+class Cauchy(Distribution):
+    """
+    Implements standard cauchy distribution (loc=0, scale=1)
+    Ref: https://en.wikipedia.org/wiki/Cauchy_distribution
+    """
+    def __init__(self, dim):
+        self.dim = dim
+        self.cond_dim = 0
+
+    def _log_prob(self, x: Array, condition: Optional[Array] = None):
+        assert x.shape == (self.dim,)
+        return jstats.cauchy.logpdf(x).sum()
+
+    def _sample(self, key: KeyArray, condition: Optional[Array] = None):
+        return random.cauchy(key, shape=(self.dim,))
+
+
+class StudentT(Distribution):
+    """
+    Implements student T distribution with specified degree of freedom.
+    """
+    dfs: Array
+    def __init__(self, dim, dfs: Array=jnp.array([1.])):
+        self.dim = dim
+        self.cond_dim = 0
+        self.df = dfs
+
+    def _log_prob(self, x: Array, condition: Optional[Array] = None):
+        assert x.shape == (self.dim,)
+        return jstats.t.logpdf(x, df=self.dfs).sum()
+
+    def _sample(self, key: KeyArray, condition: Optional[Array] = None):
+        return random.t(key, df=self.dfs, shape=(self.dim,))
