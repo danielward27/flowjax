@@ -182,9 +182,9 @@ class Normal(Transformed):
             loc (Array): Array of the means of each dimension.
             scale (Array): Array of the standard deviations of each dimension.
         """
-        dim = loc.shape[0]
-
-        super().__init__(StandardNormal(dim), Affine(loc=loc, scale=scale))
+        base_dist = StandardNormal(loc.shape[0])
+        bijection = Affine(loc=loc, scale=scale)
+        super().__init__(base_dist, bijection)
 
     @property
     def loc(self):
@@ -223,11 +223,9 @@ class Uniform(Transformed):
         """
         if jnp.any(maxval < minval):
             raise ValueError("Minimums must be less than maximums.")
-        dim = minval.shape[0]
-        super().__init__(
-            base_dist=StandardUniform(dim),
-            bijection=Affine(loc=minval, scale=maxval - minval)
-            )
+        base_dist = StandardUniform(minval.shape[0])
+        bijection = Affine(loc=minval, scale=maxval - minval)
+        super().__init__(base_dist, bijection)
 
     @property
     def minval(self):
@@ -238,7 +236,7 @@ class Uniform(Transformed):
         return self.bijection.loc + self.bijection.scale
 
 
-class Gumbel(Distribution):
+class StandardGumbel(Distribution):
     """
     Implements standard gumbel distribution (loc=0, scale=1)
     Ref: https://en.wikipedia.org/wiki/Gumbel_distribution
@@ -254,7 +252,22 @@ class Gumbel(Distribution):
         return random.gumbel(key, shape=(self.dim,))
 
 
-class Cauchy(Distribution):
+class Gumbel(Transformed):
+    def __init__(self, loc: Array, scale: Array):
+        base_dist = StandardGumbel(loc.shape[0])
+        bijection = Affine(loc, scale)
+        super().__init__(base_dist, bijection)
+
+    @property
+    def loc(self):
+        return self.bijection.loc
+
+    @property
+    def scale(self):
+        return self.bijection.scale
+
+    
+class StandardCauchy(Distribution):
     """
     Implements standard cauchy distribution (loc=0, scale=1)
     Ref: https://en.wikipedia.org/wiki/Cauchy_distribution
@@ -270,18 +283,63 @@ class Cauchy(Distribution):
         return random.cauchy(key, shape=(self.dim,))
 
 
-class StudentT(Distribution):
+class Cauchy(Transformed):
+    "Cauchy distribution with loc and scale."
+    def __init__(self, loc: Array, scale: Array):
+        base_dist = StandardGumbel(loc.shape[0])
+        bijection = Affine(loc, scale)
+        super().__init__(base_dist, bijection)
+
+    @property
+    def loc(self):
+        return self.bijection.loc
+
+    @property
+    def scale(self):
+        return self.bijection.scale
+
+
+class StandardStudentT(Distribution):
     """
-    Implements student T distribution with specified degree of freedom.
+    Implements student T distribution with specified degrees of freedom.
     """
-    dfs: Array
-    def __init__(self, dim, dfs: Array):
-        self.dim = dim
+    log_df: Array
+
+    def __init__(self, df: Array):
+        self.dim = df.shape[0]
         self.cond_dim = 0
-        self.dfs = dfs
+        self.log_df = jnp.log(df)
 
     def _log_prob(self, x: Array, condition: Optional[Array] = None):
-        return jstats.t.logpdf(x, df=self.dfs).sum()
+        return jstats.t.logpdf(x, df=self.df).sum()
 
     def _sample(self, key: KeyArray, condition: Optional[Array] = None):
-        return random.t(key, df=self.dfs, shape=(self.dim,))
+        return random.t(key, df=self.df, shape=(self.dim,))
+
+    @property
+    def df(self):
+        return jnp.exp(self.log_df)
+
+
+class StudentT(Transformed):
+    "Student T distribution with loc and scale."
+    def __init__(self, df: Array, loc: Array, scale: Array):
+        self.dim = df.shape[0]
+        self.cond_dim = 0
+
+        base_dist = StandardStudentT(df)
+        bijection = Affine(loc, scale)
+        super().__init__(base_dist, bijection)
+
+    @property
+    def loc(self):
+        return self.bijection.loc
+
+    @property
+    def scale(self):
+        return self.bijection.scale
+
+    @property
+    def df(self):
+        return self.base_dist.df
+
