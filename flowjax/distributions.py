@@ -152,7 +152,7 @@ class Transformed(Distribution):
         return x
 
 
-class StandardNormal(Distribution):
+class _StandardNormal(Distribution):
     """
     Implements a standard normal distribution, condition is ignored.
     """
@@ -182,7 +182,7 @@ class Normal(Transformed):
             loc (Array): Array of the means of each dimension.
             scale (Array): Array of the standard deviations of each dimension.
         """
-        base_dist = StandardNormal(loc.shape[0])
+        base_dist = _StandardNormal(loc.shape[0])
         bijection = Affine(loc=loc, scale=scale)
         super().__init__(base_dist, bijection)
 
@@ -195,7 +195,7 @@ class Normal(Transformed):
         return self.bijection.scale
 
 
-class StandardUniform(Distribution):
+class _StandardUniform(Distribution):
     """
     Implements a standard independent Uniform distribution, ie X ~ Uniform([0, 1]^dim).
     """
@@ -223,7 +223,7 @@ class Uniform(Transformed):
         """
         if jnp.any(maxval < minval):
             raise ValueError("Minimums must be less than maximums.")
-        base_dist = StandardUniform(minval.shape[0])
+        base_dist = _StandardUniform(minval.shape[0])
         bijection = Affine(loc=minval, scale=maxval - minval)
         super().__init__(base_dist, bijection)
 
@@ -236,7 +236,7 @@ class Uniform(Transformed):
         return self.bijection.loc + self.bijection.scale
 
 
-class StandardGumbel(Distribution):
+class _StandardGumbel(Distribution):
     """
     Implements standard gumbel distribution (loc=0, scale=1)
     Ref: https://en.wikipedia.org/wiki/Gumbel_distribution
@@ -253,8 +253,13 @@ class StandardGumbel(Distribution):
 
 
 class Gumbel(Transformed):
+    """
+    Gumbel distribution.
+    Ref: https://en.wikipedia.org/wiki/Gumbel_distribution
+
+    """
     def __init__(self, loc: Array, scale: Array):
-        base_dist = StandardGumbel(loc.shape[0])
+        base_dist = _StandardGumbel(loc.shape[0])
         bijection = Affine(loc, scale)
         super().__init__(base_dist, bijection)
 
@@ -267,7 +272,7 @@ class Gumbel(Transformed):
         return self.bijection.scale
 
     
-class StandardCauchy(Distribution):
+class _StandardCauchy(Distribution):
     """
     Implements standard cauchy distribution (loc=0, scale=1)
     Ref: https://en.wikipedia.org/wiki/Cauchy_distribution
@@ -284,9 +289,12 @@ class StandardCauchy(Distribution):
 
 
 class Cauchy(Transformed):
-    "Cauchy distribution with loc and scale."
+    """
+    Cauchy distribution with loc and scale.
+    Ref: https://en.wikipedia.org/wiki/Cauchy_distribution
+    """
     def __init__(self, loc: Array, scale: Array):
-        base_dist = StandardGumbel(loc.shape[0])
+        base_dist = _StandardCauchy(loc.shape[0])
         bijection = Affine(loc, scale)
         super().__init__(base_dist, bijection)
 
@@ -299,7 +307,7 @@ class Cauchy(Transformed):
         return self.bijection.scale
 
 
-class StandardStudentT(Distribution):
+class _StandardStudentT(Distribution):
     """
     Implements student T distribution with specified degrees of freedom.
     """
@@ -327,7 +335,7 @@ class StudentT(Transformed):
         self.dim = df.shape[0]
         self.cond_dim = 0
 
-        base_dist = StandardStudentT(df)
+        base_dist = _StandardStudentT(df)
         bijection = Affine(loc, scale)
         super().__init__(base_dist, bijection)
 
@@ -342,4 +350,3 @@ class StudentT(Transformed):
     @property
     def df(self):
         return self.base_dist.df
-

@@ -2,15 +2,15 @@ import pytest
 import jax.numpy as jnp
 from jax import random
 from flowjax.distributions import (
-    StandardNormal,
+    _StandardNormal,
     Normal,
-    StandardUniform,
+    _StandardUniform,
     Uniform,
-    StandardGumbel,
+    _StandardGumbel,
     Gumbel,
-    StandardCauchy,
+    _StandardCauchy,
     Cauchy,
-    StandardStudentT,
+    _StandardStudentT,
     StudentT,
 )
 
@@ -19,15 +19,15 @@ from flowjax.distributions import (
 
 
 _test_distributions = [
-    (StandardNormal, 'StandardNormal'),
+    (_StandardNormal, '_StandardNormal'),
     (lambda dim: Normal(jnp.zeros(dim), jnp.ones(dim)), 'Normal'),
-    (StandardUniform, 'StandardUniform'),
+    (_StandardUniform, '_StandardUniform'),
     (lambda dim: Uniform(jnp.zeros(dim), jnp.ones(dim)), 'Uniform'),
-    (StandardGumbel, 'StandardGumbel'),
+    (_StandardGumbel, '_StandardGumbel'),
     (lambda dim: Gumbel(jnp.zeros(dim), jnp.ones(dim)), 'Gumbel'),
-    (StandardCauchy, 'StandardCauchy'),
+    (_StandardCauchy, '_StandardCauchy'),
     (lambda dim: Cauchy(jnp.zeros(dim), jnp.ones(dim)), 'Cauchy'),
-    (lambda dim: StandardStudentT(jnp.ones(dim)), "StandardStudentT"),
+    (lambda dim: _StandardStudentT(jnp.ones(dim)), "_StandardStudentT"),
     (lambda dim: StudentT(jnp.ones(dim), jnp.zeros(dim), jnp.ones(dim)), 'StudentT')
 ]
 
