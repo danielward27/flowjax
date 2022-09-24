@@ -177,7 +177,7 @@ class Normal(Transformed):
     Implements an independent Normal distribution with mean and std for
     each dimension.
     """
-    def __init__(self, mean: Array=jnp.array([0.0]), std: Array=jnp.array([1.0])):
+    def __init__(self, mean: Array, std: Array):
         """
         Args:
             mean (Array): Array of the means of each dimension
@@ -220,7 +220,7 @@ class Uniform(Transformed):
     Implements an independent uniform distribution 
     between min and max for each dimension.
     """
-    def __init__(self, min: Array=jnp.array([0.0]), max: Array=jnp.array([1.0])):
+    def __init__(self, min: Array, max: Array):
         """
         Args:
             min (Array): ith entry gives the min of the ith dimension
@@ -283,7 +283,7 @@ class StudentT(Distribution):
     Implements student T distribution with specified degree of freedom.
     """
     dfs: Array
-    def __init__(self, dim, dfs: Array=jnp.array([1.])):
+    def __init__(self, dim, dfs: Array):
         self.dim = dim
         self.cond_dim = 0
         self.df = dfs
