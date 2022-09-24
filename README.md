@@ -6,13 +6,13 @@ Normalising flows in JAX. Training a flow can be done in a few lines of code:
 ```
 from flowjax.flows import block_neural_autoregressive_flow
 from flowjax.train_utils import train_flow
-from flowjax.distributions import Normal
+from flowjax.distributions import StandardNormal
 from jax import random
 
 data_key, flow_key, train_key = random.split(random.PRNGKey(0), 3)
 
 x = random.uniform(data_key, (10000, 3))  # Toy data
-base_dist = Normal(3)
+base_dist = StandardNormal(3)
 flow = block_neural_autoregressive_flow(flow_key, base_dist)
 flow, losses = train_flow(train_key, flow, x, learning_rate=0.05)
 
