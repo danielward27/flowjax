@@ -134,7 +134,7 @@ class Transformed(Distribution):
 
         Args:
             base_dist (Distribution): Base distribution.
-            bijection (Bijection): Bijection defined in "normalising" direction.
+            bijection (Bijection): Bijection to transform distribution.
         """
         self.base_dist = base_dist
         self.bijection = bijection
