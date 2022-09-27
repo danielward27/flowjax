@@ -24,7 +24,7 @@ def train_flow(
     show_progress: bool = True,
     filter_spec: PyTree[BoolAxisSpec] = eqx.is_inexact_array
 ):
-    """Train a distribution (e.g. a flow) by maximum likelihood with Adam optimizer.
+    """Train a distribution (e.g. a flow) by maximum likelihood with Adam optimizer. Note that the last batch in each epoch is dropped if truncated.
 
     Args:
         key (KeyArray): Jax PRNGKey.
@@ -55,6 +55,9 @@ def train_flow(
 
     inputs = (x,) if condition is None else (x, condition)
     train_args, val_args = train_val_split(subkey, inputs, val_prop=val_prop)
+    train_len, val_len = train_args[0].shape[0], val_args[0].shape[0]
+    if batch_size > train_len:
+        raise ValueError("The batch size cannot be greater than the train set size.")
 
     optimizer = optax.chain(
         optax.clip_by_global_norm(clip_norm), optax.adam(learning_rate=learning_rate)
@@ -71,17 +74,17 @@ def train_flow(
         train_args = random_permutation_multiple(subkey, train_args)
 
         epoch_train_loss = 0
-        batches = range(0, train_args[0].shape[0] - batch_size, batch_size)
-        for i in batches:
+        batch_start_idxs = range(0, train_len - batch_size + 1, batch_size)
+        for i in batch_start_idxs:
             batch = tuple(a[i : i + batch_size] for a in train_args)
             dist, opt_state, loss_i = step(dist, optimizer, opt_state, *batch)
-            epoch_train_loss += loss_i.item() / len(batches)
+            epoch_train_loss += loss_i.item() / len(batch_start_idxs)
 
         epoch_val_loss = 0
-        batches = range(0, val_args[0].shape[0] - batch_size, batch_size)
-        for i in batches:
+        batch_start_idxs = range(0, val_len - batch_size + 1, batch_size)
+        for i in batch_start_idxs:
             batch = tuple(a[i : i + batch_size] for a in val_args)
-            epoch_val_loss += loss(dist, *batch).item() / len(batches)
+            epoch_val_loss += loss(dist, *batch).item() / len(batch_start_idxs)
 
         losses["train"].append(epoch_train_loss)
         losses["val"].append(epoch_val_loss)
@@ -113,11 +116,12 @@ def train_val_split(key: KeyArray, arrays: List[Array], val_prop: float = 0.1):
     """
     if not (0 <= val_prop <= 1):
         raise ValueError("val_prop should be between 0 and 1.")
+    n = arrays[0].shape[0]
     key, subkey = random.split(key)
     arrays = random_permutation_multiple(subkey, arrays)
-    n_val = round(val_prop * arrays[0].shape[0])
-    train = tuple(a[:-n_val] for a in arrays)
-    val = tuple(a[-n_val:] for a in arrays)
+    n_train = n - round(val_prop * n)
+    train = tuple(a[:n_train] for a in arrays)
+    val = tuple(a[n_train:] for a in arrays)
     return train, val
 
 
