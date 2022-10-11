@@ -5,11 +5,10 @@ import jax.numpy as jnp
 import equinox as eqx
 import optax
 from tqdm import tqdm
-from typing import Optional, List, Dict, Tuple
+from typing import Optional, List, Dict, Tuple, Sequence
 from flowjax.utils import Array
 from equinox.custom_types import BoolAxisSpec
 from jaxtyping import PyTree
-
 
 def train_flow(
     key: KeyArray,
@@ -107,7 +106,7 @@ def train_flow(
     return dist, losses
 
 
-def train_val_split(key: KeyArray, arrays: List[Array], val_prop: float = 0.1):
+def train_val_split(key: KeyArray, arrays: Sequence[Array], val_prop: float = 0.1):
     """Train validation split along axis 0.
 
     Args:
@@ -129,7 +128,7 @@ def train_val_split(key: KeyArray, arrays: List[Array], val_prop: float = 0.1):
     return train, val
 
 
-def random_permutation_multiple(key: KeyArray, arrays: List[Array]) -> Tuple[Array]:
+def random_permutation_multiple(key: KeyArray, arrays: Sequence[Array]) -> Tuple[Array]:
     """Randomly permute multiple arrays on axis 0 (consistent between arrays)
 
     Args:
@@ -153,5 +152,5 @@ def count_fruitless(losses: List[float]) -> int:
         losses (List[float]): List of losses.
 
     """
-    min_idx = jnp.array(losses).argmin().item()
+    min_idx = jnp.argmin(jnp.array(losses)).item()
     return len(losses) - min_idx - 1
