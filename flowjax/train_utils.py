@@ -10,6 +10,7 @@ from flowjax.utils import Array
 from equinox.custom_types import BoolAxisSpec
 from jaxtyping import PyTree
 
+
 def train_flow(
     key: KeyArray,
     dist: Distribution,
@@ -22,7 +23,7 @@ def train_flow(
     val_prop: float = 0.1,
     clip_norm: float = 0.5,
     show_progress: bool = True,
-    filter_spec: PyTree[BoolAxisSpec] = eqx.is_inexact_array
+    filter_spec: PyTree[BoolAxisSpec] = eqx.is_inexact_array,
 ):
     """Train a distribution (e.g. a flow) by maximum likelihood with Adam optimizer. Note that the last batch in each epoch is dropped if truncated.
 
@@ -41,12 +42,15 @@ def train_flow(
         filter_spec (PyTree[BoolAxisSpec], optional): Equinox `filter_spec` for specifying trainable parameters. Either a callable `leaf -> bool`, or a PyTree with prefix structure matching `dist` with True/False values. Defaults to `eqx.is_inexact_array`.
     """
 
+    @eqx.filter_jit
     def loss(dist, x, condition=None):
         return -dist.log_prob(x, condition).mean()
 
     @eqx.filter_jit
     def step(dist, optimizer, opt_state, x, condition=None):
-        loss_val, grads = eqx.filter_value_and_grad(loss, arg=filter_spec)(dist, x, condition)
+        loss_val, grads = eqx.filter_value_and_grad(loss, arg=filter_spec)(
+            dist, x, condition
+        )
         updates, opt_state = optimizer.update(grads, opt_state)
         dist = eqx.apply_updates(dist, updates)
         return dist, opt_state, loss_val
