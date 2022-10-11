@@ -7,7 +7,6 @@ desired (e.g. maximum likelihood fitting of flows).
 """
 
 from abc import ABC, abstractmethod
-import jax.numpy as jnp
 from typing import List, Optional, Tuple
 from equinox import Module
 from flowjax.utils import Array
@@ -34,7 +33,9 @@ class Bijection(ABC, Module):
         """Invert the transformation."""
 
     @abstractmethod
-    def inverse_and_log_abs_det_jacobian(self, y: Array, condition: Optional[Array] = None) -> Array:
+    def inverse_and_log_abs_det_jacobian(
+        self, y: Array, condition: Optional[Array] = None
+    ) -> Array:
         """Invert the transformation and compute log absolute value of the Jacobian determinant."""
 
 

@@ -5,7 +5,7 @@ import jax.numpy as jnp
 import equinox as eqx
 import optax
 from tqdm import tqdm
-from typing import Optional, List, Dict, Tuple
+from typing import Optional, List, Dict, Tuple, Sequence
 from flowjax.utils import Array
 from equinox.custom_types import BoolAxisSpec
 from jaxtyping import PyTree
@@ -22,7 +22,7 @@ def train_flow(
     val_prop: float = 0.1,
     clip_norm: float = 0.5,
     show_progress: bool = True,
-    filter_spec: PyTree[BoolAxisSpec] = eqx.is_inexact_array
+    filter_spec: PyTree[BoolAxisSpec] = eqx.is_inexact_array,
 ):
     """Train a distribution (e.g. a flow) by maximum likelihood with Adam optimizer. Note that the last batch in each epoch is dropped if truncated.
 
@@ -41,12 +41,15 @@ def train_flow(
         filter_spec (PyTree[BoolAxisSpec], optional): Equinox `filter_spec` for specifying trainable parameters. Either a callable `leaf -> bool`, or a PyTree with prefix structure matching `dist` with True/False values. Defaults to `eqx.is_inexact_array`.
     """
 
+    @eqx.filter_jit
     def loss(dist, x, condition=None):
         return -dist.log_prob(x, condition).mean()
 
     @eqx.filter_jit
     def step(dist, optimizer, opt_state, x, condition=None):
-        loss_val, grads = eqx.filter_value_and_grad(loss, arg=filter_spec)(dist, x, condition)
+        loss_val, grads = eqx.filter_value_and_grad(loss, arg=filter_spec)(
+            dist, x, condition
+        )
         updates, opt_state = optimizer.update(grads, opt_state)
         dist = eqx.apply_updates(dist, updates)
         return dist, opt_state, loss_val
@@ -103,7 +106,7 @@ def train_flow(
     return dist, losses
 
 
-def train_val_split(key: KeyArray, arrays: List[Array], val_prop: float = 0.1):
+def train_val_split(key: KeyArray, arrays: Sequence[Array], val_prop: float = 0.1):
     """Train validation split along axis 0.
 
     Args:
@@ -125,7 +128,7 @@ def train_val_split(key: KeyArray, arrays: List[Array], val_prop: float = 0.1):
     return train, val
 
 
-def random_permutation_multiple(key: KeyArray, arrays: List[Array]) -> Tuple[Array]:
+def random_permutation_multiple(key: KeyArray, arrays: Sequence[Array]) -> Tuple[Array]:
     """Randomly permute multiple arrays on axis 0 (consistent between arrays)
 
     Args:
@@ -149,5 +152,5 @@ def count_fruitless(losses: List[float]) -> int:
         losses (List[float]): List of losses.
 
     """
-    min_idx = jnp.array(losses).argmin().item()
+    min_idx = jnp.argmin(jnp.array(losses)).item()
     return len(losses) - min_idx - 1

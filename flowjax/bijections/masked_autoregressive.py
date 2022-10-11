@@ -14,6 +14,7 @@ from typing import List
 from flowjax.utils import Array
 import jax
 
+
 def rank_based_mask(in_ranks: Array, out_ranks: Array, eq: bool = False):
     """Forms mask matrix, with 1s where the out_ranks > or >= in_ranks.
 
@@ -25,7 +26,7 @@ def rank_based_mask(in_ranks: Array, out_ranks: Array, eq: bool = False):
     Returns:
         Array: Mask with shape `(len(out_ranks), len(in_ranks))`
     """
-    
+
     assert (in_ranks.ndim) == 1 and (out_ranks.ndim == 1)
     if eq:
         mask = out_ranks[:, None] >= in_ranks
@@ -95,7 +96,7 @@ class AutoregressiveMLP(Module):
             final_activation (Callable, optional): Final activation function. Defaults to _identity.
             key (KeyArray): Jax PRNGKey
         """
-        
+
         masks = []
         if depth == 0:
             masks.append(rank_based_mask(in_ranks, out_ranks, eq=False))
@@ -185,9 +186,9 @@ class MaskedAutoregressive(Bijection):
         )
         return y, log_abs_det
 
-    def inverse(self, y, condition = None):
+    def inverse(self, y, condition=None):
         init = (y, 0)
-        fn = partial(self.inv_scan_fn, condition = condition)
+        fn = partial(self.inv_scan_fn, condition=condition)
         (x, _), _ = jax.lax.scan(fn, init, None, length=len(y))
         return x
 
@@ -199,7 +200,7 @@ class MaskedAutoregressive(Bijection):
         x = y.at[rank].set(x[rank])
         return (x, rank + 1), None
 
-    def inverse_and_log_abs_det_jacobian(self, y, condition = None):
+    def inverse_and_log_abs_det_jacobian(self, y, condition=None):
         x = self.inverse(y, condition)
         log_det = self.transform_and_log_abs_det_jacobian(x, condition)[1]
         return x, -log_det
@@ -210,4 +211,3 @@ class MaskedAutoregressive(Bijection):
         transformer_args = self.transformer.get_args(transformer_params)
         return transformer_args
 
-    
