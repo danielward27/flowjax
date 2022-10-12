@@ -9,7 +9,7 @@ from jax.scipy import stats as jstats
 import jax
 import jax.numpy as jnp
 from jax.random import KeyArray
-from flowjax.utils import Array
+from flowjax.utils import Array, broadcast_arrays_1d
 from typing import Any
 import equinox as eqx
 
@@ -174,14 +174,15 @@ class _StandardNormal(Distribution):
 class Normal(Transformed):
     """
     Implements an independent Normal distribution with mean and std for
-    each dimension.
+    each dimension. `loc` and `scale` should be broadcastable.
     """
-    def __init__(self, loc: Array, scale: Array):
+    def __init__(self, loc: Array, scale: Array = 1.0):
         """
         Args:
             loc (Array): Array of the means of each dimension.
             scale (Array): Array of the standard deviations of each dimension.
         """
+        loc, scale = broadcast_arrays_1d(loc, scale)
         base_dist = _StandardNormal(loc.shape[0])
         bijection = Affine(loc=loc, scale=scale)
         super().__init__(base_dist, bijection)
@@ -213,7 +214,7 @@ class _StandardUniform(Distribution):
 class Uniform(Transformed):
     """
     Implements an independent uniform distribution 
-    between min and max for each dimension.
+    between min and max for each dimension. `minval` and `maxval` should be broadcastable.
     """
     def __init__(self, minval: Array, maxval: Array):
         """
@@ -221,6 +222,7 @@ class Uniform(Transformed):
             minval (Array): ith entry gives the min of the ith dimension
             maxval (Array): ith entry gives the max of the ith dimension
         """
+        minval, maxval = broadcast_arrays_1d(minval, maxval)
         if jnp.any(maxval < minval):
             raise ValueError("Minimums must be less than maximums.")
         base_dist = _StandardUniform(minval.shape[0])
@@ -254,11 +256,11 @@ class _StandardGumbel(Distribution):
 
 class Gumbel(Transformed):
     """
-    Gumbel distribution.
+    Gumbel distribution. `loc` and `scale` should be broadcastable.
     Ref: https://en.wikipedia.org/wiki/Gumbel_distribution
-
     """
-    def __init__(self, loc: Array, scale: Array):
+    def __init__(self, loc: Array, scale: Array = 1.0):
+        loc, scale = broadcast_arrays_1d(loc, scale)
         base_dist = _StandardGumbel(loc.shape[0])
         bijection = Affine(loc, scale)
         super().__init__(base_dist, bijection)
@@ -290,10 +292,11 @@ class _StandardCauchy(Distribution):
 
 class Cauchy(Transformed):
     """
-    Cauchy distribution with loc and scale.
+    Cauchy distribution. `loc` and `scale` should be broadcastable.
     Ref: https://en.wikipedia.org/wiki/Cauchy_distribution
     """
-    def __init__(self, loc: Array, scale: Array):
+    def __init__(self, loc: Array, scale: Array = 1.0):
+        loc, scale = broadcast_arrays_1d(loc, scale)
         base_dist = _StandardCauchy(loc.shape[0])
         bijection = Affine(loc, scale)
         super().__init__(base_dist, bijection)
@@ -330,11 +333,11 @@ class _StandardStudentT(Distribution):
 
 
 class StudentT(Transformed):
-    "Student T distribution with loc and scale."
-    def __init__(self, df: Array, loc: Array, scale: Array):
+    "Student T distribution. `loc` and `scale` should be broadcastable."
+    def __init__(self, df: Array, loc: Array, scale: Array = 1.0):
+        df, loc, scale = broadcast_arrays_1d(df, loc, scale)
         self.dim = df.shape[0]
         self.cond_dim = 0
-
         base_dist = _StandardStudentT(df)
         bijection = Affine(loc, scale)
         super().__init__(base_dist, bijection)
