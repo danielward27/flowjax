@@ -1,5 +1,5 @@
 from flowjax.bijections.abc import Bijection
-from flowjax.utils import Array
+from flowjax.utils import Array, broadcast_arrays_1d
 import jax.numpy as jnp
 from jax.scipy.linalg import solve_triangular
 
@@ -10,16 +10,14 @@ class Affine(Bijection):
     dim: int
     
     def __init__(self, loc: Array, scale: Array):
-        """Elementwise affine transformation. Condition is ignored.
+        """Elementwise affine transformation. Condition is ignored. loc and scale
+        should be broadcastable.
 
         Args:
             loc (Array): Location parameter vector.
             scale (Array): Positive scale parameter vector.
         """
-
-        if loc.shape != scale.shape:
-            raise ValueError("loc and scale must have matching shapes.")
-
+        loc, scale = broadcast_arrays_1d(loc, scale)
         self.loc = loc
         self.log_scale = jnp.log(scale)
         self.dim = loc.shape[0]

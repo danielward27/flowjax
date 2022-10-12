@@ -16,3 +16,14 @@ def tile_until_length(x: Array, max_len: int):
     num_reps = max_len // len(x) + 1
     y = jnp.tile(x, num_reps)
     return y[:max_len]
+
+def broadcast_arrays_1d(*args):
+    "Broadcast arrays, with all outputs being 1d."
+    args = jnp.broadcast_arrays(*args)
+    return [promote_to_1d(a) for a in args]
+
+def promote_to_1d(arr: Array):
+    if jnp.ndim(arr) > 1:
+        raise ValueError(f"Cannot convert array with shape {arr.shape} to 1d.")
+    else:
+        return jnp.atleast_1d(arr)
