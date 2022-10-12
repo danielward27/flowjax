@@ -5,7 +5,7 @@ suffix, to avoid potential name clashes with bijections.
 
 import jax
 import jax.numpy as jnp
-from flowjax.bijections.abc import Transformer
+from flowjax.bijections import Transformer
 from functools import partial
 
 

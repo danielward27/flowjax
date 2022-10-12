@@ -1,6 +1,6 @@
 import pytest
 from flowjax.distributions import Normal, Transformed
-from flowjax.bijections.affine import Affine
+from flowjax.bijections import Affine
 from flowjax.train_utils import count_fruitless
 from flowjax.train_utils import train_val_split, random_permutation_multiple, train_flow
 import jax.numpy as jnp

@@ -1,4 +1,4 @@
-from flowjax.bijections.abc import Bijection
+from flowjax.bijections import Bijection
 from flowjax.utils import Array, broadcast_arrays_1d
 import jax.numpy as jnp
 from jax.scipy.linalg import solve_triangular

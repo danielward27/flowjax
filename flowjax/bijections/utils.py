@@ -1,4 +1,4 @@
-from flowjax.bijections.abc import Bijection
+from flowjax.bijections import Bijection
 import jax.numpy as jnp
 from jax import random
 from jax.random import KeyArray

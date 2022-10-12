@@ -9,7 +9,7 @@ from jax.random import KeyArray
 import jax.numpy as jnp
 from flowjax.utils import tile_until_length
 import jax.nn as jnn
-from flowjax.bijections.abc import Bijection, Transformer
+from flowjax.bijections import Bijection, Transformer
 from typing import List
 from flowjax.utils import Array
 import jax

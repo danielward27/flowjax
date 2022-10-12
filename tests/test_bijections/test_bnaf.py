@@ -3,14 +3,14 @@ from flowjax.bijections.bnaf import (
     b_diag_mask,
     b_tril_mask,
     BlockAutoregressiveNetwork,
+    TanhBNAF,
+    b_diag_mask
 )
 import jax.numpy as jnp
 from jax import random
 import jax
 import pytest
-from flowjax.bijections.bnaf import TanhBNAF
 from jax.scipy.linalg import block_diag
-from flowjax.bijections.bnaf import b_diag_mask
 
 
 def test_b_tril_mask():
