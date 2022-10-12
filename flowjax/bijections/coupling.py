@@ -1,8 +1,7 @@
 from typing import Callable
-from flowjax.bijections.abc import Transformer
 import equinox as eqx
 import jax.numpy as jnp
-from flowjax.bijections.abc import Bijection
+from flowjax.bijections import Transformer, Bijection
 from jax.random import KeyArray
 from flowjax.utils import Array
 import jax.nn as jnn

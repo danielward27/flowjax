@@ -1,5 +1,5 @@
 import pytest
-from flowjax.bijections.affine import TriangularAffine
+from flowjax.bijections import TriangularAffine
 import jax.numpy as jnp
 
 def test_TriangularAffine():

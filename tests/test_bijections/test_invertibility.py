@@ -1,13 +1,17 @@
 import pytest
 from jax import random
 import jax.numpy as jnp
-from flowjax.bijections.coupling import Coupling
-from flowjax.bijections.masked_autoregressive import MaskedAutoregressive
-from flowjax.bijections.transformers import AffineTransformer
-from flowjax.bijections.utils import Flip, Permute
 from flowjax.bijections.transformers import AffineTransformer, RationalQuadraticSplineTransformer
-from flowjax.bijections.affine import Affine, TriangularAffine
-from flowjax.bijections.tanh import Tanh
+
+from flowjax.bijections import (
+    Affine,
+    TriangularAffine,
+    Coupling,
+    MaskedAutoregressive,
+    Tanh,
+    Flip,
+    Permute
+)
 
 transformers = {
     "AffineTransformer": AffineTransformer(),
@@ -95,6 +99,3 @@ def test_bijection_invertibility(bijection):
     
     assert x == pytest.approx(x_reconstructed, abs=1e-5)
     assert log_det1 == pytest.approx(-log_det2, abs=1e-5)
-
-
-# TODO test the jacobians using automatic differentiation.

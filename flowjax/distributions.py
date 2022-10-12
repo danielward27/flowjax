@@ -2,8 +2,7 @@
 
 from abc import ABC, abstractmethod
 from typing import Optional
-from flowjax.bijections.abc import Bijection
-from flowjax.bijections.affine import Affine
+from flowjax.bijections import Bijection, Affine
 from jax import random
 from jax.scipy import stats as jstats
 import jax

@@ -2,18 +2,16 @@
 and examples of how flows can be constructed."""
 
 from typing import Optional
-from flowjax.bijections.abc import Bijection, Transformer
 from jax import random
 import jax.nn as jnn
 from jax.random import KeyArray
-from flowjax.bijections.coupling import Coupling
-from flowjax.bijections.utils import Chain, intertwine_random_permutation, intertwine_flip
-from flowjax.bijections.bnaf import BlockAutoregressiveNetwork
-from flowjax.bijections.masked_autoregressive import MaskedAutoregressive
-from flowjax.distributions import Distribution
+from flowjax.bijections.utils import intertwine_random_permutation, intertwine_flip
+from flowjax.distributions import Distribution, Transformed
 from typing import List
-from flowjax.bijections.utils import Invert
-from flowjax.distributions import Transformed
+from flowjax.bijections import (
+    Bijection, Transformer, Coupling, Chain, Invert,
+    BlockAutoregressiveNetwork, MaskedAutoregressive
+    )
 
 def coupling_flow(
     key: KeyArray,

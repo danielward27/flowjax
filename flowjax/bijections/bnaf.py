@@ -6,7 +6,7 @@ from typing import Callable
 import equinox as eqx
 import jax
 import jax.numpy as jnp
-from flowjax.bijections.abc import Bijection
+from flowjax.bijections import Bijection
 from jax import random
 from jax.random import KeyArray
 from jax.nn.initializers import glorot_uniform
