@@ -9,7 +9,7 @@ class Affine(Bijection):
     log_scale: Array
     dim: int
     
-    def __init__(self, loc: Array, scale: Array):
+    def __init__(self, loc: Array, scale: Array = 1.0):
         """Elementwise affine transformation. Condition is ignored. loc and scale
         should be broadcastable.
 
