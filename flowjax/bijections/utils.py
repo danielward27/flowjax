@@ -1,4 +1,4 @@
-from flowjax.bijections import Bijection
+from flowjax.bijections import Bijection, Transformer
 import jax.numpy as jnp
 from jax import random
 from jax.random import KeyArray
@@ -178,3 +178,38 @@ def intertwine_random_permutation(
         
     new_bijections.append(bijections[-1])
     return new_bijections
+
+
+class TransformerToBijection(Bijection):
+    "Convert a transformer object to a Bijection object."
+    cond_dim: int = 0
+    params: Array
+    transformer: Transformer
+    
+    def __init__(self, transformer: Transformer, *, params: Array):
+        """Convert Transformer object to Bijection object.
+
+        Args:
+            transformer (Transformer): Transformer.
+            params (Array): Unconstrained parameter vector from which the args can be constructed, using `transformer.get_args(params)`.
+        """
+        # Note, params is key word only, as perhaps we will want to support
+        # construction from args too, although this is not implemented yet.
+        self.params = params
+        self.transformer = transformer
+
+    def transform(self, x: Array, condition = None):
+        args = self.transformer.get_args(self.params)
+        return self.transformer.transform(x, *args)
+
+    def transform_and_log_abs_det_jacobian(self, x: Array, condition = None):
+        args = self.transformer.get_args(self.params)
+        return self.transformer.transform_and_log_abs_det_jacobian(x, *args)
+
+    def inverse(self, y: Array, condition = None):
+        args = self.transformer.get_args(self.params)
+        return self.transformer.inverse(y, *args)
+
+    def inverse_and_log_abs_det_jacobian(self, y: Array, condition = None):
+        args = self.transformer.get_args(self.params)
+        return self.transformer.inverse_and_log_abs_det_jacobian(y, *args)
