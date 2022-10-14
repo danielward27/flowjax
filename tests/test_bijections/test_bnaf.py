@@ -54,11 +54,6 @@ def test_BlockAutoregressiveNetwork():
     assert jnp.all(jnp.triu(auto_jacobian, 1) == pytest.approx(0, abs=1e-7))
     assert jnp.all(jnp.diag(auto_jacobian) > 0)
 
-    # Check log abs det jacobian calculation
-    y, log_abs_det_jacobian = barn.transform_and_log_abs_det_jacobian(x)
-    expected = jnp.log(jnp.diag(auto_jacobian)).sum()
-    assert log_abs_det_jacobian == pytest.approx(expected, abs=1e-5)
-
     # Check conditioning works
     barn = BlockAutoregressiveNetwork(key, dim, cond_dim, depth=1, block_dim=4)
     y1, y2 = barn.transform(x, jnp.ones(cond_dim)), barn.transform(x, jnp.zeros(cond_dim))

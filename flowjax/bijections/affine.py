@@ -51,7 +51,7 @@ class TriangularAffine(Bijection):
     loc: Array
     dim: int
     cond_dim: int
-    diag_mask: Array
+    diag_idxs: Array
     tri_mask: Array
     lower: bool
     min_diag: float
@@ -77,7 +77,7 @@ class TriangularAffine(Bijection):
         
         self.dim = arr.shape[0]
         self.cond_dim = 0
-        self.diag_mask = jnp.eye(self.dim, dtype=jnp.int32)
+        self.diag_idxs = jnp.diag_indices(self.dim)
         tri_mask = jnp.tril(jnp.ones((self.dim, self.dim), dtype=jnp.int32), k=-1)
         self.tri_mask = tri_mask if lower else tri_mask.T
         self.min_diag = min_diag
@@ -91,19 +91,19 @@ class TriangularAffine(Bijection):
     @property
     def arr(self):
         "Get triangular array, (applies masking and min_diag constraint)."
-        diag = self.diag_mask*jnp.exp(self._log_diag) + self.min_diag
-        return self.tri_mask*self._arr + diag
+        diag = jnp.exp(self._log_diag) + self.min_diag
+        return (self.tri_mask*self._arr).at[self.diag_idxs].set(diag)
 
     def transform(self, x, condition = None):
         return self.arr @ x + self.loc
 
     def transform_and_log_abs_det_jacobian(self, x, condition = None):
         a = self.arr
-        return a @ x + self.loc, jnp.diag(a).sum()
+        return a @ x + self.loc, jnp.log(jnp.diag(a)).sum()
 
     def inverse(self, y, condition = None):
         return solve_triangular(self.arr, y - self.loc, lower=self.lower)
 
     def inverse_and_log_abs_det_jacobian(self, y, condition = None):
         a = self.arr
-        return solve_triangular(a, y - self.loc, lower=self.lower), -jnp.diag(a).sum()
+        return solve_triangular(a, y - self.loc, lower=self.lower), -jnp.log(jnp.diag(a)).sum()

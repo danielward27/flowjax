@@ -114,19 +114,20 @@ class RationalQuadraticSplineTransformer(Transformer):
         return jax.vmap(self._get_args)(params)
 
     def _get_args(self, params):
-        "Gets the arguments for a single dimension of x (defined for 1d)."
+        "Gets the arguments for a single dimension of x (defined for 1d)."        
         widths = jax.nn.softmax(params[: self.K]) * 2 * self.B
         widths = self.min_bin_width + (1 - self.min_bin_width * self.K) * widths
 
         heights = jax.nn.softmax(params[self.K : self.K * 2]) * 2 * self.B
         heights = self.min_bin_height + (1 - self.min_bin_height * self.K) * heights
 
-        derivatives = jax.nn.softplus(params[self.K * 2 :]) + self.min_derivative
-        derivatives = jnp.pad(derivatives, 2, constant_values=1)
         x_pos = jnp.cumsum(widths) - self.B
         x_pos = self.pos_pad.at[2:-2].set(x_pos)
         y_pos = jnp.cumsum(heights) - self.B
         y_pos = self.pos_pad.at[2:-2].set(y_pos)
+
+        derivatives = jax.nn.softplus(params[self.K * 2 :]) + self.min_derivative
+        derivatives = jnp.pad(derivatives, 2, constant_values=1)
         return x_pos, y_pos, derivatives
 
     @staticmethod
