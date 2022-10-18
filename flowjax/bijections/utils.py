@@ -181,7 +181,6 @@ def intertwine_random_permutation(
 
 
 class TransformerToBijection(Bijection):
-    "Convert a transformer object to a Bijection object."
     cond_dim: int = 0
     params: Array
     transformer: Transformer

@@ -109,15 +109,17 @@ class TriangularAffine(Bijection):
 
 
 class AdditiveLinearCondition(Bijection):
-    """
-    Carries out y = x + W @ condition, as the forward transformation and
-    x = y - W @ condition as the inverse.
-    """
     dim: int
     cond_dim: int
     W: Array
 
     def __init__(self, arr: Array):
+        """Carries out `y = x + W @ condition`, as the forward transformation and 
+        `x = y - W @ condition` as the inverse.
+
+        Args:
+            arr (Array): Array (W in the description.)
+        """
         self.dim = arr.shape[0]
         self.cond_dim = arr.shape[1]
         self.W = arr
