@@ -63,7 +63,7 @@ bijections = {
     ),
     "BlockAutoregressiveNetwork": BlockAutoregressiveNetwork(key, dim=dim, cond_dim=0, block_dim=3, depth=1),
     "BlockAutoregressiveNetwork (conditional)": BlockAutoregressiveNetwork(key, dim=dim, cond_dim=cond_dim, block_dim=3, depth=1),
-    "AdditiveLinearCondition": AdditiveLinearCondition(key, dim, cond_dim)
+    "AdditiveLinearCondition": AdditiveLinearCondition(random.uniform(key, (dim, cond_dim)))
 }
 
 transformers = {
