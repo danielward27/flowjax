@@ -1,4 +1,5 @@
-from flowjax.distributions import Distribution
+from flowjax.distributions import Distribution, Transformed
+from flowjax.bijections import Invert, Bijection
 from jax import random
 from jax.random import KeyArray
 import jax.numpy as jnp
@@ -9,6 +10,7 @@ from typing import Optional, List, Dict, Tuple, Sequence
 from flowjax.utils import Array
 from equinox.custom_types import BoolAxisSpec
 from jaxtyping import PyTree
+import jax
 
 def train_flow(
     key: KeyArray,
@@ -23,6 +25,7 @@ def train_flow(
     clip_norm: float = 0.5,
     show_progress: bool = True,
     filter_spec: PyTree[BoolAxisSpec] = eqx.is_inexact_array,
+    preprocess_bijection: Optional[Bijection] = None
 ):
     """Train a distribution (e.g. a flow) by maximum likelihood with Adam optimizer. Note that the last batch in each epoch is dropped if truncated.
 
@@ -39,7 +42,10 @@ def train_flow(
         clip_norm (float, optional): Maximum gradient norm before clipping occurs. Defaults to 0.5.
         show_progress (bool, optional): Whether to show progress bar. Defaults to True.
         filter_spec (PyTree[BoolAxisSpec], optional): Equinox `filter_spec` for specifying trainable parameters. Either a callable `leaf -> bool`, or a PyTree with prefix structure matching `dist` with True/False values. Defaults to `eqx.is_inexact_array`.
+        preprocess_bijection (Optional[Bijection], optional): Bijection applied to preprocess the data which will not be trained. The outputted distribution is `Transformed(trained_dist, Inverse(preprocess_bijection))`. Defaults to None.
     """
+    if preprocess_bijection:
+        x = jax.vmap(jax.jit(preprocess_bijection.transform))(x, condition)
 
     @eqx.filter_jit
     def loss(dist, x, condition=None):
@@ -103,6 +109,10 @@ def train_flow(
             loop.set_postfix({k: v[-1] for k, v in losses.items()})
 
     dist = eqx.combine(best_params, static)
+    
+    if preprocess_bijection:
+        dist = Transformed(dist, Invert(preprocess_bijection))
+
     return dist, losses
 
 
