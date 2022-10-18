@@ -39,6 +39,15 @@ class RationalQuadraticSplineTransformer(Transformer):
     def __init__(
         self, K, B, min_bin_width=1e-3, min_bin_height=1e-3, min_derivative=1e-3
     ):
+        """
+        RationalQuadraticSplineTransformer (https://arxiv.org/abs/1906.04032). Ouside the interval
+        [-B, B], the identity transform is used. Each row of parameter matrices
+        (x_pos, y_pos, derivatives) corresponds to a column in x. 
+
+        Args:
+            K (int): Number of inner knots
+            B: (int): Interval to transform [-B, B]
+        """
         self.K = K
         self.B = B
         self.min_bin_width = min_bin_width
@@ -53,15 +62,7 @@ class RationalQuadraticSplineTransformer(Transformer):
         pad_vals = jnp.array(
             [-B * 1e4, -B, B, B * 1e4]
         )  # Avoids jax control flow for identity tails
-        """
-        RationalQuadraticSplineTransformer (https://arxiv.org/abs/1906.04032). Ouside the interval
-        [-B, B], the identity transform is used. Each row of parameter matrices
-        (x_pos, y_pos, derivatives) corresponds to a column in x. 
-
-        Args:
-            K (int): Number of inner knots
-            B: (int): Interval to transform [-B, B]
-        """
+        
         pos_pad = pos_pad.at[pad_idxs].set(pad_vals)
         self._pos_pad = pos_pad  # End knots and beyond
 
@@ -122,11 +123,12 @@ class RationalQuadraticSplineTransformer(Transformer):
         heights = self.min_bin_height + (1 - self.min_bin_height * self.K) * heights
 
         x_pos = jnp.cumsum(widths) - self.B
-        x_pos = self.pos_pad.at[2:-2].set(x_pos)
         y_pos = jnp.cumsum(heights) - self.B
-        y_pos = self.pos_pad.at[2:-2].set(y_pos)
-
         derivatives = jax.nn.softplus(params[self.K * 2 :]) + self.min_derivative
+
+        # Add linear tails
+        x_pos = self.pos_pad.at[2:-2].set(x_pos)
+        y_pos = self.pos_pad.at[2:-2].set(y_pos)
         derivatives = jnp.pad(derivatives, 2, constant_values=1)
         return x_pos, y_pos, derivatives
 
