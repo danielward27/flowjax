@@ -3,7 +3,6 @@ from flowjax.utils import Array, broadcast_arrays_1d
 import jax.numpy as jnp
 from jax.scipy.linalg import solve_triangular
 
-
 class Affine(Bijection):
     loc: Array
     log_scale: Array
@@ -107,3 +106,30 @@ class TriangularAffine(Bijection):
     def inverse_and_log_abs_det_jacobian(self, y, condition = None):
         a = self.arr
         return solve_triangular(a, y - self.loc, lower=self.lower), -jnp.log(jnp.diag(a)).sum()
+
+
+class AdditiveLinearCondition(Bijection):
+    """
+    Carries out y = x + W @ condition, as the forward transformation and
+    x = y - W @ condition as the inverse.
+    """
+    dim: int
+    cond_dim: int
+    W: Array
+
+    def __init__(self, arr: Array):
+        self.dim = arr.shape[0]
+        self.cond_dim = arr.shape[1]
+        self.W = arr
+    
+    def transform(self, x, condition = None):
+        return x + self.W @ condition
+
+    def transform_and_log_abs_det_jacobian(self, x, condition = None):
+        return self.transform(x, condition), jnp.array(0)
+        
+    def inverse(self, y, condition = None):
+        return y - self.W @ condition
+
+    def inverse_and_log_abs_det_jacobian(self, y, condition = None):
+        return self.inverse(y, condition), jnp.array(0)

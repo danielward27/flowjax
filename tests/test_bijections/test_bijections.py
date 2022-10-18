@@ -14,7 +14,8 @@ from flowjax.bijections import (
     Flip,
     Permute,
     BlockAutoregressiveNetwork,
-    TransformerToBijection
+    TransformerToBijection,
+    AdditiveLinearCondition
 )
 
 
@@ -61,7 +62,8 @@ bijections = {
         key, RationalQuadraticSplineTransformer(5, 3), dim=dim, cond_dim=cond_dim, nn_width=10, nn_depth=2
     ),
     "BlockAutoregressiveNetwork": BlockAutoregressiveNetwork(key, dim=dim, cond_dim=0, block_dim=3, depth=1),
-    "BlockAutoregressiveNetwork (conditional)": BlockAutoregressiveNetwork(key, dim=dim, cond_dim=cond_dim, block_dim=3, depth=1)
+    "BlockAutoregressiveNetwork (conditional)": BlockAutoregressiveNetwork(key, dim=dim, cond_dim=cond_dim, block_dim=3, depth=1),
+    "AdditiveLinearCondition": AdditiveLinearCondition(key, dim, cond_dim)
 }
 
 transformers = {

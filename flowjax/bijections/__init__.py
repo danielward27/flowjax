@@ -1,6 +1,6 @@
 
 from .abc import Bijection, Transformer
-from .affine import Affine, TriangularAffine
+from .affine import Affine, TriangularAffine, AdditiveLinearCondition
 from .bnaf import BlockAutoregressiveNetwork
 from .coupling import Coupling
 from .masked_autoregressive import MaskedAutoregressive
@@ -20,5 +20,6 @@ __all__ = [
     "Invert",
     "Flip",
     "Permute",
-    "TransformerToBijection"
+    "TransformerToBijection",
+    "AdditiveLinearCondition"
 ]
