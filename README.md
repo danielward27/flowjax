@@ -47,6 +47,16 @@ A few limitations / things that could be worth including in the future:
 ## Related
 We make use of the [Equinox](https://arxiv.org/abs/2111.00254) package, which facilitates object-oriented programming with Jax. 
 
+## FAQ
+**How to avoid training the base distribution?**
+Provide a `filter_spec` to `train_flow`, for example
+```
+import equinox as eqx
+import jax.tree_util as jtu
+filter_spec = jtu.tree_map(lambda x: eqx.is_inexact_array(x), flow)
+filter_spec = eqx.tree_at(lambda tree: tree.base_dist, filter_spec, replace=False)
+```
+
 ## Authors
 `flowjax` was written by `Daniel Ward <danielward27@outlook.com>`.
 
