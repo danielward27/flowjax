@@ -31,6 +31,7 @@ bijections = {
     "Tanh": Tanh(),
     "TriangularAffine (lower)": TriangularAffine(jnp.arange(dim), pos_def_triangles),
     "TriangularAffine (upper)": TriangularAffine(jnp.arange(dim), pos_def_triangles, lower=False),
+    "TriangularAffine (weight_norm)": TriangularAffine(jnp.arange(dim), pos_def_triangles, weight_normalisation=True),
     "Coupling (unconditional)": Coupling(
         key,
         AffineTransformer(),
