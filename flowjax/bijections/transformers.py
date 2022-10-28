@@ -7,6 +7,7 @@ import jax
 import jax.numpy as jnp
 from flowjax.bijections import Transformer
 from functools import partial
+from flowjax.utils import Array
 
 
 class AffineTransformer(Transformer):
@@ -21,8 +22,8 @@ class AffineTransformer(Transformer):
     def inverse(self, y, loc, scale):
         return (y - loc) / scale
 
-    def inverse_and_log_abs_det_jacobian(self, x, loc, scale):
-        return self.inverse(x, loc, scale), -jnp.log(scale).sum()
+    def inverse_and_log_abs_det_jacobian(self, y, loc, scale):
+        return self.inverse(y, loc, scale), -jnp.log(scale).sum()
 
     def num_params(self, dim):
         return dim * 2
@@ -37,7 +38,7 @@ class AffineTransformer(Transformer):
 
 class RationalQuadraticSplineTransformer(Transformer):
     def __init__(
-        self, K, B, min_bin_width=1e-3, min_bin_height=1e-3, min_derivative=1e-3
+        self, K, B, softmax_adjust=1e-2, min_derivative=1e-3
     ):
         """
         RationalQuadraticSplineTransformer (https://arxiv.org/abs/1906.04032). Ouside the interval
@@ -47,32 +48,17 @@ class RationalQuadraticSplineTransformer(Transformer):
         Args:
             K (int): Number of inner knots
             B: (int): Interval to transform [-B, B]
+            softmax_adjust: (float): Controls minimum bin width and height by rescaling softmax output, e.g. 0=no adjustment, 1=average softmax output with evenly spaced widths, >1 promotes more evenly spaced widths. See `real_to_increasing_on_interval`.
+            min_derivative: (float): Minimum derivative.
         """
         self.K = K
         self.B = B
-        self.min_bin_width = min_bin_width
-        self.min_bin_height = min_bin_height
+        self.softmax_adjust = softmax_adjust
         self.min_derivative = min_derivative
-
-        # Padding logic avoids jax control flow for identity tails,
-        # by setting up a linear spline from the edge of the bounding box
-        # to B * 1e4
-        pos_pad = jnp.zeros(self.K + 4)
-        pad_idxs = jnp.array([0, 1, -2, -1])
-        pad_vals = jnp.array(
-            [-B * 1e4, -B, B, B * 1e4]
-        )  # Avoids jax control flow for identity tails
-        
-        pos_pad = pos_pad.at[pad_idxs].set(pad_vals)
-        self._pos_pad = pos_pad  # End knots and beyond
-
-    @property
-    def pos_pad(self):
-        return jax.lax.stop_gradient(self._pos_pad)
 
     @partial(jax.vmap, in_axes=[None, 0, 0, 0, 0])
     def transform(self, x, x_pos, y_pos, derivatives):
-        k = self._get_bin(x, x_pos)
+        k = jnp.searchsorted(x_pos, x) - 1
         xi = (x - x_pos[k]) / (x_pos[k + 1] - x_pos[k])
         sk = (y_pos[k + 1] - y_pos[k]) / (x_pos[k + 1] - x_pos[k])
         dk, dk1, yk, yk1 = derivatives[k], derivatives[k + 1], y_pos[k], y_pos[k + 1]
@@ -87,7 +73,7 @@ class RationalQuadraticSplineTransformer(Transformer):
 
     @partial(jax.vmap, in_axes=[None, 0, 0, 0, 0])
     def inverse(self, y, x_pos, y_pos, derivatives):
-        k = self._get_bin(y, y_pos)
+        k = jnp.searchsorted(y_pos, y) - 1
         xk, xk1, yk, yk1 = x_pos[k], x_pos[k + 1], y_pos[k], y_pos[k + 1]
         sk = (yk1 - yk) / (xk1 - xk)
         y_delta_s_term = (y - yk) * (derivatives[k + 1] + derivatives[k] - 2 * sk)
@@ -115,36 +101,40 @@ class RationalQuadraticSplineTransformer(Transformer):
         return jax.vmap(self._get_args)(params)
 
     def _get_args(self, params):
-        "Gets the arguments for a single dimension of x (defined for 1d)."        
-        widths = jax.nn.softmax(params[: self.K]) * 2 * self.B
-        widths = self.min_bin_width + (1 - self.min_bin_width * self.K) * widths
-
-        heights = jax.nn.softmax(params[self.K : self.K * 2]) * 2 * self.B
-        heights = self.min_bin_height + (1 - self.min_bin_height * self.K) * heights
-
-        x_pos = jnp.cumsum(widths) - self.B
-        y_pos = jnp.cumsum(heights) - self.B
+        "Gets the arguments for a single dimension of x (defined for 1d)."    
+        x_pos = real_to_increasing_on_interval(params[: self.K], self.B, self.softmax_adjust)    
+        y_pos = real_to_increasing_on_interval(params[self.K: self.K * 2], self.B, self.softmax_adjust)
         derivatives = jax.nn.softplus(params[self.K * 2 :]) + self.min_derivative
 
-        # Add linear tails
-        x_pos = self.pos_pad.at[2:-2].set(x_pos)
-        y_pos = self.pos_pad.at[2:-2].set(y_pos)
+        # Padding sets up linear spline from the edge of the bounding box to B * 1e4
+        pos_pad = jnp.array([self.B, 1e4*self.B])
+        x_pos = jnp.hstack((-jnp.flip(pos_pad), x_pos, pos_pad))
+        y_pos = jnp.hstack((-jnp.flip(pos_pad), y_pos, pos_pad))
         derivatives = jnp.pad(derivatives, 2, constant_values=1)
         return x_pos, y_pos, derivatives
 
-    @staticmethod
-    def _get_bin(target, positions):
-        "Get the bin (defined for 1D)"
-        cond1 = target <= positions[1:]
-        cond2 = target > positions[:-1]
-        return jnp.where(cond1 & cond2, size=1)[0][0]
-
     @partial(jax.vmap, in_axes=[None, 0, 0, 0, 0])
     def derivative(self, x, x_pos, y_pos, derivatives):  # eq. 5
-        k = self._get_bin(x, x_pos)
+        k = jnp.searchsorted(x_pos, x) - 1
         xi = (x - x_pos[k]) / (x_pos[k + 1] - x_pos[k])
         sk = (y_pos[k + 1] - y_pos[k]) / (x_pos[k + 1] - x_pos[k])
         dk, dk1 = derivatives[k], derivatives[k + 1]
         num = sk ** 2 * (dk1 * xi ** 2 + 2 * sk * xi * (1 - xi) + dk * (1 - xi) ** 2)
         den = (sk + (dk1 + dk - 2 * sk) * xi * (1 - xi)) ** 2
         return num / den
+
+
+def real_to_increasing_on_interval(arr: Array, B: float = 1, softmax_adjust: float = 1e-2):
+    """Transform unconstrained parameter vector to monotonically increasing positions on [-B, B].
+
+    Args:
+        arr (Array): Parameter vector.
+        B (float, optional): Interval to transform output. Defaults to 1.
+        softmax_adjust (float, optional): Rescales softmax output using (widths + softmax_adjust/widths.size) / (1 + softmax_adjust). e.g. 0=no adjustment, 1=average softmax output with evenly spaced widths, >1 promotes more evenly spaced widths.
+    """
+    if softmax_adjust < 0:
+        raise ValueError("softmax_adjust should be >= 0.")
+    widths = jax.nn.softmax(arr)
+    widths = (widths + softmax_adjust/widths.size) / (1 + softmax_adjust)
+    widths = widths.at[0].set(widths[0] / 2)
+    return 2*B*jnp.cumsum(widths) - B

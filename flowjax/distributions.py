@@ -151,7 +151,7 @@ class Transformed(Distribution):
         return x
 
 
-class _StandardNormal(Distribution):
+class StandardNormal(Distribution):
     """
     Implements a standard normal distribution, condition is ignored.
     """
@@ -182,7 +182,7 @@ class Normal(Transformed):
             scale (Array): Array of the standard deviations of each dimension.
         """
         loc, scale = broadcast_arrays_1d(loc, scale)
-        base_dist = _StandardNormal(loc.shape[0])
+        base_dist = StandardNormal(loc.shape[0])
         bijection = Affine(loc=loc, scale=scale)
         super().__init__(base_dist, bijection)
 

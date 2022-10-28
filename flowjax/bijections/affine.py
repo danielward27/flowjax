@@ -2,6 +2,7 @@ from flowjax.bijections import Bijection
 from flowjax.utils import Array, broadcast_arrays_1d
 import jax.numpy as jnp
 from jax.scipy.linalg import solve_triangular
+from typing import Optional
 
 class Affine(Bijection):
     loc: Array
@@ -54,10 +55,11 @@ class TriangularAffine(Bijection):
     tri_mask: Array
     lower: bool
     min_diag: float
+    weight_log_scale: Optional[Array]
     _arr: Array
     _log_diag: Array
 
-    def __init__(self, loc: Array, arr: Array, lower: bool = True, min_diag: float = 1e-6):
+    def __init__(self, loc: Array, arr: Array, lower: bool = True, min_diag: float = 1e-6, weight_normalisation: bool = False):
         """
         Transformation of the form Ax + b, where A is a lower or upper triangular matrix. To
         ensure invertiblility, diagonal entries should be positive (and greater than min_diag).
@@ -67,6 +69,7 @@ class TriangularAffine(Bijection):
             arr (Array): Matrix.
             lower (bool, optional): Whether the mask should select the lower or upper triangular matrix (other elements ignored). Defaults to True.
             min_diag (float, optional): Minimum value on the diagonal, to ensure invertibility. Defaults to 1e-6.
+            weight_log_scale (Optional[Array], optional): If provided, carry out weight normalisation, initialising log scales to the zero vector.
         """
         
         if (arr.ndim != 2) or (arr.shape[0] != arr.shape[1]):
@@ -86,12 +89,20 @@ class TriangularAffine(Bijection):
         self.loc = loc
         self._arr = arr
         self._log_diag = jnp.log(jnp.diag(arr) - min_diag)
+        self.weight_log_scale = jnp.zeros((self.dim, 1)) if weight_normalisation else None
         
     @property
     def arr(self):
         "Get triangular array, (applies masking and min_diag constraint)."
         diag = jnp.exp(self._log_diag) + self.min_diag
-        return (self.tri_mask*self._arr).at[self.diag_idxs].set(diag)
+        off_diag = self.tri_mask*self._arr
+        arr = off_diag.at[self.diag_idxs].set(diag)
+
+        if self.weight_log_scale is not None:
+            norms = jnp.linalg.norm(arr, axis=1, keepdims=True)
+            arr = jnp.exp(self.weight_log_scale) * arr / norms
+            
+        return arr
 
     def transform(self, x, condition = None):
         return self.arr @ x + self.loc

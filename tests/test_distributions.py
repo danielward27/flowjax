@@ -2,7 +2,7 @@ import pytest
 import jax.numpy as jnp
 from jax import random
 from flowjax.distributions import (
-    _StandardNormal,
+    StandardNormal,
     Normal,
     _StandardUniform,
     Uniform,
@@ -19,7 +19,7 @@ from flowjax.distributions import (
 
 
 _test_distributions = [
-    (_StandardNormal, '_StandardNormal'),
+    (StandardNormal, 'StandardNormal'),
     (lambda dim: Normal(jnp.zeros(dim), jnp.ones(dim)), 'Normal'),
     (_StandardUniform, '_StandardUniform'),
     (lambda dim: Uniform(jnp.zeros(dim), jnp.ones(dim)), 'Uniform'),
