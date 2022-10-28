@@ -224,13 +224,16 @@ class Partial(Bijection):
         """
         Args:
             bijection (Bijection): Bijection that is compatible with the subset of x indexed by idxs.
-            idxs (Array): Indices (Integer, a slice, or an ndarray with integer dtype) of the transformed portion.
+            idxs (Array): Indices (Integer, a slice, or an ndarray with integer/bool dtype) of the transformed portion. If A multidimensional array is provided, the array is flattened.
         """
         self.bijection = bijection
         self.cond_dim = self.bijection.cond_dim
 
         if not isinstance(idxs, slice):
-            idxs = jnp.unique(idxs).ravel()
+            idxs = jnp.array(idxs).ravel()
+
+            if jnp.issubdtype(idxs, jnp.integer):
+                idxs = jnp.unique(idxs)
             
         self.idxs = idxs
 
