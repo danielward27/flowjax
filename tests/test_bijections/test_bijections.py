@@ -15,7 +15,8 @@ from flowjax.bijections import (
     Permute,
     BlockAutoregressiveNetwork,
     TransformerToBijection,
-    AdditiveLinearCondition
+    AdditiveLinearCondition,
+    Partial
 )
 
 
@@ -27,6 +28,9 @@ pos_def_triangles = jnp.full((dim,dim), 0.5) + jnp.diag(jnp.ones(dim))
 bijections = {
     "Flip": Flip(),
     "Permute": Permute(jnp.flip(jnp.arange(dim))),
+    "Partial (int)": Partial(Affine(2,2), 0),
+    "Partial (array)": Partial(Flip(), jnp.array([0,0,4,3])),
+    "Partial (slice)": Partial(Flip(), slice(1,3)),
     "Affine": Affine(jnp.ones(dim), jnp.full(dim, 2)),
     "Tanh": Tanh(),
     "TriangularAffine (lower)": TriangularAffine(jnp.arange(dim), pos_def_triangles),

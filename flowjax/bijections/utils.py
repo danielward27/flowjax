@@ -212,3 +212,42 @@ class TransformerToBijection(Bijection):
     def inverse_and_log_abs_det_jacobian(self, y: Array, condition = None):
         args = self.transformer.get_args(self.params)
         return self.transformer.inverse_and_log_abs_det_jacobian(y, *args)
+
+
+class Partial(Bijection):
+    """Applies bijection to specific indices of an input."""
+    cond_dim: int
+    bijection: Array
+    idxs: Union[int, slice, Array]
+
+    def __init__(self, bijection: Bijection, idxs):
+        """
+        Args:
+            bijection (Bijection): Bijection that is compatible with the subset of x indexed by idxs.
+            idxs (Array): Indices (Integer, a slice, or an ndarray with integer dtype) of the transformed portion.
+        """
+        self.bijection = bijection
+        self.cond_dim = self.bijection.cond_dim
+
+        if not isinstance(idxs, slice):
+            idxs = jnp.unique(idxs).ravel()
+            
+        self.idxs = idxs
+
+    def transform(self, x: Array, condition = None):
+        y = self.bijection.transform(x[self.idxs], condition)
+        return x.at[self.idxs].set(y)
+
+    def transform_and_log_abs_det_jacobian(self, x: Array, condition = None):
+        y, log_det = self.bijection.transform_and_log_abs_det_jacobian(x[self.idxs], condition)
+        return x.at[self.idxs].set(y), log_det
+
+    def inverse(self, y: Array, condition = None) -> Array:
+        x = self.bijection.inverse(y[self.idxs], condition)
+        return y.at[self.idxs].set(x)
+
+    def inverse_and_log_abs_det_jacobian(self, y: Array, condition = None) -> Array:
+        x, log_det = self.bijection.inverse_and_log_abs_det_jacobian(y[self.idxs], condition)
+        return y.at[self.idxs].set(x), log_det
+
+    
