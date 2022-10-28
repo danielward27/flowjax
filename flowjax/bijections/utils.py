@@ -220,7 +220,7 @@ class Partial(Bijection):
     bijection: Array
     idxs: Union[int, slice, Array]
 
-    def __init__(self, bijection: Bijection, idxs):  # TODO provide option to use bijection defined for all, but then mask?
+    def __init__(self, bijection: Bijection, idxs):
         """
         Args:
             bijection (Bijection): Bijection that is compatible with the subset of x indexed by idxs.
