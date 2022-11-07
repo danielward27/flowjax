@@ -23,8 +23,8 @@ flow.log_prob(x)
 
 The package currently supports the following:
 
-- Supports both `coupling_flow` ([Dinh et al., 2017](https://arxiv.org/abs/1605.08803)) and `masked_autoregressive_flow` ([Papamakarios et al., 2017](https://arxiv.org/abs/1705.07057v4))  architectures
-- Supports common transformers, such as `AffineTransformer` and `RationalQuadraticSplineTransformer` (the latter used in neural spline flows; [Durkan et al., 2019](https://arxiv.org/abs/1906.04032))
+- `coupling_flow` ([Dinh et al., 2017](https://arxiv.org/abs/1605.08803)) and `masked_autoregressive_flow` ([Papamakarios et al., 2017](https://arxiv.org/abs/1705.07057v4))  conditioner architectures
+- Common "transformers", such as `AffineTransformer` and `RationalQuadraticSplineTransformer` (the latter used in neural spline flows; [Durkan et al., 2019](https://arxiv.org/abs/1906.04032))
 - `block_neural_autoregressive_flow`, as introduced by [De Cao et al., 2019](https://arxiv.org/abs/1904.04676)
 
 For examples of basic usage, see [examples](https://github.com/danielward27/flowjax/blob/main/examples/).
@@ -49,7 +49,7 @@ A few limitations / things that could be worth including in the future:
 We make use of the [Equinox](https://arxiv.org/abs/2111.00254) package, which facilitates object-oriented programming with Jax. 
 
 ## FAQ
-**How to avoid training the base distribution?**
+#### How to avoid training the base distribution?
 Provide a `filter_spec` to `train_flow`, for example
 ```
 import equinox as eqx
@@ -58,7 +58,7 @@ filter_spec = jtu.tree_map(lambda x: eqx.is_inexact_array(x), flow)
 filter_spec = eqx.tree_at(lambda tree: tree.base_dist, filter_spec, replace=False)
 ```
 
-**Do I need to scale my variables?**
+#### Do I need to scale my variables?
 In general yes, you should consider the form and scales of the target samples. Often it is useful to define a bijection to carry out the preprocessing, then to transform the flow with the inverse, to "undo" the preprocessing. For example, to carry out "standard scaling", we could do
 ```
 import jax
@@ -70,6 +70,31 @@ x_processed = jax.vmap(preprocess.transform)(x)
 flow, losses = train_flow(train_key, flow, x_processed)
 flow = Transformed(flow, Invert(preprocess))  # "undo" the preprocessing
 ```
+
+#### Do I need to JIT things?
+The methods of distributions and bijections are not jitted by default. For example, if you wanted to sample several batches, or evaluate probabilities over batches, then it is usually worth jitting the methods, for example
+
+```
+import equinox as eqx
+batch_size = 256
+keys = random.split(random.PRNGKey(0), 5)
+
+# Often slow - sample and log_prob not jitted!
+results = []
+for batch_key in keys:
+    x = flow.sample(batch_key, n=batch_size)
+    lp = flow.log_prob(x)
+    results.append((x,lp))
+
+# Fast - sample and log_prob jitted!
+results = []
+for batch_key in keys:
+    x = eqx.filter_jit(flow.sample)(batch_key, n=batch_size)
+    lp = eqx.filter_jit(flow.log_prob)(x)
+    results.append((x,lp))
+```
+
+If training a distribution using a custom training script, then generally the "step" function (computing value and gradient of the loss and updating model parameters) should be jitted (as we do in `flowjax.train_utils.train_flow`).
 
 ## Authors
 `flowjax` was written by `Daniel Ward <danielward27@outlook.com>`.
