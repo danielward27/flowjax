@@ -72,29 +72,25 @@ flow = Transformed(flow, Invert(preprocess))  # "undo" the preprocessing
 ```
 
 #### Do I need to JIT things?
-The methods of distributions and bijections are not jitted by default. For example, if you wanted to sample several batches, or evaluate probabilities over batches, then it is usually worth jitting the methods, for example
+The methods of distributions and bijections are not jitted by default. For example, if you wanted to sample several batches after training, then it is usually worth using jit
 
 ```
 import equinox as eqx
 batch_size = 256
 keys = random.split(random.PRNGKey(0), 5)
 
-# Often slow - sample and log_prob not jitted!
+# Often slow - sample not jitted!
 results = []
 for batch_key in keys:
     x = flow.sample(batch_key, n=batch_size)
-    lp = flow.log_prob(x)
-    results.append((x,lp))
+    results.append(x)
 
-# Fast - sample and log_prob jitted!
+# Fast - sample jitted!
 results = []
 for batch_key in keys:
     x = eqx.filter_jit(flow.sample)(batch_key, n=batch_size)
-    lp = eqx.filter_jit(flow.log_prob)(x)
-    results.append((x,lp))
+    results.append(x))
 ```
-
-If training a distribution using a custom training script, then generally the "step" function (computing value and gradient of the loss and updating model parameters) should be jitted (as we do in `flowjax.train_utils.train_flow`).
 
 ## Authors
 `flowjax` was written by `Daniel Ward <danielward27@outlook.com>`.
