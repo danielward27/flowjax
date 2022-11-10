@@ -5,7 +5,7 @@ from .bnaf import BlockAutoregressiveNetwork
 from .coupling import Coupling
 from .masked_autoregressive import MaskedAutoregressive
 from .tanh import Tanh
-from .utils import Chain, Invert, Flip, Permute, TransformerToBijection, Partial
+from .utils import Chain, Invert, Flip, Permute, TransformerToBijection, Partial, EmbedCondition
 
 __all__ = [
     "Bijection",
@@ -22,5 +22,6 @@ __all__ = [
     "Permute",
     "TransformerToBijection",
     "AdditiveLinearCondition",
-    "Partial"
+    "Partial",
+    "EmbedCondition"
 ]

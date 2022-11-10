@@ -4,6 +4,7 @@ from jax import random
 import jax.numpy as jnp
 import jax
 from flowjax.bijections.transformers import AffineTransformer, RationalQuadraticSplineTransformer
+import equinox as eqx
 
 from flowjax.bijections import (
     Affine,
@@ -16,7 +17,9 @@ from flowjax.bijections import (
     BlockAutoregressiveNetwork,
     TransformerToBijection,
     AdditiveLinearCondition,
-    Partial
+    Partial,
+    EmbedCondition
+
 )
 
 
@@ -69,7 +72,12 @@ bijections = {
     ),
     "BlockAutoregressiveNetwork": BlockAutoregressiveNetwork(key, dim=dim, cond_dim=0, block_dim=3, depth=1),
     "BlockAutoregressiveNetwork (conditional)": BlockAutoregressiveNetwork(key, dim=dim, cond_dim=cond_dim, block_dim=3, depth=1),
-    "AdditiveLinearCondition": AdditiveLinearCondition(random.uniform(key, (dim, cond_dim)))
+    "AdditiveLinearCondition": AdditiveLinearCondition(random.uniform(key, (dim, cond_dim))),
+    "EmbedCondition": EmbedCondition(
+        BlockAutoregressiveNetwork(key, dim=dim, cond_dim=1, block_dim=3, depth=1),
+        eqx.nn.MLP(2, 1, 3, 1, key=key),
+        cond_dim
+    )
 }
 
 transformers = {

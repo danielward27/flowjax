@@ -4,7 +4,7 @@ from jax import random
 from jax.random import KeyArray
 from flowjax.utils import Array
 from typing import List, Sequence, Tuple, Union
-
+import equinox as eqx
 
 class Invert(Bijection):
     bijection: Bijection
@@ -253,4 +253,37 @@ class Partial(Bijection):
         x, log_det = self.bijection.inverse_and_log_abs_det_jacobian(y[self.idxs], condition)
         return y.at[self.idxs].set(x), log_det
 
-    
+
+class EmbedCondition(Bijection):
+    bijection: Bijection
+    embedding_net: eqx.Module
+    cond_dim: int
+
+    def __init__(self, bijection: Bijection, embedding_net: eqx.Module, cond_dim: int) -> None:
+        """Use an embedding network to reduce the dimensionality of the conditioning variable.
+        The returned bijection has cond_dim equal to the raw condition size.
+
+        Args:
+            bijection (Bijection): Bijection with bijection.cond_dim equal to the embedded size.
+            embedding_net (eqx.Module): A callable equinox module that embeds a conditioning variable to size bijection.cond_dim.
+            cond_dim (int): The dimension of the raw conditioning variable.
+        """
+        self.bijection = bijection
+        self.embedding_net = embedding_net
+        self.cond_dim = cond_dim
+
+    def transform(self, x, condition = None):
+        condition = self.embedding_net(condition)
+        return self.bijection.transform(x, condition)
+
+    def transform_and_log_abs_det_jacobian(self, x, condition = None):
+        condition = self.embedding_net(condition)
+        return self.bijection.transform_and_log_abs_det_jacobian(x, condition)
+
+    def inverse(self, y, condition = None):
+        condition = self.embedding_net(condition)
+        return self.bijection.inverse(y, condition)
+
+    def inverse_and_log_abs_det_jacobian(self, y, condition = None):
+        condition = self.embedding_net(condition)
+        return self.bijection.inverse_and_log_abs_det_jacobian(y, condition)
