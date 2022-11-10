@@ -39,9 +39,8 @@ This package is new and may have substantial breaking changes between major rele
 
 ## TODO
 A few limitations / things that could be worth including in the future:
-
-- Support embedding networks (for dimensionality reduction of conditioning variables)
-- Add batch/layer normalisation to neural networks
+- More options for batch/layer normalisation for neural networks
+- Support multiple "event" dimensions (i.e. allow x and condition instances to have ndim > 1)
 - Training script for variational inference
 - Add documentation
 
