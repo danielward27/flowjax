@@ -139,47 +139,6 @@ class Flip(Bijection):
         return jnp.flip(y), jnp.array(0)
 
 
-def intertwine_flip(bijections: Sequence[Bijection]) -> List[Bijection]:
-    """Given a sequence of bijections, add 'flips' between layers, i.e.
-    with bijections [a,b,c], returns [a, flip, b, flip, c].
-
-    Args:
-        bijections (Sequence[Bijection]): Sequence of bijections.
-
-    Returns:
-        List[Bijection]: List of bijections with flips inbetween.
-    """
-    new_bijections = []
-    for b in bijections[:-1]:
-        new_bijections.extend([b, Flip()])
-    new_bijections.append(bijections[-1])
-    return new_bijections
-
-
-def intertwine_random_permutation(
-    key: KeyArray, bijections: Sequence[Bijection], dim: int
-) -> List[Bijection]:
-    """Given a list of bijections, add random permutations between layers. i.e.
-    with bijections [a,b,c], returns [a, perm1, b, perm2, c].
-
-    Args:
-        key (KeyArray): Jax PRNGKey
-        bijections (Sequence[Bijection]): Sequence of bijections.
-        dim (int): Dimension.
-
-    Returns:
-        List[Bijection]: List of bijections with random permutations inbetween.
-    """
-    new_bijections = []
-    for bijection in bijections[:-1]:
-        key, subkey = random.split(key)
-        perm = random.permutation(subkey, jnp.arange(dim))
-        new_bijections.extend([bijection, Permute(perm)])
-        
-    new_bijections.append(bijections[-1])
-    return new_bijections
-
-
 class TransformerToBijection(Bijection):
     cond_dim: int = 0
     params: Array
@@ -224,7 +183,7 @@ class Partial(Bijection):
         """
         Args:
             bijection (Bijection): Bijection that is compatible with the subset of x indexed by idxs.
-            idxs (Array): Indices (Integer, a slice, or an ndarray with integer/bool dtype) of the transformed portion. If A multidimensional array is provided, the array is flattened.
+            idxs: Indices (Integer, a slice, or an ndarray with integer/bool dtype) of the transformed portion. If a multidimensional array is provided, the array is flattened.
         """
         self.bijection = bijection
         self.cond_dim = self.bijection.cond_dim
