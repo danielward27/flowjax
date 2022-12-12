@@ -23,7 +23,7 @@ class Coupling(Bijection):
         cond_dim: int,
         nn_width: int,
         nn_depth: int,
-        nn_activation: Callable = jnn.relu
+        nn_activation: Callable = jnn.relu,
     ):
         """Coupling layer implementation (https://arxiv.org/abs/1605.08803).
 
@@ -37,7 +37,7 @@ class Coupling(Bijection):
             nn_depth (int): Neural network hidden layer size.
             nn_activation (Callable, optional): Neural network activation function. Defaults to jnn.relu.
         """
-        
+
         self.transformer = transformer
         self.d = d
         self.D = D
@@ -88,6 +88,8 @@ class Coupling(Bijection):
         nn_input = x_cond if condition is None else jnp.concatenate((x_cond, condition))
         bijection_params = self.conditioner(nn_input)
         bijection_args = self.transformer.get_args(bijection_params)
-        x_trans, log_det = self.transformer.inverse_and_log_abs_det_jacobian(y_trans, *bijection_args)
+        x_trans, log_det = self.transformer.inverse_and_log_abs_det_jacobian(
+            y_trans, *bijection_args
+        )
         x = jnp.concatenate((x_cond, x_trans))
         return x, log_det

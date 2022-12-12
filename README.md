@@ -1,7 +1,11 @@
-## flowjax
+<div align="center">
+<img src="https://github.com/danielward27/flowjax/images/flowjax_logo.png?raw=true" alt="logo"></img>
+</div>
+
+## FlowJax: Normalising Flows in Jax
 -------
 
-Normalising flows in JAX. Training a flow can be done in a few lines of code:
+Training a flow can be done in a few lines of code:
 
 ```
 from flowjax.flows import block_neural_autoregressive_flow

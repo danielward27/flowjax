@@ -8,6 +8,7 @@ from jax import random
 import jax.tree_util as jtu
 import equinox as eqx
 
+
 def test_count_fruitless():
     assert count_fruitless([12, 2, 3, 4]) == 2
     assert count_fruitless([0]) == 0
@@ -33,6 +34,7 @@ def test_random_permutation_multiple():
     after = jnp.sort(jnp.concatenate((x2, y2), axis=1).sum(axis=1))
     assert (before == after).all()
 
+
 def test_train_flow_filter_spec():
     dim = 3
     mean, std = jnp.ones(dim), jnp.ones(dim)
@@ -52,7 +54,9 @@ def test_train_flow_filter_spec():
     before = eqx.filter(flow, eqx.is_inexact_array)
     filter_spec = jtu.tree_map(lambda x: eqx.is_inexact_array(x), flow)
     filter_spec = eqx.tree_at(lambda tree: tree.base_dist, filter_spec, replace=False)
-    flow, _ = train_flow(random.PRNGKey(0), flow, x, max_epochs=1, batch_size=50, filter_spec=filter_spec)
+    flow, _ = train_flow(
+        random.PRNGKey(0), flow, x, max_epochs=1, batch_size=50, filter_spec=filter_spec
+    )
     after = eqx.filter(flow, eqx.is_inexact_array)
 
     assert jnp.all(before.base_dist.bijection.loc == after.base_dist.bijection.loc)

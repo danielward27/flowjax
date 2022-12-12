@@ -2,29 +2,22 @@ import pytest
 import jax.numpy as jnp
 import jax
 from jax import random
-from flowjax.bijections.masked_autoregressive import (
-    AutoregressiveMLP,
-    MaskedLinear,
-    rank_based_mask,
-)
+from flowjax.nn import AutoregressiveMLP, MaskedLinear, BlockAutoregressiveLinear
+from flowjax.masks import rank_based_mask
 from flowjax.utils import tile_until_length
+from jax.scipy.linalg import block_diag
 
 
-def test_rank_based_mask():
-    in_ranks = jnp.arange(2)
-    out_ranks = jnp.array([0, 1, 1, 2])
+def test_BlockAutoregressiveLinear():
+    block_shape = (3, 2)
+    layer = BlockAutoregressiveLinear(jax.random.PRNGKey(0), 3, block_shape)
+    x = jnp.ones(6)
+    a, log_jac_3d = layer(x)
+    assert log_jac_3d.shape == (3, *block_shape)
 
-    expected_mask = jnp.array([[0, 0], [1, 0], [1, 0], [1, 1]], dtype=jnp.int32)
-
-    mask = rank_based_mask(in_ranks, out_ranks)
-    assert jnp.all(expected_mask == mask)
-
-    in_ranks = jnp.array([0, 0, 1, 1])
-    out_ranks = jnp.array([0, 1])
-
-    expected_mask = jnp.array([[0, 0, 0, 0], [1, 1, 0, 0]], dtype=jnp.int32)
-    mask = rank_based_mask(in_ranks, out_ranks)
-    assert jnp.all(expected_mask == mask)
+    # Check block diag log jacobian matches autodif.
+    auto_jacobian = jax.jacobian(lambda x: layer(x)[0])(x) * layer.b_diag_mask
+    assert block_diag(*jnp.exp(log_jac_3d)) == pytest.approx(auto_jacobian, abs=1e-7)
 
 
 def test_MaskedLinear():

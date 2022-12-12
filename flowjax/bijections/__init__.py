@@ -1,11 +1,18 @@
-
 from .abc import Bijection, Transformer
 from .affine import Affine, TriangularAffine, AdditiveLinearCondition
 from .bnaf import BlockAutoregressiveNetwork
 from .coupling import Coupling
 from .masked_autoregressive import MaskedAutoregressive
 from .tanh import Tanh
-from .utils import Chain, Invert, Flip, Permute, TransformerToBijection, Partial, EmbedCondition
+from .utils import (
+    Chain,
+    Invert,
+    Flip,
+    Permute,
+    TransformerToBijection,
+    Partial,
+    EmbedCondition,
+)
 
 __all__ = [
     "Bijection",
@@ -23,5 +30,5 @@ __all__ = [
     "TransformerToBijection",
     "AdditiveLinearCondition",
     "Partial",
-    "EmbedCondition"
+    "EmbedCondition",
 ]

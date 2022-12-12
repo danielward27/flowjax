@@ -16,15 +16,15 @@ def test_tile_until_length():
     assert jnp.all(y == jnp.array([1]))
 
 
-
 test_cases = [
     # arrays, expected_shape
-    ((jnp.ones(3), jnp.ones(3)), (3, )),
-    ((jnp.ones(3), 1.), (3, )),
-    ((1., jnp.ones(3)), (3, )),
-    ((1., 1.), (1, )),
-    (((1.), ), (1, ))
+    ((jnp.ones(3), jnp.ones(3)), (3,)),
+    ((jnp.ones(3), 1.0), (3,)),
+    ((1.0, jnp.ones(3)), (3,)),
+    ((1.0, 1.0), (1,)),
+    (((1.0),), (1,)),
 ]
+
 
 @pytest.mark.parametrize("arrays,expected", test_cases)
 def test_broadcast_arrays_1d(arrays, expected):

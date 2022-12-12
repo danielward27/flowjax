@@ -1,10 +1,9 @@
 from flowjax.bijections import Bijection, Transformer
 import jax.numpy as jnp
-from jax import random
-from jax.random import KeyArray
 from flowjax.utils import Array
-from typing import List, Sequence, Tuple, Union
+from typing import Sequence, Tuple, Union
 import equinox as eqx
+
 
 class Invert(Bijection):
     bijection: Bijection
@@ -22,16 +21,16 @@ class Invert(Bijection):
         self.bijection = bijection
         self.cond_dim = bijection.cond_dim
 
-    def transform(self, x, condition = None):
+    def transform(self, x, condition=None):
         return self.bijection.inverse(x, condition)
 
-    def transform_and_log_abs_det_jacobian(self, x, condition = None):
+    def transform_and_log_abs_det_jacobian(self, x, condition=None):
         return self.bijection.inverse_and_log_abs_det_jacobian(x, condition)
 
-    def inverse(self, y, condition = None):
+    def inverse(self, y, condition=None):
         return self.bijection.transform(y, condition)
 
-    def inverse_and_log_abs_det_jacobian(self, y, condition = None):
+    def inverse_and_log_abs_det_jacobian(self, y, condition=None):
         return self.bijection.transform_and_log_abs_det_jacobian(y, condition)
 
 
@@ -143,7 +142,7 @@ class TransformerToBijection(Bijection):
     cond_dim: int = 0
     params: Array
     transformer: Transformer
-    
+
     def __init__(self, transformer: Transformer, *, params: Array):
         """Convert Transformer object to Bijection object.
 
@@ -156,25 +155,26 @@ class TransformerToBijection(Bijection):
         self.params = params
         self.transformer = transformer
 
-    def transform(self, x: Array, condition = None):
+    def transform(self, x: Array, condition=None):
         args = self.transformer.get_args(self.params)
         return self.transformer.transform(x, *args)
 
-    def transform_and_log_abs_det_jacobian(self, x: Array, condition = None):
+    def transform_and_log_abs_det_jacobian(self, x: Array, condition=None):
         args = self.transformer.get_args(self.params)
         return self.transformer.transform_and_log_abs_det_jacobian(x, *args)
 
-    def inverse(self, y: Array, condition = None):
+    def inverse(self, y: Array, condition=None):
         args = self.transformer.get_args(self.params)
         return self.transformer.inverse(y, *args)
 
-    def inverse_and_log_abs_det_jacobian(self, y: Array, condition = None):
+    def inverse_and_log_abs_det_jacobian(self, y: Array, condition=None):
         args = self.transformer.get_args(self.params)
         return self.transformer.inverse_and_log_abs_det_jacobian(y, *args)
 
 
 class Partial(Bijection):
     """Applies bijection to specific indices of an input."""
+
     cond_dim: int
     bijection: Array
     idxs: Union[int, slice, Array]
@@ -193,23 +193,27 @@ class Partial(Bijection):
 
             if jnp.issubdtype(idxs, jnp.integer):
                 idxs = jnp.unique(idxs)
-            
+
         self.idxs = idxs
 
-    def transform(self, x: Array, condition = None):
+    def transform(self, x: Array, condition=None):
         y = self.bijection.transform(x[self.idxs], condition)
         return x.at[self.idxs].set(y)
 
-    def transform_and_log_abs_det_jacobian(self, x: Array, condition = None):
-        y, log_det = self.bijection.transform_and_log_abs_det_jacobian(x[self.idxs], condition)
+    def transform_and_log_abs_det_jacobian(self, x: Array, condition=None):
+        y, log_det = self.bijection.transform_and_log_abs_det_jacobian(
+            x[self.idxs], condition
+        )
         return x.at[self.idxs].set(y), log_det
 
-    def inverse(self, y: Array, condition = None) -> Array:
+    def inverse(self, y: Array, condition=None) -> Array:
         x = self.bijection.inverse(y[self.idxs], condition)
         return y.at[self.idxs].set(x)
 
-    def inverse_and_log_abs_det_jacobian(self, y: Array, condition = None) -> Array:
-        x, log_det = self.bijection.inverse_and_log_abs_det_jacobian(y[self.idxs], condition)
+    def inverse_and_log_abs_det_jacobian(self, y: Array, condition=None) -> Array:
+        x, log_det = self.bijection.inverse_and_log_abs_det_jacobian(
+            y[self.idxs], condition
+        )
         return y.at[self.idxs].set(x), log_det
 
 
@@ -218,7 +222,9 @@ class EmbedCondition(Bijection):
     embedding_net: eqx.Module
     cond_dim: int
 
-    def __init__(self, bijection: Bijection, embedding_net: eqx.Module, cond_dim: int) -> None:
+    def __init__(
+        self, bijection: Bijection, embedding_net: eqx.Module, cond_dim: int
+    ) -> None:
         """Use an embedding network to reduce the dimensionality of the conditioning variable.
         The returned bijection has cond_dim equal to the raw condition size.
 
@@ -231,18 +237,18 @@ class EmbedCondition(Bijection):
         self.embedding_net = embedding_net
         self.cond_dim = cond_dim
 
-    def transform(self, x, condition = None):
+    def transform(self, x, condition=None):
         condition = self.embedding_net(condition)
         return self.bijection.transform(x, condition)
 
-    def transform_and_log_abs_det_jacobian(self, x, condition = None):
+    def transform_and_log_abs_det_jacobian(self, x, condition=None):
         condition = self.embedding_net(condition)
         return self.bijection.transform_and_log_abs_det_jacobian(x, condition)
 
-    def inverse(self, y, condition = None):
+    def inverse(self, y, condition=None):
         condition = self.embedding_net(condition)
         return self.bijection.inverse(y, condition)
 
-    def inverse_and_log_abs_det_jacobian(self, y, condition = None):
+    def inverse_and_log_abs_det_jacobian(self, y, condition=None):
         condition = self.embedding_net(condition)
         return self.bijection.inverse_and_log_abs_det_jacobian(y, condition)
