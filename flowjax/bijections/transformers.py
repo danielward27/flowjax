@@ -37,13 +37,11 @@ class AffineTransformer(Transformer):
 
 
 class RationalQuadraticSplineTransformer(Transformer):
-    def __init__(
-        self, K, B, softmax_adjust=1e-2, min_derivative=1e-3
-    ):
+    def __init__(self, K, B, softmax_adjust=1e-2, min_derivative=1e-3):
         """
         RationalQuadraticSplineTransformer (https://arxiv.org/abs/1906.04032). Ouside the interval
         [-B, B], the identity transform is used. Each row of parameter matrices
-        (x_pos, y_pos, derivatives) corresponds to a column in x. 
+        (x_pos, y_pos, derivatives) corresponds to a column in x.
 
         Args:
             K (int): Number of inner knots
@@ -62,9 +60,9 @@ class RationalQuadraticSplineTransformer(Transformer):
         xi = (x - x_pos[k]) / (x_pos[k + 1] - x_pos[k])
         sk = (y_pos[k + 1] - y_pos[k]) / (x_pos[k + 1] - x_pos[k])
         dk, dk1, yk, yk1 = derivatives[k], derivatives[k + 1], y_pos[k], y_pos[k + 1]
-        num = (yk1 - yk) * (sk * xi ** 2 + dk * xi * (1 - xi))
+        num = (yk1 - yk) * (sk * xi**2 + dk * xi * (1 - xi))
         den = sk + (dk1 + dk - 2 * sk) * xi * (1 - xi)
-        return yk + num / den # eq. 4
+        return yk + num / den  # eq. 4
 
     def transform_and_log_abs_det_jacobian(self, x, x_pos, y_pos, derivatives):
         y = self.transform(x, x_pos, y_pos, derivatives)
@@ -80,7 +78,7 @@ class RationalQuadraticSplineTransformer(Transformer):
         a = (yk1 - yk) * (sk - derivatives[k]) + y_delta_s_term
         b = (yk1 - yk) * derivatives[k] - y_delta_s_term
         c = -sk * (y - yk)
-        sqrt_term = jnp.sqrt(b ** 2 - 4 * a * c)
+        sqrt_term = jnp.sqrt(b**2 - 4 * a * c)
         xi = (2 * c) / (-b - sqrt_term)
         x = xi * (xk1 - xk) + xk
         return x
@@ -101,13 +99,17 @@ class RationalQuadraticSplineTransformer(Transformer):
         return jax.vmap(self._get_args)(params)
 
     def _get_args(self, params):
-        "Gets the arguments for a single dimension of x (defined for 1d)."    
-        x_pos = real_to_increasing_on_interval(params[: self.K], self.B, self.softmax_adjust)    
-        y_pos = real_to_increasing_on_interval(params[self.K: self.K * 2], self.B, self.softmax_adjust)
+        "Gets the arguments for a single dimension of x (defined for 1d)."
+        x_pos = real_to_increasing_on_interval(
+            params[: self.K], self.B, self.softmax_adjust
+        )
+        y_pos = real_to_increasing_on_interval(
+            params[self.K : self.K * 2], self.B, self.softmax_adjust
+        )
         derivatives = jax.nn.softplus(params[self.K * 2 :]) + self.min_derivative
 
         # Padding sets up linear spline from the edge of the bounding box to B * 1e4
-        pos_pad = jnp.array([self.B, 1e4*self.B])
+        pos_pad = jnp.array([self.B, 1e4 * self.B])
         x_pos = jnp.hstack((-jnp.flip(pos_pad), x_pos, pos_pad))
         y_pos = jnp.hstack((-jnp.flip(pos_pad), y_pos, pos_pad))
         derivatives = jnp.pad(derivatives, 2, constant_values=1)
@@ -119,12 +121,14 @@ class RationalQuadraticSplineTransformer(Transformer):
         xi = (x - x_pos[k]) / (x_pos[k + 1] - x_pos[k])
         sk = (y_pos[k + 1] - y_pos[k]) / (x_pos[k + 1] - x_pos[k])
         dk, dk1 = derivatives[k], derivatives[k + 1]
-        num = sk ** 2 * (dk1 * xi ** 2 + 2 * sk * xi * (1 - xi) + dk * (1 - xi) ** 2)
+        num = sk**2 * (dk1 * xi**2 + 2 * sk * xi * (1 - xi) + dk * (1 - xi) ** 2)
         den = (sk + (dk1 + dk - 2 * sk) * xi * (1 - xi)) ** 2
         return num / den
 
 
-def real_to_increasing_on_interval(arr: Array, B: float = 1, softmax_adjust: float = 1e-2):
+def real_to_increasing_on_interval(
+    arr: Array, B: float = 1, softmax_adjust: float = 1e-2
+):
     """Transform unconstrained parameter vector to monotonically increasing positions on [-B, B].
 
     Args:
@@ -135,6 +139,6 @@ def real_to_increasing_on_interval(arr: Array, B: float = 1, softmax_adjust: flo
     if softmax_adjust < 0:
         raise ValueError("softmax_adjust should be >= 0.")
     widths = jax.nn.softmax(arr)
-    widths = (widths + softmax_adjust/widths.size) / (1 + softmax_adjust)
+    widths = (widths + softmax_adjust / widths.size) / (1 + softmax_adjust)
     widths = widths.at[0].set(widths[0] / 2)
-    return 2*B*jnp.cumsum(widths) - B
+    return 2 * B * jnp.cumsum(widths) - B

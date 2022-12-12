@@ -40,7 +40,10 @@ class Distribution(eqx.Module, ABC):
         return True if self.cond_dim > 0 else False
 
     def sample(
-        self, key: KeyArray, condition: Optional[Array] = None, n: Optional[int] = None,
+        self,
+        key: KeyArray,
+        condition: Optional[Array] = None,
+        n: Optional[int] = None,
     ) -> Array:
         """Sample from a distribution. The condition can be a vector, or a matrix.
         - If condition.ndim==1, n allows repeated sampling (a single sample is drawn if n is not provided).
@@ -68,7 +71,7 @@ class Distribution(eqx.Module, ABC):
             if condition is not None and condition.ndim != 1:
                 raise ValueError("condition must be 1d if n is provided.")
             in_axes = (0, None)
-            
+
         keys = random.split(key, n)
         return jax.vmap(self._sample, in_axes)(keys, condition)
 
@@ -99,7 +102,7 @@ class Distribution(eqx.Module, ABC):
                 return jax.vmap(self._log_prob, in_axes)(x, condition)
 
     def _argcheck_x(self, x: Array):
-        if x.ndim not in (1,2):
+        if x.ndim not in (1, 2):
             raise ValueError("x.ndim should be 1 or 2")
 
         if x.shape[-1] != self.dim:
@@ -110,7 +113,7 @@ class Distribution(eqx.Module, ABC):
             if self.conditional:
                 raise ValueError(f"condition must be provided.")
         else:
-            if condition.ndim not in (1,2):
+            if condition.ndim not in (1, 2):
                 raise ValueError("condition.ndim should be 1 or 2")
             if condition.shape[-1] != self.cond_dim:
                 raise ValueError(f"Expected condition.shape[-1]=={self.cond_dim}.")
@@ -155,6 +158,7 @@ class StandardNormal(Distribution):
     """
     Implements a standard normal distribution, condition is ignored.
     """
+
     def __init__(self, dim: int):
         """
         Args:
@@ -175,6 +179,7 @@ class Normal(Transformed):
     Implements an independent Normal distribution with mean and std for
     each dimension. `loc` and `scale` should be broadcastable.
     """
+
     def __init__(self, loc: Array, scale: Array = 1.0):
         """
         Args:
@@ -199,6 +204,7 @@ class _StandardUniform(Distribution):
     """
     Implements a standard independent Uniform distribution, ie X ~ Uniform([0, 1]^dim).
     """
+
     def __init__(self, dim):
         self.dim = dim
         self.cond_dim = 0
@@ -212,9 +218,10 @@ class _StandardUniform(Distribution):
 
 class Uniform(Transformed):
     """
-    Implements an independent uniform distribution 
+    Implements an independent uniform distribution
     between min and max for each dimension. `minval` and `maxval` should be broadcastable.
     """
+
     def __init__(self, minval: Array, maxval: Array):
         """
         Args:
@@ -242,6 +249,7 @@ class _StandardGumbel(Distribution):
     Implements standard gumbel distribution (loc=0, scale=1)
     Ref: https://en.wikipedia.org/wiki/Gumbel_distribution
     """
+
     def __init__(self, dim):
         self.dim = dim
         self.cond_dim = 0
@@ -258,6 +266,7 @@ class Gumbel(Transformed):
     Gumbel distribution. `loc` and `scale` should be broadcastable.
     Ref: https://en.wikipedia.org/wiki/Gumbel_distribution
     """
+
     def __init__(self, loc: Array, scale: Array = 1.0):
         loc, scale = broadcast_arrays_1d(loc, scale)
         base_dist = _StandardGumbel(loc.shape[0])
@@ -272,12 +281,13 @@ class Gumbel(Transformed):
     def scale(self):
         return self.bijection.scale
 
-    
+
 class _StandardCauchy(Distribution):
     """
     Implements standard cauchy distribution (loc=0, scale=1)
     Ref: https://en.wikipedia.org/wiki/Cauchy_distribution
     """
+
     def __init__(self, dim):
         self.dim = dim
         self.cond_dim = 0
@@ -294,6 +304,7 @@ class Cauchy(Transformed):
     Cauchy distribution. `loc` and `scale` should be broadcastable.
     Ref: https://en.wikipedia.org/wiki/Cauchy_distribution
     """
+
     def __init__(self, loc: Array, scale: Array = 1.0):
         loc, scale = broadcast_arrays_1d(loc, scale)
         base_dist = _StandardCauchy(loc.shape[0])
@@ -313,6 +324,7 @@ class _StandardStudentT(Distribution):
     """
     Implements student T distribution with specified degrees of freedom.
     """
+
     log_df: Array
 
     def __init__(self, df: Array):
@@ -333,6 +345,7 @@ class _StandardStudentT(Distribution):
 
 class StudentT(Transformed):
     "Student T distribution. `loc` and `scale` should be broadcastable."
+
     def __init__(self, df: Array, loc: Array, scale: Array = 1.0):
         df, loc, scale = broadcast_arrays_1d(df, loc, scale)
         self.dim = df.shape[0]

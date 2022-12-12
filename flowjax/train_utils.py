@@ -12,6 +12,7 @@ from equinox.custom_types import BoolAxisSpec
 from jaxtyping import PyTree
 import jax
 
+
 def train_flow(
     key: KeyArray,
     dist: Distribution,
@@ -42,7 +43,7 @@ def train_flow(
         show_progress (bool, optional): Whether to show progress bar. Defaults to True.
         filter_spec (PyTree[BoolAxisSpec], optional): Equinox `filter_spec` for specifying trainable parameters. Either a callable `leaf -> bool`, or a PyTree with prefix structure matching `dist` with True/False values. Defaults to `eqx.is_inexact_array`.
     """
-    
+
     @eqx.filter_jit
     def loss(dist, x, condition=None):
         return -dist.log_prob(x, condition).mean()
@@ -105,7 +106,7 @@ def train_flow(
             loop.set_postfix({k: v[-1] for k, v in losses.items()})
 
     dist = eqx.combine(best_params, static)
-    
+
     return dist, losses
 
 

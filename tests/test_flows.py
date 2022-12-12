@@ -1,5 +1,12 @@
-from flowjax.flows import coupling_flow, block_neural_autoregressive_flow, masked_autoregressive_flow
-from flowjax.bijections.transformers import AffineTransformer, RationalQuadraticSplineTransformer
+from flowjax.flows import (
+    coupling_flow,
+    block_neural_autoregressive_flow,
+    masked_autoregressive_flow,
+)
+from flowjax.bijections.transformers import (
+    AffineTransformer,
+    RationalQuadraticSplineTransformer,
+)
 from flowjax.distributions import StandardNormal
 import jax.numpy as jnp
 from jax import random
@@ -12,18 +19,35 @@ common_kwargs = {
     "base_dist": StandardNormal(dim),
     "flow_layers": 2,
     "nn_width": 10,
-    "nn_depth": 1
-    } # type: Dict[str, Any]
+    "nn_depth": 1,
+}  # type: Dict[str, Any]
 
 testcases = [
     # (name, type, kwargs)}
-    ("Affine_Coupling", coupling_flow, {"transformer": AffineTransformer()} | common_kwargs),
-    ("RationalQuadraticSpline_Coupling", coupling_flow, {"transformer": RationalQuadraticSplineTransformer(5,3)} | common_kwargs),
-    ("BNAF", block_neural_autoregressive_flow, {"key": random.PRNGKey(0), "base_dist": StandardNormal(dim), "flow_layers": 2}),
-    ("Affine_MaskedAutoregessive", masked_autoregressive_flow, {"transformer": AffineTransformer()} | common_kwargs)
+    (
+        "Affine_Coupling",
+        coupling_flow,
+        {"transformer": AffineTransformer()} | common_kwargs,
+    ),
+    (
+        "RationalQuadraticSpline_Coupling",
+        coupling_flow,
+        {"transformer": RationalQuadraticSplineTransformer(5, 3)} | common_kwargs,
+    ),
+    (
+        "BNAF",
+        block_neural_autoregressive_flow,
+        {"key": random.PRNGKey(0), "base_dist": StandardNormal(dim), "flow_layers": 2},
+    ),
+    (
+        "Affine_MaskedAutoregessive",
+        masked_autoregressive_flow,
+        {"transformer": AffineTransformer()} | common_kwargs,
+    ),
 ]
 
 uncond_testcases = {n: t(**kwargs) for n, t, kwargs in testcases}
+
 
 @pytest.mark.parametrize("flow", uncond_testcases.values(), ids=uncond_testcases.keys())
 def test_unconditional_flow_sample(flow):
@@ -34,6 +58,7 @@ def test_unconditional_flow_sample(flow):
         assert flow.sample(key).shape == (flow.dim,)
     except NotImplementedError:
         pass
+
 
 @pytest.mark.parametrize("flow", uncond_testcases.values(), ids=uncond_testcases.keys())
 def test_unconditional_flow_log_prob(flow):
@@ -51,6 +76,7 @@ def test_unconditional_flow_log_prob(flow):
 
     with pytest.raises(ValueError):
         flow.log_prob(jnp.ones((flow.dim + 1,)))
+
 
 cond_testcases = {n: t(**kwargs, cond_dim=2) for n, t, kwargs in testcases}
 
@@ -74,7 +100,7 @@ def test_conditional_flow_sample(flow):
 
         with pytest.raises(ValueError):
             x = flow.sample(key, condition=cond_2d, n=n)
-        
+
     except NotImplementedError:
         pass
 

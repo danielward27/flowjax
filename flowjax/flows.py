@@ -10,9 +10,15 @@ from flowjax.bijections.utils import Permute, Flip
 from flowjax.distributions import Distribution, Transformed
 from typing import List
 from flowjax.bijections import (
-    Bijection, Transformer, Coupling, Chain, Invert,
-    BlockAutoregressiveNetwork, MaskedAutoregressive
-    )
+    Bijection,
+    Transformer,
+    Coupling,
+    Chain,
+    Invert,
+    BlockAutoregressiveNetwork,
+    MaskedAutoregressive,
+)
+
 
 def coupling_flow(
     key: KeyArray,
@@ -24,29 +30,31 @@ def coupling_flow(
     nn_depth: int = 2,
     permute_strategy: Optional[str] = None,
     nn_activation: int = jnn.relu,
-    invert: bool = True
+    invert: bool = True,
 ):
     """Coupling flow (https://arxiv.org/abs/1605.08803).
 
-        Args:
-            key (KeyArray): Jax PRNGKey.
-            base_dist (Distribution): Base distribution.
-            transformer (Transformer): Transformer parameterised by conditioner.
-            cond_dim (int, optional): Dimension of conditioning variables. Defaults to 0.
-            flow_layers (int, optional): Number of coupling layers. Defaults to 5.
-            nn_width (int, optional): Conditioner hidden layer size. Defaults to 40.
-            nn_depth (int, optional): Conditioner depth. Defaults to 2.
-            permute_strategy (Optional[str], optional): "flip", "random" or "none". Defaults to "flip" if dim==2, and "random" for dim > 2.
-            nn_activation (int, optional): Conditioner activation function. Defaults to jnn.relu.
-            invert: (bool, optional): Whether to invert the bijection. Broadly, True will prioritise a faster `inverse` methods, leading to faster `log_prob`, False will prioritise faster `transform` methods, leading to faster `sample`. Defaults to True
+    Args:
+        key (KeyArray): Jax PRNGKey.
+        base_dist (Distribution): Base distribution.
+        transformer (Transformer): Transformer parameterised by conditioner.
+        cond_dim (int, optional): Dimension of conditioning variables. Defaults to 0.
+        flow_layers (int, optional): Number of coupling layers. Defaults to 5.
+        nn_width (int, optional): Conditioner hidden layer size. Defaults to 40.
+        nn_depth (int, optional): Conditioner depth. Defaults to 2.
+        permute_strategy (Optional[str], optional): "flip", "random" or "none". Defaults to "flip" if dim==2, and "random" for dim > 2.
+        nn_activation (int, optional): Conditioner activation function. Defaults to jnn.relu.
+        invert: (bool, optional): Whether to invert the bijection. Broadly, True will prioritise a faster `inverse` methods, leading to faster `log_prob`, False will prioritise faster `transform` methods, leading to faster `sample`. Defaults to True
     """
 
     if permute_strategy is None:
         permute_strategy = default_permute_strategy(base_dist.dim)
     if permute_strategy not in ["flip", "random", "none"]:
-        raise ValueError("Permute strategy should be 'flip', 'random' or 'none', if specified.")
+        raise ValueError(
+            "Permute strategy should be 'flip', 'random' or 'none', if specified."
+        )
 
-    bijections = [] # type: List[Bijection]
+    bijections = []  # type: List[Bijection]
     for i in range(flow_layers):
         key, *subkeys = random.split(key, 3)
         bijections.append(
@@ -58,7 +66,7 @@ def coupling_flow(
                 cond_dim=cond_dim,
                 nn_width=nn_width,
                 nn_depth=nn_depth,
-                nn_activation=nn_activation
+                nn_activation=nn_activation,
             )
         )
         if permute_strategy == "random" and i != flow_layers:
@@ -66,7 +74,7 @@ def coupling_flow(
             bijections.append(Permute(perm))
         elif permute_strategy == "flip" and i != flow_layers:
             bijections.append(Flip())
-            
+
     bijection = Chain(bijections)
     if invert is True:
         bijection = Invert(bijection)
@@ -83,8 +91,8 @@ def masked_autoregressive_flow(
     nn_depth: int = 2,
     permute_strategy: Optional[str] = None,
     nn_activation: int = jnn.relu,
-    invert: bool = True
-    ):
+    invert: bool = True,
+):
     """Masked autoregressive flow (https://arxiv.org/abs/1705.07057v4). Parameterises a
     a transformer with a neural network with masking of weights to enforces the
     autoregressive property.
@@ -102,9 +110,11 @@ def masked_autoregressive_flow(
     if permute_strategy is None:
         permute_strategy = default_permute_strategy(base_dist.dim)
     if permute_strategy not in ["flip", "random", "none"]:
-        raise ValueError("Permute strategy should be 'flip', 'random' or 'none', if specified.")
+        raise ValueError(
+            "Permute strategy should be 'flip', 'random' or 'none', if specified."
+        )
 
-    bijections = [] # type: List[Bijection]
+    bijections = []  # type: List[Bijection]
     for i in range(flow_layers):
         key, *subkeys = random.split(key, 3)
         bijections.append(
@@ -115,20 +125,21 @@ def masked_autoregressive_flow(
                 cond_dim=cond_dim,
                 nn_width=nn_width,
                 nn_depth=nn_depth,
-                nn_activation=nn_activation
+                nn_activation=nn_activation,
             )
         )
-        
+
         if permute_strategy == "random" and i != flow_layers:
             perm = random.permutation(subkeys[1], jnp.arange(base_dist.dim))
             bijections.append(Permute(perm))
         elif permute_strategy == "flip" and i != flow_layers:
             bijections.append(Flip())
-    
+
     bijection = Chain(bijections)
     if invert is True:
         bijection = Invert(bijection)
     return Transformed(base_dist, bijection)
+
 
 def block_neural_autoregressive_flow(
     key: KeyArray,
@@ -138,7 +149,7 @@ def block_neural_autoregressive_flow(
     nn_block_dim: int = 8,
     flow_layers: int = 1,
     permute_strategy: Optional[str] = None,
-    invert: bool = True
+    invert: bool = True,
 ):
     """Block neural autoregressive flow (BNAF) (https://arxiv.org/abs/1904.04676).
 
@@ -155,9 +166,11 @@ def block_neural_autoregressive_flow(
     if permute_strategy is None:
         permute_strategy = default_permute_strategy(base_dist.dim)
     if permute_strategy not in ["flip", "random", "none"]:
-        raise ValueError("Permute strategy should be 'flip', 'random' or 'none', if specified.")
+        raise ValueError(
+            "Permute strategy should be 'flip', 'random' or 'none', if specified."
+        )
 
-    bijections = [] # type: List[Bijection]
+    bijections = []  # type: List[Bijection]
     for i in range(flow_layers):
         key, *subkeys = random.split(key, 3)
         bijections.append(

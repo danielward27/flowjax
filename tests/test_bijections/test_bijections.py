@@ -3,7 +3,10 @@ import pytest
 from jax import random
 import jax.numpy as jnp
 import jax
-from flowjax.bijections.transformers import AffineTransformer, RationalQuadraticSplineTransformer
+from flowjax.bijections.transformers import (
+    AffineTransformer,
+    RationalQuadraticSplineTransformer,
+)
 import equinox as eqx
 
 from flowjax.bijections import (
@@ -18,28 +21,31 @@ from flowjax.bijections import (
     TransformerToBijection,
     AdditiveLinearCondition,
     Partial,
-    EmbedCondition
-
+    EmbedCondition,
 )
 
 
 dim = 5
 cond_dim = 2
 key = random.PRNGKey(0)
-pos_def_triangles = jnp.full((dim,dim), 0.5) + jnp.diag(jnp.ones(dim))
+pos_def_triangles = jnp.full((dim, dim), 0.5) + jnp.diag(jnp.ones(dim))
 
 bijections = {
     "Flip": Flip(),
     "Permute": Permute(jnp.flip(jnp.arange(dim))),
-    "Partial (int)": Partial(Affine(2,2), 0),
-    "Partial (bool array)": Partial(Flip(), jnp.array([True, False]*2 + [True])),
-    "Partial (int array)": Partial(Flip(), jnp.array([0,0,4,3])),
-    "Partial (slice)": Partial(Flip(), slice(1,3)),
+    "Partial (int)": Partial(Affine(2, 2), 0),
+    "Partial (bool array)": Partial(Flip(), jnp.array([True, False] * 2 + [True])),
+    "Partial (int array)": Partial(Flip(), jnp.array([0, 0, 4, 3])),
+    "Partial (slice)": Partial(Flip(), slice(1, 3)),
     "Affine": Affine(jnp.ones(dim), jnp.full(dim, 2)),
     "Tanh": Tanh(),
     "TriangularAffine (lower)": TriangularAffine(jnp.arange(dim), pos_def_triangles),
-    "TriangularAffine (upper)": TriangularAffine(jnp.arange(dim), pos_def_triangles, lower=False),
-    "TriangularAffine (weight_norm)": TriangularAffine(jnp.arange(dim), pos_def_triangles, weight_normalisation=True),
+    "TriangularAffine (upper)": TriangularAffine(
+        jnp.arange(dim), pos_def_triangles, lower=False
+    ),
+    "TriangularAffine (weight_norm)": TriangularAffine(
+        jnp.arange(dim), pos_def_triangles, weight_normalisation=True
+    ),
     "Coupling (unconditional)": Coupling(
         key,
         AffineTransformer(),
@@ -65,19 +71,35 @@ bijections = {
         key, AffineTransformer(), cond_dim=cond_dim, dim=dim, nn_width=10, nn_depth=2
     ),
     "MaskedAutoregressive_RationalQuadraticSpline (unconditional)": MaskedAutoregressive(
-        key, RationalQuadraticSplineTransformer(5, 3), dim=dim, cond_dim=0, nn_width=10, nn_depth=2
+        key,
+        RationalQuadraticSplineTransformer(5, 3),
+        dim=dim,
+        cond_dim=0,
+        nn_width=10,
+        nn_depth=2,
     ),
     "MaskedAutoregressive_RationalQuadraticSpline (conditional)": MaskedAutoregressive(
-        key, RationalQuadraticSplineTransformer(5, 3), dim=dim, cond_dim=cond_dim, nn_width=10, nn_depth=2
+        key,
+        RationalQuadraticSplineTransformer(5, 3),
+        dim=dim,
+        cond_dim=cond_dim,
+        nn_width=10,
+        nn_depth=2,
     ),
-    "BlockAutoregressiveNetwork": BlockAutoregressiveNetwork(key, dim=dim, cond_dim=0, block_dim=3, depth=1),
-    "BlockAutoregressiveNetwork (conditional)": BlockAutoregressiveNetwork(key, dim=dim, cond_dim=cond_dim, block_dim=3, depth=1),
-    "AdditiveLinearCondition": AdditiveLinearCondition(random.uniform(key, (dim, cond_dim))),
+    "BlockAutoregressiveNetwork": BlockAutoregressiveNetwork(
+        key, dim=dim, cond_dim=0, block_dim=3, depth=1
+    ),
+    "BlockAutoregressiveNetwork (conditional)": BlockAutoregressiveNetwork(
+        key, dim=dim, cond_dim=cond_dim, block_dim=3, depth=1
+    ),
+    "AdditiveLinearCondition": AdditiveLinearCondition(
+        random.uniform(key, (dim, cond_dim))
+    ),
     "EmbedCondition": EmbedCondition(
         BlockAutoregressiveNetwork(key, dim=dim, cond_dim=1, block_dim=3, depth=1),
         eqx.nn.MLP(2, 1, 3, 1, key=key),
-        cond_dim
-    )
+        cond_dim,
+    ),
 }
 
 transformers = {
@@ -85,9 +107,13 @@ transformers = {
     "RationalQuadraticSplineTransformer": RationalQuadraticSplineTransformer(K=5, B=3),
 }
 
-transformers = {k: TransformerToBijection(b, params=random.normal(key, (b.num_params(dim),))) for k, b in transformers.items()}
+transformers = {
+    k: TransformerToBijection(b, params=random.normal(key, (b.num_params(dim),)))
+    for k, b in transformers.items()
+}
 
 bijections = bijections | transformers
+
 
 @pytest.mark.parametrize("bijection", bijections.values(), ids=bijections.keys())
 def test_transform_inverse(bijection):
@@ -125,7 +151,6 @@ def test_transform_inverse_and_log_dets(bijection):
         x_reconstructed, logdetinv = bijection.inverse_and_log_abs_det_jacobian(y, cond)
         assert logdetinv == pytest.approx(-auto_log_det, abs=1e-4)
         assert x == pytest.approx(x_reconstructed, abs=1e-4)
-    
+
     except NotImplementedError:
         pass
-        
