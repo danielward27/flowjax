@@ -1,42 +1,10 @@
-from flowjax.bijections.bnaf import (
-    BlockAutoregressiveLinear,
-    b_diag_mask,
-    b_tril_mask,
-    BlockAutoregressiveNetwork,
-    TanhBNAF,
-    b_diag_mask
-)
+import pytest
+from flowjax.bijections.bnaf import BlockAutoregressiveNetwork, TanhBNAF
+from flowjax.masks import block_diag_mask
 import jax.numpy as jnp
 from jax import random
 import jax
-import pytest
 from jax.scipy.linalg import block_diag
-
-
-def test_b_tril_mask():
-    args = [(1, 2), 3]
-    expected = jnp.array([[0, 0, 0, 0, 0, 0], [1, 1, 0, 0, 0, 0], [1, 1, 1, 1, 0, 0]])
-    result = b_tril_mask(*args)
-    assert jnp.all(expected == result)
-
-
-def test_b_diag_mask():
-    args = [(1, 2), 3]
-    expected = jnp.array([[1, 1, 0, 0, 0, 0], [0, 0, 1, 1, 0, 0], [0, 0, 0, 0, 1, 1]])
-    result = b_diag_mask(*args)
-    assert jnp.all(expected == result)
-
-
-def test_BlockAutoregressiveLinear():
-    block_shape = (3, 2)
-    layer = BlockAutoregressiveLinear(random.PRNGKey(0), 3, block_shape)
-    x = jnp.ones(6)
-    a, log_jac_3d = layer(x)
-    assert log_jac_3d.shape == (3, *block_shape)
-
-    # Check block diag log jacobian matches autodif.
-    auto_jacobian = jax.jacobian(lambda x: layer(x)[0])(x) * layer.b_diag_mask
-    assert block_diag(*jnp.exp(log_jac_3d)) == pytest.approx(auto_jacobian, abs=1e-7)
 
 
 def test_BlockAutoregressiveNetwork():
@@ -56,7 +24,9 @@ def test_BlockAutoregressiveNetwork():
 
     # Check conditioning works
     barn = BlockAutoregressiveNetwork(key, dim, cond_dim, depth=1, block_dim=4)
-    y1, y2 = barn.transform(x, jnp.ones(cond_dim)), barn.transform(x, jnp.zeros(cond_dim))
+    y1, y2 = barn.transform(x, jnp.ones(cond_dim)), barn.transform(
+        x, jnp.zeros(cond_dim)
+    )
     assert jnp.all(y1 != y2)
 
 
@@ -68,7 +38,7 @@ def test_TanhBNAF():
 
     y, log_det_3d = tanh(x)
     auto_jacobian = jax.jacobian(lambda a: tanh(a)[0])(x)
-    mask = b_diag_mask((block_size, block_size), n_blocks)
+    mask = block_diag_mask((block_size, block_size), n_blocks)
     assert block_diag(*jnp.exp(log_det_3d)) == pytest.approx(
         auto_jacobian * mask, abs=1e-7
     )
