@@ -44,13 +44,16 @@ class BlockAutoregressiveLinear(eqx.Module):
         cond_size = (block_shape[0] * n_blocks, cond_dim)
 
         self.b_diag_mask = jnp.column_stack(
-            (jnp.zeros(cond_size, jnp.int32), block_diag_mask(block_shape, n_blocks))
+            (block_diag_mask(block_shape, n_blocks), jnp.zeros(cond_size, jnp.int32))
         )
 
         self.b_tril_mask = jnp.column_stack(
-            (jnp.ones(cond_size, jnp.int32), block_tril_mask(block_shape, n_blocks))
+            (block_tril_mask(block_shape, n_blocks), jnp.ones(cond_size, jnp.int32))
         )
-        self.b_diag_mask_idxs = jnp.where(self.b_diag_mask)
+
+        self.b_diag_mask_idxs = jnp.where(
+            self.b_diag_mask, size=block_shape[0] * block_shape[1] * n_blocks
+        )
 
         in_features, out_features = (
             block_shape[1] * n_blocks + cond_dim,
@@ -83,7 +86,7 @@ class BlockAutoregressiveLinear(eqx.Module):
         "returns output y, and components of weight matrix needed log_det component (n_blocks, block_shape[0], block_shape[1])"
         W = self.get_normalised_weights()
         if condition is not None:
-            x = jnp.concatenate((condition, x))
+            x = jnp.concatenate((x, condition))
         y = W @ x + self.bias
         jac_3d = W[self.b_diag_mask_idxs].reshape(self.n_blocks, *self.block_shape)
         return y, jnp.log(jac_3d)
