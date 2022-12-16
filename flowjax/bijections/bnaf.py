@@ -2,7 +2,7 @@
 Block Neural Autoregressive bijection implementation.
 """
 
-from typing import Callable
+from typing import Callable, Optional
 import jax
 import jax.numpy as jnp
 from flowjax.bijections import Bijection
@@ -20,9 +20,9 @@ class TanhBNAF:
     def __init__(self, n_blocks: int):
         self.n_blocks = n_blocks
 
-    def __call__(self, x):
+    def __call__(self, x, condition=None):
         """Applies the activation and computes the Jacobian. Jacobian shape is
-        (n_blocks, *block_size).
+        (n_blocks, *block_size). Condition is ignored.
 
         Returns:
             Tuple: output, jacobian
@@ -50,7 +50,7 @@ class BlockAutoregressiveNetwork(Bijection):
         cond_dim: int,
         depth: int,
         block_dim: int,
-        activation: Callable = None,
+        activation: Optional[Callable] = None,
     ):
         """Block Neural Autoregressive Network (see https://arxiv.org/abs/1904.04676).
 
@@ -69,16 +69,19 @@ class BlockAutoregressiveNetwork(Bijection):
             layers.append(BlockAutoregressiveLinear(key, dim, (1, 1), cond_dim))
         else:
             keys = random.split(key, depth + 1)
+
             block_shapes = [
                 (block_dim, 1),
-                *(block_dim, block_dim) * (depth - 1),
-                (1, block_dim),
+                *[(block_dim, block_dim)] * (depth - 1),
+                (1, block_dim)
             ]
             cond_dims = [cond_dim] + [0] * depth
-
             for key, block_shape, cd in zip(keys, block_shapes, cond_dims):
                 layers.extend(
-                    [BlockAutoregressiveLinear(key, dim, block_shape, cd), activation]
+                    [
+                        BlockAutoregressiveLinear(key, dim, block_shape, cd),
+                        activation,
+                    ]
                 )
             layers = layers[:-1]  # remove last activation
 
