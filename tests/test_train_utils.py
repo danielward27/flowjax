@@ -8,7 +8,6 @@ from jax import random
 import jax.tree_util as jtu
 import equinox as eqx
 
-
 def test_count_fruitless():
     assert count_fruitless([12, 2, 3, 4]) == 2
     assert count_fruitless([0]) == 0
