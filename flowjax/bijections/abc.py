@@ -39,7 +39,7 @@ class Bijection(ABC, Module):
         """Invert the transformation and compute log absolute value of the Jacobian determinant."""
 
 
-class Transformer(ABC):
+class Transformer(ABC, Module):
     """Bijection which facilitates parameterisation with a neural network output
     (e.g. as in coupling flows, or masked autoressive flows). Should not contain
     (directly) trainable parameters."""

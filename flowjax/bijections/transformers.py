@@ -37,6 +37,11 @@ class AffineTransformer(Transformer):
 
 
 class RationalQuadraticSplineTransformer(Transformer):
+    K: int
+    B: int
+    softmax_adjust: float
+    min_derivative: float
+
     def __init__(self, K, B, softmax_adjust=1e-2, min_derivative=1e-3):
         """
         RationalQuadraticSplineTransformer (https://arxiv.org/abs/1906.04032). Ouside the interval
