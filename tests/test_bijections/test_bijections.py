@@ -15,6 +15,7 @@ from flowjax.bijections import (
     Coupling,
     MaskedAutoregressive,
     Tanh,
+    TanhLinearTails,
     Flip,
     Permute,
     BlockAutoregressiveNetwork,
@@ -22,6 +23,8 @@ from flowjax.bijections import (
     AdditiveLinearCondition,
     Partial,
     EmbedCondition,
+    Chain,
+    ScannableChain,
 )
 
 
@@ -29,6 +32,13 @@ dim = 5
 cond_dim = 2
 key = random.PRNGKey(0)
 pos_def_triangles = jnp.full((dim, dim), 0.5) + jnp.diag(jnp.ones(dim))
+
+
+def get_maf_layer(key):
+    return MaskedAutoregressive(
+        key, AffineTransformer(), dim, cond_dim=cond_dim, nn_width=5, nn_depth=5
+    )
+
 
 bijections = {
     "Flip": Flip(),
@@ -39,6 +49,7 @@ bijections = {
     "Partial (slice)": Partial(Flip(), slice(1, 3)),
     "Affine": Affine(jnp.ones(dim), jnp.full(dim, 2)),
     "Tanh": Tanh(),
+    "TanhLinearTails": TanhLinearTails(1),
     "TriangularAffine (lower)": TriangularAffine(jnp.arange(dim), pos_def_triangles),
     "TriangularAffine (upper)": TriangularAffine(
         jnp.arange(dim), pos_def_triangles, lower=False
@@ -99,6 +110,10 @@ bijections = {
         BlockAutoregressiveNetwork(key, dim=dim, cond_dim=1, block_dim=3, depth=1),
         eqx.nn.MLP(2, 1, 3, 1, key=key),
         cond_dim,
+    ),
+    "Chain": Chain([Flip(), Affine(jnp.ones(dim), jnp.full(dim, 2))]),
+    "ScannableChain": ScannableChain(
+        eqx.filter_vmap(get_maf_layer)(random.split(key, 3))
     ),
 }
 

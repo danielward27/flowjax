@@ -3,7 +3,7 @@ from flowjax.utils import Array, broadcast_arrays_1d
 import jax.numpy as jnp
 from jax.scipy.linalg import solve_triangular
 from typing import Optional
-
+from jax.experimental import checkify
 
 class Affine(Bijection):
     loc: Array
@@ -81,8 +81,10 @@ class TriangularAffine(Bijection):
 
         if (arr.ndim != 2) or (arr.shape[0] != arr.shape[1]):
             ValueError("arr must be a square, 2-dimensional matrix.")
-        if jnp.any(jnp.diag(arr) < min_diag):
-            ValueError("arr diagonal entries must be greater than min_diag")
+        checkify.check(
+            jnp.all(jnp.diag(arr) > min_diag),
+            "arr diagonal entries must be greater than min_diag"
+        )
 
         self.dim = arr.shape[0]
         self.cond_dim = 0

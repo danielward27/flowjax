@@ -3,9 +3,9 @@ from .affine import Affine, TriangularAffine, AdditiveLinearCondition
 from .bnaf import BlockAutoregressiveNetwork
 from .coupling import Coupling
 from .masked_autoregressive import MaskedAutoregressive
-from .tanh import Tanh
+from .tanh import Tanh, TanhLinearTails
+from .chain import Chain, ScannableChain
 from .utils import (
-    Chain,
     Invert,
     Flip,
     Permute,
@@ -23,7 +23,9 @@ __all__ = [
     "Coupling",
     "MaskedAutoregressive",
     "Tanh",
+    "TanhLinearTails",
     "Chain",
+    "ScannableChain",
     "Invert",
     "Flip",
     "Permute",

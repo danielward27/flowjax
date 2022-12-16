@@ -22,11 +22,15 @@ def test_BlockAutoregressiveNetwork():
     assert jnp.all(jnp.triu(auto_jacobian, 1) == pytest.approx(0, abs=1e-7))
     assert jnp.all(jnp.diag(auto_jacobian) > 0)
 
-    # Check conditioning works
+
+def test_BlockAutoregressiveNetwork_conditioning():
+    dim = 3
+    cond_dim = 2
+    x = jnp.ones(dim)
+    key = random.PRNGKey(0)
     barn = BlockAutoregressiveNetwork(key, dim, cond_dim, depth=1, block_dim=4)
-    y1, y2 = barn.transform(x, jnp.ones(cond_dim)), barn.transform(
-        x, jnp.zeros(cond_dim)
-    )
+    y1 = barn.transform(x, jnp.ones(cond_dim))
+    y2 = barn.transform(x, jnp.zeros(cond_dim))
     assert jnp.all(y1 != y2)
 
 

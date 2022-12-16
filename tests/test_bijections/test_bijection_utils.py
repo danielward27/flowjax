@@ -1,17 +1,9 @@
-from flowjax.bijections.utils import Chain, Flip, Permute, Partial
+from flowjax.bijections import Partial
 from flowjax.bijections import Affine
 import pytest
-from jax import random
 import jax.numpy as jnp
-
-
-def test_chain_dunders():
-    b = Chain([Flip(), Permute(jnp.array([0, 1]))])
-    assert len(b) == 2
-    assert isinstance(b[0], Flip)
-    assert isinstance(b[1], Permute)
-    assert isinstance(b[:], Chain)
-
+from flowjax.bijections import Permute
+from jax.experimental.checkify import JaxRuntimeError
 
 test_cases = {
     # name: idx, num_transformed, expected
@@ -34,3 +26,7 @@ def test_partial(idx, num_transformed, expected):
     bijection = Partial(Affine(jnp.ones(num_transformed)), idx)
     y = bijection.transform(x)
     assert jnp.all((x != y) == expected)
+
+def test_Permute_argcheck():
+    with pytest.raises(JaxRuntimeError):
+        Permute(jnp.array([0,0]))
