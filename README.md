@@ -27,7 +27,7 @@ flow.log_prob(x)
 
 The package currently supports the following:
 
-- `coupling_flow` ([Dinh et al., 2017](https://arxiv.org/abs/1605.08803)) and `masked_autoregressive_flow` ([Papamakarios et al., 2017](https://arxiv.org/abs/1705.07057v4))  conditioner architectures
+- `CouplingFlow` ([Dinh et al., 2017](https://arxiv.org/abs/1605.08803)) and `masked_autoregressive_flow` ([Papamakarios et al., 2017](https://arxiv.org/abs/1705.07057v4))  conditioner architectures
 - Common "transformers", such as `AffineTransformer` and `RationalQuadraticSplineTransformer` (the latter used in neural spline flows; [Durkan et al., 2019](https://arxiv.org/abs/1906.04032))
 - `block_neural_autoregressive_flow`, as introduced by [De Cao et al., 2019](https://arxiv.org/abs/1904.04676)
 
