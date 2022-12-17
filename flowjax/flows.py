@@ -7,7 +7,7 @@ we generally opt to use `ScannableChain`, which avoids excessive compilation
 when the flow layers share the same structure.
 """
 
-from typing import Callable, List, Optional
+from typing import Callable, Optional
 
 import equinox as eqx
 import jax.nn as jnn
@@ -18,7 +18,6 @@ from jax.random import KeyArray
 
 from flowjax.bijections import (
     AdditiveLinearCondition,
-    Bijection,
     BlockAutoregressiveNetwork,
     Chain,
     Coupling,

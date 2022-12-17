@@ -10,8 +10,7 @@ from jax.random import KeyArray
 from jaxtyping import PyTree
 from tqdm import tqdm
 
-from flowjax.bijections import Bijection, Invert
-from flowjax.distributions import Distribution, Transformed
+from flowjax.distributions import Distribution
 from flowjax.utils import Array
 
 

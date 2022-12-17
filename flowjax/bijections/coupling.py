@@ -6,7 +6,6 @@ import jax.numpy as jnp
 from jax.random import KeyArray
 
 from flowjax.bijections import Bijection, Transformer
-from flowjax.utils import Array
 
 
 class Coupling(Bijection):
