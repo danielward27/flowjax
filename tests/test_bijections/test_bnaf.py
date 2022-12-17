@@ -4,7 +4,7 @@ import pytest
 from jax import random
 from jax.scipy.linalg import block_diag
 
-from flowjax.bijections.block_autoregressive_network import BlockAutoregressiveNetwork, _TanhBNAF
+from flowjax.bijections.block_autoregressive_network import BlockAutoregressiveNetwork, _BlockTanh
 from flowjax.masks import block_diag_mask
 
 
@@ -39,7 +39,7 @@ def test_TanhBNAF():
     n_blocks = 2
     block_size = 3
     x = random.uniform(random.PRNGKey(0), (n_blocks * block_size,))
-    tanh = _TanhBNAF(n_blocks)
+    tanh = _BlockTanh(n_blocks)
 
     y, log_det_3d = tanh(x)
     auto_jacobian = jax.jacobian(lambda a: tanh(a)[0])(x)

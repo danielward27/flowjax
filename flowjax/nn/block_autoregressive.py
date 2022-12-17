@@ -10,6 +10,9 @@ from jax.random import KeyArray
 from flowjax.masks import block_diag_mask, block_tril_mask
 from flowjax.utils import Array
 
+from flowjax.bijections.tanh import _tanh_log_grad
+
+
 
 class BlockAutoregressiveLinear(eqx.Module):
     n_blocks: int
@@ -92,3 +95,31 @@ class BlockAutoregressiveLinear(eqx.Module):
         y = W @ x + self.bias
         jac_3d = W[self.b_diag_mask_idxs].reshape(self.n_blocks, *self.block_shape)
         return y, jnp.log(jac_3d)
+
+
+class _BlockTanh:
+    """
+    Tanh transformation compatible with block neural autoregressive flow (log_abs_det provided as 3D array).
+    """
+
+    def __init__(self, n_blocks: int):
+        self.n_blocks = n_blocks
+
+    def __call__(self, x, condition=None):
+        """Applies the activation and computes the Jacobian. Jacobian shape is
+        (n_blocks, *block_size). Condition is ignored.
+
+        Returns:
+            Tuple: output, jacobian
+        """
+        log_det = _tanh_log_grad(x)
+        return jnp.tanh(x), _3d_log_det(log_det, self.n_blocks)
+
+def _3d_log_det(vals, n_blocks):
+    d = vals.shape[0] // n_blocks
+    log_det = jnp.full((n_blocks, d, d), -jnp.inf)
+    log_det = log_det.at[:, jnp.arange(d), jnp.arange(d)].set(
+        vals.reshape(n_blocks, d)
+    )
+    return log_det
+    

@@ -8,28 +8,8 @@ import jax
 import jax.numpy as jnp
 from jax import random
 from jax.random import KeyArray
-from flowjax.nn.block_autoregressive_linear import BlockAutoregressiveLinear
+from flowjax.nn.block_autoregressive import BlockAutoregressiveLinear, _BlockTanh
 from flowjax.bijections import Bijection
-from flowjax.bijections.tanh import _tanh_log_grad
-
-
-class _TanhBNAF:
-    """
-    Tanh transformation compatible with block neural autoregressive flow (log_abs_det provided as 3D array).
-    """
-
-    def __init__(self, n_blocks: int):
-        self.n_blocks = n_blocks
-
-    def __call__(self, x, condition=None):
-        """Applies the activation and computes the Jacobian. Jacobian shape is
-        (n_blocks, *block_size). Condition is ignored.
-
-        Returns:
-            Tuple: output, jacobian
-        """
-        log_det = _tanh_log_grad(x)
-        return jnp.tanh(x), _3d_log_det(log_det, self.n_blocks)
 
 
 
@@ -60,7 +40,7 @@ class BlockAutoregressiveNetwork(Bijection):
             block_dim (int): Block dimension (hidden layer size is roughly dim*block_dim).
             activation (Callable, optional): Activation function. Defaults to _TanhBNAF.
         """
-        activation = _TanhBNAF(dim) if activation is None else activation
+        activation = _BlockTanh(dim) if activation is None else activation
         layers = []
         if depth == 0:
             layers.append(BlockAutoregressiveLinear(key, dim, (1, 1), cond_dim))
@@ -129,11 +109,3 @@ def logmatmulexp(x, y):
     xy = jnp.log(jnp.matmul(jnp.exp(x - x_shift), jnp.exp(y - y_shift)))
     return xy + x_shift + y_shift
 
-def _3d_log_det(vals, n_blocks):
-    d = vals.shape[0] // n_blocks
-    log_det = jnp.full((n_blocks, d, d), -jnp.inf)
-    log_det = log_det.at[:, jnp.arange(d), jnp.arange(d)].set(
-        vals.reshape(n_blocks, d)
-    )
-    return log_det
-    
