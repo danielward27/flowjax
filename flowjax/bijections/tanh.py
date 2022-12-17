@@ -1,11 +1,13 @@
-from flowjax.bijections import Bijection
-import jax.numpy as jnp
 import jax
+import jax.numpy as jnp
+
+from flowjax.bijections import Bijection
 
 
 def _tanh_log_grad(x):
     "log gradient vector of tanh transformation"
     return -2 * (x + jax.nn.softplus(-2 * x) - jnp.log(2.0))
+
 
 class Tanh(Bijection):
     """
@@ -29,8 +31,6 @@ class Tanh(Bijection):
     def inverse_and_log_abs_det_jacobian(self, y, condition=None):
         x = jnp.arctanh(y)
         return x, -jnp.sum(_tanh_log_grad(x))
-
-    
 
 
 class TanhLinearTails(Bijection):
@@ -72,11 +72,9 @@ class TanhLinearTails(Bijection):
         return jnp.where(is_linear, linear_y, tanh_y)
 
     def transform_and_log_abs_det_jacobian(self, x, condition=None):
-        y = self.transform(x)    
+        y = self.transform(x)
         log_grads = jnp.where(
-            jnp.abs(x) >= self.max_val,
-            jnp.log(self.linear_grad),
-            _tanh_log_grad(x)
+            jnp.abs(x) >= self.max_val, jnp.log(self.linear_grad), _tanh_log_grad(x)
         )
         return y, jnp.sum(log_grads)
 
@@ -91,8 +89,6 @@ class TanhLinearTails(Bijection):
         log_grads = jnp.where(
             jnp.abs(y) >= jnp.tanh(self.max_val),
             jnp.log(self.linear_grad),
-            _tanh_log_grad(x)
+            _tanh_log_grad(x),
         )
         return x, -jnp.sum(log_grads)
-
-    

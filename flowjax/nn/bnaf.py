@@ -1,12 +1,14 @@
+from typing import Callable
+
+import equinox as eqx
+import jax
 import jax.numpy as jnp
 from jax import random
-from jax.random import KeyArray
 from jax.nn.initializers import glorot_uniform
-from flowjax.utils import Array
-import equinox as eqx
-from typing import Callable
-import jax
+from jax.random import KeyArray
+
 from flowjax.masks import block_diag_mask, block_tril_mask
+from flowjax.utils import Array
 
 
 class BlockAutoregressiveLinear(eqx.Module):

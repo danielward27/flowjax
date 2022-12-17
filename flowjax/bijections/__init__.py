@@ -1,17 +1,17 @@
 from .abc import Bijection, Transformer
-from .affine import Affine, TriangularAffine, AdditiveLinearCondition
+from .affine import AdditiveLinearCondition, Affine, TriangularAffine
 from .bnaf import BlockAutoregressiveNetwork
+from .chain import Chain, ScannableChain
 from .coupling import Coupling
 from .masked_autoregressive import MaskedAutoregressive
 from .tanh import Tanh, TanhLinearTails
-from .chain import Chain, ScannableChain
 from .utils import (
-    Invert,
+    EmbedCondition,
     Flip,
+    Invert,
+    Partial,
     Permute,
     TransformerToBijection,
-    Partial,
-    EmbedCondition,
 )
 
 __all__ = [

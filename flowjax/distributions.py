@@ -1,16 +1,17 @@
 # Distribution object (for flows and base distributions)
 
 from abc import ABC, abstractmethod
-from typing import Optional
-from flowjax.bijections import Bijection, Affine
-from jax import random
-from jax.scipy import stats as jstats
+from typing import Any, Optional
+
+import equinox as eqx
 import jax
 import jax.numpy as jnp
+from jax import random
 from jax.random import KeyArray
+from jax.scipy import stats as jstats
+
+from flowjax.bijections import Affine, Bijection
 from flowjax.utils import Array, broadcast_arrays_1d
-from typing import Any
-import equinox as eqx
 
 # To construct a distribution, we define _log_prob and _sample, which take in vector arguments.
 # More friendly methods are then created from these, supporting batches of inputs.

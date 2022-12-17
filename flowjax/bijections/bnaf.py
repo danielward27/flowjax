@@ -3,12 +3,13 @@ Block Neural Autoregressive bijection implementation.
 """
 
 from typing import Callable, Optional
+
 import jax
 import jax.numpy as jnp
-from flowjax.bijections import Bijection
 from jax import random
 from jax.random import KeyArray
-import jax.numpy as jnp
+
+from flowjax.bijections import Bijection
 from flowjax.nn.bnaf import BlockAutoregressiveLinear
 
 
@@ -73,7 +74,7 @@ class BlockAutoregressiveNetwork(Bijection):
             block_shapes = [
                 (block_dim, 1),
                 *[(block_dim, block_dim)] * (depth - 1),
-                (1, block_dim)
+                (1, block_dim),
             ]
             cond_dims = [cond_dim] + [0] * depth
             for key, block_shape, cd in zip(keys, block_shapes, cond_dims):

@@ -1,16 +1,18 @@
-from flowjax.distributions import Distribution, Transformed
-from flowjax.bijections import Invert, Bijection
+from typing import Dict, List, Optional, Sequence, Tuple
+
+import equinox as eqx
+import jax
+import jax.numpy as jnp
+import optax
+from equinox.custom_types import BoolAxisSpec
 from jax import random
 from jax.random import KeyArray
-import jax.numpy as jnp
-import equinox as eqx
-import optax
-from tqdm import tqdm
-from typing import Optional, List, Dict, Tuple, Sequence
-from flowjax.utils import Array
-from equinox.custom_types import BoolAxisSpec
 from jaxtyping import PyTree
-import jax
+from tqdm import tqdm
+
+from flowjax.bijections import Bijection, Invert
+from flowjax.distributions import Distribution, Transformed
+from flowjax.utils import Array
 
 
 def train_flow(

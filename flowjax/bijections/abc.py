@@ -8,7 +8,9 @@ desired (e.g. maximum likelihood fitting of flows).
 
 from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple
+
 from equinox import Module
+
 from flowjax.utils import Array
 
 

@@ -1,19 +1,13 @@
 # %%
-import pytest
-from flowjax.bijections import (
-    Chain,
-    ScannableChain,
-    Affine,
-    Flip,
-    Permute,
-    Coupling,
-)
-import equinox as eqx
 from functools import partial
-from flowjax.bijections.transformers import AffineTransformer
+
+import equinox as eqx
 import jax.numpy as jnp
-from jax import random
 import pytest
+from jax import random
+
+from flowjax.bijections import Affine, Chain, Coupling, Flip, Permute, ScannableChain
+from flowjax.bijections.transformers import AffineTransformer
 
 
 def test_chain_dunders():

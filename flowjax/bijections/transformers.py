@@ -3,10 +3,12 @@ parameterisation with neural networks. All transformers have the "Transformer"
 suffix, to avoid potential name clashes with bijections.
 """
 
+from functools import partial
+
 import jax
 import jax.numpy as jnp
+
 from flowjax.bijections import Transformer
-from functools import partial
 from flowjax.utils import Array
 
 

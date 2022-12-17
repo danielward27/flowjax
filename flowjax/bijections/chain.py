@@ -1,10 +1,12 @@
 """Bijections that chain together (compose) multiple bijections."""
 
-from flowjax.bijections import Bijection
-from typing import Sequence, Tuple, Union, Any
+from functools import partial
+from typing import Any, Sequence, Tuple, Union
+
 import equinox as eqx
 from jax.lax import scan
-from functools import partial
+
+from flowjax.bijections import Bijection
 from flowjax.utils import Array
 
 

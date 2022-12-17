@@ -1,5 +1,6 @@
-import jax.numpy as jnp
 from typing import Any
+
+import jax.numpy as jnp
 
 Array = Any  # Custom type for Arrays (clearer typehint)
 

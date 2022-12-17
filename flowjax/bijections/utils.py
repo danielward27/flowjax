@@ -1,9 +1,12 @@
-from flowjax.bijections import Bijection, Transformer
-import jax.numpy as jnp
-from flowjax.utils import Array
 from typing import Union
+
 import equinox as eqx
+import jax.numpy as jnp
 from jax.experimental import checkify
+
+from flowjax.bijections import Bijection, Transformer
+from flowjax.utils import Array
+
 
 class Invert(Bijection):
     bijection: Bijection
@@ -47,7 +50,7 @@ class Permute(Bijection):
         """
         checkify.check(
             (permutation.sort() == jnp.arange(len(permutation))).all(),
-            "Invalid permutation array provided."
+            "Invalid permutation array provided.",
         )
         self.permutation = permutation
         self.inverse_permutation = jnp.argsort(permutation)
