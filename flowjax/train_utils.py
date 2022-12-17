@@ -99,7 +99,8 @@ def train_flow(
             best_params = eqx.filter(dist, eqx.is_inexact_array)
 
         elif count_fruitless(losses["val"]) > max_patience:
-            print("Max patience reached.")
+            if show_progress == True:
+                loop.set_postfix_str(f"{loop.postfix} (Max patience reached)")
             break
 
         if show_progress:
