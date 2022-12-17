@@ -10,34 +10,12 @@ from jax import random
 from jax.random import KeyArray
 
 from flowjax.bijections import Bijection
-from flowjax.nn.bnaf import BlockAutoregressiveLinear
-
-
-class TanhBNAF:
-    """
-    Tanh transformation compatible with BNAF (log_abs_det provided as 3D array).
-    """
-
-    def __init__(self, n_blocks: int):
-        self.n_blocks = n_blocks
-
-    def __call__(self, x, condition=None):
-        """Applies the activation and computes the Jacobian. Jacobian shape is
-        (n_blocks, *block_size). Condition is ignored.
-
-        Returns:
-            Tuple: output, jacobian
-        """
-        d = x.shape[0] // self.n_blocks
-        log_det_vals = -2 * (x + jax.nn.softplus(-2 * x) - jnp.log(2.0))
-        log_det = jnp.full((self.n_blocks, d, d), -jnp.inf)
-        log_det = log_det.at[:, jnp.arange(d), jnp.arange(d)].set(
-            log_det_vals.reshape(self.n_blocks, d)
-        )
-        return jnp.tanh(x), log_det
+from flowjax.nn.block_autoregressive import (BlockAutoregressiveLinear,
+                                             _BlockTanh)
 
 
 class BlockAutoregressiveNetwork(Bijection):
+    dim: int
     depth: int
     layers: list
     cond_dim: int
@@ -53,7 +31,7 @@ class BlockAutoregressiveNetwork(Bijection):
         block_dim: int,
         activation: Optional[Callable] = None,
     ):
-        """Block Neural Autoregressive Network (see https://arxiv.org/abs/1904.04676).
+        """Block Autoregressive Network (see https://arxiv.org/abs/1904.04676).
 
         Args:
             key (KeyArray): Jax PRNGKey
@@ -61,10 +39,9 @@ class BlockAutoregressiveNetwork(Bijection):
             cond_dim (int): Dimension of extra conditioning variables.
             depth (int): Number of hidden layers in the network.
             block_dim (int): Block dimension (hidden layer size is roughly dim*block_dim).
-            activation (Callable, optional): Activation function. Defaults to TanhBNAF.
+            activation (Callable, optional): Activation function. Defaults to _BlockTanh.
         """
-
-        activation = TanhBNAF(dim) if activation is None else activation
+        activation = _BlockTanh(dim) if activation is None else activation
         layers = []
         if depth == 0:
             layers.append(BlockAutoregressiveLinear(key, dim, (1, 1), cond_dim))
@@ -77,7 +54,9 @@ class BlockAutoregressiveNetwork(Bijection):
                 (1, block_dim),
             ]
             cond_dims = [cond_dim] + [0] * depth
+
             for key, block_shape, cd in zip(keys, block_shapes, cond_dims):
+
                 layers.extend(
                     [
                         BlockAutoregressiveLinear(key, dim, block_shape, cd),
@@ -86,6 +65,7 @@ class BlockAutoregressiveNetwork(Bijection):
                 )
             layers = layers[:-1]  # remove last activation
 
+        self.dim = dim
         self.depth = depth
         self.layers = layers
         self.cond_dim = cond_dim
