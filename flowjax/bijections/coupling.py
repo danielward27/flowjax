@@ -1,10 +1,11 @@
 from typing import Callable
+
 import equinox as eqx
-import jax.numpy as jnp
-from flowjax.bijections import Transformer, Bijection
-from jax.random import KeyArray
-from flowjax.utils import Array
 import jax.nn as jnn
+import jax.numpy as jnp
+from jax.random import KeyArray
+
+from flowjax.bijections import Bijection, Transformer
 
 
 class Coupling(Bijection):

@@ -1,12 +1,18 @@
-import pytest
-from flowjax.distributions import Normal, Transformed
-from flowjax.bijections import Affine
-from flowjax.train_utils import count_fruitless
-from flowjax.train_utils import train_val_split, random_permutation_multiple, train_flow
-import jax.numpy as jnp
-from jax import random
-import jax.tree_util as jtu
 import equinox as eqx
+import jax.numpy as jnp
+import jax.tree_util as jtu
+import pytest
+from jax import random
+
+from flowjax.bijections import Affine
+from flowjax.distributions import Normal, Transformed
+from flowjax.train_utils import (
+    count_fruitless,
+    random_permutation_multiple,
+    train_flow,
+    train_val_split,
+)
+
 
 def test_count_fruitless():
     assert count_fruitless([12, 2, 3, 4]) == 2

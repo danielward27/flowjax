@@ -3,9 +3,10 @@ Various masks, generally used in flows to enforce e.g. a dependency structure
 that leads to invertibility and efficient Jacobian determinant calculations.
 """
 
-from flowjax.utils import Array
 import jax.numpy as jnp
 from jax.scipy.linalg import block_diag
+
+from flowjax.utils import Array
 
 
 def rank_based_mask(in_ranks: Array, out_ranks: Array, eq: bool = False):

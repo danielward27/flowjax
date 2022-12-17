@@ -1,6 +1,7 @@
-import pytest
-from flowjax.bijections import TriangularAffine
 import jax.numpy as jnp
+import pytest
+
+from flowjax.bijections import TriangularAffine
 
 
 def test_TriangularAffine():

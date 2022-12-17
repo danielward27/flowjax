@@ -1,32 +1,31 @@
 "General tests for bijections (including transformers)."
+import equinox as eqx
+import jax
+import jax.numpy as jnp
 import pytest
 from jax import random
-import jax.numpy as jnp
-import jax
+
+from flowjax.bijections import (
+    AdditiveLinearCondition,
+    Affine,
+    BlockAutoregressiveNetwork,
+    Chain,
+    Coupling,
+    EmbedCondition,
+    Flip,
+    MaskedAutoregressive,
+    Partial,
+    Permute,
+    ScannableChain,
+    Tanh,
+    TanhLinearTails,
+    TransformerToBijection,
+    TriangularAffine,
+)
 from flowjax.bijections.transformers import (
     AffineTransformer,
     RationalQuadraticSplineTransformer,
 )
-import equinox as eqx
-
-from flowjax.bijections import (
-    Affine,
-    TriangularAffine,
-    Coupling,
-    MaskedAutoregressive,
-    Tanh,
-    TanhLinearTails,
-    Flip,
-    Permute,
-    BlockAutoregressiveNetwork,
-    TransformerToBijection,
-    AdditiveLinearCondition,
-    Partial,
-    EmbedCondition,
-    Chain,
-    ScannableChain,
-)
-
 
 dim = 5
 cond_dim = 2

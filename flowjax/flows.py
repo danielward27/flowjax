@@ -8,31 +8,31 @@ when the flow layers share the same structure.
 """
 
 from typing import Callable, Optional
-from jax import random
+
+import equinox as eqx
 import jax.nn as jnn
-from jax.nn.initializers import glorot_uniform
 import jax.numpy as jnp
+from jax import random
+from jax.nn.initializers import glorot_uniform
 from jax.random import KeyArray
-from flowjax.bijections.transformers import RationalQuadraticSplineTransformer
-from flowjax.distributions import Distribution, Transformed
-from typing import List
+
 from flowjax.bijections import (
-    Bijection,
-    Transformer,
-    Coupling,
-    Chain,
-    Invert,
+    AdditiveLinearCondition,
     BlockAutoregressiveNetwork,
+    Chain,
+    Coupling,
+    Flip,
+    Invert,
     MaskedAutoregressive,
     Permute,
-    Flip,
+    ScannableChain,
+    TanhLinearTails,
+    Transformer,
     TransformerToBijection,
     TriangularAffine,
-    TanhLinearTails,
-    AdditiveLinearCondition,
-    ScannableChain,
 )
-import equinox as eqx
+from flowjax.bijections.transformers import RationalQuadraticSplineTransformer
+from flowjax.distributions import Distribution, Transformed
 
 
 class CouplingFlow(Transformed):
@@ -243,7 +243,7 @@ class TriangularSplineFlow(Transformed):
         cond_dim: int = 0,
         flow_layers: int = 8,
         K: int = 8,
-        tanh_max_val: float = 3.,
+        tanh_max_val: float = 3.0,
         invert: bool = True,
         permute_strategy: Optional[str] = None,
         init: Callable = glorot_uniform(),

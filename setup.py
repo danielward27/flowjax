@@ -2,8 +2,7 @@ import io
 import os
 import re
 
-from setuptools import find_packages
-from setuptools import setup
+from setuptools import find_packages, setup
 
 
 def read(filename):
@@ -31,7 +30,7 @@ setup(
         "tqdm",
         "optax",
         "jaxtyping",
-        "numpy<=1.22.4",  # https://github.com/google/jax/issues/11241
+        "numpy",
     ],
     extras_require={"dev": ["pytest"]},
     classifiers=[

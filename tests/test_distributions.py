@@ -1,17 +1,18 @@
-import pytest
 import jax.numpy as jnp
+import pytest
 from jax import random
+
 from flowjax.distributions import (
-    StandardNormal,
-    Normal,
-    _StandardUniform,
-    Uniform,
-    _StandardGumbel,
-    Gumbel,
-    _StandardCauchy,
     Cauchy,
-    _StandardStudentT,
+    Gumbel,
+    Normal,
+    StandardNormal,
     StudentT,
+    Uniform,
+    _StandardCauchy,
+    _StandardGumbel,
+    _StandardStudentT,
+    _StandardUniform,
 )
 
 # This sets up a number of constructors dim -> instance for testing

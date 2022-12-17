@@ -1,6 +1,7 @@
-import pytest
 import jax.numpy as jnp
-from flowjax.masks import rank_based_mask, block_tril_mask, block_diag_mask
+import pytest
+
+from flowjax.masks import block_diag_mask, block_tril_mask, rank_based_mask
 
 
 def test_rank_based_mask():

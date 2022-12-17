@@ -2,14 +2,15 @@
 
 from functools import partial
 from typing import Callable, Optional
-from jax.random import KeyArray
-import jax.numpy as jnp
-from flowjax.utils import tile_until_length
-import jax.nn as jnn
-from flowjax.bijections import Bijection, Transformer
-from flowjax.utils import Array
+
 import jax
+import jax.nn as jnn
+import jax.numpy as jnp
+from jax.random import KeyArray
+
+from flowjax.bijections import Bijection, Transformer
 from flowjax.nn import AutoregressiveMLP
+from flowjax.utils import Array, tile_until_length
 
 
 class MaskedAutoregressive(Bijection):

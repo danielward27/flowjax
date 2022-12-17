@@ -1,9 +1,8 @@
-from flowjax.bijections import Partial
-from flowjax.bijections import Affine
-import pytest
 import jax.numpy as jnp
-from flowjax.bijections import Permute
+import pytest
 from jax.experimental.checkify import JaxRuntimeError
+
+from flowjax.bijections import Affine, Partial, Permute
 
 test_cases = {
     # name: idx, num_transformed, expected
@@ -27,6 +26,7 @@ def test_partial(idx, num_transformed, expected):
     y = bijection.transform(x)
     assert jnp.all((x != y) == expected)
 
+
 def test_Permute_argcheck():
     with pytest.raises(JaxRuntimeError):
-        Permute(jnp.array([0,0]))
+        Permute(jnp.array([0, 0]))

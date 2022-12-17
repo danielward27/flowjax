@@ -1,6 +1,7 @@
-import pytest
-from flowjax.utils import tile_until_length, broadcast_arrays_1d
 import jax.numpy as jnp
+import pytest
+
+from flowjax.utils import broadcast_arrays_1d, tile_until_length
 
 
 def test_tile_until_length():

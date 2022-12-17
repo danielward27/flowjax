@@ -1,11 +1,12 @@
-import pytest
-import jax.numpy as jnp
 import jax
+import jax.numpy as jnp
+import pytest
 from jax import random
-from flowjax.nn import AutoregressiveMLP, MaskedLinear, BlockAutoregressiveLinear
-from flowjax.masks import rank_based_mask
-from flowjax.utils import tile_until_length
 from jax.scipy.linalg import block_diag
+
+from flowjax.masks import rank_based_mask
+from flowjax.nn import AutoregressiveMLP, BlockAutoregressiveLinear, MaskedLinear
+from flowjax.utils import tile_until_length
 
 
 def test_BlockAutoregressiveLinear():

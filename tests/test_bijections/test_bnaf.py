@@ -1,10 +1,11 @@
+import jax
+import jax.numpy as jnp
 import pytest
+from jax import random
+from jax.scipy.linalg import block_diag
+
 from flowjax.bijections.bnaf import BlockAutoregressiveNetwork, TanhBNAF
 from flowjax.masks import block_diag_mask
-import jax.numpy as jnp
-from jax import random
-import jax
-from jax.scipy.linalg import block_diag
 
 
 def test_BlockAutoregressiveNetwork():

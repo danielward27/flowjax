@@ -1,17 +1,19 @@
-from flowjax.flows import (
-    CouplingFlow,
-    MaskedAutoregressiveFlow,
-    BlockNeuralAutoregressiveFlow,
-)
+from typing import Any, Dict
+
+import jax.numpy as jnp
+import pytest
+from jax import random
+
 from flowjax.bijections.transformers import (
     AffineTransformer,
     RationalQuadraticSplineTransformer,
 )
 from flowjax.distributions import StandardNormal
-import jax.numpy as jnp
-from jax import random
-import pytest
-from typing import Dict, Any
+from flowjax.flows import (
+    BlockNeuralAutoregressiveFlow,
+    CouplingFlow,
+    MaskedAutoregressiveFlow,
+)
 
 dim = 3
 common_kwargs = {

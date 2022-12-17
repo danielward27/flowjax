@@ -1,13 +1,14 @@
+from typing import Callable, List
+
+import jax.nn as jnn
+import jax.numpy as jnp
 from equinox import Module
 from equinox.nn import Linear
 from jax import random
-from typing import List, Callable
-import jax.numpy as jnp
-from flowjax.utils import Array
 from jax.random import KeyArray
-import jax.nn as jnn
-from flowjax.utils import _identity
+
 from flowjax.masks import rank_based_mask
+from flowjax.utils import Array, _identity
 
 
 class MaskedLinear(Module):
