@@ -39,7 +39,7 @@ class BlockAutoregressiveNetwork(Bijection):
             cond_dim (int): Dimension of extra conditioning variables.
             depth (int): Number of hidden layers in the network.
             block_dim (int): Block dimension (hidden layer size is roughly dim*block_dim).
-            activation (Callable, optional): Activation function. Defaults to _TanhBNAF.
+            activation (Callable, optional): Activation function. Defaults to _BlockTanh.
         """
         activation = _BlockTanh(dim) if activation is None else activation
         layers = []

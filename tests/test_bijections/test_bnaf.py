@@ -35,7 +35,7 @@ def test_BlockAutoregressiveNetwork_conditioning():
     assert jnp.all(y1 != y2)
 
 
-def test_TanhBNAF():
+def test_BlockTanh():
     n_blocks = 2
     block_size = 3
     x = random.uniform(random.PRNGKey(0), (n_blocks * block_size,))
