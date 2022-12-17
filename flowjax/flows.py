@@ -16,21 +16,11 @@ from jax import random
 from jax.nn.initializers import glorot_uniform
 from jax.random import KeyArray
 
-from flowjax.bijections import (
-    AdditiveLinearCondition,
-    BlockAutoregressiveNetwork,
-    Chain,
-    Coupling,
-    Flip,
-    Invert,
-    MaskedAutoregressive,
-    Permute,
-    ScannableChain,
-    TanhLinearTails,
-    Transformer,
-    TransformerToBijection,
-    TriangularAffine,
-)
+from flowjax.bijections import (AdditiveLinearCondition,
+                                BlockAutoregressiveNetwork, Chain, Coupling,
+                                Flip, Invert, MaskedAutoregressive, Permute,
+                                ScannableChain, TanhLinearTails, Transformer,
+                                TransformerToBijection, TriangularAffine)
 from flowjax.bijections.transformers import RationalQuadraticSplineTransformer
 from flowjax.distributions import Distribution, Transformed
 

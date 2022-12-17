@@ -8,9 +8,10 @@ import jax
 import jax.numpy as jnp
 from jax import random
 from jax.random import KeyArray
-from flowjax.nn.block_autoregressive import BlockAutoregressiveLinear, _BlockTanh
-from flowjax.bijections import Bijection
 
+from flowjax.bijections import Bijection
+from flowjax.nn.block_autoregressive import (BlockAutoregressiveLinear,
+                                             _BlockTanh)
 
 
 class BlockAutoregressiveNetwork(Bijection):
@@ -53,9 +54,9 @@ class BlockAutoregressiveNetwork(Bijection):
                 (1, block_dim),
             ]
             cond_dims = [cond_dim] + [0] * depth
-            
+
             for key, block_shape, cd in zip(keys, block_shapes, cond_dims):
-                
+
                 layers.extend(
                     [
                         BlockAutoregressiveLinear(key, dim, block_shape, cd),
@@ -108,4 +109,3 @@ def logmatmulexp(x, y):
     y_shift = jax.lax.stop_gradient(jnp.amax(y, -2, keepdims=True))
     xy = jnp.log(jnp.matmul(jnp.exp(x - x_shift), jnp.exp(y - y_shift)))
     return xy + x_shift + y_shift
-

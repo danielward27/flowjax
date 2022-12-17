@@ -7,11 +7,9 @@ from jax import random
 from jax.nn.initializers import glorot_uniform
 from jax.random import KeyArray
 
+from flowjax.bijections.tanh import _tanh_log_grad
 from flowjax.masks import block_diag_mask, block_tril_mask
 from flowjax.utils import Array
-
-from flowjax.bijections.tanh import _tanh_log_grad
-
 
 
 class BlockAutoregressiveLinear(eqx.Module):
@@ -115,11 +113,9 @@ class _BlockTanh:
         log_det = _tanh_log_grad(x)
         return jnp.tanh(x), _3d_log_det(log_det, self.n_blocks)
 
+
 def _3d_log_det(vals, n_blocks):
     d = vals.shape[0] // n_blocks
     log_det = jnp.full((n_blocks, d, d), -jnp.inf)
-    log_det = log_det.at[:, jnp.arange(d), jnp.arange(d)].set(
-        vals.reshape(n_blocks, d)
-    )
+    log_det = log_det.at[:, jnp.arange(d), jnp.arange(d)].set(vals.reshape(n_blocks, d))
     return log_det
-    

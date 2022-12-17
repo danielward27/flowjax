@@ -5,14 +5,8 @@ from .chain import Chain, ScannableChain
 from .coupling import Coupling
 from .masked_autoregressive import MaskedAutoregressive
 from .tanh import Tanh, TanhLinearTails
-from .utils import (
-    EmbedCondition,
-    Flip,
-    Invert,
-    Partial,
-    Permute,
-    TransformerToBijection,
-)
+from .utils import (EmbedCondition, Flip, Invert, Partial, Permute,
+                    TransformerToBijection)
 
 __all__ = [
     "Bijection",
