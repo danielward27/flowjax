@@ -1,6 +1,6 @@
 from .abc import Bijection, Transformer
 from .affine import AdditiveLinearCondition, Affine, TriangularAffine
-from .bnaf import BlockAutoregressiveNetwork
+from .block_autoregressive_network import BlockAutoregressiveNetwork
 from .chain import Chain, ScannableChain
 from .coupling import Coupling
 from .masked_autoregressive import MaskedAutoregressive

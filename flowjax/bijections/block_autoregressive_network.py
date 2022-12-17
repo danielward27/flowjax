@@ -8,14 +8,14 @@ import jax
 import jax.numpy as jnp
 from jax import random
 from jax.random import KeyArray
-
+from flowjax.nn.block_autoregressive_linear import BlockAutoregressiveLinear
 from flowjax.bijections import Bijection
-from flowjax.nn.bnaf import BlockAutoregressiveLinear
+from flowjax.bijections.tanh import _tanh_log_grad
 
 
-class TanhBNAF:
+class _TanhBNAF:
     """
-    Tanh transformation compatible with BNAF (log_abs_det provided as 3D array).
+    Tanh transformation compatible with block neural autoregressive flow (log_abs_det provided as 3D array).
     """
 
     def __init__(self, n_blocks: int):
@@ -28,16 +28,13 @@ class TanhBNAF:
         Returns:
             Tuple: output, jacobian
         """
-        d = x.shape[0] // self.n_blocks
-        log_det_vals = -2 * (x + jax.nn.softplus(-2 * x) - jnp.log(2.0))
-        log_det = jnp.full((self.n_blocks, d, d), -jnp.inf)
-        log_det = log_det.at[:, jnp.arange(d), jnp.arange(d)].set(
-            log_det_vals.reshape(self.n_blocks, d)
-        )
-        return jnp.tanh(x), log_det
+        log_det = _tanh_log_grad(x)
+        return jnp.tanh(x), _3d_log_det(log_det, self.n_blocks)
+
 
 
 class BlockAutoregressiveNetwork(Bijection):
+    dim: int
     depth: int
     layers: list
     cond_dim: int
@@ -53,7 +50,7 @@ class BlockAutoregressiveNetwork(Bijection):
         block_dim: int,
         activation: Optional[Callable] = None,
     ):
-        """Block Neural Autoregressive Network (see https://arxiv.org/abs/1904.04676).
+        """Block Autoregressive Network (see https://arxiv.org/abs/1904.04676).
 
         Args:
             key (KeyArray): Jax PRNGKey
@@ -61,10 +58,9 @@ class BlockAutoregressiveNetwork(Bijection):
             cond_dim (int): Dimension of extra conditioning variables.
             depth (int): Number of hidden layers in the network.
             block_dim (int): Block dimension (hidden layer size is roughly dim*block_dim).
-            activation (Callable, optional): Activation function. Defaults to TanhBNAF.
+            activation (Bijection, optional): Bijection to act as activation function. It should be applicable to a single element x (and is vmapped). Defaults to _TanhBNAF.
         """
-
-        activation = TanhBNAF(dim) if activation is None else activation
+        activation = _TanhBNAF(dim) if activation is None else activation
         layers = []
         if depth == 0:
             layers.append(BlockAutoregressiveLinear(key, dim, (1, 1), cond_dim))
@@ -77,7 +73,9 @@ class BlockAutoregressiveNetwork(Bijection):
                 (1, block_dim),
             ]
             cond_dims = [cond_dim] + [0] * depth
+            
             for key, block_shape, cd in zip(keys, block_shapes, cond_dims):
+                
                 layers.extend(
                     [
                         BlockAutoregressiveLinear(key, dim, block_shape, cd),
@@ -86,6 +84,7 @@ class BlockAutoregressiveNetwork(Bijection):
                 )
             layers = layers[:-1]  # remove last activation
 
+        self.dim = dim
         self.depth = depth
         self.layers = layers
         self.cond_dim = cond_dim
@@ -129,3 +128,12 @@ def logmatmulexp(x, y):
     y_shift = jax.lax.stop_gradient(jnp.amax(y, -2, keepdims=True))
     xy = jnp.log(jnp.matmul(jnp.exp(x - x_shift), jnp.exp(y - y_shift)))
     return xy + x_shift + y_shift
+
+def _3d_log_det(vals, n_blocks):
+    d = vals.shape[0] // n_blocks
+    log_det = jnp.full((n_blocks, d, d), -jnp.inf)
+    log_det = log_det.at[:, jnp.arange(d), jnp.arange(d)].set(
+        vals.reshape(n_blocks, d)
+    )
+    return log_det
+    

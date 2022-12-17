@@ -1,4 +1,4 @@
-from .bnaf import BlockAutoregressiveLinear
+from .block_autoregressive_linear import BlockAutoregressiveLinear
 from .masked_autoregressive import AutoregressiveMLP, MaskedLinear
 
 __all__ = [
