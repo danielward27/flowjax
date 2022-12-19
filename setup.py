@@ -30,7 +30,6 @@ setup(
         "tqdm",
         "optax",
         "jaxtyping",
-        "numpy",
     ],
     python_requires=">=3.10",
     extras_require={"dev": ["pytest"]},
