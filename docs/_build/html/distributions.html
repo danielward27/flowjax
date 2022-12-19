@@ -106,9 +106,13 @@
 <dl class="py method">
 <dt class="sig sig-object py" id="flowjax.distributions.Distribution.sample">
 <span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PRNGKeyArray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">condition</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="reference internal" href="_modules/flowjax/distributions.html#Distribution.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.distributions.Distribution.sample" title="Permalink to this definition"></a></dt>
-<dd><p>Sample from a distribution. The condition can be a vector, or a matrix.
-- If condition.ndim==1, n allows repeated sampling (a single sample is drawn if n is not provided).
-- If condition.ndim==2, axis 0 is treated as batch dimension, (one sample is drawn for each row).</p>
+<dd><dl class="simple">
+<dt>Sample from a distribution. The condition can be a vector, or a matrix.</dt><dd><ul class="simple">
+<li><p>If <cite>condition.ndim==1</cite>, n allows repeated sampling (a single sample is drawn if n is not provided).</p></li>
+<li><p>If <cite>condition.ndim==2</cite>, axis 0 is treated as batch dimension, (one sample is drawn for each row).</p></li>
+</ul>
+</dd>
+</dl>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -279,19 +283,16 @@ between min and max for each dimension. <cite>minval</cite> and <cite>maxval</ci
 <dt class="sig sig-object py" id="flowjax.distributions.Gumbel">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Gumbel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/distributions.html#Gumbel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.distributions.Gumbel" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#flowjax.distributions.Transformed" title="flowjax.distributions.Transformed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Transformed</span></code></a></p>
-<p>Gumbel distribution. <cite>loc</cite> and <cite>scale</cite> should be broadcastable.
-Ref: <a class="reference external" href="https://en.wikipedia.org/wiki/Gumbel_distribution">https://en.wikipedia.org/wiki/Gumbel_distribution</a></p>
+<p>Gumbel distribution (<a class="reference external" href="https://en.wikipedia.org/wiki/Gumbel_distribution">https://en.wikipedia.org/wiki/Gumbel_distribution</a>)</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="flowjax.distributions.Gumbel.__init__">
 <span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/distributions.html#Gumbel.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.distributions.Gumbel.__init__" title="Permalink to this definition"></a></dt>
-<dd><p>Form a distribution like object using a base distribution and a
-bijection. We take the forward bijection for use in sampling, and the inverse
-bijection for use in density evaluation.</p>
+<dd><p><cite>loc</cite> and <cite>scale</cite> should broadcast to the dimension of the distribution.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>base_dist</strong> (<a class="reference internal" href="#flowjax.distributions.Distribution" title="flowjax.distributions.Distribution"><em>Distribution</em></a>) – Base distribution.</p></li>
-<li><p><strong>bijection</strong> (<a class="reference internal" href="bijections.html#flowjax.bijections.Bijection" title="flowjax.bijections.Bijection"><em>Bijection</em></a>) – Bijection to transform distribution.</p></li>
+<li><p><strong>loc</strong> (<em>Array</em>) – Location paramter.</p></li>
+<li><p><strong>scale</strong> (<em>Array</em><em>, </em><em>optional</em>) – Scale parameter. Defaults to 1.0.</p></li>
 </ul>
 </dd>
 </dl>
@@ -313,19 +314,16 @@ bijection for use in density evaluation.</p>
 <dt class="sig sig-object py" id="flowjax.distributions.Cauchy">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Cauchy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/distributions.html#Cauchy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.distributions.Cauchy" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#flowjax.distributions.Transformed" title="flowjax.distributions.Transformed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Transformed</span></code></a></p>
-<p>Cauchy distribution. <cite>loc</cite> and <cite>scale</cite> should be broadcastable.
-Ref: <a class="reference external" href="https://en.wikipedia.org/wiki/Cauchy_distribution">https://en.wikipedia.org/wiki/Cauchy_distribution</a></p>
+<p>Cauchy distribution (<a class="reference external" href="https://en.wikipedia.org/wiki/Cauchy_distribution">https://en.wikipedia.org/wiki/Cauchy_distribution</a>).</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="flowjax.distributions.Cauchy.__init__">
 <span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/distributions.html#Cauchy.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.distributions.Cauchy.__init__" title="Permalink to this definition"></a></dt>
-<dd><p>Form a distribution like object using a base distribution and a
-bijection. We take the forward bijection for use in sampling, and the inverse
-bijection for use in density evaluation.</p>
+<dd><p><cite>loc</cite> and <cite>scale</cite> should broadcast to the dimension of the distribution.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>base_dist</strong> (<a class="reference internal" href="#flowjax.distributions.Distribution" title="flowjax.distributions.Distribution"><em>Distribution</em></a>) – Base distribution.</p></li>
-<li><p><strong>bijection</strong> (<a class="reference internal" href="bijections.html#flowjax.bijections.Bijection" title="flowjax.bijections.Bijection"><em>Bijection</em></a>) – Bijection to transform distribution.</p></li>
+<li><p><strong>loc</strong> (<em>Array</em>) – Location paramter.</p></li>
+<li><p><strong>scale</strong> (<em>Array</em><em>, </em><em>optional</em>) – Scale parameter. Defaults to 1.0.</p></li>
 </ul>
 </dd>
 </dl>
@@ -347,18 +345,17 @@ bijection for use in density evaluation.</p>
 <dt class="sig sig-object py" id="flowjax.distributions.StudentT">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">StudentT</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/distributions.html#StudentT"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.distributions.StudentT" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#flowjax.distributions.Transformed" title="flowjax.distributions.Transformed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Transformed</span></code></a></p>
-<p>Student T distribution. <cite>loc</cite> and <cite>scale</cite> should be broadcastable.</p>
+<p>Student T distribution (<a class="reference external" href="https://en.wikipedia.org/wiki/Student%27s_t-distribution">https://en.wikipedia.org/wiki/Student%27s_t-distribution</a>).</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="flowjax.distributions.StudentT.__init__">
-<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/distributions.html#StudentT.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.distributions.StudentT.__init__" title="Permalink to this definition"></a></dt>
-<dd><p>Form a distribution like object using a base distribution and a
-bijection. We take the forward bijection for use in sampling, and the inverse
-bijection for use in density evaluation.</p>
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/distributions.html#StudentT.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.distributions.StudentT.__init__" title="Permalink to this definition"></a></dt>
+<dd><p><cite>df</cite>, <cite>loc</cite> and <cite>scale</cite> broadcast to the dimension of the distribution.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>base_dist</strong> (<a class="reference internal" href="#flowjax.distributions.Distribution" title="flowjax.distributions.Distribution"><em>Distribution</em></a>) – Base distribution.</p></li>
-<li><p><strong>bijection</strong> (<a class="reference internal" href="bijections.html#flowjax.bijections.Bijection" title="flowjax.bijections.Bijection"><em>Bijection</em></a>) – Bijection to transform distribution.</p></li>
+<li><p><strong>df</strong> (<em>Array</em>) – The degrees of freedom.</p></li>
+<li><p><strong>loc</strong> (<em>Array</em>) – Location parameter. Defaults to 0.0.</p></li>
+<li><p><strong>scale</strong> (<em>Array</em><em>, </em><em>optional</em>) – Scale parameter. Defaults to 1.0.</p></li>
 </ul>
 </dd>
 </dl>

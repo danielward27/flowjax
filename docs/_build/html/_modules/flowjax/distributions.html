@@ -116,8 +116,8 @@
         <span class="n">n</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Sample from a distribution. The condition can be a vector, or a matrix.</span>
-<span class="sd">        - If condition.ndim==1, n allows repeated sampling (a single sample is drawn if n is not provided).</span>
-<span class="sd">        - If condition.ndim==2, axis 0 is treated as batch dimension, (one sample is drawn for each row).</span>
+<span class="sd">            - If `condition.ndim==1`, n allows repeated sampling (a single sample is drawn if n is not provided).</span>
+<span class="sd">            - If `condition.ndim==2`, axis 0 is treated as batch dimension, (one sample is drawn for each row).</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            key (KeyArray): Jax PRNGKey.</span>
@@ -315,12 +315,11 @@
 
 
 <span class="k">class</span> <span class="nc">_StandardGumbel</span><span class="p">(</span><span class="n">Distribution</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Implements standard gumbel distribution (loc=0, scale=1)</span>
-<span class="sd">    Ref: https://en.wikipedia.org/wiki/Gumbel_distribution</span>
+    <span class="sd">&quot;&quot;&quot;Standard gumbel distribution (https://en.wikipedia.org/wiki/Gumbel_distribution).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">):</span>
+        
         <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="n">dim</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cond_dim</span> <span class="o">=</span> <span class="mi">0</span>
 
@@ -332,12 +331,16 @@
 
 
 <div class="viewcode-block" id="Gumbel"><a class="viewcode-back" href="../../distributions.html#flowjax.distributions.Gumbel">[docs]</a><span class="k">class</span> <span class="nc">Gumbel</span><span class="p">(</span><span class="n">Transformed</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Gumbel distribution. `loc` and `scale` should be broadcastable.</span>
-<span class="sd">    Ref: https://en.wikipedia.org/wiki/Gumbel_distribution</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="sd">&quot;&quot;&quot;Gumbel distribution (https://en.wikipedia.org/wiki/Gumbel_distribution)&quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="Gumbel.__init__"><a class="viewcode-back" href="../../distributions.html#flowjax.distributions.Gumbel.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loc</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">scale</span><span class="p">:</span> <span class="n">Array</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        `loc` and `scale` should broadcast to the dimension of the distribution.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            loc (Array): Location paramter. </span>
+<span class="sd">            scale (Array, optional): Scale parameter. Defaults to 1.0.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">loc</span><span class="p">,</span> <span class="n">scale</span> <span class="o">=</span> <span class="n">broadcast_arrays_1d</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">scale</span><span class="p">)</span>
         <span class="n">base_dist</span> <span class="o">=</span> <span class="n">_StandardGumbel</span><span class="p">(</span><span class="n">loc</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
         <span class="n">bijection</span> <span class="o">=</span> <span class="n">Affine</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">scale</span><span class="p">)</span>
@@ -371,11 +374,17 @@
 
 <div class="viewcode-block" id="Cauchy"><a class="viewcode-back" href="../../distributions.html#flowjax.distributions.Cauchy">[docs]</a><span class="k">class</span> <span class="nc">Cauchy</span><span class="p">(</span><span class="n">Transformed</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Cauchy distribution. `loc` and `scale` should be broadcastable.</span>
-<span class="sd">    Ref: https://en.wikipedia.org/wiki/Cauchy_distribution</span>
+<span class="sd">    Cauchy distribution (https://en.wikipedia.org/wiki/Cauchy_distribution).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
 <div class="viewcode-block" id="Cauchy.__init__"><a class="viewcode-back" href="../../distributions.html#flowjax.distributions.Cauchy.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loc</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">scale</span><span class="p">:</span> <span class="n">Array</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        `loc` and `scale` should broadcast to the dimension of the distribution.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            loc (Array): Location paramter. </span>
+<span class="sd">            scale (Array, optional): Scale parameter. Defaults to 1.0.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">loc</span><span class="p">,</span> <span class="n">scale</span> <span class="o">=</span> <span class="n">broadcast_arrays_1d</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">scale</span><span class="p">)</span>
         <span class="n">base_dist</span> <span class="o">=</span> <span class="n">_StandardCauchy</span><span class="p">(</span><span class="n">loc</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
         <span class="n">bijection</span> <span class="o">=</span> <span class="n">Affine</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">scale</span><span class="p">)</span>
@@ -414,9 +423,17 @@
 
 
 <div class="viewcode-block" id="StudentT"><a class="viewcode-back" href="../../distributions.html#flowjax.distributions.StudentT">[docs]</a><span class="k">class</span> <span class="nc">StudentT</span><span class="p">(</span><span class="n">Transformed</span><span class="p">):</span>
-    <span class="s2">&quot;Student T distribution. `loc` and `scale` should be broadcastable.&quot;</span>
+    <span class="sd">&quot;&quot;&quot;Student T distribution (https://en.wikipedia.org/wiki/Student%27s_t-distribution).&quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="StudentT.__init__"><a class="viewcode-back" href="../../distributions.html#flowjax.distributions.StudentT.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">loc</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">scale</span><span class="p">:</span> <span class="n">Array</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">):</span>
+<div class="viewcode-block" id="StudentT.__init__"><a class="viewcode-back" href="../../distributions.html#flowjax.distributions.StudentT.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">loc</span><span class="p">:</span> <span class="n">Array</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">scale</span><span class="p">:</span> <span class="n">Array</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        `df`, `loc` and `scale` broadcast to the dimension of the distribution.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            df (Array): The degrees of freedom.</span>
+<span class="sd">            loc (Array): Location parameter. Defaults to 0.0.</span>
+<span class="sd">            scale (Array, optional): Scale parameter. Defaults to 1.0.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">df</span><span class="p">,</span> <span class="n">loc</span><span class="p">,</span> <span class="n">scale</span> <span class="o">=</span> <span class="n">broadcast_arrays_1d</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">loc</span><span class="p">,</span> <span class="n">scale</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cond_dim</span> <span class="o">=</span> <span class="mi">0</span>
