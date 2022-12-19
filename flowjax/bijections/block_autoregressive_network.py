@@ -11,10 +11,11 @@ from jax.random import KeyArray
 
 from flowjax.bijections import Bijection
 from flowjax.nn.block_autoregressive import (BlockAutoregressiveLinear,
-                                             _BlockTanh)
+                                             BlockTanh)
 
 
 class BlockAutoregressiveNetwork(Bijection):
+    """Block Autoregressive Network (https://arxiv.org/abs/1904.04676)."""
     dim: int
     depth: int
     layers: list
@@ -31,17 +32,16 @@ class BlockAutoregressiveNetwork(Bijection):
         block_dim: int,
         activation: Optional[Callable] = None,
     ):
-        """Block Autoregressive Network (see https://arxiv.org/abs/1904.04676).
-
+        """
         Args:
             key (KeyArray): Jax PRNGKey
             dim (int): Dimension of the distribution.
             cond_dim (int): Dimension of extra conditioning variables.
             depth (int): Number of hidden layers in the network.
-            block_dim (int): Block dimension (hidden layer size is roughly dim*block_dim).
-            activation (Callable, optional): Activation function. Defaults to _BlockTanh.
+            block_dim (int): Block dimension (hidden layer size is `dim*block_dim`).
+            activation (Callable, optional): Activation function. Defaults to BlockTanh.
         """
-        activation = _BlockTanh(dim) if activation is None else activation
+        activation = BlockTanh(dim) if activation is None else activation
         layers = []
         if depth == 0:
             layers.append(BlockAutoregressiveLinear(key, dim, (1, 1), cond_dim))

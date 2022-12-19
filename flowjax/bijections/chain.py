@@ -11,12 +11,13 @@ from flowjax.utils import Array
 
 
 class Chain(Bijection):
+    """Chain together arbitrary bijections to form another bijection."""
+
     bijections: Tuple[Bijection]
     cond_dim: int
 
     def __init__(self, bijections: Sequence[Bijection]):
-        """Chain together arbitrary bijections to form another bijection.
-
+        """
         Args:
             bijections (Sequence[Bijection]): Sequence of bijections.
         """
@@ -67,24 +68,29 @@ class Chain(Bijection):
 
 
 class ScannableChain(Bijection):
+    """Repeatedly apply the same bijection with different parameter values. Internally,
+    uses `jax.lax.scan` to reduce compilation time.
+    """
     static: Any
     params: Any
     cond_dim: int
 
     def __init__(self, bijection: Bijection):
         """
-        Repeatedly apply the same bijection with different parameter values. Internally,
-        uses `jax.lax.scan` to reduce compilation time.
-
         The array leaves in `bijection` should have an additional leading axis to scan over.
-        Often it is convenient to construct these using `equinox.filter_vmap`. For example
+        Often it is convenient to construct these using `equinox.filter_vmap`.
 
-        ```
-        params = jnp.ones((3, 2))
-        affine = ScannableChain(equinox.filter_vmap(Affine)(params))
-        ```
-        This would be equivilent to `Chain([Affine(p) for p in params])`.
+        Examples:
 
+        .. doctest::
+            >>> from flowjax.bijections import Chain
+            >>> import jax.numpy as jnp
+            >>> import equinox as eqx
+
+            >>> params = jnp.ones((3, 2))
+            >>> # Below is equivilent to Chain([Affine(p) for p in params])
+            >>> affine = ScannableChain(equinox.filter_vmap(Affine)(params))
+        
         Args:
             bijections (Bijection): A bijection, in which the arrays have an additional leading axis to scan over.
         """

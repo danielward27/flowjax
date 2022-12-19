@@ -1,16 +1,18 @@
 from typing import Callable
 
 import equinox as eqx
-import jax
 import jax.numpy as jnp
 from jax import random
 from jax.nn.initializers import glorot_uniform
 from jax.random import KeyArray
 
-from flowjax.bijections.tanh import _tanh_log_grad
 from flowjax.masks import block_diag_mask, block_tril_mask
 from flowjax.utils import Array
+import jax
 
+def _tanh_log_grad(x):
+    "log gradient vector of tanh transformation"
+    return -2 * (x + jax.nn.softplus(-2 * x) - jnp.log(2.0))
 
 class BlockAutoregressiveLinear(eqx.Module):
     n_blocks: int
@@ -95,7 +97,7 @@ class BlockAutoregressiveLinear(eqx.Module):
         return y, jnp.log(jac_3d)
 
 
-class _BlockTanh:
+class BlockTanh:
     """
     Tanh transformation compatible with block neural autoregressive flow (log_abs_det provided as 3D array).
     """
