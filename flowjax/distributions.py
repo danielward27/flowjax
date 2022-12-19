@@ -131,7 +131,8 @@ class Transformed(Distribution):
         base_dist: Distribution,
         bijection: Bijection,
     ):
-        """Form a distribution like object using a base distribution and a
+        """
+        Form a distribution like object using a base distribution and a
         bijection. We take the forward bijection for use in sampling, and the inverse
         bijection for use in density evaluation.
 

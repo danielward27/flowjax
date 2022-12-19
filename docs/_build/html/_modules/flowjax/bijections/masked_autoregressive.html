@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>flowjax.bijections.masked_autoregressive &mdash; FlowJax 6.0.0 documentation</title>
+  <title>flowjax.bijections.masked_autoregressive &mdash; FlowJax v6.0.0 documentation</title>
       <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -36,10 +36,10 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../distributions.html">Distributions</a></li>
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../bijections.html">Bijections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributions.html">Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../nn.html">Neural networks</a></li>
 </ul>
 
         </div>
@@ -87,7 +87,7 @@
     <span class="n">autoregressive_mlp</span><span class="p">:</span> <span class="n">AutoregressiveMLP</span>
     <span class="n">cond_dim</span><span class="p">:</span> <span class="nb">int</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="MaskedAutoregressive.__init__"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.MaskedAutoregressive.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">key</span><span class="p">:</span> <span class="n">KeyArray</span><span class="p">,</span>
         <span class="n">transformer</span><span class="p">:</span> <span class="n">Transformer</span><span class="p">,</span>
@@ -126,7 +126,7 @@
             <span class="n">nn_depth</span><span class="p">,</span>
             <span class="n">nn_activation</span><span class="p">,</span>
             <span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">,</span>
-        <span class="p">)</span>
+        <span class="p">)</span></div>
 
 <div class="viewcode-block" id="MaskedAutoregressive.transform"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.MaskedAutoregressive.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="n">transformer_args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_transformer_args</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="p">)</span>

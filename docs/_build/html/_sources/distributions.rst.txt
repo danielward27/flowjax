@@ -1,9 +1,6 @@
-:tocdepth: 3
-
 Distributions
 ==========================
-
-Distributions from `flowjax.distributions`
+Distributions from `flowjax.distributions`.
 
 .. automodule:: flowjax.distributions
    :members:

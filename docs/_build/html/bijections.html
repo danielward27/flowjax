@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bijections &mdash; FlowJax 6.0.0 documentation</title>
+  <title>Bijections &mdash; FlowJax v6.0.0 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -20,7 +20,8 @@
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="Distributions" href="distributions.html" /> 
+    <link rel="next" title="Distributions" href="distributions.html" />
+    <link rel="prev" title="FlowJax" href="index.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -38,199 +39,30 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="distributions.html">Distributions</a></li>
+              <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Bijections</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.Bijection"><code class="docutils literal notranslate"><span class="pre">Bijection</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Bijection.cond_dim"><code class="docutils literal notranslate"><span class="pre">Bijection.cond_dim</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Bijection.transform"><code class="docutils literal notranslate"><span class="pre">Bijection.transform()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Bijection.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Bijection.transform_and_log_abs_det_jacobian()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Bijection.inverse"><code class="docutils literal notranslate"><span class="pre">Bijection.inverse()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Bijection.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Bijection.inverse_and_log_abs_det_jacobian()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.Bijection"><code class="docutils literal notranslate"><span class="pre">Bijection</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.Transformer"><code class="docutils literal notranslate"><span class="pre">Transformer</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.Affine"><code class="docutils literal notranslate"><span class="pre">Affine</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.TriangularAffine"><code class="docutils literal notranslate"><span class="pre">TriangularAffine</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.BlockAutoregressiveNetwork"><code class="docutils literal notranslate"><span class="pre">BlockAutoregressiveNetwork</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.Coupling"><code class="docutils literal notranslate"><span class="pre">Coupling</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.MaskedAutoregressive"><code class="docutils literal notranslate"><span class="pre">MaskedAutoregressive</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.Tanh"><code class="docutils literal notranslate"><span class="pre">Tanh</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.TanhLinearTails"><code class="docutils literal notranslate"><span class="pre">TanhLinearTails</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.Chain"><code class="docutils literal notranslate"><span class="pre">Chain</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.ScannableChain"><code class="docutils literal notranslate"><span class="pre">ScannableChain</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.Invert"><code class="docutils literal notranslate"><span class="pre">Invert</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.Flip"><code class="docutils literal notranslate"><span class="pre">Flip</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.Permute"><code class="docutils literal notranslate"><span class="pre">Permute</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.TransformerToBijection"><code class="docutils literal notranslate"><span class="pre">TransformerToBijection</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.AdditiveLinearCondition"><code class="docutils literal notranslate"><span class="pre">AdditiveLinearCondition</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.Partial"><code class="docutils literal notranslate"><span class="pre">Partial</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.EmbedCondition"><code class="docutils literal notranslate"><span class="pre">EmbedCondition</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.Transformer"><code class="docutils literal notranslate"><span class="pre">Transformer</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Transformer.transform"><code class="docutils literal notranslate"><span class="pre">Transformer.transform()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Transformer.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Transformer.transform_and_log_abs_det_jacobian()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Transformer.inverse"><code class="docutils literal notranslate"><span class="pre">Transformer.inverse()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Transformer.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Transformer.inverse_and_log_abs_det_jacobian()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Transformer.num_params"><code class="docutils literal notranslate"><span class="pre">Transformer.num_params()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Transformer.get_ranks"><code class="docutils literal notranslate"><span class="pre">Transformer.get_ranks()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Transformer.get_args"><code class="docutils literal notranslate"><span class="pre">Transformer.get_args()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.Affine"><code class="docutils literal notranslate"><span class="pre">Affine</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Affine.loc"><code class="docutils literal notranslate"><span class="pre">Affine.loc</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Affine.log_scale"><code class="docutils literal notranslate"><span class="pre">Affine.log_scale</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Affine.dim"><code class="docutils literal notranslate"><span class="pre">Affine.dim</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Affine.transform"><code class="docutils literal notranslate"><span class="pre">Affine.transform()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Affine.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Affine.transform_and_log_abs_det_jacobian()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Affine.inverse"><code class="docutils literal notranslate"><span class="pre">Affine.inverse()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Affine.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Affine.inverse_and_log_abs_det_jacobian()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Affine.scale"><code class="docutils literal notranslate"><span class="pre">Affine.scale</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.TriangularAffine"><code class="docutils literal notranslate"><span class="pre">TriangularAffine</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.TriangularAffine.dim"><code class="docutils literal notranslate"><span class="pre">TriangularAffine.dim</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.TriangularAffine.cond_dim"><code class="docutils literal notranslate"><span class="pre">TriangularAffine.cond_dim</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.TriangularAffine.diag_idxs"><code class="docutils literal notranslate"><span class="pre">TriangularAffine.diag_idxs</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.TriangularAffine.tri_mask"><code class="docutils literal notranslate"><span class="pre">TriangularAffine.tri_mask</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.TriangularAffine.min_diag"><code class="docutils literal notranslate"><span class="pre">TriangularAffine.min_diag</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.TriangularAffine.lower"><code class="docutils literal notranslate"><span class="pre">TriangularAffine.lower</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.TriangularAffine.loc"><code class="docutils literal notranslate"><span class="pre">TriangularAffine.loc</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.TriangularAffine.weight_log_scale"><code class="docutils literal notranslate"><span class="pre">TriangularAffine.weight_log_scale</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.TriangularAffine.arr"><code class="docutils literal notranslate"><span class="pre">TriangularAffine.arr</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.TriangularAffine.transform"><code class="docutils literal notranslate"><span class="pre">TriangularAffine.transform()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.TriangularAffine.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">TriangularAffine.transform_and_log_abs_det_jacobian()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.TriangularAffine.inverse"><code class="docutils literal notranslate"><span class="pre">TriangularAffine.inverse()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.TriangularAffine.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">TriangularAffine.inverse_and_log_abs_det_jacobian()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.BlockAutoregressiveNetwork"><code class="docutils literal notranslate"><span class="pre">BlockAutoregressiveNetwork</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.BlockAutoregressiveNetwork.dim"><code class="docutils literal notranslate"><span class="pre">BlockAutoregressiveNetwork.dim</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.BlockAutoregressiveNetwork.depth"><code class="docutils literal notranslate"><span class="pre">BlockAutoregressiveNetwork.depth</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.BlockAutoregressiveNetwork.layers"><code class="docutils literal notranslate"><span class="pre">BlockAutoregressiveNetwork.layers</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.BlockAutoregressiveNetwork.cond_dim"><code class="docutils literal notranslate"><span class="pre">BlockAutoregressiveNetwork.cond_dim</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.BlockAutoregressiveNetwork.block_dim"><code class="docutils literal notranslate"><span class="pre">BlockAutoregressiveNetwork.block_dim</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.BlockAutoregressiveNetwork.activation"><code class="docutils literal notranslate"><span class="pre">BlockAutoregressiveNetwork.activation</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.BlockAutoregressiveNetwork.transform"><code class="docutils literal notranslate"><span class="pre">BlockAutoregressiveNetwork.transform()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.BlockAutoregressiveNetwork.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">BlockAutoregressiveNetwork.transform_and_log_abs_det_jacobian()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.BlockAutoregressiveNetwork.inverse"><code class="docutils literal notranslate"><span class="pre">BlockAutoregressiveNetwork.inverse()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.BlockAutoregressiveNetwork.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">BlockAutoregressiveNetwork.inverse_and_log_abs_det_jacobian()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.Coupling"><code class="docutils literal notranslate"><span class="pre">Coupling</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Coupling.transformer"><code class="docutils literal notranslate"><span class="pre">Coupling.transformer</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Coupling.d"><code class="docutils literal notranslate"><span class="pre">Coupling.d</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Coupling.D"><code class="docutils literal notranslate"><span class="pre">Coupling.D</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Coupling.cond_dim"><code class="docutils literal notranslate"><span class="pre">Coupling.cond_dim</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Coupling.conditioner"><code class="docutils literal notranslate"><span class="pre">Coupling.conditioner</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Coupling.transform"><code class="docutils literal notranslate"><span class="pre">Coupling.transform()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Coupling.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Coupling.transform_and_log_abs_det_jacobian()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Coupling.inverse"><code class="docutils literal notranslate"><span class="pre">Coupling.inverse()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Coupling.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Coupling.inverse_and_log_abs_det_jacobian()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.MaskedAutoregressive"><code class="docutils literal notranslate"><span class="pre">MaskedAutoregressive</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.MaskedAutoregressive.cond_dim"><code class="docutils literal notranslate"><span class="pre">MaskedAutoregressive.cond_dim</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.MaskedAutoregressive.transformer"><code class="docutils literal notranslate"><span class="pre">MaskedAutoregressive.transformer</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.MaskedAutoregressive.autoregressive_mlp"><code class="docutils literal notranslate"><span class="pre">MaskedAutoregressive.autoregressive_mlp</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.MaskedAutoregressive.transform"><code class="docutils literal notranslate"><span class="pre">MaskedAutoregressive.transform()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.MaskedAutoregressive.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">MaskedAutoregressive.transform_and_log_abs_det_jacobian()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.MaskedAutoregressive.inverse"><code class="docutils literal notranslate"><span class="pre">MaskedAutoregressive.inverse()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.MaskedAutoregressive.inv_scan_fn"><code class="docutils literal notranslate"><span class="pre">MaskedAutoregressive.inv_scan_fn()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.MaskedAutoregressive.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">MaskedAutoregressive.inverse_and_log_abs_det_jacobian()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.MaskedAutoregressive.get_transformer_args"><code class="docutils literal notranslate"><span class="pre">MaskedAutoregressive.get_transformer_args()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.Tanh"><code class="docutils literal notranslate"><span class="pre">Tanh</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Tanh.cond_dim"><code class="docutils literal notranslate"><span class="pre">Tanh.cond_dim</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Tanh.transform"><code class="docutils literal notranslate"><span class="pre">Tanh.transform()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Tanh.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Tanh.transform_and_log_abs_det_jacobian()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Tanh.inverse"><code class="docutils literal notranslate"><span class="pre">Tanh.inverse()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Tanh.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Tanh.inverse_and_log_abs_det_jacobian()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.TanhLinearTails"><code class="docutils literal notranslate"><span class="pre">TanhLinearTails</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.TanhLinearTails.cond_dim"><code class="docutils literal notranslate"><span class="pre">TanhLinearTails.cond_dim</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.TanhLinearTails.max_val"><code class="docutils literal notranslate"><span class="pre">TanhLinearTails.max_val</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.TanhLinearTails.linear_grad"><code class="docutils literal notranslate"><span class="pre">TanhLinearTails.linear_grad</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.TanhLinearTails.intercept"><code class="docutils literal notranslate"><span class="pre">TanhLinearTails.intercept</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.TanhLinearTails.transform"><code class="docutils literal notranslate"><span class="pre">TanhLinearTails.transform()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.TanhLinearTails.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">TanhLinearTails.transform_and_log_abs_det_jacobian()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.TanhLinearTails.inverse"><code class="docutils literal notranslate"><span class="pre">TanhLinearTails.inverse()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.TanhLinearTails.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">TanhLinearTails.inverse_and_log_abs_det_jacobian()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.Chain"><code class="docutils literal notranslate"><span class="pre">Chain</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Chain.bijections"><code class="docutils literal notranslate"><span class="pre">Chain.bijections</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Chain.cond_dim"><code class="docutils literal notranslate"><span class="pre">Chain.cond_dim</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Chain.transform"><code class="docutils literal notranslate"><span class="pre">Chain.transform()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Chain.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Chain.transform_and_log_abs_det_jacobian()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Chain.inverse"><code class="docutils literal notranslate"><span class="pre">Chain.inverse()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Chain.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Chain.inverse_and_log_abs_det_jacobian()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.ScannableChain"><code class="docutils literal notranslate"><span class="pre">ScannableChain</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.ScannableChain.params"><code class="docutils literal notranslate"><span class="pre">ScannableChain.params</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.ScannableChain.static"><code class="docutils literal notranslate"><span class="pre">ScannableChain.static</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.ScannableChain.cond_dim"><code class="docutils literal notranslate"><span class="pre">ScannableChain.cond_dim</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.ScannableChain.transform"><code class="docutils literal notranslate"><span class="pre">ScannableChain.transform()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.ScannableChain.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">ScannableChain.transform_and_log_abs_det_jacobian()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.ScannableChain.inverse"><code class="docutils literal notranslate"><span class="pre">ScannableChain.inverse()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.ScannableChain.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">ScannableChain.inverse_and_log_abs_det_jacobian()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.Invert"><code class="docutils literal notranslate"><span class="pre">Invert</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Invert.bijection"><code class="docutils literal notranslate"><span class="pre">Invert.bijection</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Invert.cond_dim"><code class="docutils literal notranslate"><span class="pre">Invert.cond_dim</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Invert.transform"><code class="docutils literal notranslate"><span class="pre">Invert.transform()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Invert.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Invert.transform_and_log_abs_det_jacobian()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Invert.inverse"><code class="docutils literal notranslate"><span class="pre">Invert.inverse()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Invert.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Invert.inverse_and_log_abs_det_jacobian()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.Flip"><code class="docutils literal notranslate"><span class="pre">Flip</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Flip.cond_dim"><code class="docutils literal notranslate"><span class="pre">Flip.cond_dim</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Flip.transform"><code class="docutils literal notranslate"><span class="pre">Flip.transform()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Flip.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Flip.transform_and_log_abs_det_jacobian()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Flip.inverse"><code class="docutils literal notranslate"><span class="pre">Flip.inverse()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Flip.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Flip.inverse_and_log_abs_det_jacobian()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.Permute"><code class="docutils literal notranslate"><span class="pre">Permute</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Permute.permutation"><code class="docutils literal notranslate"><span class="pre">Permute.permutation</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Permute.inverse_permutation"><code class="docutils literal notranslate"><span class="pre">Permute.inverse_permutation</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Permute.cond_dim"><code class="docutils literal notranslate"><span class="pre">Permute.cond_dim</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Permute.transform"><code class="docutils literal notranslate"><span class="pre">Permute.transform()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Permute.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Permute.transform_and_log_abs_det_jacobian()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Permute.inverse"><code class="docutils literal notranslate"><span class="pre">Permute.inverse()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Permute.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Permute.inverse_and_log_abs_det_jacobian()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.TransformerToBijection"><code class="docutils literal notranslate"><span class="pre">TransformerToBijection</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.TransformerToBijection.cond_dim"><code class="docutils literal notranslate"><span class="pre">TransformerToBijection.cond_dim</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.TransformerToBijection.params"><code class="docutils literal notranslate"><span class="pre">TransformerToBijection.params</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.TransformerToBijection.transformer"><code class="docutils literal notranslate"><span class="pre">TransformerToBijection.transformer</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.TransformerToBijection.transform"><code class="docutils literal notranslate"><span class="pre">TransformerToBijection.transform()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.TransformerToBijection.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">TransformerToBijection.transform_and_log_abs_det_jacobian()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.TransformerToBijection.inverse"><code class="docutils literal notranslate"><span class="pre">TransformerToBijection.inverse()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.TransformerToBijection.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">TransformerToBijection.inverse_and_log_abs_det_jacobian()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.AdditiveLinearCondition"><code class="docutils literal notranslate"><span class="pre">AdditiveLinearCondition</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.AdditiveLinearCondition.dim"><code class="docutils literal notranslate"><span class="pre">AdditiveLinearCondition.dim</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.AdditiveLinearCondition.cond_dim"><code class="docutils literal notranslate"><span class="pre">AdditiveLinearCondition.cond_dim</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.AdditiveLinearCondition.W"><code class="docutils literal notranslate"><span class="pre">AdditiveLinearCondition.W</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.AdditiveLinearCondition.transform"><code class="docutils literal notranslate"><span class="pre">AdditiveLinearCondition.transform()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.AdditiveLinearCondition.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">AdditiveLinearCondition.transform_and_log_abs_det_jacobian()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.AdditiveLinearCondition.inverse"><code class="docutils literal notranslate"><span class="pre">AdditiveLinearCondition.inverse()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.AdditiveLinearCondition.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">AdditiveLinearCondition.inverse_and_log_abs_det_jacobian()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.Partial"><code class="docutils literal notranslate"><span class="pre">Partial</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Partial.bijection"><code class="docutils literal notranslate"><span class="pre">Partial.bijection</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Partial.cond_dim"><code class="docutils literal notranslate"><span class="pre">Partial.cond_dim</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Partial.idxs"><code class="docutils literal notranslate"><span class="pre">Partial.idxs</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Partial.transform"><code class="docutils literal notranslate"><span class="pre">Partial.transform()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Partial.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Partial.transform_and_log_abs_det_jacobian()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Partial.inverse"><code class="docutils literal notranslate"><span class="pre">Partial.inverse()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.Partial.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Partial.inverse_and_log_abs_det_jacobian()</span></code></a></li>
-</ul>
-</li>
-<li class="toctree-l2"><a class="reference internal" href="#flowjax.bijections.EmbedCondition"><code class="docutils literal notranslate"><span class="pre">EmbedCondition</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.EmbedCondition.bijection"><code class="docutils literal notranslate"><span class="pre">EmbedCondition.bijection</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.EmbedCondition.embedding_net"><code class="docutils literal notranslate"><span class="pre">EmbedCondition.embedding_net</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.EmbedCondition.cond_dim"><code class="docutils literal notranslate"><span class="pre">EmbedCondition.cond_dim</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.EmbedCondition.transform"><code class="docutils literal notranslate"><span class="pre">EmbedCondition.transform()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.EmbedCondition.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">EmbedCondition.transform_and_log_abs_det_jacobian()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.EmbedCondition.inverse"><code class="docutils literal notranslate"><span class="pre">EmbedCondition.inverse()</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#flowjax.bijections.EmbedCondition.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">EmbedCondition.inverse_and_log_abs_det_jacobian()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
+<li class="toctree-l1"><a class="reference internal" href="distributions.html">Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="nn.html">Neural networks</a></li>
 </ul>
 
         </div>
@@ -259,7 +91,7 @@
              
   <section id="bijections">
 <h1>Bijections<a class="headerlink" href="#bijections" title="Permalink to this heading"></a></h1>
-<p>Bijections available in <cite>flowjax.bijections</cite>.</p>
+<p>Bijections from <cite>flowjax.bijections</cite>.</p>
 <span class="target" id="module-flowjax.bijections"></span><dl class="py class">
 <dt class="sig sig-object py" id="flowjax.bijections.Bijection">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Bijection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/bijections/abc.html#Bijection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.Bijection" title="Permalink to this definition"></a></dt>
@@ -294,6 +126,11 @@
 <em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">inverse_and_log_abs_det_jacobian</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">y</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">condition</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="reference internal" href="_modules/flowjax/bijections/abc.html#Bijection.inverse_and_log_abs_det_jacobian"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.Bijection.inverse_and_log_abs_det_jacobian" title="Permalink to this definition"></a></dt>
 <dd><p>Invert the transformation and compute log absolute value of the Jacobian determinant.</p>
 </dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="flowjax.bijections.Bijection.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cond_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#flowjax.bijections.Bijection.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
 
 </dd></dl>
 
@@ -346,13 +183,21 @@
 <dd><p>Transform unconstrained vector of params (e.g. nn output) into args for transformation.</p>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="flowjax.bijections.Transformer.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#flowjax.bijections.Transformer.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="flowjax.bijections.Affine">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Affine</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/bijections/affine.html#Affine"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.Affine" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#flowjax.bijections.Bijection" title="flowjax.bijections.abc.Bijection"><code class="xref py py-class docutils literal notranslate"><span class="pre">Bijection</span></code></a></p>
-<p>Elementwise affine transformation. Condition is ignored. loc and scale
+<dl class="py method">
+<dt class="sig sig-object py" id="flowjax.bijections.Affine.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/bijections/affine.html#Affine.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.Affine.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Elementwise affine transformation. Condition is ignored. loc and scale
 should be broadcastable.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -362,6 +207,8 @@ should be broadcastable.</p>
 </ul>
 </dd>
 </dl>
+</dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="flowjax.bijections.Affine.loc">
 <span class="sig-name descname"><span class="pre">loc</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#flowjax.bijections.Affine.loc" title="Permalink to this definition"></a></dt>
@@ -412,7 +259,10 @@ should be broadcastable.</p>
 <dt class="sig sig-object py" id="flowjax.bijections.TriangularAffine">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TriangularAffine</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/bijections/affine.html#TriangularAffine"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.TriangularAffine" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#flowjax.bijections.Bijection" title="flowjax.bijections.abc.Bijection"><code class="xref py py-class docutils literal notranslate"><span class="pre">Bijection</span></code></a></p>
-<p>Transformation of the form Ax + b, where A is a lower or upper triangular matrix. To
+<dl class="py method">
+<dt class="sig sig-object py" id="flowjax.bijections.TriangularAffine.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">arr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lower</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">min_diag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1e-06</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_normalisation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/bijections/affine.html#TriangularAffine.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.TriangularAffine.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Transformation of the form Ax + b, where A is a lower or upper triangular matrix. To
 ensure invertiblility, diagonal entries should be positive (and greater than min_diag).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -425,6 +275,8 @@ ensure invertiblility, diagonal entries should be positive (and greater than min
 </ul>
 </dd>
 </dl>
+</dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="flowjax.bijections.TriangularAffine.dim">
 <span class="sig-name descname"><span class="pre">dim</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#flowjax.bijections.TriangularAffine.dim" title="Permalink to this definition"></a></dt>
@@ -501,7 +353,10 @@ ensure invertiblility, diagonal entries should be positive (and greater than min
 <dt class="sig sig-object py" id="flowjax.bijections.BlockAutoregressiveNetwork">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">BlockAutoregressiveNetwork</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/bijections/block_autoregressive_network.html#BlockAutoregressiveNetwork"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.BlockAutoregressiveNetwork" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#flowjax.bijections.Bijection" title="flowjax.bijections.abc.Bijection"><code class="xref py py-class docutils literal notranslate"><span class="pre">Bijection</span></code></a></p>
-<p>Block Autoregressive Network (see <a class="reference external" href="https://arxiv.org/abs/1904.04676">https://arxiv.org/abs/1904.04676</a>).</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="flowjax.bijections.BlockAutoregressiveNetwork.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">PRNGKeyArray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">depth</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">block_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">activation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/bijections/block_autoregressive_network.html#BlockAutoregressiveNetwork.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.BlockAutoregressiveNetwork.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Block Autoregressive Network (see <a class="reference external" href="https://arxiv.org/abs/1904.04676">https://arxiv.org/abs/1904.04676</a>).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -514,6 +369,8 @@ ensure invertiblility, diagonal entries should be positive (and greater than min
 </ul>
 </dd>
 </dl>
+</dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="flowjax.bijections.BlockAutoregressiveNetwork.dim">
 <span class="sig-name descname"><span class="pre">dim</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#flowjax.bijections.BlockAutoregressiveNetwork.dim" title="Permalink to this definition"></a></dt>
@@ -574,7 +431,10 @@ ensure invertiblility, diagonal entries should be positive (and greater than min
 <dt class="sig sig-object py" id="flowjax.bijections.Coupling">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Coupling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/bijections/coupling.html#Coupling"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.Coupling" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#flowjax.bijections.Bijection" title="flowjax.bijections.abc.Bijection"><code class="xref py py-class docutils literal notranslate"><span class="pre">Bijection</span></code></a></p>
-<p>Coupling layer implementation (<a class="reference external" href="https://arxiv.org/abs/1605.08803">https://arxiv.org/abs/1605.08803</a>).</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="flowjax.bijections.Coupling.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key:</span> <span class="pre">~jax._src.prng.PRNGKeyArray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transformer:</span> <span class="pre">~flowjax.bijections.abc.Transformer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">d:</span> <span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">D:</span> <span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond_dim:</span> <span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nn_width:</span> <span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nn_depth:</span> <span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nn_activation:</span> <span class="pre">~typing.Callable</span> <span class="pre">=</span> <span class="pre">&lt;jax._src.custom_derivatives.custom_jvp</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/bijections/coupling.html#Coupling.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.Coupling.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Coupling layer implementation (<a class="reference external" href="https://arxiv.org/abs/1605.08803">https://arxiv.org/abs/1605.08803</a>).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -589,6 +449,8 @@ ensure invertiblility, diagonal entries should be positive (and greater than min
 </ul>
 </dd>
 </dl>
+</dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="flowjax.bijections.Coupling.transformer">
 <span class="sig-name descname"><span class="pre">transformer</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#flowjax.bijections.Transformer" title="flowjax.bijections.abc.Transformer"><span class="pre">Transformer</span></a></em><a class="headerlink" href="#flowjax.bijections.Coupling.transformer" title="Permalink to this definition"></a></dt>
@@ -644,7 +506,10 @@ ensure invertiblility, diagonal entries should be positive (and greater than min
 <dt class="sig sig-object py" id="flowjax.bijections.MaskedAutoregressive">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">MaskedAutoregressive</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/bijections/masked_autoregressive.html#MaskedAutoregressive"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.MaskedAutoregressive" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#flowjax.bijections.Bijection" title="flowjax.bijections.abc.Bijection"><code class="xref py py-class docutils literal notranslate"><span class="pre">Bijection</span></code></a></p>
-<p>Masked autoregressive bijection implementation (<a class="reference external" href="https://arxiv.org/abs/1705.07057v4">https://arxiv.org/abs/1705.07057v4</a>).
+<dl class="py method">
+<dt class="sig sig-object py" id="flowjax.bijections.MaskedAutoregressive.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key:</span> <span class="pre">~jax._src.prng.PRNGKeyArray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transformer:</span> <span class="pre">~flowjax.bijections.abc.Transformer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dim:</span> <span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond_dim:</span> <span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nn_width:</span> <span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nn_depth:</span> <span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nn_activation:</span> <span class="pre">~typing.Callable</span> <span class="pre">=</span> <span class="pre">&lt;jax._src.custom_derivatives.custom_jvp</span> <span class="pre">object&gt;</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/flowjax/bijections/masked_autoregressive.html#MaskedAutoregressive.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.MaskedAutoregressive.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Masked autoregressive bijection implementation (<a class="reference external" href="https://arxiv.org/abs/1705.07057v4">https://arxiv.org/abs/1705.07057v4</a>).
 The transformer is parameterised by a neural network, with weights masked to ensure
 an autoregressive structure.</p>
 <dl class="field-list simple">
@@ -660,6 +525,8 @@ an autoregressive structure.</p>
 </ul>
 </dd>
 </dl>
+</dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="flowjax.bijections.MaskedAutoregressive.cond_dim">
 <span class="sig-name descname"><span class="pre">cond_dim</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#flowjax.bijections.MaskedAutoregressive.cond_dim" title="Permalink to this definition"></a></dt>
@@ -672,7 +539,7 @@ an autoregressive structure.</p>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="flowjax.bijections.MaskedAutoregressive.autoregressive_mlp">
-<span class="sig-name descname"><span class="pre">autoregressive_mlp</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">AutoregressiveMLP</span></em><a class="headerlink" href="#flowjax.bijections.MaskedAutoregressive.autoregressive_mlp" title="Permalink to this definition"></a></dt>
+<span class="sig-name descname"><span class="pre">autoregressive_mlp</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="nn.html#flowjax.nn.AutoregressiveMLP" title="flowjax.nn.masked_autoregressive.AutoregressiveMLP"><span class="pre">AutoregressiveMLP</span></a></em><a class="headerlink" href="#flowjax.bijections.MaskedAutoregressive.autoregressive_mlp" title="Permalink to this definition"></a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
@@ -723,6 +590,11 @@ an autoregressive structure.</p>
 <dd></dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="flowjax.bijections.Tanh.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/flowjax/bijections/tanh.html#Tanh.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.Tanh.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="flowjax.bijections.Tanh.transform">
 <span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">condition</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/bijections/tanh.html#Tanh.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.Tanh.transform" title="Permalink to this definition"></a></dt>
 <dd><p>Apply transformation.</p>
@@ -752,16 +624,26 @@ an autoregressive structure.</p>
 <dt class="sig sig-object py" id="flowjax.bijections.TanhLinearTails">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TanhLinearTails</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/bijections/tanh.html#TanhLinearTails"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.TanhLinearTails" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#flowjax.bijections.Bijection" title="flowjax.bijections.abc.Bijection"><code class="xref py py-class docutils literal notranslate"><span class="pre">Bijection</span></code></a></p>
-<p>Create a tanh bijection with linear “tails” beyond +/- max_val.</p>
+<p>Tanh bijection, with linear “tails” beyond +/- max_val. Note due to the linear
+tails this does not guarantee the forward transformation will be constrained to [-1, 1].
+This transform can be useful to “encourage” values to be within an interval
+(e.g. to subsequently apply some transformation defined on that interval), whilst
+avoiding issues with numerical instability.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flowjax.bijections.TanhLinearTails.cond_dim">
+<span class="sig-name descname"><span class="pre">cond_dim</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#flowjax.bijections.TanhLinearTails.cond_dim" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="flowjax.bijections.TanhLinearTails.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">max_val</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/bijections/tanh.html#TanhLinearTails.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.TanhLinearTails.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Create a tanh bijection with linear “tails” beyond +/- max_val.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>max_val</strong> (<em>int</em>) – Value above or below which the function becomes linear.</p>
 </dd>
 </dl>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="flowjax.bijections.TanhLinearTails.cond_dim">
-<span class="sig-name descname"><span class="pre">cond_dim</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#flowjax.bijections.TanhLinearTails.cond_dim" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="flowjax.bijections.TanhLinearTails.max_val">
@@ -808,12 +690,17 @@ an autoregressive structure.</p>
 <dt class="sig sig-object py" id="flowjax.bijections.Chain">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Chain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/bijections/chain.html#Chain"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.Chain" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#flowjax.bijections.Bijection" title="flowjax.bijections.abc.Bijection"><code class="xref py py-class docutils literal notranslate"><span class="pre">Bijection</span></code></a></p>
-<p>Chain together arbitrary bijections to form another bijection.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="flowjax.bijections.Chain.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bijections</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#flowjax.bijections.Bijection" title="flowjax.bijections.abc.Bijection"><span class="pre">Bijection</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/bijections/chain.html#Chain.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.Chain.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Chain together arbitrary bijections to form another bijection.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>bijections</strong> (<em>Sequence</em><em>[</em><a class="reference internal" href="#flowjax.bijections.Bijection" title="flowjax.bijections.Bijection"><em>Bijection</em></a><em>]</em>) – Sequence of bijections.</p>
 </dd>
 </dl>
+</dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="flowjax.bijections.Chain.bijections">
 <span class="sig-name descname"><span class="pre">bijections</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="#flowjax.bijections.Bijection" title="flowjax.bijections.abc.Bijection"><span class="pre">Bijection</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#flowjax.bijections.Chain.bijections" title="Permalink to this definition"></a></dt>
@@ -854,7 +741,10 @@ an autoregressive structure.</p>
 <dt class="sig sig-object py" id="flowjax.bijections.ScannableChain">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ScannableChain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/bijections/chain.html#ScannableChain"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.ScannableChain" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#flowjax.bijections.Bijection" title="flowjax.bijections.abc.Bijection"><code class="xref py py-class docutils literal notranslate"><span class="pre">Bijection</span></code></a></p>
-<p>Repeatedly apply the same bijection with different parameter values. Internally,
+<dl class="py method">
+<dt class="sig sig-object py" id="flowjax.bijections.ScannableChain.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bijection</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#flowjax.bijections.Bijection" title="flowjax.bijections.abc.Bijection"><span class="pre">Bijection</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/bijections/chain.html#ScannableChain.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.ScannableChain.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Repeatedly apply the same bijection with different parameter values. Internally,
 uses <cite>jax.lax.scan</cite> to reduce compilation time.</p>
 <p>The array leaves in <cite>bijection</cite> should have an additional leading axis to scan over.
 Often it is convenient to construct these using <cite>equinox.filter_vmap</cite>. For example</p>
@@ -868,6 +758,8 @@ This would be equivilent to <cite>Chain([Affine(p) for p in params])</cite>.</p>
 <dd class="field-odd"><p><strong>bijections</strong> (<a class="reference internal" href="#flowjax.bijections.Bijection" title="flowjax.bijections.Bijection"><em>Bijection</em></a>) – A bijection, in which the arrays have an additional leading axis to scan over.</p>
 </dd>
 </dl>
+</dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="flowjax.bijections.ScannableChain.params">
 <span class="sig-name descname"><span class="pre">params</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#flowjax.bijections.ScannableChain.params" title="Permalink to this definition"></a></dt>
@@ -913,7 +805,10 @@ This would be equivilent to <cite>Chain([Affine(p) for p in params])</cite>.</p>
 <dt class="sig sig-object py" id="flowjax.bijections.Invert">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Invert</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/bijections/utils.html#Invert"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.Invert" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#flowjax.bijections.Bijection" title="flowjax.bijections.abc.Bijection"><code class="xref py py-class docutils literal notranslate"><span class="pre">Bijection</span></code></a></p>
-<p>Invert a bijection, such that the transform methods become the inverse methods and vice versa.
+<dl class="py method">
+<dt class="sig sig-object py" id="flowjax.bijections.Invert.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bijection</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#flowjax.bijections.Bijection" title="flowjax.bijections.abc.Bijection"><span class="pre">Bijection</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/bijections/utils.html#Invert.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.Invert.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Invert a bijection, such that the transform methods become the inverse methods and vice versa.
 Note that in general, we define bijections such that the forward methods are preffered, i.e.
 faster/actually implemented. For training flows, we generally want the inverse method (used in
 density evaluation), to be faster. Hence it is often useful to use this class to achieve this aim.</p>
@@ -922,6 +817,8 @@ density evaluation), to be faster. Hence it is often useful to use this class to
 <dd class="field-odd"><p><strong>bijection</strong> (<a class="reference internal" href="#flowjax.bijections.Bijection" title="flowjax.bijections.Bijection"><em>Bijection</em></a>) – Bijection to “invert”.</p>
 </dd>
 </dl>
+</dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="flowjax.bijections.Invert.bijection">
 <span class="sig-name descname"><span class="pre">bijection</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#flowjax.bijections.Bijection" title="flowjax.bijections.abc.Bijection"><span class="pre">Bijection</span></a></em><a class="headerlink" href="#flowjax.bijections.Invert.bijection" title="Permalink to this definition"></a></dt>
@@ -992,18 +889,28 @@ density evaluation), to be faster. Hence it is often useful to use this class to
 <dd><p>Invert the transformation and compute log absolute value of the Jacobian determinant.</p>
 </dd></dl>
 
+<dl class="py method">
+<dt class="sig sig-object py" id="flowjax.bijections.Flip.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cond_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#flowjax.bijections.Flip.__init__" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="flowjax.bijections.Permute">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Permute</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/bijections/utils.html#Permute"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.Permute" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#flowjax.bijections.Bijection" title="flowjax.bijections.abc.Bijection"><code class="xref py py-class docutils literal notranslate"><span class="pre">Bijection</span></code></a></p>
-<p>Permutation transformation. condition is ignored.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="flowjax.bijections.Permute.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">permutation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/bijections/utils.html#Permute.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.Permute.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Permutation transformation. condition is ignored.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>permutation</strong> (<em>Array</em>) – Indexes 0-(dim-1) representing new order.</p>
 </dd>
 </dl>
+</dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="flowjax.bijections.Permute.permutation">
 <span class="sig-name descname"><span class="pre">permutation</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#flowjax.bijections.Permute.permutation" title="Permalink to this definition"></a></dt>
@@ -1049,7 +956,15 @@ density evaluation), to be faster. Hence it is often useful to use this class to
 <dt class="sig sig-object py" id="flowjax.bijections.TransformerToBijection">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">TransformerToBijection</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/bijections/utils.html#TransformerToBijection"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.TransformerToBijection" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#flowjax.bijections.Bijection" title="flowjax.bijections.abc.Bijection"><code class="xref py py-class docutils literal notranslate"><span class="pre">Bijection</span></code></a></p>
-<p>Convert Transformer object to Bijection object.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flowjax.bijections.TransformerToBijection.cond_dim">
+<span class="sig-name descname"><span class="pre">cond_dim</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#flowjax.bijections.TransformerToBijection.cond_dim" title="Permalink to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="flowjax.bijections.TransformerToBijection.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">transformer</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#flowjax.bijections.Transformer" title="flowjax.bijections.abc.Transformer"><span class="pre">Transformer</span></a></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">params</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/bijections/utils.html#TransformerToBijection.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.TransformerToBijection.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Convert Transformer object to Bijection object.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -1058,10 +973,7 @@ density evaluation), to be faster. Hence it is often useful to use this class to
 </ul>
 </dd>
 </dl>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="flowjax.bijections.TransformerToBijection.cond_dim">
-<span class="sig-name descname"><span class="pre">cond_dim</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">0</span></em><a class="headerlink" href="#flowjax.bijections.TransformerToBijection.cond_dim" title="Permalink to this definition"></a></dt>
-<dd></dd></dl>
+</dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="flowjax.bijections.TransformerToBijection.params">
@@ -1103,13 +1015,18 @@ density evaluation), to be faster. Hence it is often useful to use this class to
 <dt class="sig sig-object py" id="flowjax.bijections.AdditiveLinearCondition">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">AdditiveLinearCondition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/bijections/affine.html#AdditiveLinearCondition"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.AdditiveLinearCondition" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#flowjax.bijections.Bijection" title="flowjax.bijections.abc.Bijection"><code class="xref py py-class docutils literal notranslate"><span class="pre">Bijection</span></code></a></p>
-<p>Carries out <cite>y = x + W &#64; condition</cite>, as the forward transformation and
+<dl class="py method">
+<dt class="sig sig-object py" id="flowjax.bijections.AdditiveLinearCondition.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/bijections/affine.html#AdditiveLinearCondition.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.AdditiveLinearCondition.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Carries out <cite>y = x + W &#64; condition</cite>, as the forward transformation and
 <cite>x = y - W &#64; condition</cite> as the inverse.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>arr</strong> (<em>Array</em>) – Array (W in the description.)</p>
 </dd>
 </dl>
+</dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="flowjax.bijections.AdditiveLinearCondition.dim">
 <span class="sig-name descname"><span class="pre">dim</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#flowjax.bijections.AdditiveLinearCondition.dim" title="Permalink to this definition"></a></dt>
@@ -1155,7 +1072,11 @@ density evaluation), to be faster. Hence it is often useful to use this class to
 <dt class="sig sig-object py" id="flowjax.bijections.Partial">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Partial</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/bijections/utils.html#Partial"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.Partial" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#flowjax.bijections.Bijection" title="flowjax.bijections.abc.Bijection"><code class="xref py py-class docutils literal notranslate"><span class="pre">Bijection</span></code></a></p>
-<dl class="field-list simple">
+<p>Applies bijection to specific indices of an input.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="flowjax.bijections.Partial.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bijection</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#flowjax.bijections.Bijection" title="flowjax.bijections.abc.Bijection"><span class="pre">Bijection</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">idxs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/bijections/utils.html#Partial.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.Partial.__init__" title="Permalink to this definition"></a></dt>
+<dd><dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>bijection</strong> (<a class="reference internal" href="#flowjax.bijections.Bijection" title="flowjax.bijections.Bijection"><em>Bijection</em></a>) – Bijection that is compatible with the subset of x indexed by idxs.</p></li>
@@ -1163,6 +1084,8 @@ density evaluation), to be faster. Hence it is often useful to use this class to
 </ul>
 </dd>
 </dl>
+</dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="flowjax.bijections.Partial.bijection">
 <span class="sig-name descname"><span class="pre">bijection</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Any</span></em><a class="headerlink" href="#flowjax.bijections.Partial.bijection" title="Permalink to this definition"></a></dt>
@@ -1208,7 +1131,10 @@ density evaluation), to be faster. Hence it is often useful to use this class to
 <dt class="sig sig-object py" id="flowjax.bijections.EmbedCondition">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">EmbedCondition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/flowjax/bijections/utils.html#EmbedCondition"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.EmbedCondition" title="Permalink to this definition"></a></dt>
 <dd><p>Bases: <a class="reference internal" href="#flowjax.bijections.Bijection" title="flowjax.bijections.abc.Bijection"><code class="xref py py-class docutils literal notranslate"><span class="pre">Bijection</span></code></a></p>
-<p>Use an embedding network to reduce the dimensionality of the conditioning variable.
+<dl class="py method">
+<dt class="sig sig-object py" id="flowjax.bijections.EmbedCondition.__init__">
+<span class="sig-name descname"><span class="pre">__init__</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bijection</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#flowjax.bijections.Bijection" title="flowjax.bijections.abc.Bijection"><span class="pre">Bijection</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedding_net</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Module</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond_dim</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="_modules/flowjax/bijections/utils.html#EmbedCondition.__init__"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.bijections.EmbedCondition.__init__" title="Permalink to this definition"></a></dt>
+<dd><p>Use an embedding network to reduce the dimensionality of the conditioning variable.
 The returned bijection has cond_dim equal to the raw condition size.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1219,6 +1145,8 @@ The returned bijection has cond_dim equal to the raw condition size.</p>
 </ul>
 </dd>
 </dl>
+</dd></dl>
+
 <dl class="py attribute">
 <dt class="sig sig-object py" id="flowjax.bijections.EmbedCondition.bijection">
 <span class="sig-name descname"><span class="pre">bijection</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="#flowjax.bijections.Bijection" title="flowjax.bijections.abc.Bijection"><span class="pre">Bijection</span></a></em><a class="headerlink" href="#flowjax.bijections.EmbedCondition.bijection" title="Permalink to this definition"></a></dt>
@@ -1266,7 +1194,8 @@ The returned bijection has cond_dim equal to the raw condition size.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="distributions.html" class="btn btn-neutral float-left" title="Distributions" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="index.html" class="btn btn-neutral float-left" title="FlowJax" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="distributions.html" class="btn btn-neutral float-right" title="Distributions" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

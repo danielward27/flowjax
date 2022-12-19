@@ -1,11 +1,9 @@
 Bijections
-==============================================
-Bijections available in `flowjax.bijections`.
-
+==========================
+Bijections from `flowjax.bijections`.
 
 .. automodule:: flowjax.bijections
-    :members:
-    :undoc-members:
-    :show-inheritance:
-    :member-order: bysource
-
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :member-order: bysource

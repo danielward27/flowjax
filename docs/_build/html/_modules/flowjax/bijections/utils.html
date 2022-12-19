@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>flowjax.bijections.utils &mdash; FlowJax 6.0.0 documentation</title>
+  <title>flowjax.bijections.utils &mdash; FlowJax v6.0.0 documentation</title>
       <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
   <!--[if lt IE 9]>
@@ -36,10 +36,10 @@
   </form>
 </div>
         </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
-              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="../../../distributions.html">Distributions</a></li>
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../bijections.html">Bijections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributions.html">Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../nn.html">Neural networks</a></li>
 </ul>
 
         </div>
@@ -81,7 +81,7 @@
     <span class="n">bijection</span><span class="p">:</span> <span class="n">Bijection</span>
     <span class="n">cond_dim</span><span class="p">:</span> <span class="nb">int</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bijection</span><span class="p">:</span> <span class="n">Bijection</span><span class="p">):</span>
+<div class="viewcode-block" id="Invert.__init__"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.Invert.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bijection</span><span class="p">:</span> <span class="n">Bijection</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Invert a bijection, such that the transform methods become the inverse methods and vice versa.</span>
 <span class="sd">        Note that in general, we define bijections such that the forward methods are preffered, i.e.</span>
 <span class="sd">        faster/actually implemented. For training flows, we generally want the inverse method (used in</span>
@@ -91,7 +91,7 @@
 <span class="sd">            bijection (Bijection): Bijection to &quot;invert&quot;.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">bijection</span> <span class="o">=</span> <span class="n">bijection</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cond_dim</span> <span class="o">=</span> <span class="n">bijection</span><span class="o">.</span><span class="n">cond_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cond_dim</span> <span class="o">=</span> <span class="n">bijection</span><span class="o">.</span><span class="n">cond_dim</span></div>
 
 <div class="viewcode-block" id="Invert.transform"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.Invert.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bijection</span><span class="o">.</span><span class="n">inverse</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="p">)</span></div>
@@ -111,7 +111,7 @@
     <span class="n">inverse_permutation</span><span class="p">:</span> <span class="n">Array</span>
     <span class="n">cond_dim</span><span class="p">:</span> <span class="nb">int</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">permutation</span><span class="p">:</span> <span class="n">Array</span><span class="p">):</span>
+<div class="viewcode-block" id="Permute.__init__"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.Permute.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">permutation</span><span class="p">:</span> <span class="n">Array</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Permutation transformation. condition is ignored.</span>
 
 <span class="sd">        Args:</span>
@@ -123,7 +123,7 @@
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">permutation</span> <span class="o">=</span> <span class="n">permutation</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">inverse_permutation</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">permutation</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cond_dim</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cond_dim</span> <span class="o">=</span> <span class="mi">0</span></div>
 
 <div class="viewcode-block" id="Permute.transform"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.Permute.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">x</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">permutation</span><span class="p">]</span></div>
@@ -161,7 +161,7 @@
     <span class="n">params</span><span class="p">:</span> <span class="n">Array</span>
     <span class="n">transformer</span><span class="p">:</span> <span class="n">Transformer</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transformer</span><span class="p">:</span> <span class="n">Transformer</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Array</span><span class="p">):</span>
+<div class="viewcode-block" id="TransformerToBijection.__init__"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.TransformerToBijection.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transformer</span><span class="p">:</span> <span class="n">Transformer</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Array</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Convert Transformer object to Bijection object.</span>
 
 <span class="sd">        Args:</span>
@@ -171,7 +171,7 @@
         <span class="c1"># Note, params is key word only, as perhaps we will want to support</span>
         <span class="c1"># construction from args too, although this is not implemented yet.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="n">params</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">transformer</span> <span class="o">=</span> <span class="n">transformer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transformer</span> <span class="o">=</span> <span class="n">transformer</span></div>
 
 <div class="viewcode-block" id="TransformerToBijection.transform"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.TransformerToBijection.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="n">args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transformer</span><span class="o">.</span><span class="n">get_args</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
@@ -197,7 +197,7 @@
     <span class="n">bijection</span><span class="p">:</span> <span class="n">Array</span>
     <span class="n">idxs</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">slice</span><span class="p">,</span> <span class="n">Array</span><span class="p">]</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bijection</span><span class="p">:</span> <span class="n">Bijection</span><span class="p">,</span> <span class="n">idxs</span><span class="p">):</span>
+<div class="viewcode-block" id="Partial.__init__"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.Partial.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bijection</span><span class="p">:</span> <span class="n">Bijection</span><span class="p">,</span> <span class="n">idxs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Args:</span>
 <span class="sd">            bijection (Bijection): Bijection that is compatible with the subset of x indexed by idxs.</span>
@@ -212,7 +212,7 @@
             <span class="k">if</span> <span class="n">jnp</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">idxs</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">integer</span><span class="p">):</span>
                 <span class="n">idxs</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">idxs</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">idxs</span> <span class="o">=</span> <span class="n">idxs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">idxs</span> <span class="o">=</span> <span class="n">idxs</span></div>
 
 <div class="viewcode-block" id="Partial.transform"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.Partial.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bijection</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">idxs</span><span class="p">],</span> <span class="n">condition</span><span class="p">)</span>
@@ -240,7 +240,7 @@
     <span class="n">embedding_net</span><span class="p">:</span> <span class="n">eqx</span><span class="o">.</span><span class="n">Module</span>
     <span class="n">cond_dim</span><span class="p">:</span> <span class="nb">int</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<div class="viewcode-block" id="EmbedCondition.__init__"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.EmbedCondition.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">bijection</span><span class="p">:</span> <span class="n">Bijection</span><span class="p">,</span> <span class="n">embedding_net</span><span class="p">:</span> <span class="n">eqx</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">cond_dim</span><span class="p">:</span> <span class="nb">int</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;Use an embedding network to reduce the dimensionality of the conditioning variable.</span>
@@ -253,7 +253,7 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">bijection</span> <span class="o">=</span> <span class="n">bijection</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">embedding_net</span> <span class="o">=</span> <span class="n">embedding_net</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">cond_dim</span> <span class="o">=</span> <span class="n">cond_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cond_dim</span> <span class="o">=</span> <span class="n">cond_dim</span></div>
 
 <div class="viewcode-block" id="EmbedCondition.transform"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.EmbedCondition.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="n">condition</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding_net</span><span class="p">(</span><span class="n">condition</span><span class="p">)</span>
