@@ -7,4 +7,3 @@ FlowJax
 
    bijections
    distributions
-   nn
