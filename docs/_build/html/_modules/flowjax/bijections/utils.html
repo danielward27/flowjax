@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>flowjax.bijections.utils &mdash; FlowJax 6.0.0 documentation</title>
+      <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../../index.html" class="icon icon-home"> FlowJax
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../distributions.html">Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../bijections.html">Bijections</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">FlowJax</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">flowjax.bijections.utils</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for flowjax.bijections.utils</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">equinox</span> <span class="k">as</span> <span class="nn">eqx</span>
+<span class="kn">import</span> <span class="nn">jax.numpy</span> <span class="k">as</span> <span class="nn">jnp</span>
+<span class="kn">from</span> <span class="nn">jax.experimental</span> <span class="kn">import</span> <span class="n">checkify</span>
+
+<span class="kn">from</span> <span class="nn">flowjax.bijections</span> <span class="kn">import</span> <span class="n">Bijection</span><span class="p">,</span> <span class="n">Transformer</span>
+<span class="kn">from</span> <span class="nn">flowjax.utils</span> <span class="kn">import</span> <span class="n">Array</span>
+
+
+<div class="viewcode-block" id="Invert"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.Invert">[docs]</a><span class="k">class</span> <span class="nc">Invert</span><span class="p">(</span><span class="n">Bijection</span><span class="p">):</span>
+    <span class="n">bijection</span><span class="p">:</span> <span class="n">Bijection</span>
+    <span class="n">cond_dim</span><span class="p">:</span> <span class="nb">int</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bijection</span><span class="p">:</span> <span class="n">Bijection</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Invert a bijection, such that the transform methods become the inverse methods and vice versa.</span>
+<span class="sd">        Note that in general, we define bijections such that the forward methods are preffered, i.e.</span>
+<span class="sd">        faster/actually implemented. For training flows, we generally want the inverse method (used in</span>
+<span class="sd">        density evaluation), to be faster. Hence it is often useful to use this class to achieve this aim.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            bijection (Bijection): Bijection to &quot;invert&quot;.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bijection</span> <span class="o">=</span> <span class="n">bijection</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cond_dim</span> <span class="o">=</span> <span class="n">bijection</span><span class="o">.</span><span class="n">cond_dim</span>
+
+<div class="viewcode-block" id="Invert.transform"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.Invert.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bijection</span><span class="o">.</span><span class="n">inverse</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Invert.transform_and_log_abs_det_jacobian"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.Invert.transform_and_log_abs_det_jacobian">[docs]</a>    <span class="k">def</span> <span class="nf">transform_and_log_abs_det_jacobian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bijection</span><span class="o">.</span><span class="n">inverse_and_log_abs_det_jacobian</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Invert.inverse"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.Invert.inverse">[docs]</a>    <span class="k">def</span> <span class="nf">inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bijection</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Invert.inverse_and_log_abs_det_jacobian"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.Invert.inverse_and_log_abs_det_jacobian">[docs]</a>    <span class="k">def</span> <span class="nf">inverse_and_log_abs_det_jacobian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bijection</span><span class="o">.</span><span class="n">transform_and_log_abs_det_jacobian</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Permute"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.Permute">[docs]</a><span class="k">class</span> <span class="nc">Permute</span><span class="p">(</span><span class="n">Bijection</span><span class="p">):</span>
+    <span class="n">permutation</span><span class="p">:</span> <span class="n">Array</span>
+    <span class="n">inverse_permutation</span><span class="p">:</span> <span class="n">Array</span>
+    <span class="n">cond_dim</span><span class="p">:</span> <span class="nb">int</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">permutation</span><span class="p">:</span> <span class="n">Array</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Permutation transformation. condition is ignored.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            permutation (Array): Indexes 0-(dim-1) representing new order.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">checkify</span><span class="o">.</span><span class="n">check</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">permutation</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span> <span class="o">==</span> <span class="n">jnp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">permutation</span><span class="p">)))</span><span class="o">.</span><span class="n">all</span><span class="p">(),</span>
+            <span class="s2">&quot;Invalid permutation array provided.&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">permutation</span> <span class="o">=</span> <span class="n">permutation</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">inverse_permutation</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">permutation</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cond_dim</span> <span class="o">=</span> <span class="mi">0</span>
+
+<div class="viewcode-block" id="Permute.transform"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.Permute.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">x</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">permutation</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Permute.transform_and_log_abs_det_jacobian"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.Permute.transform_and_log_abs_det_jacobian">[docs]</a>    <span class="k">def</span> <span class="nf">transform_and_log_abs_det_jacobian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">x</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">permutation</span><span class="p">],</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Permute.inverse"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.Permute.inverse">[docs]</a>    <span class="k">def</span> <span class="nf">inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">y</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">inverse_permutation</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Permute.inverse_and_log_abs_det_jacobian"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.Permute.inverse_and_log_abs_det_jacobian">[docs]</a>    <span class="k">def</span> <span class="nf">inverse_and_log_abs_det_jacobian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">y</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">inverse_permutation</span><span class="p">],</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Flip"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.Flip">[docs]</a><span class="k">class</span> <span class="nc">Flip</span><span class="p">(</span><span class="n">Bijection</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Flip the input array. Condition argument is ignored.&quot;&quot;&quot;</span>
+
+    <span class="n">cond_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+
+<div class="viewcode-block" id="Flip.transform"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.Flip.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">flip</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Flip.transform_and_log_abs_det_jacobian"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.Flip.transform_and_log_abs_det_jacobian">[docs]</a>    <span class="k">def</span> <span class="nf">transform_and_log_abs_det_jacobian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">flip</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Flip.inverse"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.Flip.inverse">[docs]</a>    <span class="k">def</span> <span class="nf">inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">flip</span><span class="p">(</span><span class="n">y</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Flip.inverse_and_log_abs_det_jacobian"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.Flip.inverse_and_log_abs_det_jacobian">[docs]</a>    <span class="k">def</span> <span class="nf">inverse_and_log_abs_det_jacobian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">flip</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="TransformerToBijection"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.TransformerToBijection">[docs]</a><span class="k">class</span> <span class="nc">TransformerToBijection</span><span class="p">(</span><span class="n">Bijection</span><span class="p">):</span>
+    <span class="n">cond_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">params</span><span class="p">:</span> <span class="n">Array</span>
+    <span class="n">transformer</span><span class="p">:</span> <span class="n">Transformer</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">transformer</span><span class="p">:</span> <span class="n">Transformer</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Array</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert Transformer object to Bijection object.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            transformer (Transformer): Transformer.</span>
+<span class="sd">            params (Array): Unconstrained parameter vector from which the args can be constructed, using `transformer.get_args(params)`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Note, params is key word only, as perhaps we will want to support</span>
+        <span class="c1"># construction from args too, although this is not implemented yet.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="n">params</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">transformer</span> <span class="o">=</span> <span class="n">transformer</span>
+
+<div class="viewcode-block" id="TransformerToBijection.transform"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.TransformerToBijection.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transformer</span><span class="o">.</span><span class="n">get_args</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">transformer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransformerToBijection.transform_and_log_abs_det_jacobian"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.TransformerToBijection.transform_and_log_abs_det_jacobian">[docs]</a>    <span class="k">def</span> <span class="nf">transform_and_log_abs_det_jacobian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transformer</span><span class="o">.</span><span class="n">get_args</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">transformer</span><span class="o">.</span><span class="n">transform_and_log_abs_det_jacobian</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransformerToBijection.inverse"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.TransformerToBijection.inverse">[docs]</a>    <span class="k">def</span> <span class="nf">inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transformer</span><span class="o">.</span><span class="n">get_args</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">transformer</span><span class="o">.</span><span class="n">inverse</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TransformerToBijection.inverse_and_log_abs_det_jacobian"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.TransformerToBijection.inverse_and_log_abs_det_jacobian">[docs]</a>    <span class="k">def</span> <span class="nf">inverse_and_log_abs_det_jacobian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transformer</span><span class="o">.</span><span class="n">get_args</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">transformer</span><span class="o">.</span><span class="n">inverse_and_log_abs_det_jacobian</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="Partial"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.Partial">[docs]</a><span class="k">class</span> <span class="nc">Partial</span><span class="p">(</span><span class="n">Bijection</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Applies bijection to specific indices of an input.&quot;&quot;&quot;</span>
+
+    <span class="n">cond_dim</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">bijection</span><span class="p">:</span> <span class="n">Array</span>
+    <span class="n">idxs</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">slice</span><span class="p">,</span> <span class="n">Array</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bijection</span><span class="p">:</span> <span class="n">Bijection</span><span class="p">,</span> <span class="n">idxs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Args:</span>
+<span class="sd">            bijection (Bijection): Bijection that is compatible with the subset of x indexed by idxs.</span>
+<span class="sd">            idxs: Indices (Integer, a slice, or an ndarray with integer/bool dtype) of the transformed portion. If a multidimensional array is provided, the array is flattened.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bijection</span> <span class="o">=</span> <span class="n">bijection</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cond_dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bijection</span><span class="o">.</span><span class="n">cond_dim</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">idxs</span><span class="p">,</span> <span class="nb">slice</span><span class="p">):</span>
+            <span class="n">idxs</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">idxs</span><span class="p">)</span><span class="o">.</span><span class="n">ravel</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="n">jnp</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">idxs</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">integer</span><span class="p">):</span>
+                <span class="n">idxs</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">idxs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">idxs</span> <span class="o">=</span> <span class="n">idxs</span>
+
+<div class="viewcode-block" id="Partial.transform"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.Partial.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bijection</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">idxs</span><span class="p">],</span> <span class="n">condition</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">idxs</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">y</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Partial.transform_and_log_abs_det_jacobian"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.Partial.transform_and_log_abs_det_jacobian">[docs]</a>    <span class="k">def</span> <span class="nf">transform_and_log_abs_det_jacobian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">y</span><span class="p">,</span> <span class="n">log_det</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bijection</span><span class="o">.</span><span class="n">transform_and_log_abs_det_jacobian</span><span class="p">(</span>
+            <span class="n">x</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">idxs</span><span class="p">],</span> <span class="n">condition</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">x</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">idxs</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">y</span><span class="p">),</span> <span class="n">log_det</span></div>
+
+<div class="viewcode-block" id="Partial.inverse"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.Partial.inverse">[docs]</a>    <span class="k">def</span> <span class="nf">inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bijection</span><span class="o">.</span><span class="n">inverse</span><span class="p">(</span><span class="n">y</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">idxs</span><span class="p">],</span> <span class="n">condition</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">y</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">idxs</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Partial.inverse_and_log_abs_det_jacobian"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.Partial.inverse_and_log_abs_det_jacobian">[docs]</a>    <span class="k">def</span> <span class="nf">inverse_and_log_abs_det_jacobian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">log_det</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">bijection</span><span class="o">.</span><span class="n">inverse_and_log_abs_det_jacobian</span><span class="p">(</span>
+            <span class="n">y</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">idxs</span><span class="p">],</span> <span class="n">condition</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">y</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">idxs</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">log_det</span></div></div>
+
+
+<div class="viewcode-block" id="EmbedCondition"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.EmbedCondition">[docs]</a><span class="k">class</span> <span class="nc">EmbedCondition</span><span class="p">(</span><span class="n">Bijection</span><span class="p">):</span>
+    <span class="n">bijection</span><span class="p">:</span> <span class="n">Bijection</span>
+    <span class="n">embedding_net</span><span class="p">:</span> <span class="n">eqx</span><span class="o">.</span><span class="n">Module</span>
+    <span class="n">cond_dim</span><span class="p">:</span> <span class="nb">int</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">bijection</span><span class="p">:</span> <span class="n">Bijection</span><span class="p">,</span> <span class="n">embedding_net</span><span class="p">:</span> <span class="n">eqx</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">cond_dim</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Use an embedding network to reduce the dimensionality of the conditioning variable.</span>
+<span class="sd">        The returned bijection has cond_dim equal to the raw condition size.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            bijection (Bijection): Bijection with bijection.cond_dim equal to the embedded size.</span>
+<span class="sd">            embedding_net (eqx.Module): A callable equinox module that embeds a conditioning variable to size bijection.cond_dim.</span>
+<span class="sd">            cond_dim (int): The dimension of the raw conditioning variable.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bijection</span> <span class="o">=</span> <span class="n">bijection</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">embedding_net</span> <span class="o">=</span> <span class="n">embedding_net</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cond_dim</span> <span class="o">=</span> <span class="n">cond_dim</span>
+
+<div class="viewcode-block" id="EmbedCondition.transform"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.EmbedCondition.transform">[docs]</a>    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">condition</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding_net</span><span class="p">(</span><span class="n">condition</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bijection</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EmbedCondition.transform_and_log_abs_det_jacobian"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.EmbedCondition.transform_and_log_abs_det_jacobian">[docs]</a>    <span class="k">def</span> <span class="nf">transform_and_log_abs_det_jacobian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">condition</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding_net</span><span class="p">(</span><span class="n">condition</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bijection</span><span class="o">.</span><span class="n">transform_and_log_abs_det_jacobian</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EmbedCondition.inverse"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.EmbedCondition.inverse">[docs]</a>    <span class="k">def</span> <span class="nf">inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">condition</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding_net</span><span class="p">(</span><span class="n">condition</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bijection</span><span class="o">.</span><span class="n">inverse</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="EmbedCondition.inverse_and_log_abs_det_jacobian"><a class="viewcode-back" href="../../../bijections.html#flowjax.bijections.EmbedCondition.inverse_and_log_abs_det_jacobian">[docs]</a>    <span class="k">def</span> <span class="nf">inverse_and_log_abs_det_jacobian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">condition</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">embedding_net</span><span class="p">(</span><span class="n">condition</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">bijection</span><span class="o">.</span><span class="n">inverse_and_log_abs_det_jacobian</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Daniel Ward.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

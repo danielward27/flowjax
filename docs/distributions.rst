@@ -1,0 +1,12 @@
+:tocdepth: 3
+
+Distributions
+==========================
+
+Distributions from `flowjax.distributions`
+
+.. automodule:: flowjax.distributions
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   :member-order: bysource

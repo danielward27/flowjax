@@ -16,7 +16,8 @@ class MaskedLinear(Module):
     mask: Array
 
     def __init__(self, mask: Array, use_bias: bool = True, *, key: KeyArray):
-        """Masked linear layer.
+        """
+        Masked linear layer.
 
         Args:
             mask (Array): Mask with shape (out_features, in_features).

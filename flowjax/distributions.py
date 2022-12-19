@@ -156,12 +156,11 @@ class Transformed(Distribution):
 
 
 class StandardNormal(Distribution):
-    """
-    Implements a standard normal distribution, condition is ignored.
-    """
 
     def __init__(self, dim: int):
         """
+        Implements a standard normal distribution, condition is ignored.
+
         Args:
             dim (int): Dimension of the normal distribution.
         """

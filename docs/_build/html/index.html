@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Welcome to FlowJax’s documentation! &mdash; FlowJax 6.0.0 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Distributions" href="distributions.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="#" class="icon icon-home"> FlowJax
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="distributions.html">Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="bijections.html">Bijections</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">FlowJax</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home"></a></li>
+      <li class="breadcrumb-item active">Welcome to FlowJax’s documentation!</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="welcome-to-flowjax-s-documentation">
+<h1>Welcome to FlowJax’s documentation!<a class="headerlink" href="#welcome-to-flowjax-s-documentation" title="Permalink to this heading"></a></h1>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="distributions.html">Distributions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="distributions.html#flowjax.distributions.Distribution"><code class="docutils literal notranslate"><span class="pre">Distribution</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="distributions.html#flowjax.distributions.Distribution.dim"><code class="docutils literal notranslate"><span class="pre">Distribution.dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="distributions.html#flowjax.distributions.Distribution.cond_dim"><code class="docutils literal notranslate"><span class="pre">Distribution.cond_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="distributions.html#flowjax.distributions.Distribution.conditional"><code class="docutils literal notranslate"><span class="pre">Distribution.conditional</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="distributions.html#flowjax.distributions.Distribution.sample"><code class="docutils literal notranslate"><span class="pre">Distribution.sample()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="distributions.html#flowjax.distributions.Distribution.log_prob"><code class="docutils literal notranslate"><span class="pre">Distribution.log_prob()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="distributions.html#flowjax.distributions.Transformed"><code class="docutils literal notranslate"><span class="pre">Transformed</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="distributions.html#flowjax.distributions.Transformed.base_dist"><code class="docutils literal notranslate"><span class="pre">Transformed.base_dist</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="distributions.html#flowjax.distributions.Transformed.bijection"><code class="docutils literal notranslate"><span class="pre">Transformed.bijection</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="distributions.html#flowjax.distributions.Transformed.dim"><code class="docutils literal notranslate"><span class="pre">Transformed.dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="distributions.html#flowjax.distributions.Transformed.cond_dim"><code class="docutils literal notranslate"><span class="pre">Transformed.cond_dim</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="distributions.html#flowjax.distributions.StandardNormal"><code class="docutils literal notranslate"><span class="pre">StandardNormal</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="distributions.html#flowjax.distributions.Normal"><code class="docutils literal notranslate"><span class="pre">Normal</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="distributions.html#flowjax.distributions.Normal.loc"><code class="docutils literal notranslate"><span class="pre">Normal.loc</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="distributions.html#flowjax.distributions.Normal.scale"><code class="docutils literal notranslate"><span class="pre">Normal.scale</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="distributions.html#flowjax.distributions.Uniform"><code class="docutils literal notranslate"><span class="pre">Uniform</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="distributions.html#flowjax.distributions.Uniform.minval"><code class="docutils literal notranslate"><span class="pre">Uniform.minval</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="distributions.html#flowjax.distributions.Uniform.maxval"><code class="docutils literal notranslate"><span class="pre">Uniform.maxval</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="distributions.html#flowjax.distributions.Gumbel"><code class="docutils literal notranslate"><span class="pre">Gumbel</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="distributions.html#flowjax.distributions.Gumbel.loc"><code class="docutils literal notranslate"><span class="pre">Gumbel.loc</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="distributions.html#flowjax.distributions.Gumbel.scale"><code class="docutils literal notranslate"><span class="pre">Gumbel.scale</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="distributions.html#flowjax.distributions.Cauchy"><code class="docutils literal notranslate"><span class="pre">Cauchy</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="distributions.html#flowjax.distributions.Cauchy.loc"><code class="docutils literal notranslate"><span class="pre">Cauchy.loc</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="distributions.html#flowjax.distributions.Cauchy.scale"><code class="docutils literal notranslate"><span class="pre">Cauchy.scale</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="distributions.html#flowjax.distributions.StudentT"><code class="docutils literal notranslate"><span class="pre">StudentT</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="distributions.html#flowjax.distributions.StudentT.loc"><code class="docutils literal notranslate"><span class="pre">StudentT.loc</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="distributions.html#flowjax.distributions.StudentT.scale"><code class="docutils literal notranslate"><span class="pre">StudentT.scale</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="distributions.html#flowjax.distributions.StudentT.df"><code class="docutils literal notranslate"><span class="pre">StudentT.df</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="bijections.html">Bijections</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="bijections.html#flowjax.bijections.Bijection"><code class="docutils literal notranslate"><span class="pre">Bijection</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Bijection.cond_dim"><code class="docutils literal notranslate"><span class="pre">Bijection.cond_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Bijection.transform"><code class="docutils literal notranslate"><span class="pre">Bijection.transform()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Bijection.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Bijection.transform_and_log_abs_det_jacobian()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Bijection.inverse"><code class="docutils literal notranslate"><span class="pre">Bijection.inverse()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Bijection.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Bijection.inverse_and_log_abs_det_jacobian()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="bijections.html#flowjax.bijections.Transformer"><code class="docutils literal notranslate"><span class="pre">Transformer</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Transformer.transform"><code class="docutils literal notranslate"><span class="pre">Transformer.transform()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Transformer.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Transformer.transform_and_log_abs_det_jacobian()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Transformer.inverse"><code class="docutils literal notranslate"><span class="pre">Transformer.inverse()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Transformer.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Transformer.inverse_and_log_abs_det_jacobian()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Transformer.num_params"><code class="docutils literal notranslate"><span class="pre">Transformer.num_params()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Transformer.get_ranks"><code class="docutils literal notranslate"><span class="pre">Transformer.get_ranks()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Transformer.get_args"><code class="docutils literal notranslate"><span class="pre">Transformer.get_args()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="bijections.html#flowjax.bijections.Affine"><code class="docutils literal notranslate"><span class="pre">Affine</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Affine.loc"><code class="docutils literal notranslate"><span class="pre">Affine.loc</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Affine.log_scale"><code class="docutils literal notranslate"><span class="pre">Affine.log_scale</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Affine.dim"><code class="docutils literal notranslate"><span class="pre">Affine.dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Affine.transform"><code class="docutils literal notranslate"><span class="pre">Affine.transform()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Affine.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Affine.transform_and_log_abs_det_jacobian()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Affine.inverse"><code class="docutils literal notranslate"><span class="pre">Affine.inverse()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Affine.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Affine.inverse_and_log_abs_det_jacobian()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Affine.scale"><code class="docutils literal notranslate"><span class="pre">Affine.scale</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="bijections.html#flowjax.bijections.TriangularAffine"><code class="docutils literal notranslate"><span class="pre">TriangularAffine</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.TriangularAffine.dim"><code class="docutils literal notranslate"><span class="pre">TriangularAffine.dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.TriangularAffine.cond_dim"><code class="docutils literal notranslate"><span class="pre">TriangularAffine.cond_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.TriangularAffine.diag_idxs"><code class="docutils literal notranslate"><span class="pre">TriangularAffine.diag_idxs</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.TriangularAffine.tri_mask"><code class="docutils literal notranslate"><span class="pre">TriangularAffine.tri_mask</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.TriangularAffine.min_diag"><code class="docutils literal notranslate"><span class="pre">TriangularAffine.min_diag</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.TriangularAffine.lower"><code class="docutils literal notranslate"><span class="pre">TriangularAffine.lower</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.TriangularAffine.loc"><code class="docutils literal notranslate"><span class="pre">TriangularAffine.loc</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.TriangularAffine.weight_log_scale"><code class="docutils literal notranslate"><span class="pre">TriangularAffine.weight_log_scale</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.TriangularAffine.arr"><code class="docutils literal notranslate"><span class="pre">TriangularAffine.arr</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.TriangularAffine.transform"><code class="docutils literal notranslate"><span class="pre">TriangularAffine.transform()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.TriangularAffine.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">TriangularAffine.transform_and_log_abs_det_jacobian()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.TriangularAffine.inverse"><code class="docutils literal notranslate"><span class="pre">TriangularAffine.inverse()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.TriangularAffine.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">TriangularAffine.inverse_and_log_abs_det_jacobian()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="bijections.html#flowjax.bijections.BlockAutoregressiveNetwork"><code class="docutils literal notranslate"><span class="pre">BlockAutoregressiveNetwork</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.BlockAutoregressiveNetwork.dim"><code class="docutils literal notranslate"><span class="pre">BlockAutoregressiveNetwork.dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.BlockAutoregressiveNetwork.depth"><code class="docutils literal notranslate"><span class="pre">BlockAutoregressiveNetwork.depth</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.BlockAutoregressiveNetwork.layers"><code class="docutils literal notranslate"><span class="pre">BlockAutoregressiveNetwork.layers</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.BlockAutoregressiveNetwork.cond_dim"><code class="docutils literal notranslate"><span class="pre">BlockAutoregressiveNetwork.cond_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.BlockAutoregressiveNetwork.block_dim"><code class="docutils literal notranslate"><span class="pre">BlockAutoregressiveNetwork.block_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.BlockAutoregressiveNetwork.activation"><code class="docutils literal notranslate"><span class="pre">BlockAutoregressiveNetwork.activation</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.BlockAutoregressiveNetwork.transform"><code class="docutils literal notranslate"><span class="pre">BlockAutoregressiveNetwork.transform()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.BlockAutoregressiveNetwork.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">BlockAutoregressiveNetwork.transform_and_log_abs_det_jacobian()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.BlockAutoregressiveNetwork.inverse"><code class="docutils literal notranslate"><span class="pre">BlockAutoregressiveNetwork.inverse()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.BlockAutoregressiveNetwork.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">BlockAutoregressiveNetwork.inverse_and_log_abs_det_jacobian()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="bijections.html#flowjax.bijections.Coupling"><code class="docutils literal notranslate"><span class="pre">Coupling</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Coupling.transformer"><code class="docutils literal notranslate"><span class="pre">Coupling.transformer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Coupling.d"><code class="docutils literal notranslate"><span class="pre">Coupling.d</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Coupling.D"><code class="docutils literal notranslate"><span class="pre">Coupling.D</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Coupling.cond_dim"><code class="docutils literal notranslate"><span class="pre">Coupling.cond_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Coupling.conditioner"><code class="docutils literal notranslate"><span class="pre">Coupling.conditioner</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Coupling.transform"><code class="docutils literal notranslate"><span class="pre">Coupling.transform()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Coupling.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Coupling.transform_and_log_abs_det_jacobian()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Coupling.inverse"><code class="docutils literal notranslate"><span class="pre">Coupling.inverse()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Coupling.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Coupling.inverse_and_log_abs_det_jacobian()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="bijections.html#flowjax.bijections.MaskedAutoregressive"><code class="docutils literal notranslate"><span class="pre">MaskedAutoregressive</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.MaskedAutoregressive.cond_dim"><code class="docutils literal notranslate"><span class="pre">MaskedAutoregressive.cond_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.MaskedAutoregressive.transformer"><code class="docutils literal notranslate"><span class="pre">MaskedAutoregressive.transformer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.MaskedAutoregressive.autoregressive_mlp"><code class="docutils literal notranslate"><span class="pre">MaskedAutoregressive.autoregressive_mlp</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.MaskedAutoregressive.transform"><code class="docutils literal notranslate"><span class="pre">MaskedAutoregressive.transform()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.MaskedAutoregressive.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">MaskedAutoregressive.transform_and_log_abs_det_jacobian()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.MaskedAutoregressive.inverse"><code class="docutils literal notranslate"><span class="pre">MaskedAutoregressive.inverse()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.MaskedAutoregressive.inv_scan_fn"><code class="docutils literal notranslate"><span class="pre">MaskedAutoregressive.inv_scan_fn()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.MaskedAutoregressive.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">MaskedAutoregressive.inverse_and_log_abs_det_jacobian()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.MaskedAutoregressive.get_transformer_args"><code class="docutils literal notranslate"><span class="pre">MaskedAutoregressive.get_transformer_args()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="bijections.html#flowjax.bijections.Tanh"><code class="docutils literal notranslate"><span class="pre">Tanh</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Tanh.cond_dim"><code class="docutils literal notranslate"><span class="pre">Tanh.cond_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Tanh.transform"><code class="docutils literal notranslate"><span class="pre">Tanh.transform()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Tanh.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Tanh.transform_and_log_abs_det_jacobian()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Tanh.inverse"><code class="docutils literal notranslate"><span class="pre">Tanh.inverse()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Tanh.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Tanh.inverse_and_log_abs_det_jacobian()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="bijections.html#flowjax.bijections.TanhLinearTails"><code class="docutils literal notranslate"><span class="pre">TanhLinearTails</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.TanhLinearTails.cond_dim"><code class="docutils literal notranslate"><span class="pre">TanhLinearTails.cond_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.TanhLinearTails.max_val"><code class="docutils literal notranslate"><span class="pre">TanhLinearTails.max_val</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.TanhLinearTails.linear_grad"><code class="docutils literal notranslate"><span class="pre">TanhLinearTails.linear_grad</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.TanhLinearTails.intercept"><code class="docutils literal notranslate"><span class="pre">TanhLinearTails.intercept</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.TanhLinearTails.transform"><code class="docutils literal notranslate"><span class="pre">TanhLinearTails.transform()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.TanhLinearTails.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">TanhLinearTails.transform_and_log_abs_det_jacobian()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.TanhLinearTails.inverse"><code class="docutils literal notranslate"><span class="pre">TanhLinearTails.inverse()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.TanhLinearTails.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">TanhLinearTails.inverse_and_log_abs_det_jacobian()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="bijections.html#flowjax.bijections.Chain"><code class="docutils literal notranslate"><span class="pre">Chain</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Chain.bijections"><code class="docutils literal notranslate"><span class="pre">Chain.bijections</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Chain.cond_dim"><code class="docutils literal notranslate"><span class="pre">Chain.cond_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Chain.transform"><code class="docutils literal notranslate"><span class="pre">Chain.transform()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Chain.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Chain.transform_and_log_abs_det_jacobian()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Chain.inverse"><code class="docutils literal notranslate"><span class="pre">Chain.inverse()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Chain.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Chain.inverse_and_log_abs_det_jacobian()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="bijections.html#flowjax.bijections.ScannableChain"><code class="docutils literal notranslate"><span class="pre">ScannableChain</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.ScannableChain.params"><code class="docutils literal notranslate"><span class="pre">ScannableChain.params</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.ScannableChain.static"><code class="docutils literal notranslate"><span class="pre">ScannableChain.static</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.ScannableChain.cond_dim"><code class="docutils literal notranslate"><span class="pre">ScannableChain.cond_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.ScannableChain.transform"><code class="docutils literal notranslate"><span class="pre">ScannableChain.transform()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.ScannableChain.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">ScannableChain.transform_and_log_abs_det_jacobian()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.ScannableChain.inverse"><code class="docutils literal notranslate"><span class="pre">ScannableChain.inverse()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.ScannableChain.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">ScannableChain.inverse_and_log_abs_det_jacobian()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="bijections.html#flowjax.bijections.Invert"><code class="docutils literal notranslate"><span class="pre">Invert</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Invert.bijection"><code class="docutils literal notranslate"><span class="pre">Invert.bijection</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Invert.cond_dim"><code class="docutils literal notranslate"><span class="pre">Invert.cond_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Invert.transform"><code class="docutils literal notranslate"><span class="pre">Invert.transform()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Invert.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Invert.transform_and_log_abs_det_jacobian()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Invert.inverse"><code class="docutils literal notranslate"><span class="pre">Invert.inverse()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Invert.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Invert.inverse_and_log_abs_det_jacobian()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="bijections.html#flowjax.bijections.Flip"><code class="docutils literal notranslate"><span class="pre">Flip</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Flip.cond_dim"><code class="docutils literal notranslate"><span class="pre">Flip.cond_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Flip.transform"><code class="docutils literal notranslate"><span class="pre">Flip.transform()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Flip.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Flip.transform_and_log_abs_det_jacobian()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Flip.inverse"><code class="docutils literal notranslate"><span class="pre">Flip.inverse()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Flip.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Flip.inverse_and_log_abs_det_jacobian()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="bijections.html#flowjax.bijections.Permute"><code class="docutils literal notranslate"><span class="pre">Permute</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Permute.permutation"><code class="docutils literal notranslate"><span class="pre">Permute.permutation</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Permute.inverse_permutation"><code class="docutils literal notranslate"><span class="pre">Permute.inverse_permutation</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Permute.cond_dim"><code class="docutils literal notranslate"><span class="pre">Permute.cond_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Permute.transform"><code class="docutils literal notranslate"><span class="pre">Permute.transform()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Permute.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Permute.transform_and_log_abs_det_jacobian()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Permute.inverse"><code class="docutils literal notranslate"><span class="pre">Permute.inverse()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Permute.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Permute.inverse_and_log_abs_det_jacobian()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="bijections.html#flowjax.bijections.TransformerToBijection"><code class="docutils literal notranslate"><span class="pre">TransformerToBijection</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.TransformerToBijection.cond_dim"><code class="docutils literal notranslate"><span class="pre">TransformerToBijection.cond_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.TransformerToBijection.params"><code class="docutils literal notranslate"><span class="pre">TransformerToBijection.params</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.TransformerToBijection.transformer"><code class="docutils literal notranslate"><span class="pre">TransformerToBijection.transformer</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.TransformerToBijection.transform"><code class="docutils literal notranslate"><span class="pre">TransformerToBijection.transform()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.TransformerToBijection.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">TransformerToBijection.transform_and_log_abs_det_jacobian()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.TransformerToBijection.inverse"><code class="docutils literal notranslate"><span class="pre">TransformerToBijection.inverse()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.TransformerToBijection.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">TransformerToBijection.inverse_and_log_abs_det_jacobian()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="bijections.html#flowjax.bijections.AdditiveLinearCondition"><code class="docutils literal notranslate"><span class="pre">AdditiveLinearCondition</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.AdditiveLinearCondition.dim"><code class="docutils literal notranslate"><span class="pre">AdditiveLinearCondition.dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.AdditiveLinearCondition.cond_dim"><code class="docutils literal notranslate"><span class="pre">AdditiveLinearCondition.cond_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.AdditiveLinearCondition.W"><code class="docutils literal notranslate"><span class="pre">AdditiveLinearCondition.W</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.AdditiveLinearCondition.transform"><code class="docutils literal notranslate"><span class="pre">AdditiveLinearCondition.transform()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.AdditiveLinearCondition.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">AdditiveLinearCondition.transform_and_log_abs_det_jacobian()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.AdditiveLinearCondition.inverse"><code class="docutils literal notranslate"><span class="pre">AdditiveLinearCondition.inverse()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.AdditiveLinearCondition.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">AdditiveLinearCondition.inverse_and_log_abs_det_jacobian()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="bijections.html#flowjax.bijections.Partial"><code class="docutils literal notranslate"><span class="pre">Partial</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Partial.bijection"><code class="docutils literal notranslate"><span class="pre">Partial.bijection</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Partial.cond_dim"><code class="docutils literal notranslate"><span class="pre">Partial.cond_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Partial.idxs"><code class="docutils literal notranslate"><span class="pre">Partial.idxs</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Partial.transform"><code class="docutils literal notranslate"><span class="pre">Partial.transform()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Partial.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Partial.transform_and_log_abs_det_jacobian()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Partial.inverse"><code class="docutils literal notranslate"><span class="pre">Partial.inverse()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.Partial.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">Partial.inverse_and_log_abs_det_jacobian()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="bijections.html#flowjax.bijections.EmbedCondition"><code class="docutils literal notranslate"><span class="pre">EmbedCondition</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.EmbedCondition.bijection"><code class="docutils literal notranslate"><span class="pre">EmbedCondition.bijection</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.EmbedCondition.embedding_net"><code class="docutils literal notranslate"><span class="pre">EmbedCondition.embedding_net</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.EmbedCondition.cond_dim"><code class="docutils literal notranslate"><span class="pre">EmbedCondition.cond_dim</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.EmbedCondition.transform"><code class="docutils literal notranslate"><span class="pre">EmbedCondition.transform()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.EmbedCondition.transform_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">EmbedCondition.transform_and_log_abs_det_jacobian()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.EmbedCondition.inverse"><code class="docutils literal notranslate"><span class="pre">EmbedCondition.inverse()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="bijections.html#flowjax.bijections.EmbedCondition.inverse_and_log_abs_det_jacobian"><code class="docutils literal notranslate"><span class="pre">EmbedCondition.inverse_and_log_abs_det_jacobian()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this heading"></a></h1>
+<ul class="simple">
+<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
+<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
+<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
+</ul>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="distributions.html" class="btn btn-neutral float-right" title="Distributions" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Daniel Ward.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

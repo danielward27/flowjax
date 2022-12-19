@@ -1,9 +1,10 @@
-from typing import Any
+from typing import Any, TypeAlias
 
 import jax.numpy as jnp
 
-Array = Any  # Custom type for Arrays (clearer typehint)
-
+Array: TypeAlias = Any  # Custom type for Arrays (clearer typehint)
+# TODO restrict to python 3.10
+# TODO test only on 3.10
 
 def _identity(x):
     return x
