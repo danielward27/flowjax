@@ -7,7 +7,7 @@ import pytest
 from jax import random
 
 from flowjax.bijections import Affine, Chain, Coupling, Flip, Permute, ScannableChain
-from flowjax.bijections.transformers import AffineTransformer
+from flowjax.transformers import AffineTransformer
 
 
 def test_chain_dunders():

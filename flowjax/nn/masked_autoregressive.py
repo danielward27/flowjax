@@ -57,7 +57,7 @@ class AutoregressiveMLP(Module):
         *,
         key
     ) -> None:
-        """An autoregressive multilayer perceptron, similar to equinox.nn.composed.MLP.
+        """An autoregressive multilayer perceptron, similar to ``equinox.nn.composed.MLP``.
         Connections will only exist where in_ranks < out_ranks.
 
         Args:

@@ -5,7 +5,8 @@ import jax.nn as jnn
 import jax.numpy as jnp
 from jax.random import KeyArray
 
-from flowjax.bijections import Bijection, Transformer
+from flowjax.bijections import Bijection
+from flowjax.transformers import Transformer
 
 
 class Coupling(Bijection):

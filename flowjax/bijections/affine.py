@@ -15,7 +15,7 @@ class Affine(Bijection):
     dim: int
 
     def __init__(self, loc: Array, scale: Array = 1.0):
-        """`loc` and `scale` should broadast to the dimension of the transformation.
+        """``loc`` and ``scale`` should broadast to the dimension of the transformation.
 
         Args:
             loc (Array): Location parameter vector.
@@ -51,7 +51,7 @@ class Affine(Bijection):
 
 
 class TriangularAffine(Bijection):
-    """Transformation of the form Ax + b, where A is a lower or upper triangular matrix."""
+    """Transformation of the form ``Ax + b``, where ``A`` is a lower or upper triangular matrix."""
     loc: Array
     dim: int
     cond_dim: int
@@ -135,8 +135,8 @@ class TriangularAffine(Bijection):
 
 
 class AdditiveLinearCondition(Bijection):
-    """Carries out `y = x + W @ condition`, as the forward transformation and
-    `x = y - W @ condition` as the inverse."""
+    """Carries out ``y = x + W @ condition``, as the forward transformation and
+    ``x = y - W @ condition`` as the inverse."""
     dim: int
     cond_dim: int
     W: Array
@@ -144,7 +144,7 @@ class AdditiveLinearCondition(Bijection):
     def __init__(self, arr: Array):
         """
         Args:
-            arr (Array): Array (W in the description.)
+            arr (Array): Array (``W`` in the description.)
         """
         self.dim = arr.shape[0]
         self.cond_dim = arr.shape[1]

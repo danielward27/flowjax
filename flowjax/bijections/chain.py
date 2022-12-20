@@ -70,6 +70,17 @@ class Chain(Bijection):
 class ScannableChain(Bijection):
     """Repeatedly apply the same bijection with different parameter values. Internally,
     uses `jax.lax.scan` to reduce compilation time.
+
+    Example:
+
+        .. doctest::
+            >>> from flowjax.bijections import Chain
+            >>> import jax.numpy as jnp
+            >>> import equinox as eqx
+
+            >>> params = jnp.ones((3, 2))
+            >>> # Below is equivilent to Chain([Affine(p) for p in params])
+            >>> affine = ScannableChain(equinox.filter_vmap(Affine)(params))
     """
     static: Any
     params: Any
@@ -80,16 +91,6 @@ class ScannableChain(Bijection):
         The array leaves in `bijection` should have an additional leading axis to scan over.
         Often it is convenient to construct these using `equinox.filter_vmap`.
 
-        Examples:
-
-        .. doctest::
-            >>> from flowjax.bijections import Chain
-            >>> import jax.numpy as jnp
-            >>> import equinox as eqx
-
-            >>> params = jnp.ones((3, 2))
-            >>> # Below is equivilent to Chain([Affine(p) for p in params])
-            >>> affine = ScannableChain(equinox.filter_vmap(Affine)(params))
         
         Args:
             bijections (Bijection): A bijection, in which the arrays have an additional leading axis to scan over.
