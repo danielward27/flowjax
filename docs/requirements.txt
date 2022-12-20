@@ -1,2 +1,4 @@
-# TODO make documentation requirements file
-# pandoc, sphinx-rtd-theme, nbsphinx ...
+sphinx
+sphinx_rtd_theme
+scikit-learn
+nbsphinx
