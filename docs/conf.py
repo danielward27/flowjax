@@ -38,3 +38,4 @@ napoleon_include_init_with_doc = True
 html_theme_options = {
     'navigation_depth': 2,
 }
+
