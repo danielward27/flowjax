@@ -1,0 +1,11 @@
+@import url("theme.css");
+
+.wy-side-nav-search, .wy-nav-top, .wy-nav-side {
+    background: #fff;
+}
+
+.wy-menu-vertical a { color: #2f2f2f; }
+
+.wy-menu-vertical a:hover {
+    background-color: #c8c8c8;
+}

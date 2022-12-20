@@ -1,8 +1,7 @@
-Bijections
+Flows
 ==========================
-Bijections from ``flowjax.bijections``.
 
-.. automodule:: flowjax.bijections
+.. automodule:: flowjax.flows
    :members:
    :undoc-members:
    :show-inheritance:
