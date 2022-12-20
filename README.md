@@ -2,8 +2,7 @@
 <img src="./images/flowjax_logo.png?raw=true" alt="logo" width="500" ></img>
 </div>
 
-## FlowJax: Normalising Flows in Jax
--------
+# FlowJax: Normalising Flows in Jax
 
 ## Documentation
 Available [here](https://danielward27.github.io/flowjax/index.html).
