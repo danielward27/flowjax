@@ -5,6 +5,10 @@
 ## FlowJax: Normalising Flows in Jax
 -------
 
+## Documentation
+Available [here](https://danielward27.github.io/flowjax/distributions.html).
+
+## Short example
 Training a flow can be done in a few lines of code:
 
 ```
@@ -32,7 +36,6 @@ The package currently supports the following:
 - `BlockNeuralAutoregressiveFlow`, as introduced by [De Cao et al., 2019](https://arxiv.org/abs/1904.04676)
 - `TriangularSplineFlow`, introduced here.
 
-For examples of basic usage, see [examples](https://github.com/danielward27/flowjax/blob/main/examples/).
 
 ## Installation
 ```
