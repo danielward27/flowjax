@@ -19,9 +19,9 @@ from jax.random import KeyArray
 from flowjax.bijections import (AdditiveLinearCondition,
                                 BlockAutoregressiveNetwork, Chain, Coupling,
                                 Flip, Invert, MaskedAutoregressive, Permute,
-                                ScannableChain, TanhLinearTails, Transformer,
+                                ScannableChain, TanhLinearTails,
                                 TransformerToBijection, TriangularAffine)
-from flowjax.bijections.transformers import RationalQuadraticSplineTransformer
+from flowjax.transformers import RationalQuadraticSplineTransformer, Transformer
 from flowjax.distributions import Distribution, Transformed
 
 

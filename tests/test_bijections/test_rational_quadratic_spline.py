@@ -2,7 +2,7 @@ import jax.numpy as jnp
 import pytest
 from jax import random
 
-from flowjax.bijections.transformers import RationalQuadraticSplineTransformer
+from flowjax.transformers import RationalQuadraticSplineTransformer
 
 
 def test_RationalQuadraticSpline_tails():

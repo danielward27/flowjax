@@ -22,7 +22,7 @@ from flowjax.bijections import (
     TransformerToBijection,
     TriangularAffine,
 )
-from flowjax.bijections.transformers import (
+from flowjax.transformers import (
     AffineTransformer,
     RationalQuadraticSplineTransformer,
 )

@@ -32,7 +32,7 @@ def train_flow(
 
     Args:
         key (KeyArray): Jax PRNGKey.
-        dist (Distribution): Distribution object, trainable parameters are found using equinox.is_inexact_array.
+        dist (Distribution): Distribution object.
         x (Array): Samples from target distribution.
         condition (Optional[Array], optional): Conditioning variables. Defaults to None.
         max_epochs (int, optional): Maximum number of epochs. Defaults to 50.

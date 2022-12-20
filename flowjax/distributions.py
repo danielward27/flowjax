@@ -46,14 +46,13 @@ class Distribution(eqx.Module, ABC):
         condition: Optional[Array] = None,
         n: Optional[int] = None,
     ) -> Array:
-        """Sample from a distribution. The condition can be a vector, or a matrix.
-        - If condition.ndim==1, n allows repeated sampling (a single sample is drawn if n is not provided).
-        - If condition.ndim==2, axis 0 is treated as batch dimension, (one sample is drawn for each row).
+        """Sample from a distribution.
 
         Args:
             key (KeyArray): Jax PRNGKey.
-            condition (Optional[Array], optional): Conditioning variables. Defaults to None.
-            n (Optional[int], optional): Number of samples (if condition.ndim==1). Defaults to None.
+            condition (Optional[Array], optional): Conditioning variables. If the conditioning variable has
+                a leading batch dimension, `n` is inferred from the leading axis. Defaults to None.
+            n (Optional[int], optional): Number of samples. Defaults to None.
 
         Returns:
             Array: Jax array of samples.
@@ -131,7 +130,8 @@ class Transformed(Distribution):
         base_dist: Distribution,
         bijection: Bijection,
     ):
-        """Form a distribution like object using a base distribution and a
+        """
+        Form a distribution like object using a base distribution and a
         bijection. We take the forward bijection for use in sampling, and the inverse
         bijection for use in density evaluation.
 
@@ -156,12 +156,11 @@ class Transformed(Distribution):
 
 
 class StandardNormal(Distribution):
-    """
-    Implements a standard normal distribution, condition is ignored.
-    """
 
     def __init__(self, dim: int):
         """
+        Implements a standard normal distribution, condition is ignored.
+
         Args:
             dim (int): Dimension of the normal distribution.
         """
@@ -246,12 +245,11 @@ class Uniform(Transformed):
 
 
 class _StandardGumbel(Distribution):
-    """
-    Implements standard gumbel distribution (loc=0, scale=1)
-    Ref: https://en.wikipedia.org/wiki/Gumbel_distribution
+    """Standard gumbel distribution (https://en.wikipedia.org/wiki/Gumbel_distribution).
     """
 
     def __init__(self, dim):
+        
         self.dim = dim
         self.cond_dim = 0
 
@@ -263,12 +261,16 @@ class _StandardGumbel(Distribution):
 
 
 class Gumbel(Transformed):
-    """
-    Gumbel distribution. `loc` and `scale` should be broadcastable.
-    Ref: https://en.wikipedia.org/wiki/Gumbel_distribution
-    """
+    """Gumbel distribution (https://en.wikipedia.org/wiki/Gumbel_distribution)"""
 
     def __init__(self, loc: Array, scale: Array = 1.0):
+        """
+        `loc` and `scale` should broadcast to the dimension of the distribution.
+
+        Args:
+            loc (Array): Location paramter. 
+            scale (Array, optional): Scale parameter. Defaults to 1.0.
+        """
         loc, scale = broadcast_arrays_1d(loc, scale)
         base_dist = _StandardGumbel(loc.shape[0])
         bijection = Affine(loc, scale)
@@ -302,11 +304,17 @@ class _StandardCauchy(Distribution):
 
 class Cauchy(Transformed):
     """
-    Cauchy distribution. `loc` and `scale` should be broadcastable.
-    Ref: https://en.wikipedia.org/wiki/Cauchy_distribution
+    Cauchy distribution (https://en.wikipedia.org/wiki/Cauchy_distribution).
     """
 
     def __init__(self, loc: Array, scale: Array = 1.0):
+        """
+        `loc` and `scale` should broadcast to the dimension of the distribution.
+
+        Args:
+            loc (Array): Location paramter. 
+            scale (Array, optional): Scale parameter. Defaults to 1.0.
+        """
         loc, scale = broadcast_arrays_1d(loc, scale)
         base_dist = _StandardCauchy(loc.shape[0])
         bijection = Affine(loc, scale)
@@ -345,9 +353,17 @@ class _StandardStudentT(Distribution):
 
 
 class StudentT(Transformed):
-    "Student T distribution. `loc` and `scale` should be broadcastable."
+    """Student T distribution (https://en.wikipedia.org/wiki/Student%27s_t-distribution)."""
 
-    def __init__(self, df: Array, loc: Array, scale: Array = 1.0):
+    def __init__(self, df: Array, loc: Array = 0.0, scale: Array = 1.0):
+        """
+        `df`, `loc` and `scale` broadcast to the dimension of the distribution.
+
+        Args:
+            df (Array): The degrees of freedom.
+            loc (Array): Location parameter. Defaults to 0.0.
+            scale (Array, optional): Scale parameter. Defaults to 1.0.
+        """
         df, loc, scale = broadcast_arrays_1d(df, loc, scale)
         self.dim = df.shape[0]
         self.cond_dim = 0

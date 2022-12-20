@@ -4,7 +4,7 @@ import jax.numpy as jnp
 import pytest
 from jax import random
 
-from flowjax.bijections.transformers import (
+from flowjax.transformers import (
     AffineTransformer,
     RationalQuadraticSplineTransformer,
 )

@@ -2,8 +2,7 @@ from typing import Any
 
 import jax.numpy as jnp
 
-Array = Any  # Custom type for Arrays (clearer typehint)
-
+Array = Any  # TODO Can use TypeAlias from typing in future.
 
 def _identity(x):
     return x

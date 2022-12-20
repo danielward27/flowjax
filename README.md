@@ -50,6 +50,7 @@ A few limitations / things that could be worth including in the future:
     - Chaining of bijections with varied event `ndim` could follow numpy-like broadcasting rules.
     - Allow vmap-like transform to define bijections with expanded event dimensions.
 - Training script for variational inference
+- Define transformers by wrapping a bijection?
 
 ## Related
 We make use of the [Equinox](https://arxiv.org/abs/2111.00254) package, which facilitates object-oriented programming with Jax. 

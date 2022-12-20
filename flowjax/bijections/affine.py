@@ -9,13 +9,13 @@ from flowjax.utils import Array, broadcast_arrays_1d
 
 
 class Affine(Bijection):
+    """Elementwise affine transformation. Condition is ignored."""
     loc: Array
     log_scale: Array
     dim: int
 
     def __init__(self, loc: Array, scale: Array = 1.0):
-        """Elementwise affine transformation. Condition is ignored. loc and scale
-        should be broadcastable.
+        """``loc`` and ``scale`` should broadast to the dimension of the transformation.
 
         Args:
             loc (Array): Location parameter vector.
@@ -51,6 +51,7 @@ class Affine(Bijection):
 
 
 class TriangularAffine(Bijection):
+    """Transformation of the form ``Ax + b``, where ``A`` is a lower or upper triangular matrix."""
     loc: Array
     dim: int
     cond_dim: int
@@ -71,12 +72,9 @@ class TriangularAffine(Bijection):
         weight_normalisation: bool = False,
     ):
         """
-        Transformation of the form Ax + b, where A is a lower or upper triangular matrix. To
-        ensure invertiblility, diagonal entries should be positive (and greater than min_diag).
-
         Args:
             loc (Array): Translation.
-            arr (Array): Matrix.
+            arr (Array): Triangular matrix.
             lower (bool, optional): Whether the mask should select the lower or upper triangular matrix (other elements ignored). Defaults to True.
             min_diag (float, optional): Minimum value on the diagonal, to ensure invertibility. Defaults to 1e-6.
             weight_log_scale (Optional[Array], optional): If provided, carry out weight normalisation, initialising log scales to the zero vector.
@@ -137,16 +135,16 @@ class TriangularAffine(Bijection):
 
 
 class AdditiveLinearCondition(Bijection):
+    """Carries out ``y = x + W @ condition``, as the forward transformation and
+    ``x = y - W @ condition`` as the inverse."""
     dim: int
     cond_dim: int
     W: Array
 
     def __init__(self, arr: Array):
-        """Carries out `y = x + W @ condition`, as the forward transformation and
-        `x = y - W @ condition` as the inverse.
-
+        """
         Args:
-            arr (Array): Array (W in the description.)
+            arr (Array): Array (``W`` in the description.)
         """
         self.dim = arr.shape[0]
         self.cond_dim = arr.shape[1]

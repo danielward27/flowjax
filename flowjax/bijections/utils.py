@@ -4,7 +4,8 @@ import equinox as eqx
 import jax.numpy as jnp
 from jax.experimental import checkify
 
-from flowjax.bijections import Bijection, Transformer
+from flowjax.bijections import Bijection
+from flowjax.transformers import Transformer
 from flowjax.utils import Array
 
 
@@ -178,8 +179,8 @@ class EmbedCondition(Bijection):
         The returned bijection has cond_dim equal to the raw condition size.
 
         Args:
-            bijection (Bijection): Bijection with bijection.cond_dim equal to the embedded size.
-            embedding_net (eqx.Module): A callable equinox module that embeds a conditioning variable to size bijection.cond_dim.
+            bijection (Bijection): Bijection with ``bijection.cond_dim`` equal to the embedded size.
+            embedding_net (eqx.Module): A callable equinox module that embeds a conditioning variable to size ``bijection.cond_dim``.
             cond_dim (int): The dimension of the raw conditioning variable.
         """
         self.bijection = bijection
