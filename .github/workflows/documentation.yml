@@ -13,6 +13,7 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r docs/requirements.txt
+          sudo apt-get install pandoc
       - name: Sphinx build
         run: |
           sphinx-build docs docs/_build
