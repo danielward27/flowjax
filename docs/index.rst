@@ -25,7 +25,8 @@ Installation
    api/*
 
 .. toctree::
-   :caption: FAQ
-
+   :maxdepth: 1
+   :caption: Miscellaneous
+   
    faq
 
