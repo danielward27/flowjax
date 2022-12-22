@@ -1,8 +1,7 @@
-Distributions
+Flows
 ==========================
-Distributions from `flowjax.distributions`.
 
-.. automodule:: flowjax.distributions
+.. automodule:: flowjax.flows
    :members:
    :undoc-members:
    :show-inheritance:

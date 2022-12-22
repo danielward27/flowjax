@@ -1,6 +1,5 @@
 Bijections
 ==========================
-Bijections from `flowjax.bijections`.
 
 .. automodule:: flowjax.bijections
    :members:

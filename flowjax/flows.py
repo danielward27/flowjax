@@ -1,11 +1,9 @@
 """
-Contains some common flow architectures. These act as convenience costructors,
-and examples of how flows can be constructed.
-
-Note that here although we could chain arbitrary bijections using `Chain`, here,
-we generally opt to use `ScannableChain`, which avoids excessive compilation
-when the flow layers share the same structure.
+Premade versions of common flow architetctures from ``flowjax.flows``.
 """
+# Note that here although we could chain arbitrary bijections using `Chain`, here,
+# we generally opt to use `ScannableChain`, which avoids excessive compilation
+# when the flow layers share the same structure.
 
 from typing import Callable, Optional
 
@@ -56,7 +54,7 @@ class CouplingFlow(Transformed):
             nn_activation (int, optional): Conditioner activation function. Defaults to jnn.relu.
             invert: (bool, optional): Whether to invert the bijection. Broadly, True will prioritise a faster `inverse` methods, leading to faster `log_prob`, False will prioritise faster `transform` methods, leading to faster `sample`. Defaults to True
         """
-        permute_strategy = default_permute_strategy(base_dist.dim)
+        permute_strategy = _default_permute_strategy(base_dist.dim)
 
         def make_layer(key):  # coupling layer + permutation
             c_key, p_key = random.split(key)
@@ -127,7 +125,7 @@ class MaskedAutoregressiveFlow(Transformed):
                 faster forward, leading to faster `sample`. Defaults to True. Defaults to True.
         """
 
-        permute_strategy = default_permute_strategy(base_dist.dim)
+        permute_strategy = _default_permute_strategy(base_dist.dim)
 
         def make_layer(key):  # masked autoregressive layer + permutation
             masked_auto_key, p_key = random.split(key)
@@ -188,7 +186,7 @@ class BlockNeuralAutoregressiveFlow(Transformed):
             invert: (bool, optional): Use `True` for access of `log_prob` only (e.g. fitting by maximum likelihood), `False` for the forward direction (sampling) only (e.g. for fitting variationally).
         """
 
-        permute_strategy = default_permute_strategy(base_dist.dim)
+        permute_strategy = _default_permute_strategy(base_dist.dim)
 
         def make_layer(key):  # masked autoregressive layer + permutation
             ban_key, p_key = random.split(key)
@@ -238,7 +236,7 @@ class TriangularSplineFlow(Transformed):
         permute_strategy: Optional[str] = None,
         init: Callable = glorot_uniform(),
     ):
-        permute_strategy = default_permute_strategy(base_dist.dim)
+        permute_strategy = _default_permute_strategy(base_dist.dim)
 
         def make_layer(key):
             dim = base_dist.dim
@@ -286,7 +284,7 @@ class TriangularSplineFlow(Transformed):
         super().__init__(base_dist, bijection)
 
 
-def default_permute_strategy(dim):
+def _default_permute_strategy(dim):
     if dim <= 2:
         return {1: "none", 2: "flip"}[dim]
     else:

@@ -1,5 +1,5 @@
 from typing import Any
-
+import jax
 import jax.numpy as jnp
 
 Array = Any  # TODO Can use TypeAlias from typing in future.
@@ -33,3 +33,21 @@ def promote_to_1d(arr: Array):
         raise ValueError(f"Cannot convert array with shape {arr.shape} to 1d.")
     else:
         return jnp.atleast_1d(arr)
+
+
+def real_to_increasing_on_interval(
+    arr: Array, B: float = 1, softmax_adjust: float = 1e-2
+):
+    """Transform unconstrained parameter vector to monotonically increasing positions on [-B, B].
+
+    Args:
+        arr (Array): Parameter vector.
+        B (float, optional): Interval to transform output. Defaults to 1.
+        softmax_adjust (float, optional): Rescales softmax output using (widths + softmax_adjust/widths.size) / (1 + softmax_adjust). e.g. 0=no adjustment, 1=average softmax output with evenly spaced widths, >1 promotes more evenly spaced widths.
+    """
+    if softmax_adjust < 0:
+        raise ValueError("softmax_adjust should be >= 0.")
+    widths = jax.nn.softmax(arr)
+    widths = (widths + softmax_adjust / widths.size) / (1 + softmax_adjust)
+    widths = widths.at[0].set(widths[0] / 2)
+    return 2 * B * jnp.cumsum(widths) - B
