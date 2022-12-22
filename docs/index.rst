@@ -11,6 +11,7 @@ Installation
 
 .. toctree::
    :caption: Examples
+   :maxdepth: 1
 
    examples/unconditional
    examples/conditional
@@ -18,6 +19,7 @@ Installation
 
 .. toctree::
    :caption: API
+   :maxdepth: 1
    :glob:
 
    api/*
