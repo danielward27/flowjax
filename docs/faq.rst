@@ -13,9 +13,9 @@ training the base distribution, we could do the following
 
 For more information about filtering, see the `equinox documentation <https://docs.kidger.site/equinox/all-of-equinox/>`_.
 
-Scaling variables
+Standardising variables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-In general yes, you should consider the form and scales of the target samples. For example, you could define a bijection to carry out the preprocessing, then to transform the flow with the inverse, to "undo" the preprocessing, e.g.
+In general you should consider the form and scales of the target samples. For example, you could define a bijection to carry out the preprocessing, then to transform the flow with the inverse, to "undo" the preprocessing, e.g.
 
 .. code-block:: python
 
@@ -48,4 +48,4 @@ The methods of distributions and bijections are not jitted by default. For examp
     results = []
     for batch_key in keys:
         x = eqx.filter_jit(flow.sample)(batch_key, n=batch_size)
-        results.append(x))
+        results.append(x)
