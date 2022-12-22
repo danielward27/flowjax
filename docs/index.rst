@@ -6,9 +6,6 @@ FlowJax is a package for creating and fitting normalising flows in Jax.
    :maxdepth: 1
 
    examples
-   flows
-   bijections
-   distributions
-   transformers
+   api/api
    training
    

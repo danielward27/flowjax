@@ -19,7 +19,7 @@ release = 'v6.1.0'
 
 extensions = [
     "sphinx.ext.todo", "sphinx.ext.viewcode", "sphinx.ext.autodoc",
-    "sphinx.ext.napoleon", "sphinx.ext.doctest", "nbsphinx"
+    "sphinx.ext.napoleon", "sphinx.ext.doctest", "nbsphinx", "sphinx_copybutton"
 ]
 
 templates_path = ['_templates']
@@ -42,7 +42,6 @@ napoleon_include_init_with_doc = True
 html_theme_options = {
     'navigation_depth': 2,
     'logo_only': True,
-    'bgcolor': "black"
 }
 
-html_logo = "../images/flowjax_logo.png"
+# html_logo = "../images/flowjax_logo.png"

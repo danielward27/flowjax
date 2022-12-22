@@ -1,3 +1,5 @@
+"""Bijections from ``flowjax.bijections``"""
+
 from .abc import Bijection, Transformer
 from .affine import AdditiveLinearCondition, Affine, TriangularAffine
 from .block_autoregressive_network import BlockAutoregressiveNetwork

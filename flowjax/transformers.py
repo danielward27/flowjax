@@ -1,6 +1,9 @@
-"""Contains transformers, which are bijections that have methods that facilitate
-parameterisation with neural networks. All transformers have the "Transformer"
-suffix, to avoid potential name clashes with bijections.
+"""
+Transformers available in the module ``flowjax.transformers``. Transformers are simple
+bijections that can be parameterised by neural networks, e.g. as in a
+:py:class:`~flowjax.flows.CouplingFlow` or :py:class:`~flowjax.flows.MaskedAutoregressiveFlow`.
+Note, the use of the word "transformers" is unrelated to its use in self-attention
+models!
 """
 
 from functools import partial
@@ -14,7 +17,7 @@ from abc import ABC, abstractmethod
 
 from equinox import Module
 
-from flowjax.utils import Array
+from flowjax.utils import Array, real_to_increasing_on_interval
 
 
 
@@ -170,21 +173,3 @@ class RationalQuadraticSplineTransformer(Transformer):
         num = sk**2 * (dk1 * xi**2 + 2 * sk * xi * (1 - xi) + dk * (1 - xi) ** 2)
         den = (sk + (dk1 + dk - 2 * sk) * xi * (1 - xi)) ** 2
         return num / den
-
-
-def real_to_increasing_on_interval(
-    arr: Array, B: float = 1, softmax_adjust: float = 1e-2
-):
-    """Transform unconstrained parameter vector to monotonically increasing positions on [-B, B].
-
-    Args:
-        arr (Array): Parameter vector.
-        B (float, optional): Interval to transform output. Defaults to 1.
-        softmax_adjust (float, optional): Rescales softmax output using (widths + softmax_adjust/widths.size) / (1 + softmax_adjust). e.g. 0=no adjustment, 1=average softmax output with evenly spaced widths, >1 promotes more evenly spaced widths.
-    """
-    if softmax_adjust < 0:
-        raise ValueError("softmax_adjust should be >= 0.")
-    widths = jax.nn.softmax(arr)
-    widths = (widths + softmax_adjust / widths.size) / (1 + softmax_adjust)
-    widths = widths.at[0].set(widths[0] / 2)
-    return 2 * B * jnp.cumsum(widths) - B
