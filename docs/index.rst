@@ -10,7 +10,6 @@ Installation
 
 
 .. toctree::
-   :maxdepth: 1
    :caption: Examples
 
    examples/unconditional
@@ -18,13 +17,13 @@ Installation
 
 
 .. toctree::
-   :maxdepth: 1
    :caption: API
+   :glob:
 
-   api/flows
-   api/bijections
-   api/distributions
-   api/transformers
-   api/training
+   api/*
 
-   
+.. toctree::
+   :caption: FAQ
+
+   faq
+
