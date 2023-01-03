@@ -1,6 +1,6 @@
 import jax
 import jax.numpy as jnp
-
+import math
 from flowjax.bijections import Bijection
 
 
@@ -44,8 +44,8 @@ class TanhLinearTails(Bijection):
 
     cond_dim: int = 0
     max_val: float
-    _intercept: float
-    _linear_grad: float
+    intercept: float
+    linear_grad: float
 
     def __init__(self, max_val: float):
         """Create a tanh bijection with linear "tails" beyond +/- max_val.
@@ -54,16 +54,8 @@ class TanhLinearTails(Bijection):
             max_val (int): Value above or below which the function becomes linear.
         """
         self.max_val = max_val
-        self._linear_grad = jnp.exp(_tanh_log_grad(max_val))
-        self._intercept = jnp.tanh(max_val) - self.linear_grad * max_val
-
-    @property
-    def linear_grad(self):
-        return jax.lax.stop_gradient(self._linear_grad)
-
-    @property
-    def intercept(self):
-        return jax.lax.stop_gradient(self._intercept)
+        self.linear_grad = math.exp(_tanh_log_grad(max_val))
+        self.intercept = math.tanh(max_val) - self.linear_grad * max_val
 
     def transform(self, x, condition=None):
         is_linear = jnp.abs(x) >= self.max_val
