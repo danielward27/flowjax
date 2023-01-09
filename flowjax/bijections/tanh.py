@@ -14,10 +14,9 @@ class Tanh(Bijection):
     Tanh bijection.
     """
 
-    cond_dim: int = 0
-
     def __init__(self) -> None:
-        pass
+        self.shape = None
+        self.cond_shape = None
 
     def transform(self, x, condition=None):
         return jnp.tanh(x)
@@ -42,7 +41,6 @@ class TanhLinearTails(Bijection):
     avoiding issues with numerical instability.
     """
 
-    cond_dim: int = 0
     max_val: float
     intercept: float
     linear_grad: float
@@ -56,6 +54,8 @@ class TanhLinearTails(Bijection):
         self.max_val = max_val
         self.linear_grad = math.exp(_tanh_log_grad(max_val))
         self.intercept = math.tanh(max_val) - self.linear_grad * max_val
+        self.shape = None
+        self.cond_shape = None
 
     def transform(self, x, condition=None):
         is_linear = jnp.abs(x) >= self.max_val

@@ -1,29 +1,31 @@
 # Distribution object (for flows and base distributions)
 
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any, Optional, Tuple, Union
 
 import equinox as eqx
 import jax
 import jax.numpy as jnp
-from jax import random
-from jax.random import KeyArray
+
+import jax.random as jr
 from jax.scipy import stats as jstats
 
 from flowjax.bijections import Affine, Bijection
-from flowjax.utils import Array, broadcast_arrays_1d
-
+from flowjax.utils import Array, _get_ufunc_signature
+from math import prod
+from flowjax.utils import broadcast_shapes
 # To construct a distribution, we define _log_prob and _sample, which take in vector arguments.
 # More friendly methods are then created from these, supporting batches of inputs.
 # Note that unconditional distributions should allow, but ignore the passing of conditional variables
 # (to facilitate easy composing of conditional and unconditional distributions)
 
-
+# TODO Can we use numpy vectorise on the distributions????
 class Distribution(eqx.Module, ABC):
-    """Distribution base class."""
+    """Distribution base class.
+    """
 
-    dim: int
-    cond_dim: int
+    shape: Tuple[int]
+    cond_shape: Union[None, Tuple[int]]
 
     @abstractmethod
     def _log_prob(self, x: Array, condition: Optional[Array] = None):
@@ -31,53 +33,14 @@ class Distribution(eqx.Module, ABC):
         pass
 
     @abstractmethod
-    def _sample(self, key: KeyArray, condition: Optional[Array] = None):
+    def _sample(self, key: jr.KeyArray, condition: Optional[Array] = None):
         "Sample a point from the distribution."
         pass
 
-    @property
-    def conditional(self):
-        "Whether the distribution is an unconditional distribution or not."
-        return True if self.cond_dim > 0 else False
-
-    def sample(
-        self,
-        key: KeyArray,
-        condition: Optional[Array] = None,
-        n: Optional[int] = None,
-    ) -> Array:
-        """Sample from a distribution.
-
-        Args:
-            key (KeyArray): Jax PRNGKey.
-            condition (Optional[Array], optional): Conditioning variables. If the conditioning variable has
-                a leading batch dimension, `n` is inferred from the leading axis. Defaults to None.
-            n (Optional[int], optional): Number of samples. Defaults to None.
-
-        Returns:
-            Array: Jax array of samples.
-        """
-        self._argcheck_condition(condition)
-
-        if n is None:
-            if condition is None:
-                return self._sample(key)
-            elif condition.ndim == 1:
-                return self._sample(key, condition)
-            else:
-                n = condition.shape[0]
-                in_axes = (0, 0)  # type: tuple[Any, Any]
-        else:
-            if condition is not None and condition.ndim != 1:
-                raise ValueError("condition must be 1d if n is provided.")
-            in_axes = (0, None)
-
-        keys = random.split(key, n)
-        return jax.vmap(self._sample, in_axes)(keys, condition)
 
     def log_prob(self, x: Array, condition: Optional[Array] = None):
-        """Evaluate the log probability. If a matrix/matrices are passed,
-        we vmap (vectorise) over the leading axis.
+        """Evaluate the log probability. Uses numpy like broadcasting if additional
+        leading dimensions are passed. in the arguments.
 
         Args:
             x (Array): Points at which to evaluate density.
@@ -86,44 +49,71 @@ class Distribution(eqx.Module, ABC):
         Returns:
             Array: Jax array of log probabilities.
         """
-        self._argcheck_x(x)
-        self._argcheck_condition(condition)
+        self._argcheck(x, condition)
+        if condition is not None:
+            sig = _get_ufunc_signature([self.shape, self.cond_shape], [()])
+            exclude = {},
+        else:
+            sig = _get_ufunc_signature([self.shape], [()])
+            exclude = {1}
+        
+        return jnp.vectorize(self._log_prob, signature=sig, excluded=exclude)(x, condition)
+
+    def sample(self, key: jr.PRNGKey, condition: Optional[Array] = None, sample_shape: Tuple[int] = ()):
+        "Output shape will be sample_shape + condition_batch_shape + self.shape"
+        self._argcheck(condition=condition)
 
         if condition is None:
-            if x.ndim == 1:
-                return self._log_prob(x)
-            else:
-                return jax.vmap(self._log_prob)(x)
+            key_shape = sample_shape
+            excluded = {1}
+            sig = _get_ufunc_signature([(2,)], [self.shape])
         else:
-            if (x.ndim == 1) and (condition.ndim == 1):
-                return self._log_prob(x, condition)
-            else:
-                in_axes = [0 if a.ndim == 2 else None for a in (x, condition)]
-                return jax.vmap(self._log_prob, in_axes)(x, condition)
+            key_shape = sample_shape + condition.shape[:-len(self.condition_shape)]
+            excluded = {}
+            sig = _get_ufunc_signature([(2,), self.cond_shape], [self.x_shape])
+        
+        key_size = max(1, prod(key_shape)) # max 1 required for scalar input
+        keys = jnp.reshape(jr.split(key, key_size), key_shape + (2,))
 
-    def _argcheck_x(self, x: Array):
-        if x.ndim not in (1, 2):
-            raise ValueError("x.ndim should be 1 or 2")
+        return jnp.vectorize(self._sample, excluded=excluded, signature=sig)(keys, condition)
+    
+    def _argcheck(self, x=None, condition=None):
+        # jnp.vectorize will catch ndim mismatches, but it doesn't check axis lengths.
+        if x is not None:
+            x_trailing = x.shape[-self.ndim:] if self.ndim>0 else ()
+            if  x_trailing != self.shape:
+                raise ValueError(
+                    f"Expected trailing dimensions in input x to match the distribution shape, but got"
+                    f"x shape {x.shape}, and distribution shape {self.shape}."
+                )
 
-        if x.shape[-1] != self.dim:
-            raise ValueError(f"Expected x.shape[-1]=={self.dim}, got {x.shape}.")
+        if condition is None and self.cond_shape is not None:
+            raise ValueError(
+                f"Conditioning variable was not provided."
+                f"Expected conditioning variable with trailing shape {self.shape}."
+            )
 
-    def _argcheck_condition(self, condition: Optional[Array] = None):
-        if condition is None:
-            if self.conditional:
-                raise ValueError(f"condition must be provided.")
-        else:
-            if condition.ndim not in (1, 2):
-                raise ValueError("condition.ndim should be 1 or 2")
-            if condition.shape[-1] != self.cond_dim:
-                raise ValueError(f"Expected condition.shape[-1]=={self.cond_dim}.")
+        if condition is not None:
+            condition_trailing = condition.shape[-self.cond_ndim:] if self.cond_ndim>0 else ()
+            if condition_trailing != self.cond_shape:
+                raise ValueError(
+                    f"Expected trailing dimensions in the condition to match the distribution.cond_shape, but got"
+                    f"condition shape {condition.shape}, and distribution.cond_shape {self.cond_shape}."
+                )
+
+    @property
+    def ndim(self):
+        return len(self.shape)
+
+    @property
+    def cond_ndim(self):
+        return len(self.cond_shape)
 
 
 class Transformed(Distribution):
     base_dist: Distribution
     bijection: Bijection
-    dim: int
-    cond_dim: int
+    cond_shape: Union[None, Tuple[int]]
 
     def __init__(
         self,
@@ -141,15 +131,15 @@ class Transformed(Distribution):
         """
         self.base_dist = base_dist
         self.bijection = bijection
-        self.dim = self.base_dist.dim
-        self.cond_dim = max(self.bijection.cond_dim, self.base_dist.cond_dim)
+        self.shape = self.base_dist.shape
+        self.cond_shape = broadcast_shapes((self.bijection.cond_shape, self.base_dist.cond_shape))
 
     def _log_prob(self, x: Array, condition: Optional[Array] = None):
         z, log_abs_det = self.bijection.inverse_and_log_abs_det_jacobian(x, condition)
         p_z = self.base_dist._log_prob(z, condition)
         return p_z + log_abs_det
 
-    def _sample(self, key: KeyArray, condition: Optional[Array] = None):
+    def _sample(self, key: jr.KeyArray, condition: Optional[Array] = None):
         z = self.base_dist._sample(key, condition)
         x = self.bijection.transform(z, condition)
         return x
@@ -157,21 +147,21 @@ class Transformed(Distribution):
 
 class StandardNormal(Distribution):
 
-    def __init__(self, dim: int):
+    def __init__(self, shape: Tuple[int] = ()):
         """
         Implements a standard normal distribution, condition is ignored.
 
         Args:
-            dim (int): Dimension of the normal distribution.
-        """
-        self.dim = dim
-        self.cond_dim = 0
+            dim (int): Dimension of the normal distribution. 
+        """  # TODO update documentation
+        self.shape = shape
+        self.cond_shape = None
 
     def _log_prob(self, x: Array, condition: Optional[Array] = None):
         return jstats.norm.logpdf(x).sum()
 
-    def _sample(self, key: KeyArray, condition: Optional[Array] = None):
-        return random.normal(key, (self.dim,))
+    def _sample(self, key: jr.KeyArray, condition: Optional[Array] = None):
+        return jr.normal(key, self.shape)
 
 
 class Normal(Transformed):
@@ -186,8 +176,10 @@ class Normal(Transformed):
             loc (Array): Array of the means of each dimension.
             scale (Array): Array of the standard deviations of each dimension.
         """
-        loc, scale = broadcast_arrays_1d(loc, scale)
-        base_dist = StandardNormal(loc.shape[0])
+        loc, scale = jnp.broadcast_arrays(loc, scale)
+        self.shape = loc.shape
+        self.cond_shape = None
+        base_dist = StandardNormal(self.shape)
         bijection = Affine(loc=loc, scale=scale)
         super().__init__(base_dist, bijection)
 
@@ -205,16 +197,18 @@ class _StandardUniform(Distribution):
     Implements a standard independent Uniform distribution, ie X ~ Uniform([0, 1]^dim).
     """
 
-    def __init__(self, dim):
-        self.dim = dim
-        self.cond_dim = 0
+    def __init__(self, shape: Tuple[int] = ()):
+        self.shape = shape
+        self.cond_shape = None
 
     def _log_prob(self, x: Array, condition: Optional[Array] = None):
         return jstats.uniform.logpdf(x).sum()
 
-    def _sample(self, key: KeyArray, condition: Optional[Array] = None):
-        return random.uniform(key, shape=(self.dim,))
+    def _sample(self, key: jr.KeyArray, condition: Optional[Array] = None):
+        return jr.uniform(key, shape=self.shape)
 
+
+from jax.experimental import checkify
 
 class Uniform(Transformed):
     """
@@ -228,10 +222,16 @@ class Uniform(Transformed):
             minval (Array): ith entry gives the min of the ith dimension
             maxval (Array): ith entry gives the max of the ith dimension
         """
-        minval, maxval = broadcast_arrays_1d(minval, maxval)
-        if jnp.any(maxval < minval):
-            raise ValueError("Minimums must be less than maximums.")
-        base_dist = _StandardUniform(minval.shape[0])
+        minval, maxval = jnp.broadcast_arrays(minval, maxval)
+        self.shape = minval.shape
+        self.cond_shape = None
+
+        checkify.check(
+            jnp.all(maxval >= minval),
+            "Minimums must be less than the maximums."
+        )
+        
+        base_dist = _StandardUniform(minval.shape)
         bijection = Affine(loc=minval, scale=maxval - minval)
         super().__init__(base_dist, bijection)
 
@@ -248,16 +248,16 @@ class _StandardGumbel(Distribution):
     """Standard gumbel distribution (https://en.wikipedia.org/wiki/Gumbel_distribution).
     """
 
-    def __init__(self, dim):
+    def __init__(self, shape: Tuple[int] = ()):
         
-        self.dim = dim
-        self.cond_dim = 0
+        self.shape = shape
+        self.cond_shape = None
 
     def _log_prob(self, x: Array, condition: Optional[Array] = None):
         return -(x + jnp.exp(-x)).sum()
 
-    def _sample(self, key: KeyArray, condition: Optional[Array] = None):
-        return random.gumbel(key, shape=(self.dim,))
+    def _sample(self, key: jr.KeyArray, condition: Optional[Array] = None):
+        return jr.gumbel(key, shape=self.shape)
 
 
 class Gumbel(Transformed):
@@ -271,9 +271,13 @@ class Gumbel(Transformed):
             loc (Array): Location paramter. 
             scale (Array, optional): Scale parameter. Defaults to 1.0.
         """
-        loc, scale = broadcast_arrays_1d(loc, scale)
-        base_dist = _StandardGumbel(loc.shape[0])
+        loc, scale = jnp.broadcast_arrays(loc, scale)
+        self.shape = loc.shape
+        self.cond_shape = None
+        base_dist = _StandardGumbel(self.shape)
         bijection = Affine(loc, scale)
+
+
         super().__init__(base_dist, bijection)
 
     @property
@@ -291,15 +295,15 @@ class _StandardCauchy(Distribution):
     Ref: https://en.wikipedia.org/wiki/Cauchy_distribution
     """
 
-    def __init__(self, dim):
-        self.dim = dim
-        self.cond_dim = 0
+    def __init__(self, shape: Tuple[int] = ()):
+        self.shape = shape
+        self.cond_shape = None
 
     def _log_prob(self, x: Array, condition: Optional[Array] = None):
         return jstats.cauchy.logpdf(x).sum()
 
-    def _sample(self, key: KeyArray, condition: Optional[Array] = None):
-        return random.cauchy(key, shape=(self.dim,))
+    def _sample(self, key: jr.KeyArray, condition: Optional[Array] = None):
+        return jr.cauchy(key, shape=self.shape)
 
 
 class Cauchy(Transformed):
@@ -315,8 +319,10 @@ class Cauchy(Transformed):
             loc (Array): Location paramter. 
             scale (Array, optional): Scale parameter. Defaults to 1.0.
         """
-        loc, scale = broadcast_arrays_1d(loc, scale)
-        base_dist = _StandardCauchy(loc.shape[0])
+        loc, scale = jnp.broadcast_arrays(loc, scale)
+        self.shape = loc.shape
+        self.cond_shape = None
+        base_dist = _StandardCauchy(self.shape)
         bijection = Affine(loc, scale)
         super().__init__(base_dist, bijection)
 
@@ -337,15 +343,15 @@ class _StandardStudentT(Distribution):
     log_df: Array
 
     def __init__(self, df: Array):
-        self.dim = df.shape[0]
-        self.cond_dim = 0
+        self.shape = df.shape
+        self.cond_shape = None
         self.log_df = jnp.log(df)
 
     def _log_prob(self, x: Array, condition: Optional[Array] = None):
         return jstats.t.logpdf(x, df=self.df).sum()
 
-    def _sample(self, key: KeyArray, condition: Optional[Array] = None):
-        return random.t(key, df=self.df, shape=(self.dim,))
+    def _sample(self, key: jr.KeyArray, condition: Optional[Array] = None):
+        return jr.t(key, df=self.df, shape=self.shape)
 
     @property
     def df(self):
@@ -364,9 +370,9 @@ class StudentT(Transformed):
             loc (Array): Location parameter. Defaults to 0.0.
             scale (Array, optional): Scale parameter. Defaults to 1.0.
         """
-        df, loc, scale = broadcast_arrays_1d(df, loc, scale)
-        self.dim = df.shape[0]
-        self.cond_dim = 0
+        df, loc, scale = jnp.broadcast_arrays(df, loc, scale)
+        self.shape = df.shape
+        self.cond_shape = None
         base_dist = _StandardStudentT(df)
         bijection = Affine(loc, scale)
         super().__init__(base_dist, bijection)

@@ -5,29 +5,24 @@ from jax.experimental import checkify
 from jax.scipy.linalg import solve_triangular
 
 from flowjax.bijections import Bijection
-from flowjax.utils import Array, broadcast_arrays_1d
+from flowjax.utils import Array
+from jax.experimental import checkify
+import equinox as eqx
 
 
 class Affine(Bijection):
-    """Elementwise affine transformation. Condition is ignored."""
     loc: Array
     log_scale: Array
-    dim: int
 
-    def __init__(self, loc: Array, scale: Array = 1.0):
-        """``loc`` and ``scale`` should broadast to the dimension of the transformation.
+    def __init__(self, loc, scale=jnp.array(1)):
+        self.shape = jnp.broadcast_shapes(loc.shape, scale.shape)
+        self.cond_shape = None
 
-        Args:
-            loc (Array): Location parameter vector.
-            scale (Array): Positive scale parameter vector.
-        """
-        loc, scale = broadcast_arrays_1d(loc, scale)
-        self.loc = loc
-        self.log_scale = jnp.log(scale)
-        self.dim = loc.shape[0]
-        self.cond_dim = 0
+        self.loc = jnp.broadcast_to(loc, self.shape)
+        self.log_scale = jnp.broadcast_to(jnp.log(scale), self.shape)
 
-    def transform(self, x, condition=None):
+    def transform(self, x, condition = None):
+        self._argcheck(x)
         return x * self.scale + self.loc
 
     def transform_and_log_abs_det_jacobian(self, x, condition=None):
@@ -35,6 +30,7 @@ class Affine(Bijection):
         return x * self.scale + self.loc, self.log_scale.sum()
 
     def inverse(self, y, condition=None):
+        self._argcheck(y)
         return (y - self.loc) / self.scale
 
     def inverse_and_log_abs_det_jacobian(self, y, condition=None):
@@ -45,20 +41,13 @@ class Affine(Bijection):
     def scale(self):
         return jnp.exp(self.log_scale)
 
-    def _argcheck(self, x: Array):
-        if x.shape != (self.dim,):
-            raise ValueError(f"Expected shape {(self.dim, )}, got {x.shape}.")
-
 
 class TriangularAffine(Bijection):
     """Transformation of the form ``Ax + b``, where ``A`` is a lower or upper triangular matrix."""
     loc: Array
-    dim: int
-    cond_dim: int
     diag_idxs: Array
     tri_mask: Array
     lower: bool
-    min_diag: float
     weight_log_scale: Optional[Array]
     _arr: Array
     _log_diag: Array
@@ -68,7 +57,6 @@ class TriangularAffine(Bijection):
         loc: Array,
         arr: Array,
         lower: bool = True,
-        min_diag: float = 1e-6,
         weight_normalisation: bool = False,
     ):
         """
@@ -76,32 +64,31 @@ class TriangularAffine(Bijection):
             loc (Array): Translation.
             arr (Array): Triangular matrix.
             lower (bool, optional): Whether the mask should select the lower or upper triangular matrix (other elements ignored). Defaults to True.
-            min_diag (float, optional): Minimum value on the diagonal, to ensure invertibility. Defaults to 1e-6.
-            weight_log_scale (Optional[Array], optional): If provided, carry out weight normalisation, initialising log scales to the zero vector.
+            weight_log_scale (Optional[Array], optional): If provided, carry out weight normalisation.
         """
 
         if (arr.ndim != 2) or (arr.shape[0] != arr.shape[1]):
             ValueError("arr must be a square, 2-dimensional matrix.")
         checkify.check(
-            jnp.all(jnp.diag(arr) > min_diag),
-            "arr diagonal entries must be greater than min_diag",
+            jnp.all(jnp.diag(arr) > 0),
+            "arr diagonal entries must be greater than 0",
         )
-
-        self.dim = arr.shape[0]
-        self.cond_dim = 0
-        self.diag_idxs = jnp.diag_indices(self.dim)
-        tri_mask = jnp.tril(jnp.ones((self.dim, self.dim), dtype=jnp.int32), k=-1)
+        dim = arr.shape[0]
+        self.diag_idxs = jnp.diag_indices(dim)
+        tri_mask = jnp.tril(jnp.ones((dim, dim), dtype=jnp.int32), k=-1)
         self.tri_mask = tri_mask if lower else tri_mask.T
-        self.min_diag = min_diag
         self.lower = lower
 
         # inexact arrays
         self.loc = loc
         self._arr = arr
-        self._log_diag = jnp.log(jnp.diag(arr) - min_diag)
-        self.weight_log_scale = (
-            jnp.zeros((self.dim, 1)) if weight_normalisation else None
-        )
+        self._log_diag = jnp.log(jnp.diag(arr))
+        self.weight_log_scale = jnp.zeros((dim, 1)) if weight_normalisation else None
+
+        self.shape = (dim, )
+        self.cond_shape = None
+        
+        
 
     @property
     def arr(self):
@@ -117,28 +104,28 @@ class TriangularAffine(Bijection):
         return arr
 
     def transform(self, x, condition=None):
+        self._argcheck(x)
         return self.arr @ x + self.loc
 
     def transform_and_log_abs_det_jacobian(self, x, condition=None):
+        self._argcheck(x)
         a = self.arr
-        return a @ x + self.loc, jnp.log(jnp.diag(a)).sum()
+        return a @ x + self.loc, jnp.log(jnp.diag(a)).sum()  # TODO could this broadcast and give incorrect results?
 
     def inverse(self, y, condition=None):
+        self._argcheck(y)
         return solve_triangular(self.arr, y - self.loc, lower=self.lower)
 
     def inverse_and_log_abs_det_jacobian(self, y, condition=None):
+        self._argcheck(y)
         a = self.arr
-        return (
-            solve_triangular(a, y - self.loc, lower=self.lower),
-            -jnp.log(jnp.diag(a)).sum(),
-        )
+        x = solve_triangular(a, y - self.loc, lower=self.lower)
+        return x, -jnp.log(jnp.diag(a)).sum()
 
 
 class AdditiveLinearCondition(Bijection):
     """Carries out ``y = x + W @ condition``, as the forward transformation and
     ``x = y - W @ condition`` as the inverse."""
-    dim: int
-    cond_dim: int
     W: Array
 
     def __init__(self, arr: Array):
@@ -146,18 +133,21 @@ class AdditiveLinearCondition(Bijection):
         Args:
             arr (Array): Array (``W`` in the description.)
         """
-        self.dim = arr.shape[0]
-        self.cond_dim = arr.shape[1]
         self.W = arr
+        super().__init__(shape=(arr.shape[0], ), cond_shape=(arr.shape[1], ))
 
     def transform(self, x, condition=None):
+        self._argcheck(x, condition)
         return x + self.W @ condition
 
     def transform_and_log_abs_det_jacobian(self, x, condition=None):
+        self._argcheck(x, condition)
         return self.transform(x, condition), jnp.array(0)
 
     def inverse(self, y, condition=None):
+        self._argcheck(y, condition)
         return y - self.W @ condition
 
     def inverse_and_log_abs_det_jacobian(self, y, condition=None):
+        self._argcheck(y, condition)
         return self.inverse(y, condition), jnp.array(0)
