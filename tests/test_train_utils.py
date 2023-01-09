@@ -6,7 +6,7 @@ from jax import random
 
 from flowjax.bijections import Affine
 from flowjax.distributions import Normal, Transformed
-from flowjax.train_utils import (
+from flowjax.train.data_fit import (
     count_fruitless,
     random_permutation_multiple,
     train_flow,

@@ -1,7 +1,6 @@
 from typing import Dict, List, Optional, Sequence, Tuple
 
 import equinox as eqx
-import jax
 import jax.numpy as jnp
 import optax
 from equinox.custom_types import BoolAxisSpec
