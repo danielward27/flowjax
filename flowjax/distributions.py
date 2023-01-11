@@ -48,7 +48,7 @@ class Distribution(eqx.Module, ABC):
         self._argcheck(x, condition)
         if condition is not None:
             sig = _get_ufunc_signature([self.shape, self.cond_shape], [()])
-            exclude = ({},)
+            exclude = {}
         else:
             sig = _get_ufunc_signature([self.shape], [()])
             exclude = {1}
