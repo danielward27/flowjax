@@ -231,8 +231,7 @@ class Uniform(Transformed):
             minval (Array): ith entry gives the min of the ith dimension
             maxval (Array): ith entry gives the max of the ith dimension
         """
-        minval, maxval = jnp.broadcast_shapes(jnp.shape(minval), jnp.shape(maxval))
-        self.shape = minval.shape
+        self.shape = jnp.broadcast_shapes(jnp.shape(minval), jnp.shape(maxval))
         self.cond_shape = None
 
         checkify.check(
