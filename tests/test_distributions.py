@@ -34,9 +34,9 @@ _test_distributions = {
 }
 
 
-
 _test_distributions = [pytest.param(v, id=k) for k, v in _test_distributions.items()]
-_test_shapes = [(), (2, ), (2,3)]
+_test_shapes = [(), (2,), (2, 3)]
+
 
 @pytest.mark.parametrize("distribution", _test_distributions)
 @pytest.mark.parametrize("shape", _test_shapes)
@@ -45,7 +45,7 @@ def test_sample(distribution, shape):
     sample = d.sample(random.PRNGKey(0))
     assert sample.shape == shape
 
-    sample_shape = (2,2)
+    sample_shape = (2, 2)
     sample = d.sample(random.PRNGKey(0), sample_shape=sample_shape)
     assert sample.shape == sample_shape + shape
 
@@ -58,7 +58,7 @@ def test_log_prob(distribution, shape):
 
     assert d.log_prob(x).shape == ()
 
-    sample_shape = (2,3)
+    sample_shape = (2, 3)
     x = d.sample(random.PRNGKey(0), sample_shape=sample_shape)
     assert d.log_prob(x).shape == sample_shape
 
@@ -83,12 +83,11 @@ def test_log_prob_shape_mismatch(distribution):
     d = distribution(shape=(3,))
 
     with pytest.raises(ValueError):
-        d.log_prob(jnp.ones((3,2)))
+        d.log_prob(jnp.ones((3, 2)))
 
-    d = distribution(shape=(3,2))
+    d = distribution(shape=(3, 2))
     with pytest.raises(ValueError):
         d.log_prob(jnp.ones((2,)))
-
 
 
 def test_normal_params():

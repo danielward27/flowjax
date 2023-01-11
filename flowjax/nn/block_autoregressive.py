@@ -10,9 +10,11 @@ from flowjax.masks import block_diag_mask, block_tril_mask
 from flowjax.utils import Array
 import jax
 
+
 def _tanh_log_grad(x):
     "log gradient vector of tanh transformation"
     return -2 * (x + jax.nn.softplus(-2 * x) - jnp.log(2.0))
+
 
 class BlockAutoregressiveLinear(eqx.Module):
     n_blocks: int
@@ -47,7 +49,7 @@ class BlockAutoregressiveLinear(eqx.Module):
             init (Callable, optional): Default initialisation method for the weight matrix. Defaults to ``glorot_uniform()``.
         """
         self.cond_dim = cond_dim
-        
+
         if cond_dim is None:
             cond_dim = 0
 

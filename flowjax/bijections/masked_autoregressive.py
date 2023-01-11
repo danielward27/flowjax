@@ -44,21 +44,27 @@ class MaskedAutoregressive(Bijection):
             nn_activation (Callable, optional): Neural network activation. Defaults to jnn.relu.
         """
         if transformer.shape != () or transformer.cond_shape is not None:
-            raise ValueError("Currently, only unconditional transformers with shape () are supported.")
+            raise ValueError(
+                "Currently, only unconditional transformers with shape () are supported."
+            )
 
-        constructor, transformer_init_params = get_ravelled_bijection_constructor(transformer)
+        constructor, transformer_init_params = get_ravelled_bijection_constructor(
+            transformer
+        )
 
         if cond_dim is None:
             self.cond_shape = None
             in_ranks = jnp.arange(dim)
         else:
-            self.cond_shape = (cond_dim, )
+            self.cond_shape = (cond_dim,)
             # we give conditioning variables rank -1 (no masking of edges to output)
             in_ranks = jnp.hstack((jnp.arange(dim), -jnp.ones(cond_dim)))
 
         hidden_ranks = tile_until_length(jnp.arange(dim), nn_width)
 
-        out_ranks = jnp.repeat(jnp.arange(dim), transformer_init_params.size)   # TODO Should this be tile or repeat?
+        out_ranks = jnp.repeat(
+            jnp.arange(dim), transformer_init_params.size
+        )  # TODO Should this be tile or repeat?
 
         autoregressive_mlp = AutoregressiveMLP(
             in_ranks,
@@ -73,12 +79,14 @@ class MaskedAutoregressive(Bijection):
         self.autoregressive_mlp = eqx.tree_at(
             where=lambda t: t.layers[-1].linear.bias,
             pytree=autoregressive_mlp,
-            replace=jnp.tile(transformer_init_params, dim)  # TODO Is tiling or repeating or correct here? 
-            )
+            replace=jnp.tile(
+                transformer_init_params, dim
+            ),  # TODO Is tiling or repeating or correct here?
+        )
 
         self.transformer_constructor = constructor
-        self.shape = (dim, )
-        self.cond_shape = None if cond_dim is None else (cond_dim, )
+        self.shape = (dim,)
+        self.cond_shape = None if cond_dim is None else (cond_dim,)
 
     def transform(self, x, condition=None):
         nn_input = x if condition is None else jnp.hstack((x, condition))
@@ -113,9 +121,11 @@ class MaskedAutoregressive(Bijection):
         log_det = self.transform_and_log_abs_det_jacobian(x, condition)[1]
         return x, -log_det
 
-    def _flat_params_to_transformer(self, params: Array):  # TODO code repetition with MAF
+    def _flat_params_to_transformer(
+        self, params: Array
+    ):  # TODO code repetition with MAF
         "Reshape to dim X params_per_dim, then vmap."
         dim = self.shape[-1]
         transformer_params = jnp.reshape(params, (dim, -1))
         transformer = eqx.filter_vmap(self.transformer_constructor)(transformer_params)
-        return Vmap(transformer, (dim, ))
+        return Vmap(transformer, (dim,))

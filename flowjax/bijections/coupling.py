@@ -15,7 +15,6 @@ class Coupling(Bijection):
     transformer_constructor: Callable
     conditioner: eqx.nn.MLP
 
-
     def __init__(
         self,
         key: KeyArray,
@@ -41,17 +40,21 @@ class Coupling(Bijection):
             nn_activation (Callable, optional): Neural network activation function. Defaults to jnn.relu.
         """
         if transformer.shape != () or transformer.cond_shape is not None:
-            raise ValueError("Currently, only unconditional transformers with shape () are supported.")
+            raise ValueError(
+                "Currently, only unconditional transformers with shape () are supported."
+            )
 
-        constructor, transformer_init_params = get_ravelled_bijection_constructor(transformer)
+        constructor, transformer_init_params = get_ravelled_bijection_constructor(
+            transformer
+        )
 
         self.transformer_constructor = constructor
         self.d = d
         self.D = D
-        self.shape = (D, )
-        self.cond_shape = (cond_dim, ) if cond_dim is not None else None
-        
-        conditioner_output_size = transformer_init_params.size*(D-d)
+        self.shape = (D,)
+        self.cond_shape = (cond_dim,) if cond_dim is not None else None
+
+        conditioner_output_size = transformer_init_params.size * (D - d)
 
         conditioner = eqx.nn.MLP(
             in_size=d if cond_dim is None else d + cond_dim,
@@ -66,8 +69,8 @@ class Coupling(Bijection):
         self.conditioner = eqx.tree_at(
             where=lambda mlp: mlp.layers[-1].bias,
             pytree=conditioner,
-            replace=jnp.repeat(transformer_init_params, D-d)
-            )
+            replace=jnp.repeat(transformer_init_params, D - d),
+        )
 
     def transform(self, x, condition=None):
         x_cond, x_trans = x[: self.d], x[self.d :]
@@ -105,10 +108,11 @@ class Coupling(Bijection):
         x = jnp.hstack((x_cond, x_trans))
         return x, log_det
 
-    def _flat_params_to_transformer(self, params: Array):  # TODO code repetition with MAF
+    def _flat_params_to_transformer(
+        self, params: Array
+    ):  # TODO code repetition with MAF
         "Reshape to dim X params_per_dim, then vmap."
-        dim = self.D-self.d
+        dim = self.D - self.d
         transformer_params = jnp.reshape(params, (dim, -1))
         transformer = eqx.filter_vmap(self.transformer_constructor)(transformer_params)
-        return Vmap(transformer, (dim, ))
-        
+        return Vmap(transformer, (dim,))

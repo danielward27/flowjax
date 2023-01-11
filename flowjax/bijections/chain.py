@@ -17,7 +17,7 @@ class Chain(Bijection):
         """
         Args:
             bijections (Sequence[Bijection]): Sequence of bijections.
-        """        
+        """
         self.shape = broadcast_shapes([s.shape for s in bijections])
         self.cond_shape = broadcast_shapes([b.cond_shape for b in bijections])
         self.bijections = tuple(bijections)

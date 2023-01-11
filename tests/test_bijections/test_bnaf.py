@@ -4,7 +4,10 @@ import pytest
 from jax import random
 from jax.scipy.linalg import block_diag
 
-from flowjax.bijections.block_autoregressive_network import BlockAutoregressiveNetwork, BlockTanh
+from flowjax.bijections.block_autoregressive_network import (
+    BlockAutoregressiveNetwork,
+    BlockTanh,
+)
 from flowjax.masks import block_diag_mask
 
 

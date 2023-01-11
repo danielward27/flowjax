@@ -59,7 +59,6 @@ class Permute(Bijection):
         indices = jnp.unravel_index(permutation.ravel(), permutation.shape)
         self.permutation = tuple(jnp.reshape(i, permutation.shape) for i in indices)
         self.inverse_permutation = jnp.argsort(permutation)
-        
 
     def transform(self, x, condition=None):
         self._argcheck(x)
@@ -138,7 +137,10 @@ class EmbedCondition(Bijection):
     embedding_net: eqx.Module
 
     def __init__(
-        self, bijection: Bijection, embedding_net: eqx.Module, raw_cond_shape: Tuple[int]
+        self,
+        bijection: Bijection,
+        embedding_net: eqx.Module,
+        raw_cond_shape: Tuple[int],
     ) -> None:
         """Use an embedding network to reduce the dimensionality of the conditioning variable.
         The returned bijection has cond_dim equal to the raw condition size.
@@ -173,4 +175,3 @@ class EmbedCondition(Bijection):
         self._argcheck(y, condition)
         condition = self.embedding_net(condition)
         return self.bijection.inverse_and_log_abs_det_jacobian(y, condition)
-

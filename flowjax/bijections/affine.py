@@ -22,7 +22,7 @@ class Affine(Bijection):
         self.loc = jnp.broadcast_to(loc, self.shape)
         self.log_scale = jnp.broadcast_to(jnp.log(scale), self.shape)
 
-    def transform(self, x, condition = None):
+    def transform(self, x, condition=None):
         self._argcheck(x)
         return x * self.scale + self.loc
 
@@ -45,6 +45,7 @@ class Affine(Bijection):
 
 class TriangularAffine(Bijection):
     """Transformation of the form ``Ax + b``, where ``A`` is a lower or upper triangular matrix."""
+
     loc: Array
     diag_idxs: Array
     tri_mask: Array
@@ -86,10 +87,8 @@ class TriangularAffine(Bijection):
         self._log_diag = jnp.log(jnp.diag(arr))
         self.weight_log_scale = jnp.zeros((dim, 1)) if weight_normalisation else None
 
-        self.shape = (dim, )
+        self.shape = (dim,)
         self.cond_shape = None
-        
-        
 
     @property
     def arr(self):
@@ -111,7 +110,10 @@ class TriangularAffine(Bijection):
     def transform_and_log_abs_det_jacobian(self, x, condition=None):
         self._argcheck(x)
         a = self.arr
-        return a @ x + self.loc, jnp.log(jnp.diag(a)).sum()  # TODO could this broadcast and give incorrect results?
+        return (
+            a @ x + self.loc,
+            jnp.log(jnp.diag(a)).sum(),
+        )  # TODO could this broadcast and give incorrect results?
 
     def inverse(self, y, condition=None):
         self._argcheck(y)
@@ -127,6 +129,7 @@ class TriangularAffine(Bijection):
 class AdditiveLinearCondition(Bijection):
     """Carries out ``y = x + W @ condition``, as the forward transformation and
     ``x = y - W @ condition`` as the inverse."""
+
     W: Array
 
     def __init__(self, arr: Array):
@@ -135,7 +138,7 @@ class AdditiveLinearCondition(Bijection):
             arr (Array): Array (``W`` in the description.)
         """
         self.W = arr
-        super().__init__(shape=(arr.shape[-2], ), cond_shape=(arr.shape[-1], ))
+        super().__init__(shape=(arr.shape[-2],), cond_shape=(arr.shape[-1],))
 
     def transform(self, x, condition=None):
         self._argcheck(x, condition)

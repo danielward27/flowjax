@@ -24,6 +24,7 @@ from flowjax.bijections import (
 )
 
 from jax.config import config
+
 config.update("jax_enable_x64", True)
 
 
@@ -108,16 +109,14 @@ bijections = {
         (cond_dim,),  # Raw
     ),
     "Chain": Chain([Flip(), Affine(jnp.ones(dim), jnp.full(dim, 2))]),
-    "Scan": Scan(
-        eqx.filter_vmap(get_maf_layer)(random.split(key, 3))
-    ),
+    "Scan": Scan(eqx.filter_vmap(get_maf_layer)(random.split(key, 3))),
 }
 
 
 @pytest.mark.parametrize("bijection", bijections.values(), ids=bijections.keys())
 def test_transform_inverse(bijection):
     """Tests transform and inverse methods."""
-    shape = bijection.shape if bijection.shape is not None else (dim, )
+    shape = bijection.shape if bijection.shape is not None else (dim,)
     x = random.normal(random.PRNGKey(0), shape)
     if bijection.cond_shape is not None:
         cond = random.normal(random.PRNGKey(0), bijection.cond_shape)

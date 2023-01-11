@@ -1,4 +1,3 @@
-
 from functools import partial
 from typing import Tuple
 import jax
@@ -11,6 +10,7 @@ import equinox as eqx
 
 class _ScalarRationalQuadraticSpline(Bijection):
     """Scaler RationalQuadraticSpline transformation (https://arxiv.org/abs/1906.04032)."""
+
     knots: int
     interval: float
     softmax_adjust: float
@@ -19,9 +19,15 @@ class _ScalarRationalQuadraticSpline(Bijection):
     unbounded_y_pos: Array
     unbounded_derivatives: Array
 
-    def __init__(self, knots: int, interval: float, min_derivative: float=1e-3, softmax_adjust: float=1e-2):
+    def __init__(
+        self,
+        knots: int,
+        interval: float,
+        min_derivative: float = 1e-3,
+        softmax_adjust: float = 1e-2,
+    ):
         """
-        Ouside the interval [-interval, interval], the identity transform is used. 
+        Ouside the interval [-interval, interval], the identity transform is used.
 
         Args:
             knots (int): Number of inner knots.
@@ -39,18 +45,24 @@ class _ScalarRationalQuadraticSpline(Bijection):
         # Inexact arrays
         self.unbounded_x_pos = jnp.zeros(knots)
         self.unbounded_y_pos = jnp.zeros(knots)
-        self.unbounded_derivatives = jnp.full(knots + 2, jnp.log(jnp.exp(1 - min_derivative) - 1))
+        self.unbounded_derivatives = jnp.full(
+            knots + 2, jnp.log(jnp.exp(1 - min_derivative) - 1)
+        )
 
     @property
     def x_pos(self):
         "Get the knot x positions."
-        x_pos = real_to_increasing_on_interval(self.unbounded_x_pos, self.interval, self.softmax_adjust)
+        x_pos = real_to_increasing_on_interval(
+            self.unbounded_x_pos, self.interval, self.softmax_adjust
+        )
         return jnp.pad(x_pos, 1, constant_values=(-self.interval, self.interval))
 
     @property
     def y_pos(self):
         "Get the knot y positions."
-        y_pos = real_to_increasing_on_interval(self.unbounded_y_pos, self.interval, self.softmax_adjust)
+        y_pos = real_to_increasing_on_interval(
+            self.unbounded_y_pos, self.interval, self.softmax_adjust
+        )
         return jnp.pad(y_pos, 1, constant_values=(-self.interval, self.interval))
 
     @property
@@ -61,7 +73,7 @@ class _ScalarRationalQuadraticSpline(Bijection):
     def transform(self, x, condition=None):
         x_pos, y_pos, derivatives = self.x_pos, self.y_pos, self.derivatives
         in_bounds = jnp.logical_and(x > -self.interval, x < self.interval)
-        x_robust = jnp.where(in_bounds, x, 0) # To avoid nans
+        x_robust = jnp.where(in_bounds, x, 0)  # To avoid nans
         k = jnp.searchsorted(x_pos, x_robust) - 1  # k is bin number
         xi = (x_robust - x_pos[k]) / (x_pos[k + 1] - x_pos[k])
         sk = (y_pos[k + 1] - y_pos[k]) / (x_pos[k + 1] - x_pos[k])
@@ -84,7 +96,9 @@ class _ScalarRationalQuadraticSpline(Bijection):
         k = jnp.searchsorted(y_pos, y_robust) - 1
         xk, xk1, yk, yk1 = x_pos[k], x_pos[k + 1], y_pos[k], y_pos[k + 1]
         sk = (yk1 - yk) / (xk1 - xk)
-        y_delta_s_term = (y_robust - yk) * (derivatives[k + 1] + derivatives[k] - 2 * sk)
+        y_delta_s_term = (y_robust - yk) * (
+            derivatives[k + 1] + derivatives[k] - 2 * sk
+        )
         a = (yk1 - yk) * (sk - derivatives[k]) + y_delta_s_term
         b = (yk1 - yk) * derivatives[k] - y_delta_s_term
         c = -sk * (y_robust - yk)
@@ -101,7 +115,7 @@ class _ScalarRationalQuadraticSpline(Bijection):
     def derivative(self, x):  # eq. 5
         x_pos, y_pos, derivatives = self.x_pos, self.y_pos, self.derivatives
         in_bounds = jnp.logical_and(x > -self.interval, x < self.interval)
-        x_robust = jnp.where(in_bounds, x, 0) # To avoid nans
+        x_robust = jnp.where(in_bounds, x, 0)  # To avoid nans
         k = jnp.searchsorted(x_pos, x_robust) - 1
         xi = (x_robust - x_pos[k]) / (x_pos[k + 1] - x_pos[k])
         sk = (y_pos[k + 1] - y_pos[k]) / (x_pos[k + 1] - x_pos[k])
@@ -109,15 +123,24 @@ class _ScalarRationalQuadraticSpline(Bijection):
         num = sk**2 * (dk1 * xi**2 + 2 * sk * xi * (1 - xi) + dk * (1 - xi) ** 2)
         den = (sk + (dk1 + dk - 2 * sk) * xi * (1 - xi)) ** 2
         derivative = num / den
-        return jnp.where(in_bounds, derivative, 1.)
+        return jnp.where(in_bounds, derivative, 1.0)
 
- 
 
 class RationalQuadraticSpline(Vmap):
-    def __init__(self, knots: int, interval: float, shape: Tuple[int]=(), min_derivative: float=1e-3, softmax_adjust: float=1e-2) -> None:
+    def __init__(
+        self,
+        knots: int,
+        interval: float,
+        shape: Tuple[int] = (),
+        min_derivative: float = 1e-3,
+        softmax_adjust: float = 1e-2,
+    ) -> None:
         """Elementwise rational quadratic spline transform, initialised at the identity transform."""
+
         def constructor(dummy):  # Dummy variable to vmap over
-            return _ScalarRationalQuadraticSpline(knots, interval, min_derivative, softmax_adjust)
+            return _ScalarRationalQuadraticSpline(
+                knots, interval, min_derivative, softmax_adjust
+            )
 
         # Create constructor with appropriate number of batch dimensions
         for _ in shape:
@@ -125,5 +148,3 @@ class RationalQuadraticSpline(Vmap):
 
         spline = constructor(jnp.zeros(shape))
         super().__init__(spline, shape)
-
-

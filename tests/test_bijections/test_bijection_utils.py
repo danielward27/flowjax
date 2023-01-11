@@ -7,14 +7,15 @@ from flowjax.bijections import Affine, Partial, Permute
 test_cases = {
     # name: idx, expected
     "int": (1, jnp.array([False, True, False, False])),
-    "bool_array": (jnp.array([True, False, True, False]), jnp.array([True, False, True, False]),),
+    "bool_array": (
+        jnp.array([True, False, True, False]),
+        jnp.array([True, False, True, False]),
+    ),
     "int_arry": (jnp.array([0, 2]), jnp.array([True, False, True, False])),
 }
 
 
-@pytest.mark.parametrize(
-    "idx,expected", test_cases.values(), ids=test_cases.keys()
-)
+@pytest.mark.parametrize("idx,expected", test_cases.values(), ids=test_cases.keys())
 def test_partial(idx, expected):
     "Check values only change where we expect"
     x = jnp.zeros(4)

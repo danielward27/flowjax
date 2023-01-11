@@ -11,12 +11,12 @@ from jax import random
 from jax.random import KeyArray
 
 from flowjax.bijections import Bijection
-from flowjax.nn.block_autoregressive import (BlockAutoregressiveLinear,
-                                             BlockTanh)
+from flowjax.nn.block_autoregressive import BlockAutoregressiveLinear, BlockTanh
 
 
 class BlockAutoregressiveNetwork(Bijection):
     """Block Autoregressive Network (https://arxiv.org/abs/1904.04676)."""
+
     depth: int
     layers: list
     block_dim: int
@@ -68,8 +68,8 @@ class BlockAutoregressiveNetwork(Bijection):
         self.layers = layers
         self.block_dim = block_dim
         self.activation = activation
-        self.shape = (dim, )
-        self.cond_shape = (cond_dim, ) if cond_dim is not None else None
+        self.shape = (dim,)
+        self.cond_shape = (cond_dim,) if cond_dim is not None else None
 
     def transform(self, x, condition=None):
         self._argcheck(x, condition)

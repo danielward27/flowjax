@@ -10,7 +10,7 @@ from flowjax.flows import (
     BlockNeuralAutoregressiveFlow,
     CouplingFlow,
     MaskedAutoregressiveFlow,
-    TriangularSplineFlow
+    TriangularSplineFlow,
 )
 
 from flowjax.bijections import Affine, RationalQuadraticSpline
@@ -27,21 +27,20 @@ testcases = {
     "BNAF": BlockNeuralAutoregressiveFlow(**kwargs),
     "TriangularSplineFlow": TriangularSplineFlow(**kwargs),
     "Affine_Coupling": CouplingFlow(transformer=Affine(), **kwargs),
-    "Spline_Coupling": CouplingFlow(transformer=RationalQuadraticSpline(3,2), **kwargs),
-    
+    "Spline_Coupling": CouplingFlow(
+        transformer=RationalQuadraticSpline(3, 2), **kwargs
+    ),
     # "Affine_MaskedAutoregessive": MaskedAutoregressiveFlow(transformer=Affine(), **kwargs),
     #     {"transformer": } | common_kwargs,
     # ),
-    
 }
-
 
 
 @pytest.mark.parametrize("flow", testcases.values(), ids=testcases.keys())
 def test_unconditional_flow_sample(flow):
     n = 5
     try:
-        assert flow.sample(key, sample_shape=(n,)).shape == (n, ) + flow.shape
+        assert flow.sample(key, sample_shape=(n,)).shape == (n,) + flow.shape
         assert flow.sample(key).shape == flow.shape
     except NotImplementedError:
         pass
@@ -50,7 +49,7 @@ def test_unconditional_flow_sample(flow):
 @pytest.mark.parametrize("flow", testcases.values(), ids=testcases.keys())
 def test_unconditional_flow_log_prob(flow):
     n = 5
-    x = jr.normal(key, (n, ) + flow.shape)
+    x = jr.normal(key, (n,) + flow.shape)
     lp = flow.log_prob(x)
     assert lp.shape == (n,)
 

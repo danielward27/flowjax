@@ -1,4 +1,3 @@
-
 from functools import partial
 import equinox as eqx
 from flowjax.bijections import Bijection
@@ -17,6 +16,7 @@ class Vmap(Bijection):
             >>> # TODO create examples
 
     """
+
     ndim_to_add: int
     bijection: Bijection
     kwargs: dict
@@ -24,14 +24,16 @@ class Vmap(Bijection):
     def __init__(self, bijection: Bijection, shape: Tuple[int], **kwargs):
         """
         Args:
-            bijection (Bijection): Bijection, where the parameters have leading shape equalling shape (if vmapping over bijection parameters). 
+            bijection (Bijection): Bijection, where the parameters have leading shape equalling shape (if vmapping over bijection parameters).
             shape (Tuple[int]): Shape prepended to the bijection shape. If len(shape)>1, multiple applications of vmap will be used.
             **kwargs: kwargs, passed to equinox.filter_vmap, allowing e.g. control over which variables to map over.
         """
         self.bijection = bijection
         self.ndim_to_add = len(shape)
         self.kwargs = kwargs  # For filter vmap
-        self.shape = shape + self.bijection.shape if self.bijection.shape is not None else shape
+        self.shape = (
+            shape + self.bijection.shape if self.bijection.shape is not None else shape
+        )
         self.cond_shape = bijection.cond_shape
 
     def transform(self, x, condition=None):
@@ -82,6 +84,7 @@ class Scan(Bijection):
             >>> # Below is equivilent to Chain([Affine(p) for p in params])
             >>> affine = Scan(equinox.filter_vmap(Affine)(params))
     """
+
     static: Any
     params: Any
 
@@ -90,7 +93,7 @@ class Scan(Bijection):
         The array leaves in `bijection` should have an additional leading axis to scan over.
         Often it is convenient to construct these using `equinox.filter_vmap`.
 
-        
+
         Args:
             bijections (Bijection): A bijection, in which the arrays have an additional leading axis to scan over.
         """
@@ -100,6 +103,7 @@ class Scan(Bijection):
 
     def transform(self, x, condition=None):
         self._argcheck(x, condition)
+
         def fn(x, p, condition=None):
             bijection = eqx.combine(self.static, p)
             result = bijection.transform(x, condition)  # type: ignore
@@ -111,6 +115,7 @@ class Scan(Bijection):
 
     def transform_and_log_abs_det_jacobian(self, x, condition=None):
         self._argcheck(x, condition)
+
         def fn(carry, p, condition):
             x, log_det = carry
             bijection = eqx.combine(self.static, p)
@@ -122,7 +127,8 @@ class Scan(Bijection):
         return y, log_det
 
     def inverse(self, y, condition=None):
-        self._argcheck(y, condition)       
+        self._argcheck(y, condition)
+
         def fn(y, p, condition=None):
             bijection = eqx.combine(self.static, p)
             x = bijection.inverse(y, condition)  # type: ignore
@@ -134,6 +140,7 @@ class Scan(Bijection):
 
     def inverse_and_log_abs_det_jacobian(self, y, condition=None):
         self._argcheck(y, condition)
+
         def fn(carry, p, condition=None):
             y, log_det = carry
             bijection = eqx.combine(self.static, p)

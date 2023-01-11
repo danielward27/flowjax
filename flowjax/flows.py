@@ -14,16 +14,27 @@ from jax import random
 from jax.nn.initializers import glorot_uniform
 from jax.random import KeyArray
 
-from flowjax.bijections import (AdditiveLinearCondition,
-                                BlockAutoregressiveNetwork, Chain, Coupling,
-                                Flip, Invert, MaskedAutoregressive, Permute,
-                                Scan, TanhLinearTails,
-                                TriangularAffine, RationalQuadraticSpline,
-                                Bijection)
+from flowjax.bijections import (
+    AdditiveLinearCondition,
+    BlockAutoregressiveNetwork,
+    Chain,
+    Coupling,
+    Flip,
+    Invert,
+    MaskedAutoregressive,
+    Permute,
+    Scan,
+    TanhLinearTails,
+    TriangularAffine,
+    RationalQuadraticSpline,
+    Bijection,
+)
 from flowjax.distributions import Distribution, Transformed
 
 
-class CouplingFlow(Transformed): # TODO allow flows to work on higher dimensional inputs?
+class CouplingFlow(
+    Transformed
+):  # TODO allow flows to work on higher dimensional inputs?
     flow_layers: int
     nn_width: int
     nn_depth: int
@@ -54,8 +65,8 @@ class CouplingFlow(Transformed): # TODO allow flows to work on higher dimensiona
             nn_activation (int, optional): Conditioner activation function. Defaults to jnn.relu.
             invert: (bool, optional): Whether to invert the bijection. Broadly, True will prioritise a faster `inverse` methods, leading to faster `log_prob`, False will prioritise faster `transform` methods, leading to faster `sample`. Defaults to True
         """
-        if len(base_dist.shape) != 1:
-            raise ValueError("Coupling flows are currently only defined for the case where len(base_dist.shape)==1")
+        if base_dist.ndim != 1:
+            raise ValueError(f"Expected base_dist.ndim==1, got {base_dist.ndim}")
 
         dim = base_dist.shape[0]
         permute_strategy = _default_permute_strategy(dim)
@@ -90,8 +101,8 @@ class CouplingFlow(Transformed): # TODO allow flows to work on higher dimensiona
         self.nn_depth = nn_depth
         self.flow_layers = flow_layers
         self.permute_strategy = permute_strategy
-        self.shape = (dim, )
-        self.cond_shape = None if cond_dim is None else (cond_dim, )
+        self.shape = (dim,)
+        self.cond_shape = None if cond_dim is None else (cond_dim,)
         super().__init__(base_dist, bijection)
 
 
@@ -131,7 +142,7 @@ class MaskedAutoregressiveFlow(Transformed):
                 faster forward, leading to faster `sample`. Defaults to True. Defaults to True.
         """
         if len(base_dist.shape) != 1:
-            raise ValueError("MaskedAutoregressiveFlow is currently only defined for the case where len(base_dist.shape)==1")
+            raise ValueError(f"Expected base_dist.ndim==1, got {base_dist.ndim}")
 
         dim = base_dist.shape[0]
         permute_strategy = _default_permute_strategy(dim)
@@ -164,8 +175,8 @@ class MaskedAutoregressiveFlow(Transformed):
         self.nn_depth = nn_depth
         self.flow_layers = flow_layers
         self.permute_strategy = permute_strategy
-        self.shape = (dim, )
-        self.cond_shape = None if cond_dim is None else (cond_dim, )
+        self.shape = (dim,)
+        self.cond_shape = None if cond_dim is None else (cond_dim,)
         super().__init__(base_dist, bijection)
 
 
@@ -197,7 +208,7 @@ class BlockNeuralAutoregressiveFlow(Transformed):
             invert: (bool, optional): Use `True` for access of `log_prob` only (e.g. fitting by maximum likelihood), `False` for the forward direction (sampling) only (e.g. for fitting variationally).
         """
         if len(base_dist.shape) != 1:
-            raise ValueError("MaskedAutoregressiveFlow is currently only defined for the case where len(base_dist.shape)==1")
+            raise ValueError(f"Expected base_dist.ndim==1, got {base_dist.ndim}")
 
         dim = base_dist.shape[-1]
         permute_strategy = _default_permute_strategy(base_dist.shape[0])
@@ -228,9 +239,9 @@ class BlockNeuralAutoregressiveFlow(Transformed):
         self.nn_depth = nn_depth
         self.flow_layers = flow_layers
         self.permute_strategy = permute_strategy
-        
-        self.shape = (dim, )
-        self.cond_shape = None if cond_dim is None else (cond_dim, )
+
+        self.shape = (dim,)
+        self.cond_shape = None if cond_dim is None else (cond_dim,)
         super().__init__(base_dist, bijection)
 
 
@@ -254,14 +265,14 @@ class TriangularSplineFlow(Transformed):
     ):
 
         if len(base_dist.shape) != 1:
-            raise ValueError("MaskedAutoregressiveFlow is currently only defined for the case where len(base_dist.shape)==1")
-        
+            raise ValueError(f"Expected base_dist.ndim==1, got {base_dist.ndim}")
+
         dim = base_dist.shape[-1]
 
         permute_strategy = _default_permute_strategy(dim)
 
         def make_layer(key):
-            
+
             lt_key, perm_key = random.split(key)
             c_dim = 0 if cond_dim is None else cond_dim
             weights = init(lt_key, (dim, dim + c_dim))
@@ -297,8 +308,8 @@ class TriangularSplineFlow(Transformed):
         self.permute_strategy = permute_strategy
         self.knots = knots
         self.tanh_max_val = tanh_max_val
-        self.shape = (dim, )
-        self.cond_shape = None if cond_dim is None else (cond_dim, )
+        self.shape = (dim,)
+        self.cond_shape = None if cond_dim is None else (cond_dim,)
 
         super().__init__(base_dist, bijection)
 
