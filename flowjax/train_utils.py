@@ -77,13 +77,11 @@ def train_flow(
 
     losses = {"train": [], "val": []}  # type: Dict[str, List[float]]
 
-    n = x.shape[0]
     loop = tqdm(range(max_epochs)) if show_progress is True else range(max_epochs)
 
     for epoch in loop:
         key, subkey = random.split(key)
-
-        permutation = random.permutation(subkey, jnp.arange(n))
+        permutation = random.permutation(subkey, jnp.arange(train_len))
         train_args = tuple(a[permutation] for a in train_args)
 
         epoch_train_loss = 0
