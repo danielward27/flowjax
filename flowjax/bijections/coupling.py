@@ -69,7 +69,7 @@ class Coupling(Bijection):
         self.conditioner = eqx.tree_at(
             where=lambda mlp: mlp.layers[-1].bias,
             pytree=conditioner,
-            replace=jnp.repeat(transformer_init_params, D - d),
+            replace=jnp.tile(transformer_init_params, D - d),
         )
 
     def transform(self, x, condition=None):

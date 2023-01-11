@@ -62,9 +62,7 @@ class MaskedAutoregressive(Bijection):
 
         hidden_ranks = tile_until_length(jnp.arange(dim), nn_width)
 
-        out_ranks = jnp.repeat(
-            jnp.arange(dim), transformer_init_params.size
-        )  # TODO Should this be tile or repeat?
+        out_ranks = jnp.repeat(jnp.arange(dim), transformer_init_params.size)
 
         autoregressive_mlp = AutoregressiveMLP(
             in_ranks,
@@ -81,7 +79,7 @@ class MaskedAutoregressive(Bijection):
             pytree=autoregressive_mlp,
             replace=jnp.tile(
                 transformer_init_params, dim
-            ),  # TODO Is tiling or repeating or correct here?
+            ),
         )
 
         self.transformer_constructor = constructor

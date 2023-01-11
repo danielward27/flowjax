@@ -64,7 +64,9 @@ def train_flow(
     train_args, val_args = train_val_split(subkey, inputs, val_prop=val_prop)
     train_len, val_len = train_args[0].shape[0], val_args[0].shape[0]
     if batch_size > train_len:
-        raise ValueError("The batch size cannot be greater than the train set size.")
+        raise ValueError(
+            f"The batch size ({batch_size}) cannot be greater than the train set size ({train_len})."
+            )
 
     optimizer = optax.chain(
         optax.clip_by_global_norm(clip_norm), optax.adam(learning_rate=learning_rate)
