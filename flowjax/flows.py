@@ -44,7 +44,7 @@ class CouplingFlow(
         self,
         key: KeyArray,
         base_dist: Distribution,
-        transformer: Bijection,  # TODO better document
+        transformer: Bijection,
         cond_dim: int = None,
         flow_layers: int = 8,
         nn_width: int = 40,

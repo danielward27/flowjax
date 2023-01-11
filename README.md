@@ -48,9 +48,8 @@ This package is new and may have substantial breaking changes between major rele
 ## TODO
 A few limitations / things that could be worth including in the future:
 - Add documentation
-- Add support for "reshaping" bijections.
+- Add ability to "reshape" bijections.
 - Training script for variational inference
-- Define transformers by wrapping a bijection?
 
 ## Related
 We make use of the [Equinox](https://arxiv.org/abs/2111.00254) package, which facilitates object-oriented programming with Jax. 

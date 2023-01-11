@@ -14,14 +14,36 @@ from flowjax.utils import merge_shapes
 
 from jax.experimental import checkify
 
-# To construct a distribution, we define _log_prob and _sample, which take in arguments
-# matching dist.shape for x, and dist.cond_shape for the conditioninv variables. 
-# Note that unconditional distributions should allow, but ignore the passing of conditional variables
-# (to facilitate easy composing of conditional and unconditional distributions and transformations).
-
-
 class Distribution(eqx.Module, ABC):
-    """Distribution base class."""
+    """Distribution base class. Distributions all have an attribute ``shape``,
+    denoting the shape of a single sample from the distribution. This corresponds to the 
+    ``batch_shape + event_shape`` in torch/numpyro distributions. Similarly, the
+    cond_shape attribute denotes the shape of the conditioning variable.
+    This attribute is None for unconditional distributions. For example
+
+    .. doctest::
+
+        >>> import jax.numpy as jnp
+        >>> from flowjax.distributions import Normal
+        >>> dist = Normal(jnp.zeros(3))
+        >>> dist.shape
+        (3,)
+        >>> dist.cond_shape
+        None
+
+    Distributions are registered as jax PyTrees (as they are equinox modules),
+    so are compatible with normal jax operations.
+
+    Implementing a distribution
+
+        (1) Inherit from ``Distribution``.
+        (2) Define attributes ``shape`` and ``cond_shape``.
+        (3) Define the ``_sample`` method, which samples a point with a shape of ``shape``, (given a conditioning variable with shape ``cond_shape`` for conditional distributions).
+        (4) Define the ``_log_prob`` method, which evaluates the log probability, given an input of shape ``shape`` (and a conditioning variable with shape ``cond_shape`` for conditional distributions).
+
+        The base class will handle defining more convenient log_prob and sample methods that support broadcasting and perform argument checks.
+
+    """
 
     shape: Tuple[int]
     cond_shape: Union[None, Tuple[int]]
@@ -38,7 +60,7 @@ class Distribution(eqx.Module, ABC):
 
     def log_prob(self, x: Array, condition: Optional[Array] = None):
         """Evaluate the log probability. Uses numpy like broadcasting if additional
-        leading dimensions are passed. in the arguments.
+        leading dimensions are passed.
 
         Args:
             x (Array): Points at which to evaluate density.
@@ -162,7 +184,7 @@ class StandardNormal(Distribution):
         Implements a standard normal distribution, condition is ignored.
 
         Args:
-            shape (int): The shape of the normal distribution.
+            shape (Tuple[int]): The shape of the normal distribution. Defaults to ().
         """
         self.shape = shape
         self.cond_shape = None
@@ -180,11 +202,11 @@ class Normal(Transformed):
     each dimension. `loc` and `scale` should be broadcastable.
     """
 
-    def __init__(self, loc: Array=0, scale: Array=1.0):
+    def __init__(self, loc: Array=0, scale: Array=1):
         """
         Args:
-            loc (Array): Means.
-            scale (Array): Standard deviations.
+            loc (Array): Means. Defaults to 0.
+            scale (Array): Standard deviations. Defaults to 1.
         """
         self.shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
         self.cond_shape = None
@@ -238,7 +260,7 @@ class Uniform(Transformed):
             jnp.all(maxval >= minval), "Minimums must be less than the maximums."
         )
 
-        base_dist = _StandardUniform(minval.shape)
+        base_dist = _StandardUniform(self.shape)
         bijection = Affine(loc=minval, scale=maxval - minval)
         super().__init__(base_dist, bijection)
 
