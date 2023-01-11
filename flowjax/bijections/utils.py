@@ -46,7 +46,7 @@ class Permute(Bijection):
 
         Args:
             permutation (Array): An array with shape matching the array to transform,
-                with indices 0-(array.size-1) representing the new order based on the
+                with elements 0-(array.size-1) representing the new order based on the
                 flattened array (uses, C-like ordering).
         """
         checkify.check(
@@ -58,7 +58,9 @@ class Permute(Bijection):
 
         indices = jnp.unravel_index(permutation.ravel(), permutation.shape)
         self.permutation = tuple(jnp.reshape(i, permutation.shape) for i in indices)
-        self.inverse_permutation = jnp.argsort(permutation)
+        
+        inv_indices = jnp.unravel_index(jnp.argsort(permutation.ravel()), permutation.shape)
+        self.inverse_permutation = tuple(jnp.reshape(i, permutation.shape) for i in inv_indices)
 
     def transform(self, x, condition=None):
         self._argcheck(x)

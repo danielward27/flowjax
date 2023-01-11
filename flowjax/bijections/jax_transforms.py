@@ -9,11 +9,18 @@ class Vmap(Bijection):
     """Expand the dimension of a bijection by vmapping. By default, we vmap over
     bijection parameters, x and the conditioning variables, although this behaviour can
     be modified by providing key word arguments that are passed to eqx.filter_vmap.
+    The arguments names for the vmapped function is (bijection, x, condition).
 
      Example:
 
         .. doctest::
-            >>> # TODO create examples
+            >>> # Affine parameters usually acts elementwise, but we could use vmap to form a
+            >>> # "global" affine transformation instead.
+            >>> from flowjax.bijections import Vmap, Affine
+            >>> import jax.numpy as jnp
+            >>> affine = Vmap(Affine(1), (3,), kwargs=dict(bijection=None))
+            >>> affine.transform(jnp.ones(3))
+            Array([2., 2., 2.], dtype=float32)
 
     """
 
@@ -24,7 +31,9 @@ class Vmap(Bijection):
     def __init__(self, bijection: Bijection, shape: Tuple[int], **kwargs):
         """
         Args:
-            bijection (Bijection): Bijection, where the parameters have leading shape equalling shape (if vmapping over bijection parameters).
+            bijection (Bijection): Bijection. If vmapping over the bijection, the array leaves
+                in bijection should have additional leading axes with shape equalling `shape`.
+                Often it is convenient to construct these using `equinox.filter_vmap`.
             shape (Tuple[int]): Shape prepended to the bijection shape. If len(shape)>1, multiple applications of vmap will be used.
             **kwargs: kwargs, passed to equinox.filter_vmap, allowing e.g. control over which variables to map over.
         """
@@ -32,32 +41,32 @@ class Vmap(Bijection):
         self.ndim_to_add = len(shape)
         self.kwargs = kwargs  # For filter vmap
         self.shape = (
-            shape + self.bijection.shape if self.bijection.shape is not None else shape
+            shape + self.bijection.shape if self.bijection.shape is not None else None
         )
         self.cond_shape = bijection.cond_shape
 
     def transform(self, x, condition=None):
         self._argcheck(x, condition)
-        f = lambda b, x, c: b.transform(x, c)
+        f = lambda bijection, x, condition: bijection.transform(x, condition)
         f = self._multivmap(f)
         return f(self.bijection, x, condition)
 
     def inverse(self, y, condition=None):
         self._argcheck(y, condition)
-        f = lambda b, y, c: b.inverse(y, c)
+        f = lambda bijection, x, condition: bijection.inverse(x, condition)
         f = self._multivmap(f)
         return f(self.bijection, y, condition)
 
     def transform_and_log_abs_det_jacobian(self, x, condition=None):
         self._argcheck(x, condition)
-        f = lambda b, x, c: b.transform_and_log_abs_det_jacobian(x, c)
+        f = lambda bijection, x, condition: bijection.transform_and_log_abs_det_jacobian(x, condition)
         f = self._multivmap(f)
         y, log_det = f(self.bijection, x, condition)
         return y, log_det.sum()
 
     def inverse_and_log_abs_det_jacobian(self, y, condition=None):
         self._argcheck(y, condition)
-        f = lambda b, y, c: b.inverse_and_log_abs_det_jacobian(y, c)
+        f = lambda bijection, x, condition: bijection.inverse_and_log_abs_det_jacobian(x, condition)
         f = self._multivmap(f)
         x, log_det = f(self.bijection, y, condition)
         return x, log_det.sum()
@@ -76,10 +85,9 @@ class Scan(Bijection):
     Example:
 
         .. doctest::
-            >>> from flowjax.bijections import Chain
+            >>> from flowjax.bijections import Scan
             >>> import jax.numpy as jnp
             >>> import equinox as eqx
-
             >>> params = jnp.ones((3, 2))
             >>> # Below is equivilent to Chain([Affine(p) for p in params])
             >>> affine = Scan(equinox.filter_vmap(Affine)(params))
@@ -92,7 +100,6 @@ class Scan(Bijection):
         """
         The array leaves in `bijection` should have an additional leading axis to scan over.
         Often it is convenient to construct these using `equinox.filter_vmap`.
-
 
         Args:
             bijections (Bijection): A bijection, in which the arrays have an additional leading axis to scan over.

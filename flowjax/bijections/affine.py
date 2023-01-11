@@ -7,14 +7,20 @@ from jax.scipy.linalg import solve_triangular
 from flowjax.bijections import Bijection
 from flowjax.utils import Array
 from jax.experimental import checkify
-import equinox as eqx
 
 
 class Affine(Bijection):
     loc: Array
     log_scale: Array
 
-    def __init__(self, loc=0, scale=1):
+    def __init__(self, loc: Array=0, scale: Array=1):
+        """Elementwise affine transformation y = ax + b. loc and scale should broadcast
+        to the desired shape of the bijection.
+
+        Args:
+            loc (int, optional): Location parameter. Defaults to 0.
+            scale (int, optional): Scale parameter. Defaults to 1.
+        """
         loc, scale = [jnp.asarray(a, dtype=jnp.float32) for a in (loc, scale)]
         self.shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
         self.cond_shape = None
@@ -63,7 +69,7 @@ class TriangularAffine(Bijection):
     ):
         """
         Args:
-            loc (Array): Translation.
+            loc (Array): Location parameter.
             arr (Array): Triangular matrix.
             lower (bool, optional): Whether the mask should select the lower or upper triangular matrix (other elements ignored). Defaults to True.
             weight_log_scale (Optional[Array], optional): If provided, carry out weight normalisation.
@@ -82,7 +88,7 @@ class TriangularAffine(Bijection):
         self.lower = lower
 
         # inexact arrays
-        self.loc = loc
+        self.loc = jnp.broadcast_to(loc, (dim,))
         self._arr = arr
         self._log_diag = jnp.log(jnp.diag(arr))
         self.weight_log_scale = jnp.zeros((dim, 1)) if weight_normalisation else None
@@ -110,10 +116,7 @@ class TriangularAffine(Bijection):
     def transform_and_log_abs_det_jacobian(self, x, condition=None):
         self._argcheck(x)
         a = self.arr
-        return (
-            a @ x + self.loc,
-            jnp.log(jnp.diag(a)).sum(),
-        )  # TODO could this broadcast and give incorrect results?
+        return a @ x + self.loc, jnp.log(jnp.diag(a)).sum()
 
     def inverse(self, y, condition=None):
         self._argcheck(y)

@@ -38,7 +38,7 @@ class MaskedAutoregressive(Bijection):
             key (KeyArray): Jax PRNGKey
             transformer (Bijection): Bijection with shape () to be parameterised by the autoregressive network.
             dim (int): Dimension.
-            cond_shape (Union[None, Tuple[int]]): Dimension of any conditioning variables.
+            cond_dim (Union[None, int]): Dimension of any conditioning variables.
             nn_width (int): Neural network width.
             nn_depth (int): Neural network depth.
             nn_activation (Callable, optional): Neural network activation. Defaults to jnn.relu.

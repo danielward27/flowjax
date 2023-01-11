@@ -26,15 +26,13 @@ class Coupling(Bijection):
         nn_depth: int,
         nn_activation: Callable = jnn.relu,
     ):
-        """Coupling layer implementation (https://arxiv.org/abs/1605.08803). If the condition is multidimensional,
-        it is flattened internally.
-
+        """Coupling layer implementation (https://arxiv.org/abs/1605.08803).
         Args:
             key (KeyArray): Jax PRNGKey
             transformer (Bijection): Bijection with shape () to be parameterised by the conditioner neural netork.
             d (int): Number of untransformed conditioning variables.
             D (int): Total dimension.
-            cond_shape (Union[None, Tuple[int]]): Dimension of additional conditioning variables.
+            cond_dim (Union[None, int]): Dimension of additional conditioning variables.
             nn_width (int): Neural network hidden layer width.
             nn_depth (int): Neural network hidden layer size.
             nn_activation (Callable, optional): Neural network activation function. Defaults to jnn.relu.

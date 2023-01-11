@@ -1,10 +1,7 @@
-# Distribution object (for flows and base distributions)
-
 from abc import ABC, abstractmethod
-from typing import Any, Optional, Tuple, Union
+from typing import Optional, Tuple, Union
 
 import equinox as eqx
-import jax
 import jax.numpy as jnp
 
 import jax.random as jr
@@ -15,10 +12,10 @@ from flowjax.utils import Array, _get_ufunc_signature
 from math import prod
 from flowjax.utils import broadcast_shapes
 
-# To construct a distribution, we define _log_prob and _sample, which take in vector arguments.
-# More friendly methods are then created from these, supporting batches of inputs.
+# To construct a distribution, we define _log_prob and _sample, which take in arguments
+# matching dist.shape for x, and dist.cond_shape for the conditioninv variables. 
 # Note that unconditional distributions should allow, but ignore the passing of conditional variables
-# (to facilitate easy composing of conditional and unconditional distributions)
+# (to facilitate easy composing of conditional and unconditional distributions and transformations).
 
 
 class Distribution(eqx.Module, ABC):

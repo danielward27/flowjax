@@ -9,7 +9,7 @@ from .masked_autoregressive import MaskedAutoregressive
 from .tanh import Tanh, TanhLinearTails
 from .utils import EmbedCondition, Flip, Invert, Partial, Permute
 from .rational_quadratic_spline import RationalQuadraticSpline
-from .jax_transforms import Scan
+from .jax_transforms import Scan, Vmap
 
 __all__ = [
     "Bijection",
@@ -22,7 +22,7 @@ __all__ = [
     "TanhLinearTails",
     "Chain",
     "Scan",
-    "Batch",
+    "Vmap",
     "Invert",
     "Flip",
     "Permute",

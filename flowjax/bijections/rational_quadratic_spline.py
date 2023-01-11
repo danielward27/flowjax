@@ -26,15 +26,6 @@ class _ScalarRationalQuadraticSpline(Bijection):
         min_derivative: float = 1e-3,
         softmax_adjust: float = 1e-2,
     ):
-        """
-        Ouside the interval [-interval, interval], the identity transform is used.
-
-        Args:
-            knots (int): Number of inner knots.
-            interval: (float): Interval to transform [-interval, interval]
-            min_derivative: (float): Minimum derivative.
-            softmax_adjust: (float): Controls minimum bin width and height by rescaling softmax output, e.g. 0=no adjustment, 1=average softmax output with evenly spaced widths, >1 promotes more evenly spaced widths. See `real_to_increasing_on_interval`.
-        """
         self.knots = knots
         self.interval = interval
         self.softmax_adjust = softmax_adjust
@@ -126,6 +117,17 @@ class _ScalarRationalQuadraticSpline(Bijection):
         return jnp.where(in_bounds, derivative, 1.0)
 
 
+
+"""
+        Ouside the interval [-interval, interval], the identity transform is used.
+
+        Args:
+            knots (int): Number of inner knots.
+            interval: (float): Interval to transform [-interval, interval]
+            min_derivative: (float): Minimum derivative.
+            softmax_adjust: (float): 
+        """
+
 class RationalQuadraticSpline(Vmap):
     def __init__(
         self,
@@ -135,7 +137,19 @@ class RationalQuadraticSpline(Vmap):
         min_derivative: float = 1e-3,
         softmax_adjust: float = 1e-2,
     ) -> None:
-        """Elementwise rational quadratic spline transform, initialised at the identity transform."""
+        """Elementwise rational quadratic spline transform (https://arxiv.org/abs/1906.04032),
+        initialised at the identity function.
+
+        Args:
+            knots (int): Number of knots.
+            interval (float): interval to transform, [-interval, interval].
+            shape (Tuple[int], optional): Shape of transformation. Defaults to ().
+            min_derivative (float, optional): Minimum dervivative. Defaults to 1e-3.
+            softmax_adjust (float, optional): Controls minimum bin width and height by
+                rescaling softmax output, e.g. 0=no adjustment, 1=average softmax output
+                with evenly spaced widths, >1 promotes more evenly spaced widths.
+                See `real_to_increasing_on_interval`.. Defaults to 1e-2.
+        """
 
         def constructor(dummy):  # Dummy variable to vmap over
             return _ScalarRationalQuadraticSpline(

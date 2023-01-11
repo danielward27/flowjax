@@ -1,5 +1,3 @@
-"""Bijections that chain together (compose) multiple bijections."""
-
 from typing import Sequence, Tuple, Union
 
 from flowjax.utils import broadcast_shapes

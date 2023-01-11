@@ -1,6 +1,7 @@
 import jax.numpy as jnp
 import pytest
 from jax.experimental.checkify import JaxRuntimeError
+import jax.random as jr
 
 from flowjax.bijections import Affine, Partial, Permute
 
