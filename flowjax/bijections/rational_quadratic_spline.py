@@ -148,7 +148,7 @@ class RationalQuadraticSpline(Vmap):
             softmax_adjust (float, optional): Controls minimum bin width and height by
                 rescaling softmax output, e.g. 0=no adjustment, 1=average softmax output
                 with evenly spaced widths, >1 promotes more evenly spaced widths.
-                See `real_to_increasing_on_interval`.. Defaults to 1e-2.
+                See ``real_to_increasing_on_interval``.. Defaults to 1e-2.
         """
 
         def constructor(dummy):  # Dummy variable to vmap over

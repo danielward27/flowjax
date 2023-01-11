@@ -34,7 +34,7 @@ class BlockAutoregressiveNetwork(Bijection):
         """
         Args:
             key (KeyArray): Jax PRNGKey
-            shape (int): Dimension of the distribution.
+            dim (int): Dimension of the distribution.
             cond_dim (Union[None, Tuple[int]]): Dimension of extra conditioning variables.
             depth (int): Number of hidden layers in the network.
             block_dim (int): Block dimension (hidden layer size is `dim*block_dim`).

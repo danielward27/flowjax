@@ -9,13 +9,14 @@ class Vmap(Bijection):
     """Expand the dimension of a bijection by vmapping. By default, we vmap over
     bijection parameters, x and the conditioning variables, although this behaviour can
     be modified by providing key word arguments that are passed to eqx.filter_vmap.
-    The arguments names for the vmapped function is (bijection, x, condition).
+    The arguments names for the vmapped function are (bijection, x, condition).
 
-     Example:
-
+    Example:
+        Affine parameters usually act elementwise, but we could vmap excluding the
+        the bijection to create a global affine (sharing the location and scale).
+        
         .. doctest::
-            >>> # Affine parameters usually acts elementwise, but we could use vmap to form a
-            >>> # "global" affine transformation instead.
+
             >>> from flowjax.bijections import Vmap, Affine
             >>> import jax.numpy as jnp
             >>> affine = Vmap(Affine(1), (3,), kwargs=dict(bijection=None))
@@ -83,14 +84,16 @@ class Scan(Bijection):
     uses `jax.lax.scan` to reduce compilation time.
 
     Example:
+        Below is equivilent to ``Chain([Affine(p) for p in params])``.
 
         .. doctest::
-            >>> from flowjax.bijections import Scan
+
+            >>> from flowjax.bijections import Scan, Affine
             >>> import jax.numpy as jnp
             >>> import equinox as eqx
             >>> params = jnp.ones((3, 2))
-            >>> # Below is equivilent to Chain([Affine(p) for p in params])
-            >>> affine = Scan(equinox.filter_vmap(Affine)(params))
+            >>> affine = Scan(Affine(params))
+
     """
 
     static: Any
@@ -102,7 +105,8 @@ class Scan(Bijection):
         Often it is convenient to construct these using `equinox.filter_vmap`.
 
         Args:
-            bijections (Bijection): A bijection, in which the arrays have an additional leading axis to scan over.
+            bijections (Bijection): A bijection, in which the arrays leaves have an additional leading axis to scan over.
+                For complex bijections, it can be convenient to create compatible bijections with `equinox.filter_vmap`.
         """
         self.params, self.static = eqx.partition(bijection, eqx.is_array)  # type: ignore
         self.shape = bijection.shape

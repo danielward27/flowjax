@@ -12,6 +12,8 @@ from flowjax.utils import Array, _get_ufunc_signature
 from math import prod
 from flowjax.utils import merge_shapes
 
+from jax.experimental import checkify
+
 # To construct a distribution, we define _log_prob and _sample, which take in arguments
 # matching dist.shape for x, and dist.cond_shape for the conditioninv variables. 
 # Note that unconditional distributions should allow, but ignore the passing of conditional variables
@@ -184,8 +186,7 @@ class Normal(Transformed):
             loc (Array): Array of the means of each dimension.
             scale (Array): Array of the standard deviations of each dimension.
         """
-        loc, scale = jnp.broadcast_arrays(loc, scale)
-        self.shape = loc.shape
+        self.shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
         self.cond_shape = None
         base_dist = StandardNormal(self.shape)
         bijection = Affine(loc=loc, scale=scale)
@@ -216,7 +217,6 @@ class _StandardUniform(Distribution):
         return jr.uniform(key, shape=self.shape)
 
 
-from jax.experimental import checkify
 
 
 class Uniform(Transformed):
@@ -231,7 +231,7 @@ class Uniform(Transformed):
             minval (Array): ith entry gives the min of the ith dimension
             maxval (Array): ith entry gives the max of the ith dimension
         """
-        minval, maxval = jnp.broadcast_arrays(minval, maxval)
+        minval, maxval = jnp.broadcast_shapes(jnp.shape(minval), jnp.shape(maxval))
         self.shape = minval.shape
         self.cond_shape = None
 
@@ -278,8 +278,7 @@ class Gumbel(Transformed):
             loc (Array): Location paramter.
             scale (Array, optional): Scale parameter. Defaults to 1.0.
         """
-        loc, scale = jnp.broadcast_arrays(loc, scale)
-        self.shape = loc.shape
+        self.shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
         self.cond_shape = None
         base_dist = _StandardGumbel(self.shape)
         bijection = Affine(loc, scale)
@@ -317,7 +316,7 @@ class Cauchy(Transformed):
     Cauchy distribution (https://en.wikipedia.org/wiki/Cauchy_distribution).
     """
 
-    def __init__(self, loc: Array, scale: Array = 1.0):
+    def __init__(self, loc: Array=0, scale: Array=1):
         """
         `loc` and `scale` should broadcast to the dimension of the distribution.
 
@@ -325,8 +324,7 @@ class Cauchy(Transformed):
             loc (Array): Location paramter.
             scale (Array, optional): Scale parameter. Defaults to 1.0.
         """
-        loc, scale = jnp.broadcast_arrays(loc, scale)
-        self.shape = loc.shape
+        self.shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
         self.cond_shape = None
         base_dist = _StandardCauchy(self.shape)
         bijection = Affine(loc, scale)
@@ -367,7 +365,7 @@ class _StandardStudentT(Distribution):
 class StudentT(Transformed):
     """Student T distribution (https://en.wikipedia.org/wiki/Student%27s_t-distribution)."""
 
-    def __init__(self, df: Array, loc: Array = 0.0, scale: Array = 1.0):
+    def __init__(self, df: Array, loc: Array=0.0, scale: Array=1.0):
         """
         `df`, `loc` and `scale` broadcast to the dimension of the distribution.
 

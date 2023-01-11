@@ -9,7 +9,6 @@ class Chain(Bijection):
     """Chain together arbitrary bijections to form another bijection."""
 
     bijections: Tuple[Bijection]
-    cond_shape: int
 
     def __init__(self, bijections: Sequence[Bijection]):
         """
