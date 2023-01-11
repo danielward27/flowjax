@@ -1,5 +1,5 @@
 """
-Abstact base classes for the `Bijection` and `_Transformer` types. Note when implementing bijections,
+Abstact base classes for the `Bijection` and `Bijection` types. Note when implementing bijections,
 by convention we try to i) implement the "transform" methods as the faster/more intuitive approach 
 (compared to the inverse methods); and ii) implement only the forward methods if an inverse
 is not available. The `Invert` bijection can be used to invert the orientation if a fast inverse is

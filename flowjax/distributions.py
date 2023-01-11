@@ -19,7 +19,6 @@ from flowjax.utils import broadcast_shapes
 # Note that unconditional distributions should allow, but ignore the passing of conditional variables
 # (to facilitate easy composing of conditional and unconditional distributions)
 
-# TODO Can we use numpy vectorise on the distributions????
 class Distribution(eqx.Module, ABC):
     """Distribution base class.
     """
@@ -72,7 +71,7 @@ class Distribution(eqx.Module, ABC):
             excluded = {}
             sig = _get_ufunc_signature([(2,), self.cond_shape], [self.x_shape])
         
-        key_size = max(1, prod(key_shape)) # max 1 required for scalar input
+        key_size = max(1, prod(key_shape)) # Still need 1 key for scalar input
         keys = jnp.reshape(jr.split(key, key_size), key_shape + (2,))
 
         return jnp.vectorize(self._sample, excluded=excluded, signature=sig)(keys, condition)

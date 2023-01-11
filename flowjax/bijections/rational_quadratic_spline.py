@@ -61,11 +61,9 @@ class _ScalarRationalQuadraticSpline(Bijection):
     def transform(self, x, condition=None):
         x_pos, y_pos, derivatives = self.x_pos, self.y_pos, self.derivatives
         in_bounds = jnp.logical_and(x > -self.interval, x < self.interval)
-        k = jnp.searchsorted(x_pos, x) - 1  # k is bin number
-
-        # Note that the below computation would be incorrect when out of bounds,
-        # but we replace these values with the identity transformation.        
-        xi = (x - x_pos[k]) / (x_pos[k + 1] - x_pos[k])
+        x_robust = jnp.where(in_bounds, x, 0) # To avoid nans
+        k = jnp.searchsorted(x_pos, x_robust) - 1  # k is bin number
+        xi = (x_robust - x_pos[k]) / (x_pos[k + 1] - x_pos[k])
         sk = (y_pos[k + 1] - y_pos[k]) / (x_pos[k + 1] - x_pos[k])
         dk, dk1, yk, yk1 = derivatives[k], derivatives[k + 1], y_pos[k], y_pos[k + 1]
         num = (yk1 - yk) * (sk * xi**2 + dk * xi * (1 - xi))
@@ -81,13 +79,15 @@ class _ScalarRationalQuadraticSpline(Bijection):
     def inverse(self, y, condition=None):
         x_pos, y_pos, derivatives = self.x_pos, self.y_pos, self.derivatives
         in_bounds = jnp.logical_and(y > -self.interval, y < self.interval)
-        k = jnp.searchsorted(y_pos, y) - 1
+
+        y_robust = jnp.where(in_bounds, y, 0)  # To avoid nans
+        k = jnp.searchsorted(y_pos, y_robust) - 1
         xk, xk1, yk, yk1 = x_pos[k], x_pos[k + 1], y_pos[k], y_pos[k + 1]
         sk = (yk1 - yk) / (xk1 - xk)
-        y_delta_s_term = (y - yk) * (derivatives[k + 1] + derivatives[k] - 2 * sk)
+        y_delta_s_term = (y_robust - yk) * (derivatives[k + 1] + derivatives[k] - 2 * sk)
         a = (yk1 - yk) * (sk - derivatives[k]) + y_delta_s_term
         b = (yk1 - yk) * derivatives[k] - y_delta_s_term
-        c = -sk * (y - yk)
+        c = -sk * (y_robust - yk)
         sqrt_term = jnp.sqrt(b**2 - 4 * a * c)
         xi = (2 * c) / (-b - sqrt_term)
         x = xi * (xk1 - xk) + xk
@@ -101,8 +101,9 @@ class _ScalarRationalQuadraticSpline(Bijection):
     def derivative(self, x):  # eq. 5
         x_pos, y_pos, derivatives = self.x_pos, self.y_pos, self.derivatives
         in_bounds = jnp.logical_and(x > -self.interval, x < self.interval)
-        k = jnp.searchsorted(x_pos, x) - 1
-        xi = (x - x_pos[k]) / (x_pos[k + 1] - x_pos[k])
+        x_robust = jnp.where(in_bounds, x, 0) # To avoid nans
+        k = jnp.searchsorted(x_pos, x_robust) - 1
+        xi = (x_robust - x_pos[k]) / (x_pos[k + 1] - x_pos[k])
         sk = (y_pos[k + 1] - y_pos[k]) / (x_pos[k + 1] - x_pos[k])
         dk, dk1 = derivatives[k], derivatives[k + 1]
         num = sk**2 * (dk1 * xi**2 + 2 * sk * xi * (1 - xi) + dk * (1 - xi) ** 2)

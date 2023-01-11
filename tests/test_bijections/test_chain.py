@@ -1,4 +1,3 @@
-# %%
 from functools import partial
 
 import equinox as eqx
@@ -6,8 +5,7 @@ import jax.numpy as jnp
 import pytest
 from jax import random
 
-from flowjax.bijections import Affine, Chain, Coupling, Flip, Permute, ScannableChain
-from flowjax.transformers import AffineTransformer
+from flowjax.bijections import Affine, Chain, Coupling, Flip, Permute, Scan
 
 
 def test_chain_dunders():
@@ -23,10 +21,9 @@ cond_dim = 5
 num_layers = 3
 keys = random.split(random.PRNGKey(0), num_layers)
 
-
 make_coupling_layer = partial(
     Coupling,
-    transformer=AffineTransformer(),
+    transformer=Affine(),
     d=dim // 2,
     D=dim,
     cond_dim=cond_dim,
@@ -37,10 +34,10 @@ make_coupling_layer = partial(
 
 params = jnp.ones((num_layers, dim))
 affine_chain = Chain([Affine(p) for p in params])
-affine_scan = ScannableChain(eqx.filter_vmap(Affine)(params))
+affine_scan = Scan(eqx.filter_vmap(Affine)(params))
 
 coupling_chain = Chain([make_coupling_layer(k) for k in keys])
-coupling_scan = ScannableChain(eqx.filter_vmap(make_coupling_layer)(keys))
+coupling_scan = Scan(eqx.filter_vmap(make_coupling_layer)(keys))
 
 test_cases = {
     "Affine": (affine_scan, affine_chain),
@@ -50,9 +47,9 @@ test_cases = {
 
 @pytest.mark.parametrize("scan,chain", test_cases.values(), ids=test_cases.keys())
 def test_scannable_chain(scan, chain):
-    "Check Chain and ScannableChain give consistent results."
+    "Check Chain and Scan give consistent results."
     x = jnp.ones(dim)
-    condition = jnp.ones(chain.cond_dim) if chain.cond_dim > 0 else None
+    condition = jnp.ones(chain.cond_shape) if chain.cond_shape is not None else None
     expected = pytest.approx(chain.transform(x, condition))
     assert expected == scan.transform(x, condition)
 

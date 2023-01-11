@@ -3,7 +3,6 @@ import jax
 import jax.numpy as jnp
 import equinox as eqx
 import jax.flatten_util as jfu
-# from flowjax.bijections import Bijection
 
 Array = Any  # TODO Can use TypeAlias from typing in future.
 
@@ -53,13 +52,6 @@ def increasing_on_interval_to_real(
     widths = widths*(1 + softmax_adjust) - softmax_adjust / widths.size
     # TODO finish
 
-def replace_bijection_params_from_flat(bijection, flat, filter_spec = eqx.is_inexact_array):
-    old_params, static = eqx.partition(bijection, filter_spec)
-    _, unravel = jfu.ravel_pytree(old_params)
-    new_params = unravel(flat)
-    return eqx.combine(new_params, static)
-
-
 
 def broadcast_shapes(shapes: Sequence):  # TODO rename to avoid name clash with jnp.
     """"Broadcast shapes used in bijections and distributions. Note we use different rules to numpy broadcasting.
@@ -98,3 +90,27 @@ def _get_ufunc_signature(in_shapes, out_shapes):
     in_shapes_str = _shapes_to_str(in_shapes)
     out_shapes_str = _shapes_to_str(out_shapes)
     return f"{in_shapes_str}->{out_shapes_str}"
+
+
+
+def get_ravelled_bijection_constructor(
+    bijection,
+    filter_spec = eqx.is_inexact_array):
+    """Given a bijection, returns a tuple containing
+    1) a constructor for the bijection from a flattened array; 2) the current flattened
+    parameters.
+
+    Args:
+        bijection (Bijection): Bijection.
+        filter_spec: Filter function. Defaults to eqx.is_inexact_array.
+    """
+    
+    params, static = eqx.partition(bijection, filter_spec)
+    bias, unravel = jfu.ravel_pytree(params)
+
+    def f(ravelled_params: Array):
+        ravelled_params = ravelled_params + bias
+        params = unravel(ravelled_params)
+        return  eqx.combine(params, static)
+
+    return f, bias

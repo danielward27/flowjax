@@ -2,7 +2,8 @@
 Block Neural Autoregressive bijection implementation.
 """
 
-from typing import Callable, Optional
+import math
+from typing import Callable, Optional, Union, Tuple
 
 import jax
 import jax.numpy as jnp
@@ -16,10 +17,8 @@ from flowjax.nn.block_autoregressive import (BlockAutoregressiveLinear,
 
 class BlockAutoregressiveNetwork(Bijection):
     """Block Autoregressive Network (https://arxiv.org/abs/1904.04676)."""
-    dim: int
     depth: int
     layers: list
-    cond_dim: int
     block_dim: int
     activation: Callable
 
@@ -27,7 +26,7 @@ class BlockAutoregressiveNetwork(Bijection):
         self,
         key: KeyArray,
         dim: int,
-        cond_dim: int,
+        cond_dim: Union[None, int],
         depth: int,
         block_dim: int,
         activation: Optional[Callable] = None,
@@ -35,8 +34,8 @@ class BlockAutoregressiveNetwork(Bijection):
         """
         Args:
             key (KeyArray): Jax PRNGKey
-            dim (int): Dimension of the distribution.
-            cond_dim (int): Dimension of extra conditioning variables.
+            shape (int): Dimension of the distribution.
+            cond_shape (Union[None, Tuple[int]]): Dimension of extra conditioning variables.
             depth (int): Number of hidden layers in the network.
             block_dim (int): Block dimension (hidden layer size is `dim*block_dim`).
             activation (Callable, optional): Activation function. Defaults to BlockTanh.
@@ -53,7 +52,7 @@ class BlockAutoregressiveNetwork(Bijection):
                 *[(block_dim, block_dim)] * (depth - 1),
                 (1, block_dim),
             ]
-            cond_dims = [cond_dim] + [0] * depth
+            cond_dims = [cond_dim] + [None] * depth
 
             for key, block_shape, cd in zip(keys, block_shapes, cond_dims):
 
@@ -65,20 +64,22 @@ class BlockAutoregressiveNetwork(Bijection):
                 )
             layers = layers[:-1]  # remove last activation
 
-        self.dim = dim
         self.depth = depth
         self.layers = layers
-        self.cond_dim = cond_dim
         self.block_dim = block_dim
         self.activation = activation
+        self.shape = (dim, )
+        self.cond_shape = (cond_dim, ) if cond_dim is not None else None
 
     def transform(self, x, condition=None):
+        self._argcheck(x, condition)
         x = self.layers[0](x, condition)[0]
         for layer in self.layers[1:]:
             x = layer(x)[0]
         return x
 
     def transform_and_log_abs_det_jacobian(self, x, condition=None):
+        self._argcheck(x, condition)
         x, log_det_3d_0 = self.layers[0](x, condition)
         log_det_3ds = [log_det_3d_0]
         for layer in self.layers[1:]:

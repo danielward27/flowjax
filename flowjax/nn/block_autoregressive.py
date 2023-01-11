@@ -1,4 +1,4 @@
-from typing import Callable
+from typing import Callable, Optional
 
 import equinox as eqx
 import jax.numpy as jnp
@@ -17,7 +17,7 @@ def _tanh_log_grad(x):
 class BlockAutoregressiveLinear(eqx.Module):
     n_blocks: int
     block_shape: tuple
-    cond_dim: int
+    cond_dim: Optional[int]
     W: Array
     bias: Array
     W_log_scale: Array
@@ -32,7 +32,7 @@ class BlockAutoregressiveLinear(eqx.Module):
         key: KeyArray,
         n_blocks: int,
         block_shape: tuple,
-        cond_dim: int = 0,
+        cond_dim: Optional[int] = None,
         init: Callable = glorot_uniform(),
     ):
         """Block autoregressive neural network layer (https://arxiv.org/abs/1904.04676).
@@ -43,9 +43,14 @@ class BlockAutoregressiveLinear(eqx.Module):
             key KeyArray: Random key
             n_blocks (int): Number of diagonal blocks (dimension of original input).
             block_shape (tuple): The shape of the (unconstrained) blocks.
-            cond_dim (int): Number of additional conditioning variables. Defaults to 0.
+            cond_shape (Union[None, Tuple[int]]): Number of additional conditioning variables. Defaults to 0.
             init (Callable, optional): Default initialisation method for the weight matrix. Defaults to ``glorot_uniform()``.
         """
+        self.cond_dim = cond_dim
+        
+        if cond_dim is None:
+            cond_dim = 0
+
         cond_size = (block_shape[0] * n_blocks, cond_dim)
 
         self.b_diag_mask = jnp.column_stack(

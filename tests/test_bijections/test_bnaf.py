@@ -14,7 +14,7 @@ def test_BlockAutoregressiveNetwork():
     x = jnp.ones(dim)
     key = random.PRNGKey(0)
 
-    barn = BlockAutoregressiveNetwork(key, dim, 0, depth=1, block_dim=4)
+    barn = BlockAutoregressiveNetwork(key, dim, None, depth=1, block_dim=4)
     y = barn.transform(x)
     assert y.shape == (dim,)
     auto_jacobian = jax.jacobian(barn.transform)(x)

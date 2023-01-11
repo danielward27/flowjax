@@ -63,7 +63,7 @@ class Permute(Bijection):
 
     def transform(self, x, condition=None):
         self._argcheck(x)
-        return x[self.permutation], self.shape
+        return x[self.permutation]
 
     def transform_and_log_abs_det_jacobian(self, x, condition=None):
         return x[self.permutation], jnp.array(0)
@@ -99,24 +99,16 @@ class Partial(Bijection):
     """Applies bijection to specific indices of an input."""
 
     bijection: Array
-    idxs: Union[int, slice, Array]
+    idxs: Union[int, slice, Array, tuple]
 
     def __init__(self, bijection: Bijection, idxs):
         """
         Args:
             bijection (Bijection): Bijection that is compatible with the subset of x indexed by idxs.
-            idxs: Indices (Integer, a slice, or an ndarray with integer/bool dtype) of the transformed portion. If a multidimensional array is provided, the array is flattened.
+            idxs: Indices (Integer, a slice, or an ndarray with integer/bool dtype) of the transformed portion.
         """
         self.bijection = bijection
-
-        if not isinstance(idxs, slice):
-            idxs = jnp.array(idxs).ravel()
-
-            if jnp.issubdtype(idxs, jnp.integer):
-                idxs = jnp.unique(idxs)
-
         self.idxs = idxs
-
         self.shape = None
         self.cond_shape = bijection.cond_shape
 
@@ -146,7 +138,7 @@ class EmbedCondition(Bijection):
     embedding_net: eqx.Module
 
     def __init__(
-        self, bijection: Bijection, embedding_net: eqx.Module, cond_shape: Tuple[int]
+        self, bijection: Bijection, embedding_net: eqx.Module, raw_cond_shape: Tuple[int]
     ) -> None:
         """Use an embedding network to reduce the dimensionality of the conditioning variable.
         The returned bijection has cond_dim equal to the raw condition size.
@@ -160,7 +152,7 @@ class EmbedCondition(Bijection):
         self.embedding_net = embedding_net
 
         self.shape = bijection.shape
-        self.cond_shape = bijection.cond_shape
+        self.cond_shape = raw_cond_shape
 
     def transform(self, x, condition=None):
         self._argcheck(x, condition)

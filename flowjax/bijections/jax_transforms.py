@@ -3,9 +3,8 @@ from functools import partial
 import equinox as eqx
 from flowjax.bijections import Bijection
 from jax.lax import scan
-from typing import Any, Tuple, Union
+from typing import Any, Tuple
 
-# TODO test for scaler example?
 
 class Vmap(Bijection):
     """Expand the dimension of a bijection by vmapping. By default, we vmap over
@@ -56,9 +55,9 @@ class Vmap(Bijection):
 
     def inverse_and_log_abs_det_jacobian(self, y, condition=None):
         self._argcheck(y, condition)
-        f = lambda b, x, c: b.inverse_and_log_abs_det_jacobian(x, c)
+        f = lambda b, y, c: b.inverse_and_log_abs_det_jacobian(y, c)
         f = self._multivmap(f)
-        x, log_det = f(self.bijection, x, condition)
+        x, log_det = f(self.bijection, y, condition)
         return x, log_det.sum()
 
     def _multivmap(self, f):

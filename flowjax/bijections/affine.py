@@ -14,8 +14,9 @@ class Affine(Bijection):
     loc: Array
     log_scale: Array
 
-    def __init__(self, loc, scale=jnp.array(1)):
-        self.shape = jnp.broadcast_shapes(loc.shape, scale.shape)
+    def __init__(self, loc=0, scale=1):
+        loc, scale = [jnp.asarray(a, dtype=jnp.float32) for a in (loc, scale)]
+        self.shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
         self.cond_shape = None
 
         self.loc = jnp.broadcast_to(loc, self.shape)
@@ -93,7 +94,7 @@ class TriangularAffine(Bijection):
     @property
     def arr(self):
         "Get triangular array, (applies masking and min_diag constraint)."
-        diag = jnp.exp(self._log_diag) + self.min_diag
+        diag = jnp.exp(self._log_diag)
         off_diag = self.tri_mask * self._arr
         arr = off_diag.at[self.diag_idxs].set(diag)
 
@@ -134,7 +135,7 @@ class AdditiveLinearCondition(Bijection):
             arr (Array): Array (``W`` in the description.)
         """
         self.W = arr
-        super().__init__(shape=(arr.shape[0], ), cond_shape=(arr.shape[1], ))
+        super().__init__(shape=(arr.shape[-2], ), cond_shape=(arr.shape[-1], ))
 
     def transform(self, x, condition=None):
         self._argcheck(x, condition)

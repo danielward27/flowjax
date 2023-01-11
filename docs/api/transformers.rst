@@ -1,7 +1,7 @@
 Transformers
 ==========================
 
-.. automodule:: flowjax.transformers
+.. automodule:: flowjax.transformer
    :members:
    :undoc-members:
    :show-inheritance:
