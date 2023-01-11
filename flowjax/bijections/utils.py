@@ -150,7 +150,7 @@ class EmbedCondition(Bijection):
         Args:
             bijection (Bijection): Bijection with ``bijection.cond_dim`` equal to the embedded size.
             embedding_net (eqx.Module): A callable equinox module that embeds a conditioning variable to size ``bijection.cond_dim``.
-            cond_shape (Union[None, Tuple[int]]): The dimension of the raw conditioning variable.
+            raw_cond_shape (Union[None, Tuple[int]]): The dimension of the raw conditioning variable.
         """
         self.bijection = bijection
         self.embedding_net = embedding_net

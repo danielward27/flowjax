@@ -10,7 +10,7 @@ from jax.scipy import stats as jstats
 from flowjax.bijections import Affine, Bijection
 from flowjax.utils import Array, _get_ufunc_signature
 from math import prod
-from flowjax.utils import broadcast_shapes
+from flowjax.utils import merge_shapes
 
 # To construct a distribution, we define _log_prob and _sample, which take in arguments
 # matching dist.shape for x, and dist.cond_shape for the conditioninv variables. 
@@ -139,7 +139,7 @@ class Transformed(Distribution):
         self.base_dist = base_dist
         self.bijection = bijection
         self.shape = self.base_dist.shape
-        self.cond_shape = broadcast_shapes(
+        self.cond_shape = merge_shapes(
             (self.bijection.cond_shape, self.base_dist.cond_shape)
         )
 

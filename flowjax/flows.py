@@ -201,7 +201,7 @@ class BlockNeuralAutoregressiveFlow(Transformed):
         Args:
             key (KeyArray): Jax PRNGKey.
             base_dist (Distribution): Base distribution.
-            cond_shape (Union[None, Tuple[int]]): Dimension of conditional variables.
+            cond_dim (Union[None, Tuple[int]]): Dimension of conditional variables.
             nn_depth (int, optional): Number of hidden layers within the networks. Defaults to 1.
             nn_block_dim (int, optional): Block size. Hidden layer width is dim*nn_block_dim. Defaults to 8.
             flow_layers (int, optional): Number of BNAF layers. Defaults to 1.

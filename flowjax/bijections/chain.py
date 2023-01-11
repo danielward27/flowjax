@@ -1,6 +1,6 @@
 from typing import Sequence, Tuple, Union
 
-from flowjax.utils import broadcast_shapes
+from flowjax.utils import merge_shapes
 from flowjax.bijections import Bijection
 from flowjax.utils import Array
 
@@ -16,8 +16,8 @@ class Chain(Bijection):
         Args:
             bijections (Sequence[Bijection]): Sequence of bijections.
         """
-        self.shape = broadcast_shapes([s.shape for s in bijections])
-        self.cond_shape = broadcast_shapes([b.cond_shape for b in bijections])
+        self.shape = merge_shapes([s.shape for s in bijections])
+        self.cond_shape = merge_shapes([b.cond_shape for b in bijections])
         self.bijections = tuple(bijections)
 
     def transform(self, x, condition=None):

@@ -47,22 +47,12 @@ def inv_cum_sum(x):
     return x - jnp.pad(x[:-1], (1, 0))
 
 
-def increasing_on_interval_to_real(
-    arr: Array, B: float = 1, softmax_adjust: float = 1e-2
-):
-    widths = inv_cum_sum(arr / (2 * B)) + B
-    widths = widths.at[0].set(widths[0] * 2)
-    widths = widths * (1 + softmax_adjust) - softmax_adjust / widths.size
-    # TODO finish
-
-
-def broadcast_shapes(shapes: Sequence):  # TODO rename to avoid name clash with jnp.
-    """ "Broadcast shapes used in bijections and distributions. Note we use different rules to numpy broadcasting.
+def merge_shapes(shapes: Sequence):
+    """ "Broadcast shapes used in bijections and distributions.
 
     Namely:
         - A shape None is used to mean any shape (either unknown, unimportant, or compatible with any shape).
-        - An element in a shape of -1 acts as a "wildcard", indicating the bijection can act on any length on the corresponding array dimension.
-        - We require all shapes that are not None to have the same length, and matching values (with the exception of the wildcard).
+        - We require all shapes that are not None to have the same length, and matching values.
     """  # TODO update these docs.
     if len(shapes) == 0:
         raise ValueError("No shapes have been provided.")

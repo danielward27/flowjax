@@ -5,7 +5,7 @@ import jax.random as jr
 from flowjax.utils import (
     tile_until_length,
     inv_cum_sum,
-    broadcast_shapes,
+    merge_shapes,
     check_shapes,
     _get_ufunc_signature,
 )
@@ -57,8 +57,8 @@ def test_check_shapes(input):
 
 
 @pytest.mark.parametrize("input,expected", test_cases)
-def test_broadcast_shapes(input, expected):
-    assert broadcast_shapes(input) == expected
+def test_merge_shapes(input, expected):
+    assert merge_shapes(input) == expected
 
 
 test_cases_error = [[(2, 3), (2, 1)], [(2, 3), (4, 2, 3)]]
@@ -71,9 +71,9 @@ def test_check_shapes_errors(input):
 
 
 @pytest.mark.parametrize("input", test_cases_error)
-def test_broadcast_shapes_errors(input):
+def test_merge_shapes_errors(input):
     with pytest.raises(ValueError):
-        broadcast_shapes(input)
+        merge_shapes(input)
 
 
 test_cases = [
