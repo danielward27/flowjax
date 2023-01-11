@@ -146,7 +146,7 @@ def test_transform_inverse_and_log_dets(bijection):
 
     # We flatten the function so auto_jacobian is calculated correctly
     def flat_transform(x_flat, cond):
-        x = x_flat.reshape(bijection.shape)
+        x = x_flat.reshape(shape)
         y = bijection.transform(x, cond)
         return y.ravel()
     
