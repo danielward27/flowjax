@@ -73,9 +73,9 @@ class Distribution(eqx.Module, ABC):
             excluded = {1}
             sig = _get_ufunc_signature([(2,)], [self.shape])
         else:
-            key_shape = sample_shape + condition.shape[: -len(self.condition_shape)]
+            key_shape = sample_shape + condition.shape[: -len(self.cond_shape)]
             excluded = {}
-            sig = _get_ufunc_signature([(2,), self.cond_shape], [self.x_shape])
+            sig = _get_ufunc_signature([(2,), self.cond_shape], [self.shape])
 
         key_size = max(1, prod(key_shape))  # Still need 1 key for scalar input
         keys = jnp.reshape(jr.split(key, key_size), key_shape + (2,))
