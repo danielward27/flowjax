@@ -19,7 +19,6 @@ release = "v7.0.0"
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    "sphinx.ext.todo",
     "sphinx.ext.viewcode",
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
@@ -32,6 +31,7 @@ templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 add_module_names = False
+napoleon_include_init_with_doc = True
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
@@ -43,11 +43,7 @@ html_css_files = [
     "style.css",
 ]
 
-napoleon_include_init_with_doc = True
 
 html_theme_options = {
     "navigation_depth": 2,
-    #'logo_only': True,
 }
-
-# html_logo = "../images/flowjax_logo.png"

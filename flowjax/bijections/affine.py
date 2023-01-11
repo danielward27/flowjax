@@ -12,7 +12,7 @@ from jax.experimental import checkify
 class Affine(Bijection):
     loc: Array
     log_scale: Array
-
+    
     def __init__(self, loc: Array=0, scale: Array=1):
         """Elementwise affine transformation y = ax + b. loc and scale should broadcast
         to the desired shape of the bijection.

@@ -62,7 +62,6 @@ bijections = {
         jnp.arange(dim), pos_def_triangles, weight_normalisation=True
     ),
     "RationalQuadraticSpline": RationalQuadraticSpline(knots=4, interval=1, shape=(5,)),
-    # "AffineTransformer": affine_transformer,
     "Coupling (unconditional)": Coupling(
         key,
         Affine(),
