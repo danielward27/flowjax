@@ -162,8 +162,8 @@ class StandardNormal(Distribution):
         Implements a standard normal distribution, condition is ignored.
 
         Args:
-            dim (int): Dimension of the normal distribution.
-        """  # TODO update documentation
+            shape (int): The shape of the normal distribution.
+        """
         self.shape = shape
         self.cond_shape = None
 
@@ -180,11 +180,11 @@ class Normal(Transformed):
     each dimension. `loc` and `scale` should be broadcastable.
     """
 
-    def __init__(self, loc: Array, scale: Array = 1.0):
+    def __init__(self, loc: Array=0, scale: Array=1.0):
         """
         Args:
-            loc (Array): Array of the means of each dimension.
-            scale (Array): Array of the standard deviations of each dimension.
+            loc (Array): Means.
+            scale (Array): Standard deviations.
         """
         self.shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
         self.cond_shape = None
@@ -228,8 +228,8 @@ class Uniform(Transformed):
     def __init__(self, minval: Array, maxval: Array):
         """
         Args:
-            minval (Array): ith entry gives the min of the ith dimension
-            maxval (Array): ith entry gives the max of the ith dimension
+            minval (Array): Minimum values.
+            maxval (Array): Maximum values.
         """
         self.shape = jnp.broadcast_shapes(jnp.shape(minval), jnp.shape(maxval))
         self.cond_shape = None
@@ -255,7 +255,6 @@ class _StandardGumbel(Distribution):
     """Standard gumbel distribution (https://en.wikipedia.org/wiki/Gumbel_distribution)."""
 
     def __init__(self, shape: Tuple[int] = ()):
-
         self.shape = shape
         self.cond_shape = None
 
@@ -269,7 +268,7 @@ class _StandardGumbel(Distribution):
 class Gumbel(Transformed):
     """Gumbel distribution (https://en.wikipedia.org/wiki/Gumbel_distribution)"""
 
-    def __init__(self, loc: Array, scale: Array = 1.0):
+    def __init__(self, loc: Array=0, scale: Array=1):
         """
         `loc` and `scale` should broadcast to the dimension of the distribution.
 
@@ -364,7 +363,7 @@ class _StandardStudentT(Distribution):
 class StudentT(Transformed):
     """Student T distribution (https://en.wikipedia.org/wiki/Student%27s_t-distribution)."""
 
-    def __init__(self, df: Array, loc: Array=0.0, scale: Array=1.0):
+    def __init__(self, df: Array, loc: Array=0, scale: Array=1):
         """
         `df`, `loc` and `scale` broadcast to the dimension of the distribution.
 
