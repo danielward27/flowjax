@@ -107,7 +107,7 @@ class Distribution(eqx.Module, ABC):
         )
 
     def _argcheck(self, x=None, condition=None):
-        # jnp.vectorize will catch ndim mismatches, but it doesn't check axis lengths.
+        # jnp.vectorize would catch ndim mismatches, but it doesn't check axis lengths.
         if x is not None:
             x_trailing = x.shape[-self.ndim :] if self.ndim > 0 else ()
             if x_trailing != self.shape:
@@ -123,14 +123,17 @@ class Distribution(eqx.Module, ABC):
             )
 
         if condition is not None:
-            condition_trailing = (
-                condition.shape[-self.cond_ndim :] if self.cond_ndim > 0 else ()
-            )
-            if condition_trailing != self.cond_shape:
-                raise ValueError(
-                    f"Expected trailing dimensions in the condition to match the distribution.cond_shape, but got"
-                    f"condition shape {condition.shape}, and distribution.cond_shape {self.cond_shape}."
+            if self.cond_shape is None:
+                raise ValueError("condition should not be provided for unconditional distribution.")
+            else:
+                condition_trailing = (
+                    condition.shape[-self.cond_ndim :] if self.cond_ndim > 0 else ()
                 )
+                if condition_trailing != self.cond_shape:
+                    raise ValueError(
+                        f"Expected trailing dimensions in the condition to match distribution.cond_shape, but got"
+                        f"condition shape {condition.shape}, and distribution.cond_shape {self.cond_shape}."
+                    )
 
     @property
     def ndim(self):
@@ -159,6 +162,17 @@ class Transformed(Distribution):
         Args:
             base_dist (Distribution): Base distribution.
             bijection (Bijection): Bijection to transform distribution.
+
+        Example:
+
+        .. doctest::
+
+            >>> from flowjax.distributions import StandardNormal, Transformed
+            >>> from flowjax.bijections import Affine
+            >>> normal = StandardNormal()
+            >>> bijection = Affine(1)
+            >>> transformed = Transformed(normal, bijection)
+            
         """
         self.base_dist = base_dist
         self.bijection = bijection
