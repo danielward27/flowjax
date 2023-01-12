@@ -31,7 +31,7 @@ flow.log_prob(x)
 The package currently supports the following:
 
 - `CouplingFlow` ([Dinh et al., 2017](https://arxiv.org/abs/1605.08803))
-- `MaskedAutoregressiveFlow` ([Papamakarios et al., 2017](https://arxiv.org/abs/1705.07057v4))  conditioner architectures.
+- `MaskedAutoregressiveFlow` ([Papamakarios et al., 2017](https://arxiv.org/abs/1705.07057v4)).
 - Common "transformers", such as `Affine` and `RationalQuadraticSpline` (the latter used in neural spline flows; [Durkan et al., 2019](https://arxiv.org/abs/1906.04032))
 - `BlockNeuralAutoregressiveFlow`, as introduced by [De Cao et al., 2019](https://arxiv.org/abs/1904.04676)
 - `TriangularSplineFlow`, introduced here.
@@ -47,7 +47,6 @@ This package is new and may have substantial breaking changes between major rele
 
 ## TODO
 A few limitations / things that could be worth including in the future:
-- Add documentation
 - Add ability to "reshape" bijections.
 - Training script for variational inference
 
