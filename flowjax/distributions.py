@@ -18,7 +18,7 @@ class Distribution(eqx.Module, ABC):
     """Distribution base class. Distributions all have an attribute ``shape``,
     denoting the shape of a single sample from the distribution. This corresponds to the 
     ``batch_shape + event_shape`` in torch/numpyro distributions. Similarly, the
-    cond_shape attribute denotes the shape of the conditioning variable.
+    ``cond_shape`` attribute denotes the shape of the conditioning variable.
     This attribute is None for unconditional distributions. For example
 
     .. doctest::
@@ -31,13 +31,13 @@ class Distribution(eqx.Module, ABC):
         >>> dist.cond_shape
         None
 
-    Distributions are registered as jax PyTrees (as they are equinox modules),
-    so are compatible with normal jax operations.
+    Distributions are registered as jax PyTrees (as they are equinox modules), and as such
+    they are compatible with normal jax operations.
 
     Implementing a distribution
 
         (1) Inherit from ``Distribution``.
-        (2) Define attributes ``shape`` and ``cond_shape``.
+        (2) Define attributes ``shape`` and ``cond_shape`` (cond shape should be None for unconditional distributions).
         (3) Define the ``_sample`` method, which samples a point with a shape of ``shape``, (given a conditioning variable with shape ``cond_shape`` for conditional distributions).
         (4) Define the ``_log_prob`` method, which evaluates the log probability, given an input of shape ``shape`` (and a conditioning variable with shape ``cond_shape`` for conditional distributions).
 

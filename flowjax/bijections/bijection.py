@@ -22,14 +22,14 @@ class Bijection(ABC, Module):
     ignored). Unlike distributions, the ``shape`` attribute can be None, for cases where
     the shape may be unknown, or unimportant (e.g. the
     :py:class:`~flowjax.bijections.tanh.Tanh` bijection is compatible with any shape of
-    input.
+    input).
 
     The methods of bijections do not generally support passing of additional batch
     dimensions, however, ``jax.vmap`` or ``eqx.filter_vmap`` can be used to vmap
     specific methods if desired, and a bijection can be explicitly vectorised using the
     :py:class:`~flowjax.bijections.jax_transforms.Vmap` bijection.
 
-    Distributions are registered as jax PyTrees (as they are equinox modules), so are
+    Bijections are registered as Jax PyTrees (as they are equinox modules), so are
     compatible with normal jax operations.
 
     Implementing a bijection
