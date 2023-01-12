@@ -8,7 +8,6 @@ from flowjax.bijections import Affine
 from flowjax.distributions import Normal, Transformed
 from flowjax.train_utils import (
     count_fruitless,
-    random_permutation_multiple,
     train_flow,
     train_val_split,
 )
@@ -30,14 +29,6 @@ def test_train_val_split():
     assert test[0].shape == (10, 10)
     assert test[1].shape == (10, 5)
 
-
-def test_random_permutation_multiple():
-    x = jnp.arange(10).reshape((5, 2))
-    y = jnp.arange(15).reshape((5, 3))
-    before = jnp.sort(jnp.concatenate((x, y), axis=1).sum(axis=1))
-    x2, y2 = random_permutation_multiple(random.PRNGKey(0), (x, y))
-    after = jnp.sort(jnp.concatenate((x2, y2), axis=1).sum(axis=1))
-    assert (before == after).all()
 
 
 def test_train_flow_filter_spec():
