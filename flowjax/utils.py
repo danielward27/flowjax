@@ -73,16 +73,21 @@ def check_shapes(shapes):  # TODO test this?
 
 
 def _get_ufunc_signature(in_shapes, out_shapes):
+    """Convert a sequence of in_shapes, and out_shapes to a universal function signature.
+    
+    Example:
+        >>> _get_ufunc_signature([(3,),(2,3)], [()])
+        "(3),(2,3)->()"
+    """
     def _shapes_to_str(shapes):
-        result = []
-        for shape in shapes:
-            shape_str = f"({','.join([str(s) for s in shape])})"
-            result.append(shape_str)
-        return ",".join(result)
+        result = [str(s) if len(s)!=1 else str(s).replace(",", "") for s in shapes]
+        return ",".join(result).replace(" ", "")
 
     in_shapes_str = _shapes_to_str(in_shapes)
     out_shapes_str = _shapes_to_str(out_shapes)
     return f"{in_shapes_str}->{out_shapes_str}"
+
+
 
 
 def get_ravelled_bijection_constructor(bijection, filter_spec=eqx.is_inexact_array):
