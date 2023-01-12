@@ -8,8 +8,8 @@ from typing import Any, Tuple
 class Vmap(Bijection):
     """Expand the dimension of a bijection by vmapping. By default, we vmap over
     bijection parameters, x and the conditioning variables, although this behaviour can
-    be modified by providing key word arguments that are passed to eqx.filter_vmap.
-    The arguments names for the vmapped function are (bijection, x, condition).
+    be modified by providing key word arguments that are passed to ``equinox.filter_vmap``.
+    The arguments names for the vmapped functions are (bijection, x, condition).
 
     Example:
         Affine parameters usually act elementwise, but we could vmap excluding the
@@ -81,20 +81,7 @@ class Vmap(Bijection):
 
 class Scan(Bijection):
     """Repeatedly apply the same bijection with different parameter values. Internally,
-    uses `jax.lax.scan` to reduce compilation time.
-
-    Example:
-        Below is equivilent to ``Chain([Affine(p) for p in params])``.
-
-        .. doctest::
-
-            >>> from flowjax.bijections import Scan, Affine
-            >>> import jax.numpy as jnp
-            >>> import equinox as eqx
-            >>> params = jnp.ones((3, 2))
-            >>> affine = Scan(Affine(params))
-
-    """
+    uses `jax.lax.scan` to reduce compilation time."""
 
     static: Any
     params: Any
@@ -105,8 +92,20 @@ class Scan(Bijection):
         Often it is convenient to construct these using `equinox.filter_vmap`.
 
         Args:
-            bijections (Bijection): A bijection, in which the arrays leaves have an additional leading axis to scan over.
-                For complex bijections, it can be convenient to create compatible bijections with `equinox.filter_vmap`.
+            bijection (Bijection): A bijection, in which the arrays leaves have an additional leading axis to scan over.
+                For complex bijections, it can be convenient to create compatible bijections with ``equinox.filter_vmap``.
+
+        Example:
+            Below is equivilent to ``Chain([Affine(p) for p in params])``.
+
+            .. doctest::
+
+                >>> from flowjax.bijections import Scan, Affine
+                >>> import jax.numpy as jnp
+                >>> import equinox as eqx
+                >>> params = jnp.ones((3, 2))
+                >>> affine = Scan(Affine(params))
+
         """
         self.params, self.static = eqx.partition(bijection, eqx.is_array)  # type: ignore
         self.shape = bijection.shape

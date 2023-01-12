@@ -117,17 +117,6 @@ class _ScalarRationalQuadraticSpline(Bijection):
         return jnp.where(in_bounds, derivative, 1.0)
 
 
-
-"""
-        Ouside the interval [-interval, interval], the identity transform is used.
-
-        Args:
-            knots (int): Number of inner knots.
-            interval: (float): Interval to transform [-interval, interval]
-            min_derivative: (float): Minimum derivative.
-            softmax_adjust: (float): 
-        """
-
 class RationalQuadraticSpline(Vmap):
     def __init__(
         self,
