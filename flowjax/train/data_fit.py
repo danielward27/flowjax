@@ -63,7 +63,9 @@ def train_flow(
     train_args, val_args = train_val_split(subkey, inputs, val_prop=val_prop)
     train_len, val_len = train_args[0].shape[0], val_args[0].shape[0]
     if batch_size > train_len:
-        raise ValueError("The batch size cannot be greater than the train set size.")
+        raise ValueError(
+            f"The batch size ({batch_size}) cannot be greater than the train set size ({train_len})."
+            )
 
     optimizer = optax.chain(
         optax.clip_by_global_norm(clip_norm), optax.adam(learning_rate=learning_rate)
@@ -75,9 +77,11 @@ def train_flow(
     losses = {"train": [], "val": []}  # type: Dict[str, List[float]]
 
     loop = tqdm(range(max_epochs)) if show_progress is True else range(max_epochs)
+
     for epoch in loop:
         key, subkey = random.split(key)
-        train_args = random_permutation_multiple(subkey, train_args)
+        permutation = random.permutation(subkey, jnp.arange(train_len))
+        train_args = tuple(a[permutation] for a in train_args)
 
         epoch_train_loss = 0
         batch_start_idxs = range(0, train_len - batch_size + 1, batch_size)
@@ -125,28 +129,12 @@ def train_val_split(key: KeyArray, arrays: Sequence[Array], val_prop: float = 0.
     if not (0 <= val_prop <= 1):
         raise ValueError("val_prop should be between 0 and 1.")
     n = arrays[0].shape[0]
-    key, subkey = random.split(key)
-    arrays = random_permutation_multiple(subkey, arrays)
+    permutation = random.permutation(key, jnp.arange(n))
+    arrays = tuple(a[permutation] for a in arrays)
     n_train = n - round(val_prop * n)
     train = tuple(a[:n_train] for a in arrays)
     val = tuple(a[n_train:] for a in arrays)
     return train, val
-
-
-def random_permutation_multiple(key: KeyArray, arrays: Sequence[Array]) -> Tuple[Array]:
-    """Randomly permute multiple arrays on axis 0 (consistent between arrays)
-
-    Args:
-        key (KeyArray): Jax PRNGKey
-        arrays (List[Array]): List of arrays.
-
-    Returns:
-        List[Array]: List of permuted arrays.
-    """
-    n = arrays[0].shape[0]
-    shuffle = random.permutation(key, jnp.arange(n))
-    arrays = tuple(a[shuffle] for a in arrays)
-    return arrays
 
 
 def count_fruitless(losses: List[float]) -> int:

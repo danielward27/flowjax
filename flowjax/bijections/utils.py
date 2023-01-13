@@ -1,17 +1,15 @@
-from typing import Union
+from typing import Tuple, Union
 
 import equinox as eqx
 import jax.numpy as jnp
 from jax.experimental import checkify
 
 from flowjax.bijections import Bijection
-from flowjax.transformers import Transformer
 from flowjax.utils import Array
 
 
 class Invert(Bijection):
     bijection: Bijection
-    cond_dim: int
 
     def __init__(self, bijection: Bijection):
         """Invert a bijection, such that the transform methods become the inverse methods and vice versa.
@@ -23,7 +21,8 @@ class Invert(Bijection):
             bijection (Bijection): Bijection to "invert".
         """
         self.bijection = bijection
-        self.cond_dim = bijection.cond_dim
+        self.shape = bijection.shape
+        self.cond_shape = bijection.cond_shape
 
     def transform(self, x, condition=None):
         return self.bijection.inverse(x, condition)
@@ -41,29 +40,37 @@ class Invert(Bijection):
 class Permute(Bijection):
     permutation: Array
     inverse_permutation: Array
-    cond_dim: int
 
     def __init__(self, permutation: Array):
-        """Permutation transformation. condition is ignored.
+        """Permutation transformation.
 
         Args:
-            permutation (Array): Indexes 0-(dim-1) representing new order.
+            permutation (Array): An array with shape matching the array to transform,
+                with elements 0-(array.size-1) representing the new order based on the
+                flattened array (uses, C-like ordering).
         """
         checkify.check(
-            (permutation.sort() == jnp.arange(len(permutation))).all(),
+            (permutation.ravel().sort() == jnp.arange(permutation.size)).all(),
             "Invalid permutation array provided.",
         )
-        self.permutation = permutation
-        self.inverse_permutation = jnp.argsort(permutation)
-        self.cond_dim = 0
+        self.shape = permutation.shape
+        self.cond_shape = None
+
+        indices = jnp.unravel_index(permutation.ravel(), permutation.shape)
+        self.permutation = tuple(jnp.reshape(i, permutation.shape) for i in indices)
+        
+        inv_indices = jnp.unravel_index(jnp.argsort(permutation.ravel()), permutation.shape)
+        self.inverse_permutation = tuple(jnp.reshape(i, permutation.shape) for i in inv_indices)
 
     def transform(self, x, condition=None):
+        self._argcheck(x)
         return x[self.permutation]
 
     def transform_and_log_abs_det_jacobian(self, x, condition=None):
         return x[self.permutation], jnp.array(0)
 
     def inverse(self, y, condition=None):
+        self._argcheck(y)
         return y[self.inverse_permutation]
 
     def inverse_and_log_abs_det_jacobian(self, y, condition=None):
@@ -73,7 +80,9 @@ class Permute(Bijection):
 class Flip(Bijection):
     """Flip the input array. Condition argument is ignored."""
 
-    cond_dim: int = 0
+    def __init__(self) -> None:
+        self.shape = None
+        self.cond_shape = None    
 
     def transform(self, x, condition=None):
         return jnp.flip(x)
@@ -88,63 +97,22 @@ class Flip(Bijection):
         return jnp.flip(y), jnp.array(0)
 
 
-class TransformerToBijection(Bijection):
-    cond_dim: int = 0
-    params: Array
-    transformer: Transformer
-
-    def __init__(self, transformer: Transformer, *, params: Array):
-        """Convert Transformer object to Bijection object.
-
-        Args:
-            transformer (Transformer): Transformer.
-            params (Array): Unconstrained parameter vector from which the args can be constructed, using `transformer.get_args(params)`.
-        """
-        # Note, params is key word only, as perhaps we will want to support
-        # construction from args too, although this is not implemented yet.
-        self.params = params
-        self.transformer = transformer
-
-    def transform(self, x: Array, condition=None):
-        args = self.transformer.get_args(self.params)
-        return self.transformer.transform(x, *args)
-
-    def transform_and_log_abs_det_jacobian(self, x: Array, condition=None):
-        args = self.transformer.get_args(self.params)
-        return self.transformer.transform_and_log_abs_det_jacobian(x, *args)
-
-    def inverse(self, y: Array, condition=None):
-        args = self.transformer.get_args(self.params)
-        return self.transformer.inverse(y, *args)
-
-    def inverse_and_log_abs_det_jacobian(self, y: Array, condition=None):
-        args = self.transformer.get_args(self.params)
-        return self.transformer.inverse_and_log_abs_det_jacobian(y, *args)
-
-
 class Partial(Bijection):
     """Applies bijection to specific indices of an input."""
 
-    cond_dim: int
     bijection: Array
-    idxs: Union[int, slice, Array]
+    idxs: Union[int, slice, Array, tuple]
 
     def __init__(self, bijection: Bijection, idxs):
         """
         Args:
             bijection (Bijection): Bijection that is compatible with the subset of x indexed by idxs.
-            idxs: Indices (Integer, a slice, or an ndarray with integer/bool dtype) of the transformed portion. If a multidimensional array is provided, the array is flattened.
+            idxs: Indices (Integer, a slice, or an ndarray with integer/bool dtype) of the transformed portion.
         """
         self.bijection = bijection
-        self.cond_dim = self.bijection.cond_dim
-
-        if not isinstance(idxs, slice):
-            idxs = jnp.array(idxs).ravel()
-
-            if jnp.issubdtype(idxs, jnp.integer):
-                idxs = jnp.unique(idxs)
-
         self.idxs = idxs
+        self.shape = None
+        self.cond_shape = bijection.cond_shape
 
     def transform(self, x: Array, condition=None):
         y = self.bijection.transform(x[self.idxs], condition)
@@ -170,10 +138,12 @@ class Partial(Bijection):
 class EmbedCondition(Bijection):
     bijection: Bijection
     embedding_net: eqx.Module
-    cond_dim: int
 
     def __init__(
-        self, bijection: Bijection, embedding_net: eqx.Module, cond_dim: int
+        self,
+        bijection: Bijection,
+        embedding_net: eqx.Module,
+        raw_cond_shape: Tuple[int],
     ) -> None:
         """Use an embedding network to reduce the dimensionality of the conditioning variable.
         The returned bijection has cond_dim equal to the raw condition size.
@@ -181,24 +151,30 @@ class EmbedCondition(Bijection):
         Args:
             bijection (Bijection): Bijection with ``bijection.cond_dim`` equal to the embedded size.
             embedding_net (eqx.Module): A callable equinox module that embeds a conditioning variable to size ``bijection.cond_dim``.
-            cond_dim (int): The dimension of the raw conditioning variable.
+            raw_cond_shape (Union[None, Tuple[int]]): The dimension of the raw conditioning variable.
         """
         self.bijection = bijection
         self.embedding_net = embedding_net
-        self.cond_dim = cond_dim
+
+        self.shape = bijection.shape
+        self.cond_shape = raw_cond_shape
 
     def transform(self, x, condition=None):
+        self._argcheck(x, condition)
         condition = self.embedding_net(condition)
         return self.bijection.transform(x, condition)
 
     def transform_and_log_abs_det_jacobian(self, x, condition=None):
+        self._argcheck(x, condition)
         condition = self.embedding_net(condition)
         return self.bijection.transform_and_log_abs_det_jacobian(x, condition)
 
     def inverse(self, y, condition=None):
+        self._argcheck(y, condition)
         condition = self.embedding_net(condition)
         return self.bijection.inverse(y, condition)
 
     def inverse_and_log_abs_det_jacobian(self, y, condition=None):
+        self._argcheck(y, condition)
         condition = self.embedding_net(condition)
         return self.bijection.inverse_and_log_abs_det_jacobian(y, condition)

@@ -5,5 +5,5 @@ __all__ = [
     "MaskedLinear",
     "AutoregressiveMLP",
     "BlockAutoregressiveLinear",
-    "BlockTanh"
+    "BlockTanh",
 ]

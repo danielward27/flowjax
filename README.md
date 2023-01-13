@@ -30,8 +30,9 @@ flow.log_prob(x)
 
 The package currently supports the following:
 
-- `CouplingFlow` ([Dinh et al., 2017](https://arxiv.org/abs/1605.08803)) and `MaskedAutoregressiveFlow` ([Papamakarios et al., 2017](https://arxiv.org/abs/1705.07057v4))  conditioner architectures
-- Common "transformers", such as `AffineTransformer` and `RationalQuadraticSplineTransformer` (the latter used in neural spline flows; [Durkan et al., 2019](https://arxiv.org/abs/1906.04032))
+- `CouplingFlow` ([Dinh et al., 2017](https://arxiv.org/abs/1605.08803))
+- `MaskedAutoregressiveFlow` ([Papamakarios et al., 2017](https://arxiv.org/abs/1705.07057v4)).
+- Common "transformers", such as `Affine` and `RationalQuadraticSpline` (the latter used in neural spline flows; [Durkan et al., 2019](https://arxiv.org/abs/1906.04032))
 - `BlockNeuralAutoregressiveFlow`, as introduced by [De Cao et al., 2019](https://arxiv.org/abs/1904.04676)
 - `TriangularSplineFlow`, introduced here.
 
@@ -46,13 +47,8 @@ This package is new and may have substantial breaking changes between major rele
 
 ## TODO
 A few limitations / things that could be worth including in the future:
-- Add documentation
-- Support varied "event" dimensions:
-    - i.e. allow `x` and `condition` instances to have `ndim==0` (scalar), or `ndim > 1`.
-    - Chaining of bijections with varied event `ndim` could follow numpy-like broadcasting rules.
-    - Allow vmap-like transform to define bijections with expanded event dimensions.
+- Add ability to "reshape" bijections.
 - Training script for variational inference
-- Define transformers by wrapping a bijection?
 
 ## Related
 We make use of the [Equinox](https://arxiv.org/abs/2111.00254) package, which facilitates object-oriented programming with Jax. 
