@@ -28,14 +28,6 @@ def elbo_loss(dist: Distribution, target: VariationalTarget, key: random.KeyArra
     losses = approx_density - target_density
     return losses.mean()
 
-@eqx.filter_jit
-def safe_elbo_loss(dist: Distribution, target: VariationalTarget, key: random.KeyArray, elbo_samples: int = 500):
-    losses = elbo_loss(dist, target, key, elbo_samples)
-    max = jnp.max(losses, where=jnp.isfinite(losses), initial=-jnp.inf)
-    min = jnp.min(losses, where=jnp.isfinite(losses), initial=jnp.inf)
-    losses = jnp.clip(losses, min, max)
-    return losses.mean()
-
 def variational_fit(
     key: random.KeyArray,
     dist: Distribution,
