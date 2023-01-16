@@ -29,3 +29,7 @@ jobs:
         run: |
           pip install pytest
           pytest
+
+      - name: Test documentation
+        run: |
+          make docs doctest
