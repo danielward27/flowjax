@@ -1,6 +1,5 @@
 from typing import Optional, Callable
 
-import jax.numpy as jnp
 from jax import random
 import optax
 import equinox as eqx
