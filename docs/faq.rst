@@ -44,11 +44,12 @@ The methods of distributions and bijections are not jitted by default. For examp
     # Often slow - sample not jitted!
     results = []
     for batch_key in keys:
-        x = flow.sample(batch_key, n=batch_size)
+        x = flow.sample(batch_key, sample_shape=(batch_size,)
         results.append(x)
 
     # Fast - sample jitted!
     results = []
     for batch_key in keys:
-        x = eqx.filter_jit(flow.sample)(batch_key, n=batch_size)
+        x = eqx.filter_jit(flow.sample)(batch_key, sample_shape=(batch_size,))
         results.append(x)
+        
