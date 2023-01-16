@@ -40,6 +40,7 @@ def variational_fit(
 ):
     """
     Train a distribution (e.g. a flow) by variational inference.
+    By default this does nothing fancy, just runs SGD steps on the ELBO loss for a fixed number of epochs.
     Args:
         key (KeyArray): Jax PRNGKey.
         dist (Distribution): Distribution object, trainable parameters are found using equinox.is_inexact_array.
