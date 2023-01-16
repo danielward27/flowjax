@@ -22,7 +22,7 @@ VariationalLoss = Callable[
 
 @eqx.filter_jit
 def elbo_loss(dist: Distribution, target: VariationalTarget, key: random.KeyArray, elbo_samples: int = 500):
-    samples = dist.sample(key, n=elbo_samples)
+    samples = dist.sample(key, sample_shape=(elbo_samples,))
     approx_density = dist.log_prob(samples).reshape(-1)
     target_density = target(samples).reshape(-1)
     losses = approx_density - target_density

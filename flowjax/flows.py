@@ -123,7 +123,6 @@ class MaskedAutoregressiveFlow(Transformed):
         nn_depth: int = 2,
         nn_activation: Callable = jnn.relu,
         invert: bool = True,
-        final_affine: bool = False,
     ):
         """Masked autoregressive flow (https://arxiv.org/abs/1606.04934,
         https://arxiv.org/abs/1705.07057v4). Parameterises a transformer with an
@@ -141,7 +140,6 @@ class MaskedAutoregressiveFlow(Transformed):
             invert (bool, optional): Whether to invert the bijection. Broadly, True will
                 prioritise a faster inverse, leading to faster `log_prob`, False will prioritise
                 faster forward, leading to faster `sample`. Defaults to True. Defaults to True.
-            final_affine (bool, optional): Whether to add a final affine transformation. Defaults to False.
         """
         if len(base_dist.shape) != 1:
             raise ValueError(f"Expected base_dist.ndim==1, got {base_dist.ndim}")
@@ -149,7 +147,7 @@ class MaskedAutoregressiveFlow(Transformed):
         dim = base_dist.shape[0]
         permute_strategy = _default_permute_strategy(dim)
 
-        def make_layer(transformer, key):  # masked autoregressive layer + permutation
+        def make_layer(key):  # masked autoregressive layer + permutation
             masked_auto_key, p_key = random.split(key)
             masked_autoregressive = MaskedAutoregressive(
                 key=masked_auto_key,
@@ -172,12 +170,6 @@ class MaskedAutoregressiveFlow(Transformed):
         layers = eqx.filter_vmap(make_layer)(keys)
         bijection = Scan(layers)
         bijection = Invert(bijection) if invert else bijection
-
-        if final_affine:
-            keys = random.split(key, base_dist.dim)
-            create_affine_layer = lambda key: make_layer(AffineTransformer(), key)
-            affine_layers =  eqx.filter_vmap(create_affine_layer)(keys)
-            bijection = Chain([bijection, ScannableChain(affine_layers)])
 
         self.nn_width = nn_width
         self.nn_depth = nn_depth
