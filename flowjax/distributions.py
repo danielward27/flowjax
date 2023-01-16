@@ -95,7 +95,8 @@ class Distribution(eqx.Module, ABC):
             excluded = {1}
             sig = _get_ufunc_signature([(2,)], [self.shape])
         else:
-            key_shape = sample_shape + condition.shape[: -len(self.cond_shape)]
+            leading_cond_shape = condition.shape[: -len(self.cond_shape)] if self.cond_ndim > 0 else condition.shape
+            key_shape = sample_shape + leading_cond_shape
             excluded = {}
             sig = _get_ufunc_signature([(2,), self.cond_shape], [self.shape])
 
@@ -112,13 +113,13 @@ class Distribution(eqx.Module, ABC):
             x_trailing = x.shape[-self.ndim :] if self.ndim > 0 else ()
             if x_trailing != self.shape:
                 raise ValueError(
-                    f"Expected trailing dimensions in input x to match the distribution shape, but got"
+                    f"Expected trailing dimensions in input x to match the distribution shape, but got "
                     f"x shape {x.shape}, and distribution shape {self.shape}."
                 )
 
         if condition is None and self.cond_shape is not None:
             raise ValueError(
-                f"Conditioning variable was not provided."
+                f"Conditioning variable was not provided. "
                 f"Expected conditioning variable with trailing shape {self.shape}."
             )
 
@@ -131,7 +132,7 @@ class Distribution(eqx.Module, ABC):
                 )
                 if condition_trailing != self.cond_shape:
                     raise ValueError(
-                        f"Expected trailing dimensions in the condition to match distribution.cond_shape, but got"
+                        f"Expected trailing dimensions in the condition to match distribution.cond_shape, but got "
                         f"condition shape {condition.shape}, and distribution.cond_shape {self.cond_shape}."
                     )
 

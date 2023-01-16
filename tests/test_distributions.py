@@ -1,7 +1,6 @@
 import jax.numpy as jnp
 import pytest
-from jax import random
-
+import jax.random as jr
 from flowjax.distributions import (
     Cauchy,
     Gumbel,
@@ -13,7 +12,9 @@ from flowjax.distributions import (
     _StandardGumbel,
     _StandardStudentT,
     _StandardUniform,
+    Distribution
 )
+
 
 # This sets up a number of constructors shape -> instance for testing
 # the generic API of Distribution classes.
@@ -21,9 +22,10 @@ from flowjax.distributions import (
 # sufficiently tested by their loc, scale public counterparts.
 
 _test_distributions = {
-    "StandardNormal": StandardNormal,
+    # flowjax.distributions
+    "StandardNormal": lambda shape: StandardNormal(shape),
     "Normal": lambda shape: Normal(jnp.zeros(shape)),
-    "_StandardUniform": _StandardUniform,
+    "_StandardUniform": lambda shape: _StandardUniform(shape),
     "Uniform": lambda shape: Uniform(jnp.zeros(shape), 1),
     "_StandardGumbel": _StandardGumbel,
     "Gumbel": lambda shape: Gumbel(jnp.zeros(shape)),
@@ -42,11 +44,11 @@ _test_shapes = [(), (2,), (2, 3)]
 @pytest.mark.parametrize("shape", _test_shapes)
 def test_sample(distribution, shape):
     d = distribution(shape=shape)
-    sample = d.sample(random.PRNGKey(0))
+    sample = d.sample(jr.PRNGKey(0))
     assert sample.shape == shape
 
     sample_shape = (2, 2)
-    sample = d.sample(random.PRNGKey(0), sample_shape=sample_shape)
+    sample = d.sample(jr.PRNGKey(0), sample_shape=sample_shape)
     assert sample.shape == sample_shape + shape
 
 
@@ -54,28 +56,13 @@ def test_sample(distribution, shape):
 @pytest.mark.parametrize("shape", _test_shapes)
 def test_log_prob(distribution, shape):
     d = distribution(shape=shape)
-    x = d.sample(random.PRNGKey(0))
+    x = d.sample(jr.PRNGKey(0))
 
     assert d.log_prob(x).shape == ()
 
     sample_shape = (2, 3)
-    x = d.sample(random.PRNGKey(0), sample_shape=sample_shape)
+    x = d.sample(jr.PRNGKey(0), sample_shape=sample_shape)
     assert d.log_prob(x).shape == sample_shape
-
-
-# @pytest.mark.parametrize("distribution", _test_distributions)
-# def test_sin_log_prob(distribution):
-#     d = distribution(shape=3)
-#     sample = d.sample(random.PRNGKey(0))
-#     assert d.log_prob(sample).shape == ()
-
-
-# @pytest.mark.parametrize("distribution_class", _test_distributions)
-# def test_log_prob(distribution_class):
-#     d = distribution_class(dim=3)
-#     # sample 4 times from 3d distribution
-#     x_matrix = d.sample(random.PRNGKey(0), n=4)
-#     assert d.log_prob(x_matrix).shape == (4,)
 
 
 @pytest.mark.parametrize("distribution", _test_distributions)
@@ -89,17 +76,6 @@ def test_log_prob_shape_mismatch(distribution):
     with pytest.raises(ValueError):
         d.log_prob(jnp.ones((2,)))
 
-
-def test_normal_params():
-    dist = Normal(
-        jnp.array([1.0, 2.0]),
-        jnp.array([3.0, 4.0]),
-    )
-
-    assert dist.loc == pytest.approx(jnp.array([1.0, 2.0]))
-    assert dist.scale == pytest.approx(jnp.array([3.0, 4.0]))
-
-
 def test_uniform_params():
     dist = Uniform(
         jnp.array([1.0, 2.0]),
@@ -108,3 +84,64 @@ def test_uniform_params():
 
     assert dist.minval == pytest.approx(jnp.array([1.0, 2.0]))
     assert dist.maxval == pytest.approx(jnp.array([3.0, 4.0]))
+
+
+
+
+# Since the broadcasting behaviour is shared by all, we test it for a single unconditional and conditional distribution only
+
+dist_shape, sample_shape, condition_shape = [[(), (2,), (3,4)] for _ in range(3)]
+
+class TestDist(Distribution):
+    "Toy distribution object, for testing of distribution broadcasting."
+
+    def __init__(self, shape, cond_shape = None) -> None:
+        self.shape = shape
+        self.cond_shape = cond_shape
+
+    def _log_prob(self, x, condition = None):
+        return jnp.zeros(())
+
+    def _sample(self, key, condition = None):
+        return jnp.zeros(self.shape)
+
+
+@pytest.mark.parametrize("dist_shape", dist_shape)
+@pytest.mark.parametrize("sample_shape", sample_shape)
+def test_broadcasting_unconditional(dist_shape, sample_shape):
+    d = TestDist(dist_shape)
+    samples = d.sample(jr.PRNGKey(0), sample_shape=sample_shape)
+    assert samples.shape == sample_shape + dist_shape
+
+    log_probs = d.log_prob(samples)
+    assert log_probs.shape == sample_shape
+
+    with pytest.raises(ValueError):
+        d.sample(jr.PRNGKey(0), condition=jnp.ones(3), sample_shape=sample_shape)
+
+    with pytest.raises(ValueError):
+        d.log_prob(samples, condition=jnp.ones(3))
+
+
+
+@pytest.mark.parametrize("dist_shape", dist_shape)
+@pytest.mark.parametrize("sample_shape", sample_shape)
+@pytest.mark.parametrize("condition_shape", condition_shape)
+def test_broadcasting_conditional_sample(dist_shape, sample_shape, condition_shape):
+
+    key = jr.PRNGKey(0)
+    d = TestDist(dist_shape, condition_shape)
+
+    # No leading dimensions in condition
+    condition = jnp.zeros(condition_shape) 
+    samples = d.sample(key, condition=condition, sample_shape=sample_shape)
+    assert samples.shape == sample_shape + dist_shape
+
+    log_probs = d.log_prob(samples, condition)
+    assert log_probs.shape == sample_shape
+
+    # Leading dimensions in condition
+    leading = (3,4)
+    condition = jnp.zeros(leading + condition_shape) 
+    samples = d.sample(key, condition=condition, sample_shape=sample_shape)
+    assert samples.shape == sample_shape + leading + dist_shape
