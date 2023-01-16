@@ -6,10 +6,12 @@ from typing import Any, Tuple
 
 
 class Vmap(Bijection):
-    """Expand the dimension of a bijection by vmapping. By default, we vmap over
-    bijection parameters, x and the conditioning variables, although this behaviour can
-    be modified by providing key word arguments that are passed to ``equinox.filter_vmap``.
-    The arguments names for the vmapped functions are (bijection, x, condition).
+    """Expand the dimension of a bijection by vmapping. By default, we vmap over both the
+    bijection parameters and x, although this behaviour can be modified by providing key
+    word arguments that are passed to ``equinox.filter_vmap``. The arguments names for
+    the vmapped functions are (bijection, x).
+    
+    Vmapping over the conditioning variable is not currently supported.
 
     Example:
         Affine parameters usually act elementwise, but we could vmap excluding the
@@ -31,6 +33,8 @@ class Vmap(Bijection):
 
     def __init__(self, bijection: Bijection, shape: Tuple[int], **kwargs):
         """
+        
+
         Args:
             bijection (Bijection): Bijection. If vmapping over the bijection, the array leaves
                 in bijection should have additional leading axes with shape equalling `shape`.
@@ -38,6 +42,7 @@ class Vmap(Bijection):
             shape (Tuple[int]): Shape prepended to the bijection shape. If len(shape)>1, multiple applications of vmap will be used.
             **kwargs: kwargs, passed to equinox.filter_vmap, allowing e.g. control over which variables to map over.
         """
+
         self.bijection = bijection
         self.ndim_to_add = len(shape)
         self.kwargs = kwargs  # For filter vmap
@@ -48,28 +53,28 @@ class Vmap(Bijection):
 
     def transform(self, x, condition=None):
         self._argcheck(x, condition)
-        f = lambda bijection, x, condition: bijection.transform(x, condition)
+        f = lambda bijection, x: bijection.transform(x, condition)
         f = self._multivmap(f)
-        return f(self.bijection, x, condition)
+        return f(self.bijection, x)
 
     def inverse(self, y, condition=None):
         self._argcheck(y, condition)
-        f = lambda bijection, x, condition: bijection.inverse(x, condition)
+        f = lambda bijection, x: bijection.inverse(x, condition)
         f = self._multivmap(f)
-        return f(self.bijection, y, condition)
+        return f(self.bijection, y)
 
     def transform_and_log_abs_det_jacobian(self, x, condition=None):
         self._argcheck(x, condition)
-        f = lambda bijection, x, condition: bijection.transform_and_log_abs_det_jacobian(x, condition)
+        f = lambda bijection, x: bijection.transform_and_log_abs_det_jacobian(x, condition)
         f = self._multivmap(f)
-        y, log_det = f(self.bijection, x, condition)
+        y, log_det = f(self.bijection, x)
         return y, log_det.sum()
 
     def inverse_and_log_abs_det_jacobian(self, y, condition=None):
         self._argcheck(y, condition)
-        f = lambda bijection, x, condition: bijection.inverse_and_log_abs_det_jacobian(x, condition)
+        f = lambda bijection, x: bijection.inverse_and_log_abs_det_jacobian(x, condition)
         f = self._multivmap(f)
-        x, log_det = f(self.bijection, y, condition)
+        x, log_det = f(self.bijection, y)
         return x, log_det.sum()
 
     def _multivmap(self, f):

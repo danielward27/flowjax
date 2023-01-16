@@ -145,3 +145,6 @@ def test_broadcasting_conditional_sample(dist_shape, sample_shape, condition_sha
     condition = jnp.zeros(leading + condition_shape) 
     samples = d.sample(key, condition=condition, sample_shape=sample_shape)
     assert samples.shape == sample_shape + leading + dist_shape
+
+    log_probs = d.log_prob(samples, condition)
+    assert log_probs.shape == sample_shape + leading
