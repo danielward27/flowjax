@@ -12,7 +12,7 @@ Training a flow can be done in a few lines of code:
 
 ```
 from flowjax.flows import BlockNeuralAutoregressiveFlow
-from flowjax.train_utils import train_flow
+from flowjax.train import train_flow
 from flowjax.distributions import Normal
 from jax import random
 import jax.numpy as jnp
@@ -48,7 +48,6 @@ This package is new and may have substantial breaking changes between major rele
 ## TODO
 A few limitations / things that could be worth including in the future:
 - Add ability to "reshape" bijections.
-- Training script for variational inference
 
 ## Related
 We make use of the [Equinox](https://arxiv.org/abs/2111.00254) package, which facilitates object-oriented programming with Jax. 
