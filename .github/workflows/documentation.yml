@@ -21,7 +21,7 @@ jobs:
           pip install -r docs/requirements.txt
       - name: Test documentation
         run: |
-          make docs doctest
+          make -C docs doctest
       - name: Sphinx build
         run: |
           sphinx-build docs docs/_build
