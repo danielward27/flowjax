@@ -92,7 +92,7 @@ def test_uniform_params():
 
 dist_shape, sample_shape, condition_shape = [[(), (2,), (3,4)] for _ in range(3)]
 
-class TestDist(Distribution):
+class _TestDist(Distribution):
     "Toy distribution object, for testing of distribution broadcasting."
 
     def __init__(self, shape, cond_shape = None) -> None:
@@ -109,7 +109,7 @@ class TestDist(Distribution):
 @pytest.mark.parametrize("dist_shape", dist_shape)
 @pytest.mark.parametrize("sample_shape", sample_shape)
 def test_broadcasting_unconditional(dist_shape, sample_shape):
-    d = TestDist(dist_shape)
+    d = _TestDist(dist_shape)
     samples = d.sample(jr.PRNGKey(0), sample_shape=sample_shape)
     assert samples.shape == sample_shape + dist_shape
 
@@ -127,24 +127,39 @@ def test_broadcasting_unconditional(dist_shape, sample_shape):
 @pytest.mark.parametrize("dist_shape", dist_shape)
 @pytest.mark.parametrize("sample_shape", sample_shape)
 @pytest.mark.parametrize("condition_shape", condition_shape)
-def test_broadcasting_conditional_sample(dist_shape, sample_shape, condition_shape):
+@pytest.mark.parametrize("leading_cond_shape", [(), (3,4)])  # Additional leading dimensions in condition
+def test_broadcasting_conditional(dist_shape, sample_shape, condition_shape, leading_cond_shape):
 
     key = jr.PRNGKey(0)
-    d = TestDist(dist_shape, condition_shape)
-
-    # No leading dimensions in condition
-    condition = jnp.zeros(condition_shape) 
+    d = _TestDist(dist_shape, condition_shape)
+    condition = jnp.zeros(leading_cond_shape + condition_shape) 
     samples = d.sample(key, condition=condition, sample_shape=sample_shape)
-    assert samples.shape == sample_shape + dist_shape
+    assert samples.shape == sample_shape + leading_cond_shape + dist_shape
 
     log_probs = d.log_prob(samples, condition)
-    assert log_probs.shape == sample_shape
+    assert log_probs.shape == sample_shape + leading_cond_shape
 
-    # Leading dimensions in condition
-    leading = (3,4)
-    condition = jnp.zeros(leading + condition_shape) 
-    samples = d.sample(key, condition=condition, sample_shape=sample_shape)
-    assert samples.shape == sample_shape + leading + dist_shape
+    samples, log_probs = d.sample_and_log_prob(key, condition=condition, sample_shape=sample_shape)
+    assert samples.shape == sample_shape + leading_cond_shape + dist_shape
+    assert log_probs.shape == sample_shape + leading_cond_shape
+    
 
-    log_probs = d.log_prob(samples, condition)
-    assert log_probs.shape == sample_shape + leading
+
+
+
+test_cases = [
+    StandardNormal((2,2)),  # Won't have custom sample_and_log_prob implementation as not Transformed
+    Normal(jnp.ones((2,2))), # Will have custom implementation as is Transformed
+]
+
+@pytest.mark.parametrize("dist", test_cases)
+def test_sample_and_log_prob(dist):
+    # We test broadcasting behaviour seperately above.
+    # Just check consistency to seperately using methods
+    key = jr.PRNGKey(0)
+    x_naive = dist._sample(key)
+    lp_naive = dist._log_prob(x_naive)
+    x, lp = dist._sample_and_log_prob(key)
+    assert x == pytest.approx(x_naive)
+    assert lp == pytest.approx(lp_naive)
+

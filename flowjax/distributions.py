@@ -58,6 +58,19 @@ class Distribution(eqx.Module, ABC):
         "Sample a point from the distribution."
         pass
 
+    def _sample_and_log_prob(
+        self,
+        key: jr.PRNGKey,
+        condition: Optional[Array] = None
+        ):
+        """
+        Sample a point from the distribution, and return its log probability.
+        Subclasses can reimplement this method in cases where more efficient methods exists (e.g. see Transformed).
+        """
+        x = self._sample(key, condition)
+        log_prob = self._log_prob(x, condition)
+        return x, log_prob
+
     def log_prob(self, x: Array, condition: Optional[Array] = None):
         """Evaluate the log probability. Uses numpy like broadcasting if additional
         leading dimensions are passed.
@@ -161,6 +174,45 @@ class Distribution(eqx.Module, ABC):
             keys, condition
         )
 
+
+    def sample_and_log_prob(
+        self,
+        key: jr.PRNGKey,
+        condition: Optional[Array] = None,
+        sample_shape: Tuple[int] = ()
+        ):
+        """Sample the distribution and return the samples and corresponding log probabilities.
+        For transformed distributions (especially flows), this will generally be more efficient
+        than calling the methods seperately.
+        
+        Refer to the :py:meth:`~flowjax.distributions.Distribution.sample` and
+        Refer to the :py:meth:`~flowjax.distributions.Distribution.log_prob` documentation
+        for more information.
+
+        Args:
+            key (jr.PRNGKey): Jax random key.
+            condition (Optional[Array], optional): Conditioning variables. Defaults to None.
+            sample_shape (Tuple[int], optional): Sample shape. Defaults to ().
+        """
+        self._argcheck(condition=condition)
+
+        if condition is None:
+            key_shape = sample_shape
+            excluded = {1}
+            sig = _get_ufunc_signature([(2,)], [self.shape, ()])
+        else:
+            leading_cond_shape = condition.shape[: -len(self.cond_shape)] if self.cond_ndim > 0 else condition.shape
+            key_shape = sample_shape + leading_cond_shape
+            excluded = {}
+            sig = _get_ufunc_signature([(2,), self.cond_shape], [self.shape, ()])
+
+        key_size = max(1, prod(key_shape))  # Still need 1 key for scalar input
+        keys = jnp.reshape(jr.split(key, key_size), key_shape + (2,))
+
+        return jnp.vectorize(self._sample_and_log_prob, excluded=excluded, signature=sig)(
+            keys, condition
+        )
+
     def _argcheck(self, x=None, condition=None):
         # jnp.vectorize would catch ndim mismatches, but it doesn't check axis lengths.
         if x is not None:
@@ -245,6 +297,13 @@ class Transformed(Distribution):
         z = self.base_dist._sample(key, condition)
         x = self.bijection.transform(z, condition)
         return x
+
+    def _sample_and_log_prob(self, key: jr.PRNGKey, condition: Optional[Array] = None):
+        # We overwrite the naive implementation of calling both methods seperately to
+        # avoid computing the inverse transformation.
+        x, log_prob_base = self.base_dist._sample_and_log_prob(key, condition)
+        y, forward_log_dets = self.bijection.transform_and_log_abs_det_jacobian(x, condition)
+        return y, log_prob_base - forward_log_dets
 
 
 class StandardNormal(Distribution):
