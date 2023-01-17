@@ -25,11 +25,11 @@ class Distribution(eqx.Module, ABC):
 
         >>> import jax.numpy as jnp
         >>> from flowjax.distributions import Normal
-        >>> dist = Normal(jnp.zeros(3))
+        >>> dist = Normal(jnp.zeros(2))
         >>> dist.shape
-        (3,)
-        >>> dist.cond_shape
-        None
+        (2,)
+        >>> dist.cond_shape is None
+        True
 
     Distributions are registered as jax PyTrees (as they are equinox modules), and as such
     they are compatible with normal jax operations.
@@ -87,7 +87,61 @@ class Distribution(eqx.Module, ABC):
         condition: Optional[Array] = None,
         sample_shape: Tuple[int] = (),
     ):
-        "Output shape will be sample_shape + condition_batch_shape + self.shape"
+        """Sample from the distribution. For unconditional distributions, the output will
+        be of shape ``sample_shape + dist.shape``.
+        
+        Example:
+
+            .. testsetup::
+
+                from flowjax.distributions import StandardNormal
+                import jax.random as jr
+                import jax.numpy as jnp
+                from flowjax.flows import CouplingFlow
+                from flowjax.bijections import Affine
+                # For a unconditional distribution:
+                key = jr.PRNGKey(0)
+                dist = StandardNormal((2,))
+                # For a conditional distribution
+                cond_dist = CouplingFlow(key, StandardNormal((2,)), cond_dim=3, transformer=Affine())
+
+            For an unconditional distribution:
+
+            .. doctest::
+
+                >>> dist.shape
+                (2,)
+                >>> samples = dist.sample(key, sample_shape=(10, ))
+                >>> samples.shape
+                (10, 2)
+
+            For a conditional distribution:
+
+            .. doctest::
+
+                >>> cond_dist.shape
+                (2,)
+                >>> cond_dist.cond_shape
+                (3,)
+                >>> # Sample 10 times for a particular condition
+                >>> samples = cond_dist.sample(key, condition=jnp.ones(3), sample_shape=(10,))
+                >>> samples.shape
+                (10, 2)
+                >>> # Sampling, batching over a condition
+                >>> samples = cond_dist.sample(key, condition=jnp.ones((5, 3)))
+                >>> samples.shape
+                (5, 2)
+                >>> # Sample 10 times for each of 5 conditioning variables
+                >>> samples = cond_dist.sample(key, condition=jnp.ones((5, 3)), sample_shape=(10, ))
+                >>> samples.shape
+                (10, 5, 2)
+
+        Args:
+            key (jr.PRNGKey): Jax random key.
+            condition (Optional[Array], optional): Conditioning variables. Defaults to None.
+            sample_shape (Tuple[int], optional): Sample shape. Defaults to ().
+
+        """
         self._argcheck(condition=condition)
 
         if condition is None:
@@ -95,7 +149,8 @@ class Distribution(eqx.Module, ABC):
             excluded = {1}
             sig = _get_ufunc_signature([(2,)], [self.shape])
         else:
-            key_shape = sample_shape + condition.shape[: -len(self.cond_shape)]
+            leading_cond_shape = condition.shape[: -len(self.cond_shape)] if self.cond_ndim > 0 else condition.shape
+            key_shape = sample_shape + leading_cond_shape
             excluded = {}
             sig = _get_ufunc_signature([(2,), self.cond_shape], [self.shape])
 
@@ -112,13 +167,13 @@ class Distribution(eqx.Module, ABC):
             x_trailing = x.shape[-self.ndim :] if self.ndim > 0 else ()
             if x_trailing != self.shape:
                 raise ValueError(
-                    f"Expected trailing dimensions in input x to match the distribution shape, but got"
+                    f"Expected trailing dimensions in input x to match the distribution shape, but got "
                     f"x shape {x.shape}, and distribution shape {self.shape}."
                 )
 
         if condition is None and self.cond_shape is not None:
             raise ValueError(
-                f"Conditioning variable was not provided."
+                f"Conditioning variable was not provided. "
                 f"Expected conditioning variable with trailing shape {self.shape}."
             )
 
@@ -131,7 +186,7 @@ class Distribution(eqx.Module, ABC):
                 )
                 if condition_trailing != self.cond_shape:
                     raise ValueError(
-                        f"Expected trailing dimensions in the condition to match distribution.cond_shape, but got"
+                        f"Expected trailing dimensions in the condition to match distribution.cond_shape, but got "
                         f"condition shape {condition.shape}, and distribution.cond_shape {self.cond_shape}."
                     )
 
