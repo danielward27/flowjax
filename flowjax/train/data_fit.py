@@ -1,7 +1,6 @@
 from typing import Dict, List, Optional, Sequence, Tuple
 
 import equinox as eqx
-import jax
 import jax.numpy as jnp
 import optax
 from equinox.custom_types import BoolAxisSpec
@@ -14,7 +13,7 @@ from flowjax.distributions import Distribution
 from flowjax.utils import Array
 
 
-def train_flow(
+def fit_to_data(
     key: KeyArray,
     dist: Distribution,
     x: Array,
