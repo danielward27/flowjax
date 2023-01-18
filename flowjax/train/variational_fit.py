@@ -35,8 +35,8 @@ def fit_to_variational_target(
         dist (Distribution): Distribution object, trainable parameters are found using equinox.is_inexact_array.
         target (Callable): The variational target (this is usually the unormalized log posterior)
         loss_fn (Callable, optional): The loss function to optimize. The loss function should take
-            a random key, the distribution, and a callable that maps samples from the distribution to a scalar loss.
-            Defaults to elbo_loss.
+            a random key, the distribution, a callable that maps samples from the distribution to a scalar loss,
+            and a number of samples to use. Defaults to elbo_loss.
         steps (int, optional): The number of training steps to run. Defaults to 100.
         samples_per_step (int, optional): number of samples to use at each step. Defaults to 500.
         learning_rate (float, optional): Adam learning rate. Defaults to 5e-4.
