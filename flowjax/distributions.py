@@ -97,8 +97,8 @@ class Distribution(eqx.Module, ABC):
     def sample(
         self,
         key: jr.PRNGKey,
-        condition: Optional[Array] = None,
         sample_shape: Tuple[int] = (),
+        condition: Optional[Array] = None,
     ):
         """Sample from the distribution. For unconditional distributions, the output will
         be of shape ``sample_shape + dist.shape``.
@@ -124,7 +124,7 @@ class Distribution(eqx.Module, ABC):
 
                 >>> dist.shape
                 (2,)
-                >>> samples = dist.sample(key, sample_shape=(10, ))
+                >>> samples = dist.sample(key, (10, ))
                 >>> samples.shape
                 (10, 2)
 
@@ -137,7 +137,7 @@ class Distribution(eqx.Module, ABC):
                 >>> cond_dist.cond_shape
                 (3,)
                 >>> # Sample 10 times for a particular condition
-                >>> samples = cond_dist.sample(key, condition=jnp.ones(3), sample_shape=(10,))
+                >>> samples = cond_dist.sample(key, (10,), condition=jnp.ones(3))
                 >>> samples.shape
                 (10, 2)
                 >>> # Sampling, batching over a condition
@@ -145,7 +145,7 @@ class Distribution(eqx.Module, ABC):
                 >>> samples.shape
                 (5, 2)
                 >>> # Sample 10 times for each of 5 conditioning variables
-                >>> samples = cond_dist.sample(key, condition=jnp.ones((5, 3)), sample_shape=(10, ))
+                >>> samples = cond_dist.sample(key, (10,), condition=jnp.ones((5, 3)))
                 >>> samples.shape
                 (10, 5, 2)
 
@@ -178,8 +178,8 @@ class Distribution(eqx.Module, ABC):
     def sample_and_log_prob(
         self,
         key: jr.PRNGKey,
+        sample_shape: Tuple[int] = (),
         condition: Optional[Array] = None,
-        sample_shape: Tuple[int] = ()
         ):
         """Sample the distribution and return the samples and corresponding log probabilities.
         For transformed distributions (especially flows), this will generally be more efficient

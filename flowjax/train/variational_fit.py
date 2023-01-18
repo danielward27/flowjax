@@ -10,7 +10,7 @@ from flowjax.distributions import Distribution
 
 @eqx.filter_jit
 def elbo_loss(dist: Distribution, target: Callable[[Array], Array], key: random.KeyArray, elbo_samples: int = 500):
-    samples, approx_density = dist.sample_and_log_prob(key, sample_shape=(elbo_samples,))
+    samples, approx_density = dist.sample_and_log_prob(key, (elbo_samples,))
     target_density = target(samples)
     losses = approx_density - target_density
     return losses.mean()
@@ -33,7 +33,7 @@ def fit_to_variational_target(
         key (KeyArray): Jax PRNGKey.
         dist (Distribution): Distribution object, trainable parameters are found using equinox.is_inexact_array.
         target (Callable): The variational target (this is usually the unormalized log posterior)
-        loss_fcn (Callable, optional): The loss function to optimize. Variational losses are functions that take 
+        loss_fn (Callable, optional): The loss function to optimize. Variational losses are functions that take 
             a distribution, a target callable and a random key, and returns a scalar loss. Defaults to elbo_loss.
         learning_rate (float, optional): Adam learning rate. Defaults to 5e-4.
         clip_norm (float, optional): Maximum gradient norm before clipping occurs. Defaults to 0.5.
