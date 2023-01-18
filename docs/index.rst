@@ -16,6 +16,7 @@ Installation
 
    examples/unconditional
    examples/conditional
+   examples/variational_inference
 
 .. toctree::
    :caption: API
