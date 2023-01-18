@@ -48,7 +48,7 @@ def test_sample(distribution, shape):
     assert sample.shape == shape
 
     sample_shape = (2, 2)
-    sample = d.sample(jr.PRNGKey(0), sample_shape=sample_shape)
+    sample = d.sample(jr.PRNGKey(0), sample_shape)
     assert sample.shape == sample_shape + shape
 
 
@@ -61,7 +61,7 @@ def test_log_prob(distribution, shape):
     assert d.log_prob(x).shape == ()
 
     sample_shape = (2, 3)
-    x = d.sample(jr.PRNGKey(0), sample_shape=sample_shape)
+    x = d.sample(jr.PRNGKey(0), sample_shape)
     assert d.log_prob(x).shape == sample_shape
 
 
@@ -110,14 +110,14 @@ class _TestDist(Distribution):
 @pytest.mark.parametrize("sample_shape", sample_shape)
 def test_broadcasting_unconditional(dist_shape, sample_shape):
     d = _TestDist(dist_shape)
-    samples = d.sample(jr.PRNGKey(0), sample_shape=sample_shape)
+    samples = d.sample(jr.PRNGKey(0), sample_shape)
     assert samples.shape == sample_shape + dist_shape
 
     log_probs = d.log_prob(samples)
     assert log_probs.shape == sample_shape
 
     with pytest.raises(ValueError):
-        d.sample(jr.PRNGKey(0), condition=jnp.ones(3), sample_shape=sample_shape)
+        d.sample(jr.PRNGKey(0), sample_shape, condition=jnp.ones(3))
 
     with pytest.raises(ValueError):
         d.log_prob(samples, condition=jnp.ones(3))
@@ -133,19 +133,16 @@ def test_broadcasting_conditional(dist_shape, sample_shape, condition_shape, lea
     key = jr.PRNGKey(0)
     d = _TestDist(dist_shape, condition_shape)
     condition = jnp.zeros(leading_cond_shape + condition_shape) 
-    samples = d.sample(key, condition=condition, sample_shape=sample_shape)
+    samples = d.sample(key, sample_shape, condition)
     assert samples.shape == sample_shape + leading_cond_shape + dist_shape
 
     log_probs = d.log_prob(samples, condition)
     assert log_probs.shape == sample_shape + leading_cond_shape
 
-    samples, log_probs = d.sample_and_log_prob(key, condition=condition, sample_shape=sample_shape)
+    samples, log_probs = d.sample_and_log_prob(key, sample_shape, condition)
     assert samples.shape == sample_shape + leading_cond_shape + dist_shape
     assert log_probs.shape == sample_shape + leading_cond_shape
     
-
-
-
 
 test_cases = [
     StandardNormal((2,2)),  # Won't have custom sample_and_log_prob implementation as not Transformed

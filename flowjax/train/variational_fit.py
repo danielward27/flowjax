@@ -10,7 +10,7 @@ from flowjax.distributions import Distribution
 
 @eqx.filter_jit
 def elbo_loss(dist: Distribution, target: Callable[[Array], Array], key: random.KeyArray, elbo_samples: int = 500):
-    samples, approx_density = dist.sample_and_log_prob(key, sample_shape=(elbo_samples,))
+    samples, approx_density = dist.sample_and_log_prob(key, (elbo_samples,))
     target_density = target(samples)
     losses = approx_density - target_density
     return losses.mean()
