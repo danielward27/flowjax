@@ -58,7 +58,7 @@ class CouplingFlow(
             key (KeyArray): Jax PRNGKey.
             base_dist (Distribution): Base distribution.
             transformer (Bijection): Bijection to be parameterised by conditioner.
-            cond_dim (int, optional): Dimension of conditioning variables. Defaults to 0.
+            cond_dim (int, optional): Dimension of conditioning variables. Defaults to None.
             flow_layers (int, optional): Number of coupling layers. Defaults to 5.
             nn_width (int, optional): Conditioner hidden layer size. Defaults to 40.
             nn_depth (int, optional): Conditioner depth. Defaults to 2.
