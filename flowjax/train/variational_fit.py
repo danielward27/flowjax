@@ -76,4 +76,4 @@ def fit_to_variational_target(
         if show_progress:
             loop.set_postfix({'loss': losses[-1]})
 
-    return dist, losses, optimizer
+    return dist, losses

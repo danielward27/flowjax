@@ -7,7 +7,7 @@ from jax import random
 
 from flowjax.train.variational_fit import (
     elbo_loss, 
-    variational_fit,
+    fit_to_variational_target,
     VariationalLoss, 
     VariationalTarget
 )
@@ -56,7 +56,7 @@ def test_elbo_loss(mocker, distribution, target, shape):
     assert loss.shape == () # expect scalar loss
     assert jnp.isfinite(loss) # expect finite loss
 
-def test_variational_fit_e2e():
+def test_fit_to_variational_target_e2e():
     # A simple E2E test to make sure that the function runs without error
     flow_random_key = random.PRNGKey(10)
     flow = MaskedAutoregressiveFlow(
@@ -74,15 +74,13 @@ def test_variational_fit_e2e():
     target = target_dist.log_prob
 
     train_random_key = random.PRNGKey(0)
-    trained_flow, losses,  record = variational_fit(
+    trained_flow, losses = fit_to_variational_target(
         key=train_random_key,
         dist=flow,
         target=target,
         num_epochs=10,
         show_progress=False,
     )
-
-    assert record is None
 
     # Check that we have trained the flow
     initial_params, initial_static = eqx.partition(flow, eqx.is_inexact_array)
