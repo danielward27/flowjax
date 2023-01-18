@@ -13,7 +13,7 @@ from flowjax.distributions import Distribution
 from flowjax.utils import Array
 
 
-def train_flow(
+def fit_to_data(
     key: KeyArray,
     dist: Distribution,
     x: Array,
