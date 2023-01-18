@@ -8,8 +8,6 @@ from jax import random
 from flowjax.train.variational_fit import (
     elbo_loss, 
     fit_to_variational_target,
-    VariationalLoss, 
-    VariationalTarget
 )
 from flowjax.flows import MaskedAutoregressiveFlow
 from flowjax import distributions
@@ -43,7 +41,7 @@ from flowjax import bijections
 ])
 def test_elbo_loss(distribution, target, shape):
     distribution_object: distributions.Distribution = distribution(shape)
-    target: VariationalLoss = target(shape).log_prob
+    target = target(shape).log_prob
 
     loss = elbo_loss(
         distribution_object,

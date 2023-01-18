@@ -8,19 +8,8 @@ from tqdm import tqdm
 from flowjax.utils import Array
 from flowjax.distributions import Distribution
 
-# Variational targets accept an array of proposed samples and return an array of (usually)
-# the unormalised log posterior probability of the samples.
-VariationalTarget = Callable[[Array], Array]
-
-# Variational losses are functions that take a distribution, a target 
-# callable and a random key, and returns a scalar loss.
-VariationalLoss = Callable[
-    [Distribution, VariationalTarget, random.KeyArray], 
-    float
-]
-
 @eqx.filter_jit
-def elbo_loss(dist: Distribution, target: VariationalTarget, key: random.KeyArray, elbo_samples: int = 500):
+def elbo_loss(dist: Distribution, target: Callable[[Array], Array], key: random.KeyArray, elbo_samples: int = 500):
     samples, approx_density = dist.sample_and_log_prob(key, sample_shape=(elbo_samples,))
     target_density = target(samples)
     losses = approx_density - target_density
@@ -29,8 +18,8 @@ def elbo_loss(dist: Distribution, target: VariationalTarget, key: random.KeyArra
 def fit_to_variational_target(
     key: random.KeyArray,
     dist: Distribution,
-    target: VariationalTarget,
-    loss_fn: VariationalLoss = elbo_loss,
+    target: Callable[[Array], Array],
+    loss_fn: Callable[[Distribution, Callable, random.KeyArray], float] = elbo_loss,
     learning_rate: float = 5e-4,
     clip_norm: float = 0.5,
     num_epochs: int = 100,
@@ -42,8 +31,10 @@ def fit_to_variational_target(
     Args:
         key (KeyArray): Jax PRNGKey.
         dist (Distribution): Distribution object, trainable parameters are found using equinox.is_inexact_array.
-        target (VariationalTarget): The target (usually) unormalized log posterior.
-        loss_fcn (VariationalLoss, optional): Loss function. Defaults to elbo_loss.
+        target (Callable): The variational target (this is usually the unormalized log posterior)
+        loss_fcn (Callable, optional): The loss function to optimize. Variational losses are functions that take 
+                                       a distribution, a target callable and a random key, and returns a scalar loss. 
+                                       Defaults to elbo_loss.
         learning_rate (float, optional): Adam learning rate. Defaults to 5e-4.
         clip_norm (float, optional): Maximum gradient norm before clipping occurs. Defaults to 0.5.
         num_epochs (int, optional): The number of training steps to run. Defaults to 100.
