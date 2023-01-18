@@ -41,18 +41,16 @@ from flowjax import bijections
         id='multiple_dim'
     ),
 ])
-def test_elbo_loss(mocker, distribution, target, shape):
+def test_elbo_loss(distribution, target, shape):
     distribution_object: distributions.Distribution = distribution(shape)
     target: VariationalLoss = target(shape).log_prob
-
-    mocker.spy(distribution, 'sample') # track calls to distribution.sample
 
     loss = elbo_loss(
         distribution_object,
         target,
         key=random.PRNGKey(0),
     )
-
+    
     assert loss.shape == () # expect scalar loss
     assert jnp.isfinite(loss) # expect finite loss
 
