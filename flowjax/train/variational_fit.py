@@ -28,13 +28,13 @@ def fit_to_variational_target(
     """
     Train a distribution (e.g. a flow) by variational inference.
     By default this does nothing fancy, just runs SGD steps on the ELBO loss for a fixed number of epochs.
+    
     Args:
         key (KeyArray): Jax PRNGKey.
         dist (Distribution): Distribution object, trainable parameters are found using equinox.is_inexact_array.
         target (Callable): The variational target (this is usually the unormalized log posterior)
         loss_fcn (Callable, optional): The loss function to optimize. Variational losses are functions that take 
-                                       a distribution, a target callable and a random key, and returns a scalar loss. 
-                                       Defaults to elbo_loss.
+            a distribution, a target callable and a random key, and returns a scalar loss. Defaults to elbo_loss.
         learning_rate (float, optional): Adam learning rate. Defaults to 5e-4.
         clip_norm (float, optional): Maximum gradient norm before clipping occurs. Defaults to 0.5.
         num_epochs (int, optional): The number of training steps to run. Defaults to 100.
