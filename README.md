@@ -12,7 +12,7 @@ Training a flow can be done in a few lines of code:
 
 ```
 from flowjax.flows import BlockNeuralAutoregressiveFlow
-from flowjax.train import train_flow
+from flowjax.train import fit_to_data
 from flowjax.distributions import Normal
 from jax import random
 import jax.numpy as jnp
@@ -22,7 +22,7 @@ data_key, flow_key, train_key = random.split(random.PRNGKey(0), 3)
 x = random.uniform(data_key, (10000, 3))  # Toy data
 base_dist = Normal(jnp.zeros(x.shape[1]))
 flow = BlockNeuralAutoregressiveFlow(flow_key, base_dist)
-flow, losses = train_flow(train_key, flow, x, learning_rate=0.05)
+flow, losses = fit_to_data(train_key, flow, x, learning_rate=0.05)
 
 # We can now evaluate the log-probability of arbitrary points
 flow.log_prob(x)
