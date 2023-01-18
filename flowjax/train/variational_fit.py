@@ -31,7 +31,7 @@ def variational_fit(
     key: random.KeyArray,
     dist: Distribution,
     target: VariationalTarget,
-    loss_fcn: VariationalLoss = elbo_loss,
+    loss_fn: VariationalLoss = elbo_loss,
     num_epochs: int = 100,
     optimizer: Optional[optax.GradientTransformation] = None,
     show_progress: bool = True,
@@ -52,7 +52,7 @@ def variational_fit(
     """
     @eqx.filter_jit
     def step(dist, target, key, optimizer, opt_state):
-        loss_val, grads = eqx.filter_value_and_grad(loss_fcn)(dist, target, key)
+        loss_val, grads = eqx.filter_value_and_grad(loss_fn)(dist, target, key)
         updates, opt_state = optimizer.update(grads, opt_state)
         dist = eqx.apply_updates(dist, updates)
         return dist, opt_state, loss_val
