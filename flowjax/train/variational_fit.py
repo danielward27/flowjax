@@ -35,7 +35,6 @@ def variational_fit(
     num_epochs: int = 100,
     optimizer: Optional[optax.GradientTransformation] = None,
     show_progress: bool = True,
-    recorder: Optional[Callable] = None,
 ):
     """
     Train a distribution (e.g. a flow) by variational inference.
@@ -68,22 +67,15 @@ def variational_fit(
     opt_state = optimizer.init(trainable_params)
 
     losses = []
-    if recorder is None:
-        record = None
-    else:
-        record = []
 
     loop = tqdm(range(num_epochs)) if show_progress is True else range(num_epochs)
     for iteration in loop:
         key, subkey = random.split(key)
         dist, opt_state, loss = step(dist, target, subkey, optimizer, opt_state)
         
-        if recorder is not None:
-            record.append(recorder(dist))
-
         losses.append(loss.item())
 
         if show_progress:
             loop.set_postfix({'loss': losses[-1]})
 
-    return dist, losses, record
+    return dist, losses
