@@ -44,9 +44,10 @@ def test_elbo_loss(distribution, target, shape):
     target = target(shape).log_prob
 
     loss = elbo_loss(
+        random.PRNGKey(0),
         distribution_object,
         target,
-        key=random.PRNGKey(0),
+        num_samples=100
     )
     
     assert loss.shape == () # expect scalar loss
@@ -74,7 +75,7 @@ def test_fit_to_variational_target_e2e():
         key=train_random_key,
         dist=flow,
         target=target,
-        num_epochs=10,
+        steps=10,
         show_progress=False,
     )
 
