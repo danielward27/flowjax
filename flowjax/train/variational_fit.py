@@ -31,8 +31,8 @@ def fit_to_variational_target(
     show_progress: bool = True,
 ):
     """
-    Train a distribution (e.g. a flow) by variational inference.
-    By default this does nothing fancy, just runs SGD steps on the ELBO loss for a fixed number of epochs.
+    Train a distribution (e.g. a flow) by variational inference to a target
+    (e.g. an unnormalized density).
     
     Args:
         key (KeyArray): Jax PRNGKey.
