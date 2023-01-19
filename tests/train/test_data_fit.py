@@ -31,7 +31,7 @@ def test_train_val_split():
 
 
 
-def test_train_flow_filter_spec():
+def test_data_fit_filter_spec():
     dim = 3
     mean, std = jnp.ones(dim), jnp.ones(dim)
     base_dist = Normal(mean, std)

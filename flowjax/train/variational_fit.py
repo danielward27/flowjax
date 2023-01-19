@@ -7,6 +7,8 @@ from tqdm import tqdm
 
 from flowjax.utils import Array
 from flowjax.distributions import Distribution
+from jaxtyping import PyTree
+from equinox.custom_types import BoolAxisSpec
 
 @eqx.filter_jit
 def elbo_loss(key: jr.KeyArray, dist: Distribution, target: Callable[[Array], Array], num_samples: int):
@@ -24,6 +26,8 @@ def fit_to_variational_target(
     samples_per_step: int = 500,
     learning_rate: float = 5e-4,
     clip_norm: float = 0.5,
+    optimizer: optax.GradientTransformation = None,
+    filter_spec: PyTree[BoolAxisSpec] = eqx.is_inexact_array,
     show_progress: bool = True,
 ):
     """
@@ -41,21 +45,25 @@ def fit_to_variational_target(
         samples_per_step (int, optional): number of samples to use at each step. Defaults to 500.
         learning_rate (float, optional): Adam learning rate. Defaults to 5e-4.
         clip_norm (float, optional): Maximum gradient norm before clipping occurs. Defaults to 0.5.
+        optimizer (optax.GradientTransformation): Optax optimizer. If provided, this overrides the default Adam optimizer, and the learning_rate and clip_norm arguments are ignored. Defaults to None.
+        filter_spec (PyTree[BoolAxisSpec], optional): Equinox `filter_spec` for specifying trainable parameters. Either a callable `leaf -> bool`, or a PyTree with prefix structure matching `dist` with True/False values. Defaults to `eqx.is_inexact_array`.
         show_progress (bool, optional): Whether to show progress bar. Defaults to True.
     """
+    if optimizer is None:
+        optimizer = optimizer = optax.chain(
+            optax.clip_by_global_norm(clip_norm), optax.adam(learning_rate=learning_rate)
+        )
+
     @eqx.filter_jit
     def step(dist, target, key, optimizer, opt_state):
-        loss_val, grads = eqx.filter_value_and_grad(loss_fn)(key, dist, target, samples_per_step)
+        loss_val, grads = eqx.filter_value_and_grad(loss_fn, arg=filter_spec)(
+            key, dist, target, samples_per_step
+            )
         updates, opt_state = optimizer.update(grads, opt_state)
         dist = eqx.apply_updates(dist, updates)
         return dist, opt_state, loss_val
 
-    optimizer = optax.chain(
-        optax.clip_by_global_norm(clip_norm), 
-        optax.adam(learning_rate=learning_rate)
-    )
-
-    trainable_params, _ = eqx.partition(dist, eqx.is_inexact_array)
+    trainable_params, _ = eqx.partition(dist, filter_spec)
     opt_state = optimizer.init(trainable_params)
 
     losses = []
