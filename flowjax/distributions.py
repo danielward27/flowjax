@@ -92,7 +92,7 @@ class Distribution(eqx.Module, ABC):
         lps = jnp.vectorize(self._log_prob, signature=sig, excluded=exclude)(
             x, condition
         )
-        return jnp.where(jnp.isnan(lps), -jnp.inf, lps)  # TODO nan assumed out of support. What if we try to Log transform a normal distribution? This should probably error! Maybe we should add explicit constraints.  
+        return jnp.where(jnp.isnan(lps), -jnp.inf, lps)
 
     def sample(
         self,
@@ -279,7 +279,12 @@ class Transformed(Distribution):
             >>> normal = StandardNormal()
             >>> bijection = Affine(1)
             >>> transformed = Transformed(normal, bijection)
-            
+
+        
+        .. warning::
+            It is the currently the users responsibility to ensure the bijection is valid
+            across the entire support of the distribution. Failure to do so may lead to
+            to unexpected results. In future versions explicit constraints may be introduced.
         """
         self.base_dist = base_dist
         self.bijection = bijection
