@@ -18,6 +18,7 @@ from flowjax.bijections import (
     Permute,
     Scan,
     Tanh,
+    Exp,
     TanhLinearTails,
     TriangularAffine,
     RationalQuadraticSpline,
@@ -53,6 +54,7 @@ bijections = {
     "Partial (slice)": Partial(Affine(jnp.zeros(3)), slice(0, 3)),
     "Affine": Affine(jnp.ones(dim), jnp.full(dim, 2)),
     "Tanh": Tanh(),
+    "Exp": Exp(),
     "TanhLinearTails": TanhLinearTails(1),
     "TriangularAffine (lower)": TriangularAffine(jnp.arange(dim), pos_def_triangles),
     "TriangularAffine (upper)": TriangularAffine(

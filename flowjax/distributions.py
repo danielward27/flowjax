@@ -89,10 +89,10 @@ class Distribution(eqx.Module, ABC):
         else:
             sig = _get_ufunc_signature([self.shape], [()])
             exclude = {1}
-
-        return jnp.vectorize(self._log_prob, signature=sig, excluded=exclude)(
+        lps = jnp.vectorize(self._log_prob, signature=sig, excluded=exclude)(
             x, condition
         )
+        return jnp.where(jnp.isnan(lps), -jnp.inf, lps)
 
     def sample(
         self,
@@ -279,7 +279,12 @@ class Transformed(Distribution):
             >>> normal = StandardNormal()
             >>> bijection = Affine(1)
             >>> transformed = Transformed(normal, bijection)
-            
+
+        
+        .. warning::
+            It is the currently the users responsibility to ensure the bijection is valid
+            across the entire support of the distribution. Failure to do so may lead to
+            to unexpected results. In future versions explicit constraints may be introduced.
         """
         self.base_dist = base_dist
         self.bijection = bijection
