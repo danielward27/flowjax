@@ -92,7 +92,7 @@ class Distribution(eqx.Module, ABC):
         lps = jnp.vectorize(self._log_prob, signature=sig, excluded=exclude)(
             x, condition
         )
-        return jnp.where(jnp.isnan(lps), -jnp.inf, lps)  # nan assumed out of support
+        return jnp.where(jnp.isnan(lps), -jnp.inf, lps)  # TODO nan assumed out of support. What if we try to Log transform a normal distribution? This should probably error! Maybe we should add explicit constraints.  
 
     def sample(
         self,
