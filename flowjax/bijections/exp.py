@@ -4,6 +4,7 @@ import jax.numpy as jnp
 
 class Exp(Bijection):
     def __init__(self):
+        """Elementwise exponential transform (forward) and log transform (inverse)."""
         self.shape = None
         self.cond_shape = None
 
