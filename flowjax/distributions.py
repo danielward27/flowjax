@@ -89,10 +89,10 @@ class Distribution(eqx.Module, ABC):
         else:
             sig = _get_ufunc_signature([self.shape], [()])
             exclude = {1}
-
-        return jnp.vectorize(self._log_prob, signature=sig, excluded=exclude)(
+        lps = jnp.vectorize(self._log_prob, signature=sig, excluded=exclude)(
             x, condition
         )
+        return jnp.where(jnp.isnan(lps), -jnp.inf, lps)  # nan assumed out of support
 
     def sample(
         self,
