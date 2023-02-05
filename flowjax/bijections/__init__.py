@@ -7,6 +7,7 @@ from .chain import Chain
 from .coupling import Coupling
 from .masked_autoregressive import MaskedAutoregressive
 from .tanh import Tanh, TanhLinearTails
+from .exp import Exp
 from .utils import EmbedCondition, Flip, Invert, Partial, Permute
 from .rational_quadratic_spline import RationalQuadraticSpline
 from .jax_transforms import Scan, Vmap
@@ -19,6 +20,7 @@ __all__ = [
     "Coupling",
     "MaskedAutoregressive",
     "Tanh",
+    "Exp",
     "TanhLinearTails",
     "Chain",
     "Scan",
