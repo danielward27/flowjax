@@ -3,26 +3,11 @@ import pytest
 import jax.random as jr
 
 from flowjax.utils import (
-    tile_until_length,
     inv_cum_sum,
     merge_shapes,
     check_shapes,
     _get_ufunc_signature,
 )
-
-
-def test_tile_until_length():
-    x = jnp.array([1, 2])
-
-    y = tile_until_length(x, 4)
-    assert jnp.all(y == jnp.array([1, 2, 1, 2]))
-
-    y = tile_until_length(x, 3)
-    assert jnp.all(y == jnp.array([1, 2, 1]))
-
-    y = tile_until_length(x, 1)
-    assert jnp.all(y == jnp.array([1]))
-
 
 test_cases = [
     # arrays, expected_shape

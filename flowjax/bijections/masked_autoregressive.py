@@ -11,7 +11,7 @@ import equinox as eqx
 
 from flowjax.bijections import Bijection
 from flowjax.nn import AutoregressiveMLP
-from flowjax.utils import Array, tile_until_length, get_ravelled_bijection_constructor
+from flowjax.utils import Array, get_ravelled_bijection_constructor
 
 from flowjax.bijections.jax_transforms import Vmap
 
@@ -60,8 +60,7 @@ class MaskedAutoregressive(Bijection):
             # we give conditioning variables rank -1 (no masking of edges to output)
             in_ranks = jnp.hstack((jnp.arange(dim), -jnp.ones(cond_dim)))
 
-        hidden_ranks = tile_until_length(jnp.arange(dim), nn_width)
-
+        hidden_ranks = jnp.arange(nn_width) % dim
         out_ranks = jnp.repeat(jnp.arange(dim), transformer_init_params.size)
 
         autoregressive_mlp = AutoregressiveMLP(
