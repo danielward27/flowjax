@@ -7,7 +7,7 @@ from jax.nn.initializers import glorot_uniform
 from jax.random import KeyArray
 
 from flowjax.masks import block_diag_mask, block_tril_mask
-from flowjax.utils import Array
+from jax import Array
 import jax
 
 

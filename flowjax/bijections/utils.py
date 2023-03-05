@@ -5,7 +5,7 @@ import jax.numpy as jnp
 from jax.experimental import checkify
 
 from flowjax.bijections import Bijection
-from flowjax.utils import Array
+from jax import Array
 
 
 class Invert(Bijection):

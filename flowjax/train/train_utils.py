@@ -1,5 +1,5 @@
 from typing import Sequence, List
-from flowjax.utils import Array
+from jax import Array
 import jax.random as jr
 import jax.numpy as jnp
 

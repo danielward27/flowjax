@@ -1,14 +1,9 @@
-from typing import Any, Sequence
+from typing import Sequence
 import jax
 import jax.numpy as jnp
 import equinox as eqx
 import jax.flatten_util as jfu
-
-Array = Any  # TODO Can use TypeAlias from typing in future.
-
-
-def _identity(x):
-    return x
+from jax import Array
 
 def real_to_increasing_on_interval(
     arr: Array, B: float = 1, softmax_adjust: float = 1e-2

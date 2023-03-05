@@ -1,8 +1,8 @@
-from functools import partial
 from typing import Tuple
 import jax
 import jax.numpy as jnp
-from flowjax.utils import Array, real_to_increasing_on_interval
+from jax import Array
+from flowjax.utils import real_to_increasing_on_interval
 from flowjax.bijections import Bijection
 from flowjax.bijections.jax_transforms import Vmap
 import equinox as eqx

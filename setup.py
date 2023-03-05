@@ -29,7 +29,6 @@ setup(
         "equinox",
         "tqdm",
         "optax",
-        "jaxtyping",
     ],
     python_requires=">=3.7",
     extras_require={"dev": ["pytest"]},

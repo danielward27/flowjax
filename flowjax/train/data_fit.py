@@ -1,25 +1,22 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union, Callable, Any
+PyTree = Any
 
 import equinox as eqx
 import jax.numpy as jnp
 import optax
-from equinox.custom_types import BoolAxisSpec
-from jax import random
-from jax.random import KeyArray
-from jaxtyping import PyTree
+from jax.typing import ArrayLike
+import jax.random as jr
 from tqdm import tqdm
 import optax
-
 from flowjax.distributions import Distribution
-from flowjax.utils import Array
 
 from flowjax.train.train_utils import train_val_split, count_fruitless
 
 def fit_to_data(
-    key: KeyArray,
+    key: jr.KeyArray,
     dist: Distribution,
-    x: Array,
-    condition: Optional[Array] = None,
+    x: ArrayLike,
+    condition: Optional[ArrayLike] = None,
     max_epochs: int = 50,
     max_patience: int = 5,
     batch_size: int = 256,
@@ -27,7 +24,7 @@ def fit_to_data(
     learning_rate: float = 5e-4,
     clip_norm: float = 0.5,
     optimizer: Optional[optax.GradientTransformation] = None,
-    filter_spec: PyTree[BoolAxisSpec] = eqx.is_inexact_array,
+    filter_spec: Union[Callable, PyTree] = eqx.is_inexact_array,
     show_progress: bool = True,
 ):
     """Train a distribution (e.g. a flow) to samples by maximum likelihood. Note that the last batch in each epoch is dropped if truncated.
@@ -44,9 +41,13 @@ def fit_to_data(
         learning_rate (float, optional): Adam learning rate. Defaults to 5e-4.
         clip_norm (float, optional): Maximum gradient norm before clipping occurs. Defaults to 0.5.
         optimizer (optax.GradientTransformation): Optax optimizer. If provided, this overrides the default Adam optimizer, and the learning_rate and clip_norm arguments are ignored. Defaults to None.
-        filter_spec (PyTree[BoolAxisSpec], optional): Equinox `filter_spec` for specifying trainable parameters. Either a callable `leaf -> bool`, or a PyTree with prefix structure matching `dist` with True/False values. Defaults to `eqx.is_inexact_array`.
+        filter_spec (Union[Callable, PyTree], optional): Equinox `filter_spec` for specifying trainable parameters. Either a callable `leaf -> bool`, or a PyTree with prefix structure matching `dist` with True/False values. Defaults to `eqx.is_inexact_array`.
         show_progress (bool, optional): Whether to show progress bar. Defaults to True.
     """
+    x = jnp.asarray(x)
+    
+    if condition is not None:
+        condition = jnp.asarray(condition)
 
     @eqx.filter_jit
     def loss_fn(dist, x, condition=None):
@@ -69,7 +70,7 @@ def fit_to_data(
     best_params, static = eqx.partition(dist, filter_spec)
     opt_state = optimizer.init(best_params)
 
-    key, train_val_split_key = random.split(key)
+    key, train_val_split_key = jr.split(key)
 
     inputs = (x,) if condition is None else (x, condition)
     train_args, val_args = train_val_split(train_val_split_key, inputs, val_prop=val_prop)
@@ -84,8 +85,8 @@ def fit_to_data(
     loop = tqdm(range(max_epochs)) if show_progress is True else range(max_epochs)
 
     for epoch in loop:
-        key, subkey = random.split(key)
-        permutation = random.permutation(subkey, jnp.arange(train_len))
+        key, subkey = jr.split(key)
+        permutation = jr.permutation(subkey, jnp.arange(train_len))
         train_args = tuple(a[permutation] for a in train_args)
 
         epoch_train_loss = 0

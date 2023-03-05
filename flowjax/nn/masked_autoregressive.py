@@ -8,8 +8,10 @@ from jax import random
 from jax.random import KeyArray
 
 from flowjax.masks import rank_based_mask
-from flowjax.utils import Array, _identity
+from jax import Array
 
+def _identity(x):
+    return x
 
 class MaskedLinear(Module):
     linear: Linear

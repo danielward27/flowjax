@@ -5,8 +5,7 @@ that leads to invertibility and efficient Jacobian determinant calculations.
 
 import jax.numpy as jnp
 from jax.scipy.linalg import block_diag
-
-from flowjax.utils import Array
+from jax import Array
 
 
 def rank_based_mask(in_ranks: Array, out_ranks: Array, eq: bool = False):

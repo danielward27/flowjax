@@ -2,7 +2,7 @@ from typing import Sequence, Tuple, Union
 
 from flowjax.utils import merge_shapes
 from flowjax.bijections import Bijection
-from flowjax.utils import Array
+from jax import Array
 
 
 class Chain(Bijection):

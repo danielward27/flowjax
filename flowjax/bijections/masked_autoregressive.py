@@ -11,7 +11,8 @@ import equinox as eqx
 
 from flowjax.bijections import Bijection
 from flowjax.nn import AutoregressiveMLP
-from flowjax.utils import Array, get_ravelled_bijection_constructor
+from jax import Array
+from flowjax.utils import get_ravelled_bijection_constructor
 
 from flowjax.bijections.jax_transforms import Vmap
 

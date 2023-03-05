@@ -5,15 +5,18 @@ from jax.experimental import checkify
 from jax.scipy.linalg import solve_triangular
 
 from flowjax.bijections import Bijection
-from flowjax.utils import Array
+from jax import Array
+from jax.typing import ArrayLike
 from jax.experimental import checkify
+
+from equinox import is_array_like
 
 
 class Affine(Bijection):
     loc: Array
     log_scale: Array
     
-    def __init__(self, loc: Array=0, scale: Array=1):
+    def __init__(self, loc: ArrayLike=0, scale: ArrayLike=1):
         """Elementwise affine transformation y = ax + b. loc and scale should broadcast
         to the desired shape of the bijection.
 

@@ -11,7 +11,7 @@ from typing import Optional, Tuple, Union
 
 from equinox import Module
 
-from flowjax.utils import Array
+from jax import Array
 
 
 class Bijection(ABC, Module):

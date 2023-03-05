@@ -8,9 +8,11 @@ import jax.random as jr
 from jax.scipy import stats as jstats
 
 from flowjax.bijections import Affine, Bijection
-from flowjax.utils import Array, _get_ufunc_signature
+from flowjax.utils import _get_ufunc_signature
 from math import prod
 from flowjax.utils import merge_shapes
+from jax import Array
+from jax.typing import ArrayLike
 
 from jax.experimental import checkify
 
@@ -335,7 +337,7 @@ class Normal(Transformed):
     each dimension. `loc` and `scale` should be broadcastable.
     """
 
-    def __init__(self, loc: Array=0, scale: Array=1):
+    def __init__(self, loc: ArrayLike=0, scale: ArrayLike=1):
         """
         Args:
             loc (Array): Means. Defaults to 0.
@@ -380,7 +382,7 @@ class Uniform(Transformed):
     between min and max for each dimension. `minval` and `maxval` should be broadcastable.
     """
 
-    def __init__(self, minval: Array, maxval: Array):
+    def __init__(self, minval: ArrayLike, maxval: ArrayLike):
         """
         Args:
             minval (Array): Minimum values.
@@ -423,7 +425,7 @@ class _StandardGumbel(Distribution):
 class Gumbel(Transformed):
     """Gumbel distribution (https://en.wikipedia.org/wiki/Gumbel_distribution)"""
 
-    def __init__(self, loc: Array=0, scale: Array=1):
+    def __init__(self, loc: ArrayLike=0, scale: ArrayLike=1):
         """
         `loc` and `scale` should broadcast to the dimension of the distribution.
 
@@ -469,7 +471,7 @@ class Cauchy(Transformed):
     Cauchy distribution (https://en.wikipedia.org/wiki/Cauchy_distribution).
     """
 
-    def __init__(self, loc: Array=0, scale: Array=1):
+    def __init__(self, loc: ArrayLike=0, scale: ArrayLike=1):
         """
         `loc` and `scale` should broadcast to the dimension of the distribution.
 
@@ -496,7 +498,6 @@ class _StandardStudentT(Distribution):
     """
     Implements student T distribution with specified degrees of freedom.
     """
-
     log_df: Array
 
     def __init__(self, df: Array):
@@ -518,7 +519,7 @@ class _StandardStudentT(Distribution):
 class StudentT(Transformed):
     """Student T distribution (https://en.wikipedia.org/wiki/Student%27s_t-distribution)."""
 
-    def __init__(self, df: Array, loc: Array=0, scale: Array=1):
+    def __init__(self, df: Array, loc: ArrayLike=0, scale: ArrayLike=1):
         """
         `df`, `loc` and `scale` broadcast to the dimension of the distribution.
 
