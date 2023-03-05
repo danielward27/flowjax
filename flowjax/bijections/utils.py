@@ -80,8 +80,8 @@ class Permute(Bijection):
 class Flip(Bijection):
     """Flip the input array. Condition argument is ignored."""
 
-    def __init__(self) -> None:
-        self.shape = None
+    def __init__(self, shape: tuple[int] = None) -> None:
+        self.shape = shape
         self.cond_shape = None    
 
     def transform(self, x, condition=None):

@@ -11,6 +11,7 @@ from .exp import Exp
 from .utils import EmbedCondition, Flip, Invert, Partial, Permute
 from .rational_quadratic_spline import RationalQuadraticSpline
 from .jax_transforms import Scan, Vmap
+from .concatenate import Concatenate, Stack
 
 __all__ = [
     "Bijection",
@@ -32,4 +33,6 @@ __all__ = [
     "Partial",
     "EmbedCondition",
     "RationalQuadraticSpline",
+    "Concatenate",
+    "Stack"
 ]

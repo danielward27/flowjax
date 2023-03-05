@@ -22,6 +22,8 @@ from flowjax.bijections import (
     TanhLinearTails,
     TriangularAffine,
     RationalQuadraticSpline,
+    Concatenate,
+    Stack
 )
 
 from jax.config import config
@@ -112,6 +114,8 @@ bijections = {
     ),
     "Chain": Chain([Flip(), Affine(jnp.ones(dim), jnp.full(dim, 2))]),
     "Scan": Scan(eqx.filter_vmap(get_maf_layer)(jr.split(key, 3))),
+    "Concatenate": Concatenate([Affine(jnp.ones(3)), Tanh(shape=(3,))]),
+    "Concatenate": Stack([Tanh(()), Affine(), Tanh(())])
 }
 
 

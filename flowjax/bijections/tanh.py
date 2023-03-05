@@ -2,20 +2,20 @@ import jax
 import jax.numpy as jnp
 import math
 from flowjax.bijections import Bijection
-
+from typing import Optional
 
 def _tanh_log_grad(x):
     "log gradient vector of tanh transformation"
     return -2 * (x + jax.nn.softplus(-2 * x) - jnp.log(2.0))
 
 
-class Tanh(Bijection):
+class Tanh(Bijection):  # TODO argchecking if shape provided!
     """
     Tanh bijection.
     """
 
-    def __init__(self) -> None:
-        self.shape = None
+    def __init__(self, shape: Optional[tuple[int]] = None) -> None:
+        self.shape = shape
         self.cond_shape = None
 
     def transform(self, x, condition=None):
@@ -45,7 +45,7 @@ class TanhLinearTails(Bijection):
     intercept: float
     linear_grad: float
 
-    def __init__(self, max_val: float):
+    def __init__(self, max_val: float, shape: tuple[int] = None):
         """Create a tanh bijection with linear "tails" beyond +/- max_val.
 
         Args:
@@ -54,7 +54,7 @@ class TanhLinearTails(Bijection):
         self.max_val = max_val
         self.linear_grad = math.exp(_tanh_log_grad(max_val))
         self.intercept = math.tanh(max_val) - self.linear_grad * max_val
-        self.shape = None
+        self.shape = shape
         self.cond_shape = None
 
     def transform(self, x, condition=None):
