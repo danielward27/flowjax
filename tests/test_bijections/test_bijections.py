@@ -115,7 +115,11 @@ bijections = {
     "Chain": Chain([Flip(), Affine(jnp.ones(dim), jnp.full(dim, 2))]),
     "Scan": Scan(eqx.filter_vmap(get_maf_layer)(jr.split(key, 3))),
     "Concatenate": Concatenate([Affine(jnp.ones(3)), Tanh(shape=(3,))]),
-    "Concatenate": Stack([Tanh(()), Affine(), Tanh(())])
+    "ConcatenateAxis1": Concatenate([Affine(jnp.ones((3,3))), Tanh(shape=((3,3)))], axis=1),
+    "ConcatenateAxis-1": Concatenate([Affine(jnp.ones((3,3))), Tanh(shape=((3,3)))], axis=-1),
+    "Stack": Stack([Tanh(()), Affine(), Tanh(())]),
+    "StackAxis1": Stack([Tanh((2,)), Affine(jnp.ones(2)), Tanh((2,))], axis=1),
+    "StackAxis-1": Stack([Affine(jr.uniform(k, (1,2,3))) for k in jr.split(key, 3)], axis=-1)
 }
 
 

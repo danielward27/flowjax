@@ -2,7 +2,7 @@ from flowjax.bijections import Bijection
 import jax.numpy as jnp
 from typing import Sequence
 from flowjax.utils import merge_shapes
-
+from jax import Array
 
 class Concatenate(Bijection):
     split_idxs: tuple[int]
@@ -10,14 +10,14 @@ class Concatenate(Bijection):
     axis: int
 
     def __init__(self, bijections: Sequence[Bijection], axis: int = 0):
-
-        # TODO what if len(bijections)==1? What does concatenate do?
-        # TODO test -1
         self.bijections = bijections
         self.axis = axis
+        # TODO add test when len(bijections)==1?
 
         shapes = [b.shape for b in bijections]
-        self._check_shapes(shapes, axis)
+        self._check_shapes(shapes)
+
+        axis = len(shapes[0]) - 1 if axis == -1 else axis
         self.shape = (*shapes[0][:axis], sum(s[axis] for s in shapes), *shapes[0][axis+1:])    
         self.split_idxs = [s[axis] for s in shapes[:-1]]
         self.cond_shape = merge_shapes([b.cond_shape for b in bijections])
@@ -50,20 +50,25 @@ class Concatenate(Bijection):
             b.inverse_and_log_abs_det_jacobian(y, condition)
             for b, y in zip(self.bijections, ys)
         ]
-        
+
         xs, log_dets = zip(*xs_log_dets)
         return jnp.concatenate(xs, self.axis), sum(log_dets) 
     
-    @staticmethod
-    def _check_shapes(shapes, axis):
+    def _check_shapes(self, shapes):
         if any(s is None for s in shapes):
             raise ValueError(
                 "Cannot concatenate bijections with shape None. You may wish to "
                 "explicitly set shape during initialisation."
             )
-        
+        axis = len(shapes[0]) - 1 if self.axis == -1 else self.axis
+
         expected_dim = len(shapes[0])
-        expected_matching = (*shapes[:axis], *shapes[axis+1:])
+        if axis > expected_dim:
+            raise ValueError(
+                f"Axis {axis} out of bounds for array of dimension {expected_dim}"
+                )
+        # TODO code repetition with init
+        expected_matching = (*shapes[:axis], *shapes[axis+1:])  # TODO -1 axis here
 
         for i, shape in enumerate(shapes):
             if len(shape) != expected_dim:
@@ -73,7 +78,7 @@ class Concatenate(Bijection):
                     f"and the bijection at index {i} had {len(shape)} dimension(s). "
                     )
             
-            elif (*shapes[:axis], *shapes[axis+1:]) != expected_matching:
+            elif shape != expected_matching[0]:
                 raise ValueError(
                     "All bijection dimensions must match, except along dimension "
                     "corresponding to axis, but the bijection at index 0 had shape "
@@ -97,43 +102,52 @@ class Stack(Bijection):
         self.bijections = bijections
 
         shapes = [b.shape for b in bijections]
+        if not all([s==shapes[0] for s in shapes]):
+            raise ValueError(
+                "All input bijections must have the same shape."
+            )
         self.shape = (*shapes[0][:axis], len(bijections), *shapes[0][axis:])   
         self.cond_shape = merge_shapes([b.cond_shape for b in bijections]) 
 
-        
+        # TODO add test when len(bijections)==1?
+        # TODO test axis -1
+
         # TODO check shape mismatches
-        # TODO what if len(bijections)==1? What does concatenate do?
-        # TODO test -1
-        # TODO conditional checks?s
+        # TODO conditional checks?
 
 
     def transform(self, x, condition = None):
-        xs = jnp.split(x, len(self.bijections), axis=self.axis)
-        ys = [b.transform(x, condition) for (b, x) in zip(self.bijections, xs)]
+        xs = self._split_and_squeeze(x)
+        ys = [
+            b.transform(x, condition)
+            for (b, x) in zip(self.bijections, xs)
+            ]
         return jnp.stack(ys, self.axis)
     
     def transform_and_log_abs_det_jacobian(self, x, condition = None):
-        xs = jnp.split(x, len(self.bijections), axis=self.axis)
-
+        xs = self._split_and_squeeze(x)
         ys_log_det = [
             b.transform_and_log_abs_det_jacobian(x, condition)
             for b, x in zip(self.bijections, xs)
             ]
         
         ys, log_dets = zip(*ys_log_det)
-        return jnp.stack(ys, self.axis), log_dets
+        return jnp.stack(ys, self.axis), sum(log_dets)
         
     def inverse(self, y, condition = None):
-        ys = jnp.split(y, len(self.bijections), axis=self.axis)
+        ys = self._split_and_squeeze(y)
         xs = [b.inverse(y, condition) for (b, y) in zip(self.bijections, ys)]
         return jnp.stack(xs, self.axis)
 
     def inverse_and_log_abs_det_jacobian(self, y, condition = None):
-        ys = jnp.split(y, len(self.bijections), axis=self.axis)
+        ys = self._split_and_squeeze(y)
         xs_log_det = [
             b.inverse_and_log_abs_det_jacobian(y, condition)
             for b, y in zip(self.bijections, ys)
             ]
         xs, log_dets = zip(*xs_log_det)
-        return jnp.stack(xs, self.axis), log_dets
-    
+        return jnp.stack(xs, self.axis), sum(log_dets)
+
+    def _split_and_squeeze(self, array: Array):
+        arrays = jnp.split(array, len(self.bijections), axis=self.axis)
+        return [a.squeeze(axis=self.axis) for a in arrays]
