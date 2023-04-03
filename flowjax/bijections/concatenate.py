@@ -12,13 +12,11 @@ class Concatenate(Bijection):
     def __init__(self, bijections: Sequence[Bijection], axis: int = 0):
         self.bijections = bijections
         self.axis = axis
-        # TODO add test when len(bijections)==1?
 
+
+        axis = range(len(shapes[0]))[axis]  # allows negative axis specification
         shapes = [b.shape for b in bijections]
-        self._check_shapes(shapes)
-
-        axis = len(shapes[0]) - 1 if axis == -1 else axis
-        self.shape = (*shapes[0][:axis], sum(s[axis] for s in shapes), *shapes[0][axis+1:])    
+        self.shape = self._infer_shape(shapes)  
         self.split_idxs = [s[axis] for s in shapes[:-1]]
         self.cond_shape = merge_shapes([b.cond_shape for b in bijections])
         
@@ -54,37 +52,34 @@ class Concatenate(Bijection):
         xs, log_dets = zip(*xs_log_dets)
         return jnp.concatenate(xs, self.axis), sum(log_dets) 
     
-    def _check_shapes(self, shapes):
+    def _infer_shape(self, shapes):
         if any(s is None for s in shapes):
             raise ValueError(
                 "Cannot concatenate bijections with shape None. You may wish to "
                 "explicitly set shape during initialisation."
             )
-        axis = len(shapes[0]) - 1 if self.axis == -1 else self.axis
-
-        expected_dim = len(shapes[0])
-        if axis > expected_dim:
-            raise ValueError(
-                f"Axis {axis} out of bounds for array of dimension {expected_dim}"
-                )
-        # TODO code repetition with init
-        expected_matching = (*shapes[:axis], *shapes[axis+1:])  # TODO -1 axis here
-
+        dim = len(shapes[0])
+        try:
+            axis = range(dim)[self.axis]
+        except IndexError:
+            raise IndexError(f"Invalid axis {self.axis} for {dim}-dimensional bijection")
+        
         for i, shape in enumerate(shapes):
-            if len(shape) != expected_dim:
+            if len(shape) != dim:
                 raise ValueError(
-                    "All bijections must have the same number of dimensions, but "
-                    f"the bijection at index 0 had {expected_dim} dimensions(s) "
-                    f"and the bijection at index {i} had {len(shape)} dimension(s). "
+                    f"Bijections must have consistent number of dimensions, but index "
+                    f"0 has {dim} dimensions and index {i} has {len(shape)}."
                     )
             
-            elif shape != expected_matching[0]:
+            if (*shape[:axis], *shape[axis+1:]) != (shapes[0][:axis], shapes[0][axis+1:]):
                 raise ValueError(
-                    "All bijection dimensions must match, except along dimension "
-                    "corresponding to axis, but the bijection at index 0 had shape "
-                    f"{shapes[0]}, and the bijection at index {i} had {len(shape)} "
-                    "dimension(s)."
+                    f"Expected bijection shapes to match except along axis {axis}, but "
+                    f"index 0 had shape {shapes[0]}, and index {i} had shape {shape}."
                     )
+        
+        return (*shapes[0][:axis], sum(s[axis] for s in shapes), *shapes[0][axis+1:])   
+
+        
         
 
 class Stack(Bijection):
@@ -108,9 +103,6 @@ class Stack(Bijection):
             )
         self.shape = (*shapes[0][:axis], len(bijections), *shapes[0][axis:])   
         self.cond_shape = merge_shapes([b.cond_shape for b in bijections]) 
-
-        # TODO add test when len(bijections)==1?
-        # TODO test axis -1
 
         # TODO check shape mismatches
         # TODO conditional checks?
