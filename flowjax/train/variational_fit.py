@@ -14,9 +14,9 @@ PyTree = Any
 
 @eqx.filter_jit
 def elbo_loss(
-    key: jr.KeyArray,
     dist: Distribution,
     target: Callable[[Array], Array],
+    key: jr.KeyArray,
     num_samples: int,
 ) -> Array:
     """The evidence lower bound loss function."""
@@ -30,7 +30,7 @@ def fit_to_variational_target(
     key: jr.KeyArray,
     dist: Distribution,
     target: Callable[[Array], Array],
-    loss_fn: Callable[[jr.KeyArray, Distribution, Callable, int], Array] = elbo_loss,
+    loss_fn: Callable[[Distribution, Callable, jr.KeyArray, int], Array] = elbo_loss,
     steps: int = 100,
     samples_per_step: int = 500,
     learning_rate: float = 5e-4,
@@ -77,7 +77,7 @@ def fit_to_variational_target(
     @eqx.filter_jit
     def step(dist, target, key, optimizer, opt_state):
         loss_val, grads = eqx.filter_value_and_grad(loss_fn, arg=filter_spec)(
-            key, dist, target, samples_per_step
+            dist, target, key, samples_per_step
         )
         updates, opt_state = optimizer.update(grads, opt_state)
         dist = eqx.apply_updates(dist, updates)
