@@ -1,7 +1,7 @@
 """Distributions - including the base class Distribution, common distributions
 and a Transformed distribution class.
 """
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from math import prod
 from typing import Optional, Tuple, Union
 
@@ -17,7 +17,7 @@ from flowjax.bijections import Affine, Bijection
 from flowjax.utils import _get_ufunc_signature, merge_shapes
 
 
-class Distribution(eqx.Module, ABC):
+class Distribution(eqx.Module):
     """Distribution base class. Distributions all have an attribute ``shape``,
     denoting the shape of a single sample from the distribution. This corresponds to the
     ``batch_shape + event_shape`` in torch/numpyro distributions. Similarly, the

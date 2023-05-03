@@ -6,14 +6,14 @@ to invert the orientation if a fast inverse is desired (e.g. maximum likelihood 
 of flows).
 """
 
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from typing import Optional, Tuple, Union
 
 from equinox import Module
 from jax import Array
 
 
-class Bijection(ABC, Module):
+class Bijection(Module):
     """Bijection base class. Similar to :py:class:`~flowjax.distributions.Distribution`,
     bijections have a ``shape`` and a ``cond_shape`` attribute. To allow easy composing
     of bijections, all bijections support passing of conditioning variables (even if
