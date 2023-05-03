@@ -42,7 +42,7 @@ def test_elbo_loss(distribution, target, shape):
     distribution_object: distributions.Distribution = distribution(shape)
     target = target(shape).log_prob
 
-    loss = elbo_loss(random.PRNGKey(0), distribution_object, target, num_samples=100)
+    loss = elbo_loss(distribution_object, target, random.PRNGKey(0), num_samples=100)
 
     assert loss.shape == ()  # expect scalar loss
     assert jnp.isfinite(loss)  # expect finite loss
@@ -75,8 +75,8 @@ def test_fit_to_variational_target_e2e():
     )
 
     # Check that we have trained the flow
-    initial_params, initial_static = eqx.partition(flow, eqx.is_inexact_array)
-    trained_params, trained_static = eqx.partition(trained_flow, eqx.is_inexact_array)
+    initial_params, initial_static = eqx.partition(flow, eqx.is_inexact_array)  # type: ignore
+    trained_params, trained_static = eqx.partition(trained_flow, eqx.is_inexact_array)  # type: ignore
 
     assert initial_static == trained_static
     jax.tree_util.tree_map(
