@@ -76,15 +76,23 @@ def fit_to_variational_target(
 
     @eqx.filter_jit
     def step(dist, target, key, optimizer, opt_state):
-        loss_val, grads = eqx.filter_value_and_grad(loss_fn, arg=filter_spec)(
-            dist, target, key, samples_per_step
+        @eqx.filter_value_and_grad
+        def loss_val_and_grad(
+            dist_trainable, dist_static, target, key, samples_per_step
+        ):
+            dist = eqx.combine(dist_trainable, dist_static)
+            return loss_fn(dist, target, key, samples_per_step)
+
+        dist_trainable, dist_static = eqx.partition(dist, filter_spec)
+        loss_val, grads = loss_val_and_grad(
+            dist_trainable, dist_static, target, key, samples_per_step
         )
         updates, opt_state = optimizer.update(grads, opt_state)
         dist = eqx.apply_updates(dist, updates)
         return dist, opt_state, loss_val
 
-    trainable_params, _ = eqx.partition(dist, filter_spec)  # type: ignore
-    opt_state = optimizer.init(trainable_params)
+    dist_trainable, _ = eqx.partition(dist, filter_spec)  # type: ignore
+    opt_state = optimizer.init(dist_trainable)
 
     losses = []
 

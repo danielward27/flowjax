@@ -58,20 +58,22 @@ def fit_to_data(
         condition = jnp.asarray(condition)
 
     @eqx.filter_jit
-    def loss_fn(dist, x, condition=None):
+    def loss_fn(dist_trainable, dist_static, x, condition=None):
+        dist = eqx.combine(dist_trainable, dist_static)
         return -dist.log_prob(x, condition).mean()
 
     @eqx.filter_jit
     def step(dist, optimizer, opt_state, x, condition=None):
-        loss_val, grads = eqx.filter_value_and_grad(loss_fn, arg=filter_spec)(
-            dist, x, condition
+        dist_trainable, dist_static = eqx.partition(dist, filter_spec)
+        loss_val, grads = eqx.filter_value_and_grad(loss_fn)(
+            dist_trainable, dist_static, x, condition
         )
         updates, opt_state = optimizer.update(grads, opt_state)
         dist = eqx.apply_updates(dist, updates)
         return dist, opt_state, loss_val
 
     if optimizer is None:
-        optimizer = optimizer = optax.chain(
+        optimizer = optax.chain(
             optax.clip_by_global_norm(clip_norm),
             optax.adam(learning_rate=learning_rate),
         )
@@ -112,7 +114,10 @@ def fit_to_data(
         batch_start_idxs = range(0, val_len - batch_size + 1, batch_size)
         for i in batch_start_idxs:
             batch = tuple(a[i : i + batch_size] for a in val_args)
-            epoch_val_loss += loss_fn(dist, *batch).item() / len(batch_start_idxs)
+
+            epoch_val_loss += loss_fn(
+                *eqx.partition(dist, filter_spec), *batch
+            ).item() / len(batch_start_idxs)
 
         losses["train"].append(epoch_train_loss)
         losses["val"].append(epoch_val_loss)
