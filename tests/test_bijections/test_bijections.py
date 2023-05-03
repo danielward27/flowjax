@@ -4,7 +4,6 @@ import jax
 import jax.numpy as jnp
 import jax.random as jr
 import pytest
-from jax.config import config
 
 from flowjax.bijections import (
     AdditiveLinearCondition,
@@ -27,8 +26,6 @@ from flowjax.bijections import (
     TriangularAffine,
 )
 
-config.update("jax_enable_x64", True)
-
 
 DIM = 5
 COND_DIM = 2
@@ -37,6 +34,7 @@ POS_DEF_TRAINGLES = jnp.full((DIM, DIM), 0.5) + jnp.diag(jnp.ones(DIM))
 
 
 def get_maf_layer(key):
+    """Get a masked autoregressive flow layer."""
     return MaskedAutoregressive(
         key, Affine(), DIM, cond_dim=COND_DIM, nn_width=5, nn_depth=5
     )

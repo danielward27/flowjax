@@ -257,10 +257,9 @@ class Distribution(eqx.Module, ABC):
                     "condition should not be provided for unconditional distribution."
                 )
             assert self.cond_ndim is not None
-
             condition_trailing = (
                 condition.shape[-self.cond_ndim :] if self.cond_ndim > 0 else ()
-            )  # type: ignore
+            )
             if condition_trailing != self.cond_shape:
                 raise ValueError(
                     "Expected trailing dimensions in the condition to match "
