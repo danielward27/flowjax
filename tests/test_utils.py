@@ -31,7 +31,7 @@ test_cases = [
 ]
 
 
-@pytest.mark.parametrize("input,expected", test_cases)
+@pytest.mark.parametrize("input_,expected", test_cases)
 def test_merge_shapes(input_, expected):
     assert merge_shapes(input_) == expected
 
@@ -39,10 +39,10 @@ def test_merge_shapes(input_, expected):
 test_cases_error = [[(2, 3), (2, 1)], [(2, 3), (4, 2, 3)]]
 
 
-@pytest.mark.parametrize("input", test_cases_error)
-def test_merge_shapes_errors(input):
+@pytest.mark.parametrize("input_", test_cases_error)
+def test_merge_shapes_errors(input_):
     with pytest.raises(ValueError):
-        merge_shapes(input)
+        merge_shapes(input_)
 
 
 test_cases = [
@@ -54,6 +54,6 @@ test_cases = [
 ]
 
 
-@pytest.mark.parametrize("input,expected", test_cases)
-def test_get_ufunc_signature(input, expected):
-    assert _get_ufunc_signature(*input) == expected
+@pytest.mark.parametrize("input_,expected", test_cases)
+def test_get_ufunc_signature(input_, expected):
+    assert _get_ufunc_signature(*input_) == expected
