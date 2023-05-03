@@ -1,9 +1,10 @@
-import jax.numpy as jnp
-import pytest
-import jax.random as jr
 import equinox as eqx
-from flowjax.bijections import RationalQuadraticSpline
+import jax.numpy as jnp
+import jax.random as jr
+import pytest
 from jax import tree_map
+
+from flowjax.bijections import RationalQuadraticSpline
 
 
 def test_RationalQuadraticSpline_tails():

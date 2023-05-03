@@ -3,21 +3,25 @@
 from functools import partial
 from typing import Callable, Union
 
+import equinox as eqx
 import jax
 import jax.nn as jnn
 import jax.numpy as jnp
-from jax.random import KeyArray
-import equinox as eqx
-
-from flowjax.bijections import Bijection
-from flowjax.nn import AutoregressiveMLP
 from jax import Array
-from flowjax.utils import get_ravelled_bijection_constructor
+from jax.random import KeyArray
 
+from flowjax.bijections.bijection import Bijection
 from flowjax.bijections.jax_transforms import Vmap
+from flowjax.nn import AutoregressiveMLP
+from flowjax.utils import get_ravelled_bijection_constructor
 
 
 class MaskedAutoregressive(Bijection):
+    """Masked autoregressive bijection implementation (https://arxiv.org/abs/1705.07057v4).
+    The transformer is parameterised by a neural network, with weights masked to ensure
+    an autoregressive structure.
+    """
+
     transformer_constructor: Callable
     autoregressive_mlp: AutoregressiveMLP
 
@@ -31,13 +35,11 @@ class MaskedAutoregressive(Bijection):
         nn_depth: int,
         nn_activation: Callable = jnn.relu,
     ) -> None:
-        """Masked autoregressive bijection implementation (https://arxiv.org/abs/1705.07057v4).
-        The transformer is parameterised by a neural network, with weights masked to ensure
-        an autoregressive structure.
-
+        """
         Args:
             key (KeyArray): Jax PRNGKey
-            transformer (Bijection): Bijection with shape () to be parameterised by the autoregressive network.
+            transformer (Bijection): Bijection with shape () to be parameterised by the
+                autoregressive network.
             dim (int): Dimension.
             cond_dim (Union[None, int]): Dimension of any conditioning variables.
             nn_width (int): Neural network width.
@@ -75,11 +77,9 @@ class MaskedAutoregressive(Bijection):
 
         # Initialise bias terms to match the provided transformer parameters
         self.autoregressive_mlp = eqx.tree_at(
-            where=lambda t: t.layers[-1].linear.bias,
+            where=lambda t: t.layers[-1].linear.bias,  # type: ignore
             pytree=autoregressive_mlp,
-            replace=jnp.tile(
-                transformer_init_params, dim
-            ),
+            replace=jnp.tile(transformer_init_params, dim),
         )
 
         self.transformer_constructor = constructor
@@ -105,7 +105,7 @@ class MaskedAutoregressive(Bijection):
         return x
 
     def inv_scan_fn(self, init, _, condition):
-        "One 'step' in computing the inverse"
+        """One 'step' in computing the inverse."""
         y, rank = init
         nn_input = y if condition is None else jnp.hstack((y, condition))
         transformer_params = self.autoregressive_mlp(nn_input)
@@ -122,8 +122,8 @@ class MaskedAutoregressive(Bijection):
     def _flat_params_to_transformer(
         self, params: Array
     ):  # TODO code repetition with MAF
-        "Reshape to dim X params_per_dim, then vmap."
-        dim = self.shape[-1]
+        """Reshape to dim X params_per_dim, then vmap."""
+        dim = self.shape[-1]  # type: ignore
         transformer_params = jnp.reshape(params, (dim, -1))
         transformer = eqx.filter_vmap(self.transformer_constructor)(transformer_params)
         return Vmap(transformer, (dim,))

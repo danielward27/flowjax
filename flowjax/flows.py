@@ -1,6 +1,4 @@
-"""
-Premade versions of common flow architetctures from ``flowjax.flows``.
-"""
+"""Premade versions of common flow architetctures from ``flowjax.flows``."""
 # Note that here although we could chain arbitrary bijections using `Chain`, here,
 # we generally opt to use `Scan`, which avoids excessive compilation
 # when the flow layers share the same structure.
@@ -16,6 +14,7 @@ from jax.random import KeyArray
 
 from flowjax.bijections import (
     AdditiveLinearCondition,
+    Bijection,
     BlockAutoregressiveNetwork,
     Chain,
     Coupling,
@@ -23,18 +22,17 @@ from flowjax.bijections import (
     Invert,
     MaskedAutoregressive,
     Permute,
+    RationalQuadraticSpline,
     Scan,
     TanhLinearTails,
     TriangularAffine,
-    RationalQuadraticSpline,
-    Bijection,
 )
 from flowjax.distributions import Distribution, Transformed
 
 
-class CouplingFlow(
-    Transformed
-):  # TODO allow flows to work on higher dimensional inputs?
+class CouplingFlow(Transformed):
+    """Coupling flow (https://arxiv.org/abs/1605.08803)."""
+
     flow_layers: int
     nn_width: int
     nn_depth: int
@@ -45,15 +43,14 @@ class CouplingFlow(
         key: KeyArray,
         base_dist: Distribution,
         transformer: Bijection,
-        cond_dim: int = None,
+        cond_dim: Optional[int] = None,
         flow_layers: int = 8,
         nn_width: int = 40,
         nn_depth: int = 2,
         nn_activation: Callable = jnn.relu,
         invert: bool = True,
     ):
-        """Coupling flow (https://arxiv.org/abs/1605.08803).
-
+        """
         Args:
             key (KeyArray): Jax PRNGKey.
             base_dist (Distribution): Base distribution.
@@ -63,7 +60,10 @@ class CouplingFlow(
             nn_width (int, optional): Conditioner hidden layer size. Defaults to 40.
             nn_depth (int, optional): Conditioner depth. Defaults to 2.
             nn_activation (int, optional): Conditioner activation function. Defaults to jnn.relu.
-            invert: (bool, optional): Whether to invert the bijection. Broadly, True will prioritise a faster `inverse` methods, leading to faster `log_prob`, False will prioritise faster `transform` methods, leading to faster `sample`. Defaults to True
+            invert: (bool, optional): Whether to invert the bijection. Broadly, True will
+                prioritise a faster `inverse` methods, leading to faster `log_prob`,
+                False will prioritise faster `transform` methods, leading to faster
+                `sample`. Defaults to True
         """
         if base_dist.ndim != 1:
             raise ValueError(f"Expected base_dist.ndim==1, got {base_dist.ndim}")
@@ -86,16 +86,14 @@ class CouplingFlow(
 
             if permute_strategy == "flip":
                 return Chain([coupling, Flip()])
-            elif permute_strategy == "random":
+            if permute_strategy == "random":
                 perm = Permute(random.permutation(p_key, jnp.arange(dim)))
                 return Chain([coupling, perm])
-            else:
-                return coupling
+            return coupling
 
         keys = random.split(key, flow_layers)
         layers = eqx.filter_vmap(make_layer)(keys)
-        bijection = Scan(layers)
-        bijection = Invert(bijection) if invert else bijection
+        bijection = Invert(Scan(layers)) if invert else Scan(layers)
 
         self.nn_width = nn_width
         self.nn_depth = nn_depth
@@ -107,6 +105,11 @@ class CouplingFlow(
 
 
 class MaskedAutoregressiveFlow(Transformed):
+    """Masked autoregressive flow (https://arxiv.org/abs/1606.04934,
+    https://arxiv.org/abs/1705.07057v4). Parameterises a transformer with an
+    autoregressive neural network.
+    """
+
     flow_layers: int
     nn_width: int
     nn_depth: int
@@ -117,17 +120,14 @@ class MaskedAutoregressiveFlow(Transformed):
         key: KeyArray,
         base_dist: Distribution,
         transformer: Bijection,
-        cond_dim: int = None,
+        cond_dim: Optional[int] = None,
         flow_layers: int = 8,
         nn_width: int = 40,
         nn_depth: int = 2,
         nn_activation: Callable = jnn.relu,
         invert: bool = True,
     ):
-        """Masked autoregressive flow (https://arxiv.org/abs/1606.04934,
-        https://arxiv.org/abs/1705.07057v4). Parameterises a transformer with an
-        autoregressive neural network.
-
+        """
         Args:
             key (KeyArray): Random seed.
             base_dist (Distribution): Base distribution.
@@ -160,16 +160,14 @@ class MaskedAutoregressiveFlow(Transformed):
             )
             if permute_strategy == "flip":
                 return Chain([masked_autoregressive, Flip()])
-            elif permute_strategy == "random":
+            if permute_strategy == "random":
                 perm = Permute(random.permutation(p_key, jnp.arange(dim)))
                 return Chain([masked_autoregressive, perm])
-            else:
-                return masked_autoregressive
+            return masked_autoregressive
 
         keys = random.split(key, flow_layers)
         layers = eqx.filter_vmap(make_layer)(keys)
-        bijection = Scan(layers)
-        bijection = Invert(bijection) if invert else bijection
+        bijection = Invert(Scan(layers)) if invert else Scan(layers)
 
         self.nn_width = nn_width
         self.nn_depth = nn_depth
@@ -181,6 +179,8 @@ class MaskedAutoregressiveFlow(Transformed):
 
 
 class BlockNeuralAutoregressiveFlow(Transformed):
+    """Block neural autoregressive flow (BNAF) (https://arxiv.org/abs/1904.04676)."""
+
     flow_layers: int
     nn_block_dim: int
     nn_depth: int
@@ -196,16 +196,19 @@ class BlockNeuralAutoregressiveFlow(Transformed):
         flow_layers: int = 1,
         invert: bool = True,
     ):
-        """Block neural autoregressive flow (BNAF) (https://arxiv.org/abs/1904.04676).
-
+        """
         Args:
             key (KeyArray): Jax PRNGKey.
             base_dist (Distribution): Base distribution.
-            cond_dim (Union[None, Tuple[int]]): Dimension of conditional variables.
-            nn_depth (int, optional): Number of hidden layers within the networks. Defaults to 1.
-            nn_block_dim (int, optional): Block size. Hidden layer width is dim*nn_block_dim. Defaults to 8.
+            cond_dim (Optional[int]): Dimension of conditional variables.
+            nn_depth (int, optional): Number of hidden layers within the networks.
+                Defaults to 1.
+            nn_block_dim (int, optional): Block size. Hidden layer width is
+                dim*nn_block_dim. Defaults to 8.
             flow_layers (int, optional): Number of BNAF layers. Defaults to 1.
-            invert: (bool, optional): Use `True` for access of `log_prob` only (e.g. fitting by maximum likelihood), `False` for the forward direction (sampling) only (e.g. for fitting variationally).
+            invert: (bool, optional): Use `True` for access of `log_prob` only (e.g.
+                fitting by maximum likelihood), `False` for the forward direction
+                (sampling) only (e.g. for fitting variationally).
         """
         if len(base_dist.shape) != 1:
             raise ValueError(f"Expected base_dist.ndim==1, got {base_dist.ndim}")
@@ -224,16 +227,14 @@ class BlockNeuralAutoregressiveFlow(Transformed):
             )
             if permute_strategy == "flip":
                 return Chain([ban, Flip()])
-            elif permute_strategy == "random":
+            if permute_strategy == "random":
                 perm = Permute(random.permutation(p_key, jnp.arange(dim)))
                 return Chain([ban, perm])
-            else:
-                return ban
+            return ban
 
         keys = random.split(key, flow_layers)
         layers = eqx.filter_vmap(make_layer)(keys)
-        bijection = Scan(layers)
-        bijection = Invert(bijection) if invert else bijection
+        bijection = Invert(Scan(layers)) if invert else Scan(layers)
 
         self.nn_block_dim = nn_block_dim
         self.nn_depth = nn_depth
@@ -246,6 +247,12 @@ class BlockNeuralAutoregressiveFlow(Transformed):
 
 
 class TriangularSplineFlow(Transformed):
+    """A stack of layers, where each layer consists of a triangular affine
+    transformation with weight normalisation, and an elementwise rational quadratic
+    spline. Tanh is used to constrain to the input to [-1, 1] before spline
+    transformations.
+    """
+
     flow_layers: int
     permute_strategy: str
     knots: int
@@ -263,7 +270,19 @@ class TriangularSplineFlow(Transformed):
         permute_strategy: Optional[str] = None,
         init: Callable = glorot_uniform(),
     ):
-
+        """
+        Args:
+            key (KeyArray): Jax random seed.
+            base_dist (Distribution): Base distribution of the flow.
+            cond_dim (Optional[int], optional): The number of conditioning features.
+                Defaults to None.
+            flow_layers (int, optional): _description_. Defaults to 8.
+            knots (int, optional): _description_. Defaults to 8.
+            tanh_max_val (float, optional): _description_. Defaults to 3.0.
+            invert (bool, optional): _description_. Defaults to True.
+            permute_strategy (Optional[str], optional): _description_. Defaults to None.
+            init (Callable, optional): _description_. Defaults to glorot_uniform().
+        """
         if len(base_dist.shape) != 1:
             raise ValueError(f"Expected base_dist.ndim==1, got {base_dist.ndim}")
 
@@ -272,19 +291,20 @@ class TriangularSplineFlow(Transformed):
         permute_strategy = _default_permute_strategy(dim)
 
         def make_layer(key):
-
             lt_key, perm_key = random.split(key)
             c_dim = 0 if cond_dim is None else cond_dim
             weights = init(lt_key, (dim, dim + c_dim))
             lt_weights = weights[:, :dim].at[jnp.diag_indices(dim)].set(1)
             cond_weights = weights[:, dim:]
-            lt = TriangularAffine(jnp.zeros(dim), lt_weights, weight_normalisation=True)
+            lower_tri = TriangularAffine(
+                jnp.zeros(dim), lt_weights, weight_normalisation=True
+            )
 
             bijections = [
                 TanhLinearTails(tanh_max_val),
                 RationalQuadraticSpline(knots, interval=1, shape=(dim,)),
                 Invert(TanhLinearTails(tanh_max_val)),
-                lt,
+                lower_tri,
             ]
 
             if cond_dim is not None:
@@ -301,8 +321,7 @@ class TriangularSplineFlow(Transformed):
 
         keys = random.split(key, flow_layers)
         layers = eqx.filter_vmap(make_layer)(keys)
-        bijection = Scan(layers)
-        bijection = Invert(bijection) if invert else bijection
+        bijection = Invert(Scan(layers)) if invert else Scan(layers)
 
         self.flow_layers = flow_layers
         self.permute_strategy = permute_strategy
@@ -317,5 +336,4 @@ class TriangularSplineFlow(Transformed):
 def _default_permute_strategy(dim):
     if dim <= 2:
         return {1: "none", 2: "flip"}[dim]
-    else:
-        return "random"
+    return "random"

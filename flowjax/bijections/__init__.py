@@ -1,17 +1,18 @@
 """Bijections from ``flowjax.bijections``"""
 
-from .bijection import Bijection
 from .affine import AdditiveLinearCondition, Affine, TriangularAffine
+from .bijection import Bijection
 from .block_autoregressive_network import BlockAutoregressiveNetwork
 from .chain import Chain
-from .coupling import Coupling
-from .masked_autoregressive import MaskedAutoregressive
-from .tanh import Tanh, TanhLinearTails
-from .exp import Exp
-from .utils import EmbedCondition, Flip, Invert, Partial, Permute
-from .rational_quadratic_spline import RationalQuadraticSpline
-from .jax_transforms import Scan, Vmap
 from .concatenate import Concatenate, Stack
+from .coupling import Coupling
+from .exp import Exp
+from .jax_transforms import Scan, Vmap
+from .masked_autoregressive import MaskedAutoregressive
+from .rational_quadratic_spline import RationalQuadraticSpline
+from .tanh import Tanh, TanhLinearTails
+
+from .utils import EmbedCondition, Flip, Invert, Partial, Permute
 
 __all__ = [
     "Bijection",
@@ -34,5 +35,5 @@ __all__ = [
     "EmbedCondition",
     "RationalQuadraticSpline",
     "Concatenate",
-    "Stack"
+    "Stack",
 ]

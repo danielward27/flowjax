@@ -5,15 +5,12 @@ from jax import random
 from jax.scipy.linalg import block_diag
 
 from flowjax.bijections.block_autoregressive_network import (
-    BlockAutoregressiveNetwork,
-    BlockTanh,
-)
+    BlockAutoregressiveNetwork, BlockTanh)
 from flowjax.masks import block_diag_mask
 
 
 def test_BlockAutoregressiveNetwork():
     dim = 3
-    cond_dim = 2
     x = jnp.ones(dim)
     key = random.PRNGKey(0)
 

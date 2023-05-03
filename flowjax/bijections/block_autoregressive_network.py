@@ -1,16 +1,12 @@
-"""
-Block Neural Autoregressive bijection implementation.
-"""
-
-import math
-from typing import Callable, Optional, Union, Tuple
+"""Block Neural Autoregressive bijection implementation."""
+from typing import Callable, Optional, Union, List, Any
 
 import jax
 import jax.numpy as jnp
 from jax import random
 from jax.random import KeyArray
 
-from flowjax.bijections import Bijection
+from flowjax.bijections.bijection import Bijection
 from flowjax.nn.block_autoregressive import BlockAutoregressiveLinear, BlockTanh
 
 
@@ -35,13 +31,13 @@ class BlockAutoregressiveNetwork(Bijection):
         Args:
             key (KeyArray): Jax PRNGKey
             dim (int): Dimension of the distribution.
-            cond_dim (Union[None, Tuple[int]]): Dimension of extra conditioning variables.
+            cond_dim (Union[None, Tuple[int, ...]]): Dimension of extra conditioning variables.
             depth (int): Number of hidden layers in the network.
             block_dim (int): Block dimension (hidden layer size is `dim*block_dim`).
             activation (Callable, optional): Activation function. Defaults to BlockTanh.
         """
         activation = BlockTanh(dim) if activation is None else activation
-        layers = []
+        layers = []  # type: List[Any]
         if depth == 0:
             layers.append(BlockAutoregressiveLinear(key, dim, (1, 1), cond_dim))
         else:
@@ -54,11 +50,10 @@ class BlockAutoregressiveNetwork(Bijection):
             ]
             cond_dims = [cond_dim] + [None] * depth
 
-            for key, block_shape, cd in zip(keys, block_shapes, cond_dims):
-
+            for layer_key, block_shape, cd in zip(keys, block_shapes, cond_dims):
                 layers.extend(
                     [
-                        BlockAutoregressiveLinear(key, dim, block_shape, cd),
+                        BlockAutoregressiveLinear(layer_key, dim, block_shape, cd),
                         activation,
                     ]
                 )
@@ -104,7 +99,9 @@ class BlockAutoregressiveNetwork(Bijection):
 
 def logmatmulexp(x, y):
     """
-    Numerically stable version of ``(x.log() @ y.log()).exp()``. From numpyro https://github.com/pyro-ppl/numpyro/blob/f2ff89a3a7147617e185eb51148eb15d56d44661/numpyro/distributions/util.py#L387
+    Numerically stable version of ``(x.log() @ y.log()).exp()``.
+    From numpyro https://github.com/pyro-ppl/numpyro/blob/
+    f2ff89a3a7147617e185eb51148eb15d56d44661/numpyro/distributions/util.py#L387
     """
     x_shift = jax.lax.stop_gradient(jnp.amax(x, -1, keepdims=True))
     y_shift = jax.lax.stop_gradient(jnp.amax(y, -2, keepdims=True))

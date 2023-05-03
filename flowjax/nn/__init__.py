@@ -1,3 +1,7 @@
+"""nn package contains neural network architectures of use for flows (invertible
+neural networks).
+"""
+
 from .block_autoregressive import BlockAutoregressiveLinear, BlockTanh
 from .masked_autoregressive import AutoregressiveMLP, MaskedLinear
 

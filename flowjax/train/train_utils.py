@@ -1,7 +1,9 @@
-from typing import Sequence, List
-from jax import Array
-import jax.random as jr
+"""Utility functions for training."""
+from typing import List, Sequence
+
 import jax.numpy as jnp
+import jax.random as jr
+from jax import Array
 
 
 def train_val_split(key: jr.KeyArray, arrays: Sequence[Array], val_prop: float = 0.1):
@@ -15,7 +17,7 @@ def train_val_split(key: jr.KeyArray, arrays: Sequence[Array], val_prop: float =
     Returns:
         Tuple[Tuple]: (train_arrays, validation_arrays)
     """
-    if not (0 <= val_prop <= 1):
+    if not 0 <= val_prop <= 1:
         raise ValueError("val_prop should be between 0 and 1.")
     n = arrays[0].shape[0]
     permutation = jr.permutation(key, jnp.arange(n))

@@ -1,16 +1,17 @@
-from typing import Dict, List, Optional, Union, Callable, Any
-PyTree = Any
-
+"""Function to fit flows to samples from a distribution."""
+from typing import Any, Callable, Optional, Union, Dict, List
 import equinox as eqx
 import jax.numpy as jnp
+import jax.random as jr
 import optax
 from jax.typing import ArrayLike
-import jax.random as jr
 from tqdm import tqdm
-import optax
-from flowjax.distributions import Distribution
 
-from flowjax.train.train_utils import train_val_split, count_fruitless
+from flowjax.distributions import Distribution
+from flowjax.train.train_utils import count_fruitless, train_val_split
+
+PyTree = Any
+
 
 def fit_to_data(
     key: jr.KeyArray,
@@ -27,7 +28,8 @@ def fit_to_data(
     filter_spec: Union[Callable, PyTree] = eqx.is_inexact_array,
     show_progress: bool = True,
 ):
-    """Train a distribution (e.g. a flow) to samples by maximum likelihood. Note that the last batch in each epoch is dropped if truncated.
+    """Train a distribution (e.g. a flow) to samples by maximum likelihood. Note that
+        the last batch in each epoch is dropped if truncated.
 
     Args:
         key (KeyArray): Jax PRNGKey.
@@ -35,17 +37,23 @@ def fit_to_data(
         x (Array): Samples from target distribution.
         condition (Optional[Array], optional): Conditioning variables. Defaults to None.
         max_epochs (int, optional): Maximum number of epochs. Defaults to 50.
-        max_patience (int, optional): Number of consecutive epochs with no validation loss improvement after which training is terminated. Defaults to 5.
+        max_patience (int, optional): Number of consecutive epochs with no validation
+            loss improvement after which training is terminated. Defaults to 5.
         batch_size (int, optional): Batch size. Defaults to 256.
         val_prop (float, optional): Proportion of data to use in validation set. Defaults to 0.1.
         learning_rate (float, optional): Adam learning rate. Defaults to 5e-4.
         clip_norm (float, optional): Maximum gradient norm before clipping occurs. Defaults to 0.5.
-        optimizer (optax.GradientTransformation): Optax optimizer. If provided, this overrides the default Adam optimizer, and the learning_rate and clip_norm arguments are ignored. Defaults to None.
-        filter_spec (Union[Callable, PyTree], optional): Equinox `filter_spec` for specifying trainable parameters. Either a callable `leaf -> bool`, or a PyTree with prefix structure matching `dist` with True/False values. Defaults to `eqx.is_inexact_array`.
+        optimizer (optax.GradientTransformation): Optax optimizer. If provided, this
+            overrides the default Adam optimizer, and the learning_rate and clip_norm
+            arguments are ignored. Defaults to None.
+        filter_spec (Union[Callable, PyTree], optional): Equinox `filter_spec` for
+            specifying trainable parameters. Either a callable `leaf -> bool`, or a
+            PyTree with prefix structure matching `dist` with True/False values.
+            Defaults to `eqx.is_inexact_array`.
         show_progress (bool, optional): Whether to show progress bar. Defaults to True.
     """
     x = jnp.asarray(x)
-    
+
     if condition is not None:
         condition = jnp.asarray(condition)
 
@@ -64,27 +72,31 @@ def fit_to_data(
 
     if optimizer is None:
         optimizer = optimizer = optax.chain(
-            optax.clip_by_global_norm(clip_norm), optax.adam(learning_rate=learning_rate)
+            optax.clip_by_global_norm(clip_norm),
+            optax.adam(learning_rate=learning_rate),
         )
-    
-    best_params, static = eqx.partition(dist, filter_spec)
+
+    best_params, static = eqx.partition(dist, filter_spec)  # type: ignore
     opt_state = optimizer.init(best_params)
 
     key, train_val_split_key = jr.split(key)
 
     inputs = (x,) if condition is None else (x, condition)
-    train_args, val_args = train_val_split(train_val_split_key, inputs, val_prop=val_prop)
+    train_args, val_args = train_val_split(
+        train_val_split_key, inputs, val_prop=val_prop
+    )
     train_len, val_len = train_args[0].shape[0], val_args[0].shape[0]
     if batch_size > train_len:
         raise ValueError(
-            f"The batch size ({batch_size}) cannot be greater than the train set size ({train_len})."
-            )
+            f"The batch size ({batch_size}) cannot be greater than the train set size "
+            f"({train_len})."
+        )
 
     losses = {"train": [], "val": []}  # type: Dict[str, List[float]]
 
-    loop = tqdm(range(max_epochs)) if show_progress is True else range(max_epochs)
+    loop = tqdm(range(max_epochs), disable=not show_progress)
 
-    for epoch in loop:
+    for _ in loop:
         key, subkey = jr.split(key)
         permutation = jr.permutation(subkey, jnp.arange(train_len))
         train_args = tuple(a[permutation] for a in train_args)
@@ -109,13 +121,10 @@ def fit_to_data(
             best_params = eqx.filter(dist, filter_spec)
 
         elif count_fruitless(losses["val"]) > max_patience:
-            if show_progress == True:
-                loop.set_postfix_str(f"{loop.postfix} (Max patience reached)")
+            loop.set_postfix_str(f"{loop.postfix} (Max patience reached)")
             break
 
-        if show_progress:
-            loop.set_postfix({k: v[-1] for k, v in losses.items()})
+        loop.set_postfix({k: v[-1] for k, v in losses.items()})
 
-    dist = eqx.combine(best_params, static)
+    dist = eqx.combine(best_params, static)  # type: ignore
     return dist, losses
-

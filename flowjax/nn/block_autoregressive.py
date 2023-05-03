@@ -1,22 +1,27 @@
+"""Block autoregressive neural network components."""
 from typing import Callable, Optional
 
 import equinox as eqx
+import jax
 import jax.numpy as jnp
-from jax import random
+from jax import Array, random
 from jax.nn.initializers import glorot_uniform
 from jax.random import KeyArray
 
 from flowjax.masks import block_diag_mask, block_tril_mask
-from jax import Array
-import jax
 
 
 def _tanh_log_grad(x):
-    "log gradient vector of tanh transformation"
+    """log gradient vector of tanh transformation."""
     return -2 * (x + jax.nn.softplus(-2 * x) - jnp.log(2.0))
 
 
 class BlockAutoregressiveLinear(eqx.Module):
+    """Block autoregressive neural network layer (https://arxiv.org/abs/1904.04676).
+    Conditioning variables are incorporated by appending columns (one for each
+    conditioning variable) to the left of the block diagonal weight matrix.
+    """
+
     n_blocks: int
     block_shape: tuple
     cond_dim: Optional[int]
@@ -37,16 +42,15 @@ class BlockAutoregressiveLinear(eqx.Module):
         cond_dim: Optional[int] = None,
         init: Callable = glorot_uniform(),
     ):
-        """Block autoregressive neural network layer (https://arxiv.org/abs/1904.04676).
-        Conditioning variables are incorporated by appending columns (one for each
-        conditioning variable) to the left of the block diagonal weight matrix.
-
+        """
         Args:
             key KeyArray: Random key
             n_blocks (int): Number of diagonal blocks (dimension of original input).
             block_shape (Tuple): The shape of the (unconstrained) blocks.
-            cond_dim (Union[None, int]): Number of additional conditioning variables. Defaults to None.
-            init (Callable, optional): Default initialisation method for the weight matrix. Defaults to ``glorot_uniform()``.
+            cond_dim (Union[None, int]): Number of additional conditioning variables.
+                Defaults to None.
+            init (Callable, optional): Default initialisation method for the weight
+                matrix. Defaults to ``glorot_uniform()``.
         """
         self.cond_dim = cond_dim
 
@@ -65,7 +69,7 @@ class BlockAutoregressiveLinear(eqx.Module):
 
         self.b_diag_mask_idxs = jnp.where(
             self.b_diag_mask, size=block_shape[0] * block_shape[1] * n_blocks
-        )
+        )  # type: ignore
 
         in_features, out_features = (
             block_shape[1] * n_blocks + cond_dim,
@@ -89,13 +93,15 @@ class BlockAutoregressiveLinear(eqx.Module):
         self.out_features = out_features
 
     def get_normalised_weights(self):
-        "Carries out weight normalisation."
+        """Carries out weight normalisation."""
         W = jnp.exp(self.W) * self.b_diag_mask + self.W * self.b_tril_mask
         W_norms = jnp.linalg.norm(W, axis=-1, keepdims=True)
         return jnp.exp(self.W_log_scale) * W / W_norms
 
     def __call__(self, x, condition=None):
-        "returns output y, and components of weight matrix needed log_det component (n_blocks, block_shape[0], block_shape[1])"
+        """returns output y, and components of weight matrix needed log_det component
+        (n_blocks, block_shape[0], block_shape[1]).
+        """
         W = self.get_normalised_weights()
         if condition is not None:
             x = jnp.concatenate((x, condition))
@@ -105,11 +111,15 @@ class BlockAutoregressiveLinear(eqx.Module):
 
 
 class BlockTanh:
-    """
-    Tanh transformation compatible with block neural autoregressive flow (log_abs_det provided as 3D array).
+    """Tanh transformation compatible with block neural autoregressive flow (log_abs_det
+    provided as 3D array).
     """
 
     def __init__(self, n_blocks: int):
+        """
+        Args:
+            n_blocks (int): Number of blocks.
+        """
         self.n_blocks = n_blocks
 
     def __call__(self, x, condition=None):

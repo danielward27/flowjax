@@ -1,8 +1,12 @@
+"""Module contains the Chain bijection, that allows sequentially application of arbitrary
+bijections, with compatible shapes.
+"""
 from typing import Sequence, Tuple, Union
 
-from flowjax.utils import merge_shapes
-from flowjax.bijections import Bijection
 from jax import Array
+
+from flowjax.bijections.bijection import Bijection
+from flowjax.utils import merge_shapes
 
 
 class Chain(Bijection):
@@ -50,10 +54,9 @@ class Chain(Bijection):
     def __getitem__(self, i: Union[int, slice]) -> Bijection:
         if isinstance(i, int):
             return self.bijections[i]
-        elif isinstance(i, slice):
+        if isinstance(i, slice):
             return Chain(self.bijections[i])
-        else:
-            raise TypeError(f"Indexing with type {type(i)} is not supported.")
+        raise TypeError(f"Indexing with type {type(i)} is not supported.")
 
     def __iter__(self):
         yield from self.bijections

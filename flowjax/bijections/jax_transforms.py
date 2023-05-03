@@ -1,8 +1,11 @@
+"""Bijections that wrap jax function transforms (scan and vmap)."""
 from functools import partial
-import equinox as eqx
-from flowjax.bijections import Bijection
-from jax.lax import scan
 from typing import Any, Tuple
+
+import equinox as eqx
+from jax.lax import scan
+
+from flowjax.bijections.bijection import Bijection
 
 
 class Vmap(Bijection):
@@ -10,13 +13,13 @@ class Vmap(Bijection):
     bijection parameters and x, although this behaviour can be modified by providing key
     word arguments that are passed to ``equinox.filter_vmap``. The arguments names for
     the vmapped functions are (bijection, x).
-    
+
     Vmapping over the conditioning variable is not currently supported.
 
     Example:
         Affine parameters usually act elementwise, but we could vmap excluding the
         the bijection to create a global affine (sharing the location and scale).
-        
+
         .. doctest::
 
             >>> from flowjax.bijections import Vmap, Affine
@@ -31,18 +34,18 @@ class Vmap(Bijection):
     bijection: Bijection
     kwargs: dict
 
-    def __init__(self, bijection: Bijection, shape: Tuple[int], **kwargs):
+    def __init__(self, bijection: Bijection, shape: Tuple[int, ...], **kwargs):
         """
-        
-
         Args:
-            bijection (Bijection): Bijection. If vmapping over the bijection, the array leaves
-                in bijection should have additional leading axes with shape equalling `shape`.
-                Often it is convenient to construct these using `equinox.filter_vmap`.
-            shape (Tuple[int]): Shape prepended to the bijection shape. If len(shape)>1, multiple applications of vmap will be used.
-            **kwargs: kwargs, passed to equinox.filter_vmap, allowing e.g. control over which variables to map over.
+            bijection (Bijection): Bijection. If vmapping over the bijection, the array
+                leaves in bijection should have additional leading axes with shape
+                equalling `shape`. Often it is convenient to construct these using
+                `equinox.filter_vmap`.
+            shape (Tuple[int, ...]): Shape prepended to the bijection shape. If
+                len(shape)>1, multiple applications of vmap will be used.
+            **kwargs: kwargs, passed to equinox.filter_vmap, allowing e.g. control over
+                which variables to map over.
         """
-
         self.bijection = bijection
         self.ndim_to_add = len(shape)
         self.kwargs = kwargs  # For filter vmap
@@ -53,40 +56,53 @@ class Vmap(Bijection):
 
     def transform(self, x, condition=None):
         self._argcheck(x, condition)
-        f = lambda bijection, x: bijection.transform(x, condition)
-        f = self._multivmap(f)
-        return f(self.bijection, x)
+
+        def _transform(bijection, x):
+            return bijection.transform(x, condition)
+
+        _transform = self._multivmap(_transform)
+        return _transform(self.bijection, x)
 
     def inverse(self, y, condition=None):
         self._argcheck(y, condition)
-        f = lambda bijection, x: bijection.inverse(x, condition)
-        f = self._multivmap(f)
-        return f(self.bijection, y)
+
+        def _inverse(bijection, x):
+            return bijection.inverse(x, condition)
+
+        _inverse = self._multivmap(_inverse)
+        return _inverse(self.bijection, y)
 
     def transform_and_log_abs_det_jacobian(self, x, condition=None):
         self._argcheck(x, condition)
-        f = lambda bijection, x: bijection.transform_and_log_abs_det_jacobian(x, condition)
-        f = self._multivmap(f)
-        y, log_det = f(self.bijection, x)
+
+        def _transform_and_log_det(bijection, x):
+            return bijection.transform_and_log_abs_det_jacobian(x, condition)
+
+        _transform_and_log_det = self._multivmap(_transform_and_log_det)
+        y, log_det = _transform_and_log_det(self.bijection, x)
         return y, log_det.sum()
 
     def inverse_and_log_abs_det_jacobian(self, y, condition=None):
         self._argcheck(y, condition)
-        f = lambda bijection, x: bijection.inverse_and_log_abs_det_jacobian(x, condition)
-        f = self._multivmap(f)
-        x, log_det = f(self.bijection, y)
+
+        def _inv_and_log_det(bijection, x):
+            return bijection.inverse_and_log_abs_det_jacobian(x, condition)
+
+        _inv_and_log_det = self._multivmap(_inv_and_log_det)
+        x, log_det = _inv_and_log_det(self.bijection, y)
         return x, log_det.sum()
 
-    def _multivmap(self, f):
-        "Compose Vmap to add ndim batch dimensions."
+    def _multivmap(self, func):
+        """Compose Vmap to add ndim batch dimensions."""
         for _ in range(self.ndim_to_add):
-            f = eqx.filter_vmap(f, **self.kwargs)
-        return f
+            func = eqx.filter_vmap(func, **self.kwargs)
+        return func
 
 
 class Scan(Bijection):
     """Repeatedly apply the same bijection with different parameter values. Internally,
-    uses `jax.lax.scan` to reduce compilation time."""
+    uses `jax.lax.scan` to reduce compilation time.
+    """
 
     static: Any
     params: Any
@@ -97,8 +113,9 @@ class Scan(Bijection):
         Often it is convenient to construct these using `equinox.filter_vmap`.
 
         Args:
-            bijection (Bijection): A bijection, in which the arrays leaves have an additional leading axis to scan over.
-                For complex bijections, it can be convenient to create compatible bijections with ``equinox.filter_vmap``.
+            bijection (Bijection): A bijection, in which the arrays leaves have an
+                additional leading axis to scan over. For complex bijections, it can be
+                convenient to create compatible bijections with ``equinox.filter_vmap``.
 
         Example:
             Below is equivilent to ``Chain([Affine(p) for p in params])``.
@@ -131,10 +148,12 @@ class Scan(Bijection):
     def transform_and_log_abs_det_jacobian(self, x, condition=None):
         self._argcheck(x, condition)
 
-        def fn(carry, p, condition):
+        def fn(carry, params, condition):
             x, log_det = carry
-            bijection = eqx.combine(self.static, p)
-            y, log_det_i = bijection.transform_and_log_abs_det_jacobian(x, condition)  # type: ignore
+            bijection = eqx.combine(self.static, params)
+            y, log_det_i = bijection.transform_and_log_abs_det_jacobian(  # type: ignore
+                x, condition
+            )
             return ((y, log_det + log_det_i.sum()), None)
 
         fn = partial(fn, condition=condition)
@@ -144,8 +163,8 @@ class Scan(Bijection):
     def inverse(self, y, condition=None):
         self._argcheck(y, condition)
 
-        def fn(y, p, condition=None):
-            bijection = eqx.combine(self.static, p)
+        def fn(y, params, condition=None):
+            bijection = eqx.combine(self.static, params)
             x = bijection.inverse(y, condition)  # type: ignore
             return (x, None)
 
@@ -156,10 +175,12 @@ class Scan(Bijection):
     def inverse_and_log_abs_det_jacobian(self, y, condition=None):
         self._argcheck(y, condition)
 
-        def fn(carry, p, condition=None):
+        def fn(carry, params, condition=None):
             y, log_det = carry
-            bijection = eqx.combine(self.static, p)
-            x, log_det_i = bijection.inverse_and_log_abs_det_jacobian(y, condition)  # type: ignore
+            bijection = eqx.combine(self.static, params)
+            x, log_det_i = bijection.inverse_and_log_abs_det_jacobian(  # type: ignore
+                y, condition
+            )
             return ((x, log_det + log_det_i.sum()), None)
 
         fn = partial(fn, condition=condition)

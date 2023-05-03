@@ -1,15 +1,21 @@
+"""Implemenetation of Coupling flow layer with arbitrary transformer.
+See https://arxiv.org/abs/1605.08803 for more information.
+"""
 from typing import Callable, Union
-import math
+
 import equinox as eqx
 import jax.nn as jnn
 import jax.numpy as jnp
 from jax.random import KeyArray
-from flowjax.bijections import Bijection
-from flowjax.utils import get_ravelled_bijection_constructor, Array
+
+from flowjax.bijections.bijection import Bijection
 from flowjax.bijections.jax_transforms import Vmap
+from flowjax.utils import Array, get_ravelled_bijection_constructor
 
 
 class Coupling(Bijection):
+    """Coupling layer implementation (https://arxiv.org/abs/1605.08803)."""
+
     d: int
     D: int
     transformer_constructor: Callable
@@ -26,16 +32,18 @@ class Coupling(Bijection):
         nn_depth: int,
         nn_activation: Callable = jnn.relu,
     ):
-        """Coupling layer implementation (https://arxiv.org/abs/1605.08803).
+        """
         Args:
             key (KeyArray): Jax PRNGKey
-            transformer (Bijection): Bijection with shape () to be parameterised by the conditioner neural netork.
+            transformer (Bijection): Bijection with shape () to be parameterised by the
+                conditioner neural netork.
             d (int): Number of untransformed conditioning variables.
             D (int): Total dimension.
             cond_dim (Union[None, int]): Dimension of additional conditioning variables.
             nn_width (int): Neural network hidden layer width.
             nn_depth (int): Neural network hidden layer size.
-            nn_activation (Callable, optional): Neural network activation function. Defaults to jnn.relu.
+            nn_activation (Callable, optional): Neural network activation function.
+                Defaults to jnn.relu.
         """
         if transformer.shape != () or transformer.cond_shape is not None:
             raise ValueError(
@@ -61,11 +69,11 @@ class Coupling(Bijection):
             depth=nn_depth,
             activation=nn_activation,
             key=key,
-        )
+        )  # type: eqx.nn.MLP
 
-        # Initialise bias terms to match the provided transformer parameters
+        # Initialise last bias terms to match the provided transformer parameters
         self.conditioner = eqx.tree_at(
-            where=lambda mlp: mlp.layers[-1].bias,
+            where=lambda mlp: mlp.layers[-1].bias,  # type: ignore
             pytree=conditioner,
             replace=jnp.tile(transformer_init_params, D - d),
         )
@@ -109,7 +117,7 @@ class Coupling(Bijection):
     def _flat_params_to_transformer(
         self, params: Array
     ):  # TODO code repetition with MAF
-        "Reshape to dim X params_per_dim, then vmap."
+        """Reshape to dim X params_per_dim, then vmap."""
         dim = self.D - self.d
         transformer_params = jnp.reshape(params, (dim, -1))
         transformer = eqx.filter_vmap(self.transformer_constructor)(transformer_params)

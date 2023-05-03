@@ -1,11 +1,15 @@
+"""Rational quadratic spline bijections (https://arxiv.org/abs/1906.04032)."""
+
 from typing import Tuple
+
+import equinox as eqx
 import jax
 import jax.numpy as jnp
 from jax import Array
-from flowjax.utils import real_to_increasing_on_interval
-from flowjax.bijections import Bijection
+
+from flowjax.bijections.bijection import Bijection
 from flowjax.bijections.jax_transforms import Vmap
-import equinox as eqx
+from flowjax.utils import real_to_increasing_on_interval
 
 
 class _ScalarRationalQuadraticSpline(Bijection):
@@ -42,7 +46,7 @@ class _ScalarRationalQuadraticSpline(Bijection):
 
     @property
     def x_pos(self):
-        "Get the knot x positions."
+        """Get the knot x positions."""
         x_pos = real_to_increasing_on_interval(
             self.unbounded_x_pos, self.interval, self.softmax_adjust
         )
@@ -50,7 +54,7 @@ class _ScalarRationalQuadraticSpline(Bijection):
 
     @property
     def y_pos(self):
-        "Get the knot y positions."
+        """Get the knot y positions."""
         y_pos = real_to_increasing_on_interval(
             self.unbounded_y_pos, self.interval, self.softmax_adjust
         )
@@ -58,7 +62,7 @@ class _ScalarRationalQuadraticSpline(Bijection):
 
     @property
     def derivatives(self):
-        "Get the knot derivitives"
+        """Get the knot derivitives."""
         return jax.nn.softplus(self.unbounded_derivatives) + self.min_derivative
 
     def transform(self, x, condition=None):
@@ -103,7 +107,8 @@ class _ScalarRationalQuadraticSpline(Bijection):
         derivative = self.derivative(x)
         return x, -jnp.log(derivative).sum()
 
-    def derivative(self, x):  # eq. 5
+    def derivative(self, x) -> Array:  # eq. 5
+        """The derivative dy/dx of the forward transformation."""
         x_pos, y_pos, derivatives = self.x_pos, self.y_pos, self.derivatives
         in_bounds = jnp.logical_and(x > -self.interval, x < self.interval)
         x_robust = jnp.where(in_bounds, x, 0)  # To avoid nans
@@ -114,25 +119,27 @@ class _ScalarRationalQuadraticSpline(Bijection):
         num = sk**2 * (dk1 * xi**2 + 2 * sk * xi * (1 - xi) + dk * (1 - xi) ** 2)
         den = (sk + (dk1 + dk - 2 * sk) * xi * (1 - xi)) ** 2
         derivative = num / den
-        return jnp.where(in_bounds, derivative, 1.0)
+        return jnp.where(in_bounds, derivative, 1.0)  # type: ignore
 
 
 class RationalQuadraticSpline(Vmap):
+    """Elementwise rational quadratic spline transform (https://arxiv.org/abs/1906.04032),
+    initialised at the identity function.
+    """
+
     def __init__(
         self,
         knots: int,
         interval: float,
-        shape: Tuple[int] = (),
+        shape: Tuple[int, ...] = (),
         min_derivative: float = 1e-3,
         softmax_adjust: float = 1e-2,
     ) -> None:
-        """Elementwise rational quadratic spline transform (https://arxiv.org/abs/1906.04032),
-        initialised at the identity function.
-
+        """
         Args:
             knots (int): Number of knots.
             interval (float): interval to transform, [-interval, interval].
-            shape (Tuple[int], optional): Shape of transformation. Defaults to ().
+            shape (Tuple[int, ...], optional): Shape of transformation. Defaults to ().
             min_derivative (float, optional): Minimum dervivative. Defaults to 1e-3.
             softmax_adjust (float, optional): Controls minimum bin width and height by
                 rescaling softmax output, e.g. 0=no adjustment, 1=average softmax output
@@ -140,7 +147,8 @@ class RationalQuadraticSpline(Vmap):
                 See ``real_to_increasing_on_interval``.. Defaults to 1e-2.
         """
 
-        def constructor(dummy):  # Dummy variable to vmap over
+        # Dummy variable included for vmapping
+        def constructor(dummy):  # pylint: disable=W0613
             return _ScalarRationalQuadraticSpline(
                 knots, interval, min_derivative, softmax_adjust
             )

@@ -1,13 +1,8 @@
 import jax.numpy as jnp
-import pytest
 import jax.random as jr
+import pytest
 
-from flowjax.utils import (
-    inv_cum_sum,
-    merge_shapes,
-    check_shapes,
-    _get_ufunc_signature,
-)
+from flowjax.utils import _get_ufunc_signature, inv_cum_sum, merge_shapes
 
 test_cases = [
     # arrays, expected_shape
@@ -36,23 +31,12 @@ test_cases = [
 ]
 
 
-@pytest.mark.parametrize("input", [t[0] for t in test_cases])
-def test_check_shapes(input):
-    check_shapes(input)
-
-
 @pytest.mark.parametrize("input,expected", test_cases)
-def test_merge_shapes(input, expected):
-    assert merge_shapes(input) == expected
+def test_merge_shapes(input_, expected):
+    assert merge_shapes(input_) == expected
 
 
 test_cases_error = [[(2, 3), (2, 1)], [(2, 3), (4, 2, 3)]]
-
-
-@pytest.mark.parametrize("input", test_cases_error)
-def test_check_shapes_errors(input):
-    with pytest.raises(ValueError):
-        check_shapes(input)
 
 
 @pytest.mark.parametrize("input", test_cases_error)

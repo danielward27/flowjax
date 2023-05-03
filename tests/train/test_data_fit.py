@@ -6,11 +6,8 @@ from jax import random
 
 from flowjax.bijections import Affine
 from flowjax.distributions import Normal, Transformed
-from flowjax.train.data_fit import (
-    count_fruitless,
-    fit_to_data,
-    train_val_split,
-)
+from flowjax.train.data_fit import (count_fruitless, fit_to_data,
+                                    train_val_split)
 
 
 def test_count_fruitless():
@@ -28,7 +25,6 @@ def test_train_val_split():
     assert train[1].shape == (90, 5)
     assert test[0].shape == (10, 10)
     assert test[1].shape == (10, 5)
-
 
 
 def test_data_fit_filter_spec():
