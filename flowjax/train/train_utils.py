@@ -19,10 +19,10 @@ def train_val_split(key: jr.KeyArray, arrays: Sequence[Array], val_prop: float =
     """
     if not 0 <= val_prop <= 1:
         raise ValueError("val_prop should be between 0 and 1.")
-    n = arrays[0].shape[0]
-    permutation = jr.permutation(key, jnp.arange(n))
+    size_axis_0 = arrays[0].shape[0]
+    permutation = jr.permutation(key, jnp.arange(size_axis_0))
     arrays = tuple(a[permutation] for a in arrays)
-    n_train = n - round(val_prop * n)
+    n_train = size_axis_0 - round(val_prop * size_axis_0)
     train = tuple(a[:n_train] for a in arrays)
     val = tuple(a[n_train:] for a in arrays)
     return train, val

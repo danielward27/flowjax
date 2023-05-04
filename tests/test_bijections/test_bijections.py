@@ -65,8 +65,8 @@ bijections = {
     "Coupling (unconditional)": Coupling(
         KEY,
         Affine(),
-        d=DIM // 2,
-        D=DIM,
+        untransformed_dim=DIM // 2,
+        dim=DIM,
         cond_dim=None,
         nn_width=10,
         nn_depth=2,
@@ -74,8 +74,8 @@ bijections = {
     "Coupling (conditional)": Coupling(
         KEY,
         Affine(),
-        d=DIM // 2,
-        D=DIM,
+        untransformed_dim=DIM // 2,
+        dim=DIM,
         cond_dim=COND_DIM,
         nn_width=10,
         nn_depth=2,

@@ -1,3 +1,4 @@
+"Tests for bijection.chain module"
 from functools import partial
 
 import equinox as eqx
@@ -9,30 +10,30 @@ from flowjax.bijections import Affine, Chain, Coupling, Flip, Permute, Scan
 
 
 def test_chain_dunders():
-    b = Chain([Flip(), Permute(jnp.array([0, 1]))])
-    assert len(b) == 2
-    assert isinstance(b[0], Flip)
-    assert isinstance(b[1], Permute)
-    assert isinstance(b[:], Chain)
+    bijection = Chain([Flip(), Permute(jnp.array([0, 1]))])
+    assert len(bijection) == 2
+    assert isinstance(bijection[0], Flip)
+    assert isinstance(bijection[1], Permute)
+    assert isinstance(bijection[:], Chain)
 
 
-dim = 4
-cond_dim = 5
-num_layers = 3
-keys = random.split(random.PRNGKey(0), num_layers)
+DIM = 4
+COND_DIM = 5
+NUM_LAYERS = 3
+keys = random.split(random.PRNGKey(0), NUM_LAYERS)
 
 make_coupling_layer = partial(
     Coupling,
     transformer=Affine(),
-    d=dim // 2,
-    D=dim,
-    cond_dim=cond_dim,
+    untransformed_dim=DIM // 2,
+    dim=DIM,
+    cond_dim=COND_DIM,
     nn_width=10,
     nn_depth=3,
 )
 
 
-params = jnp.ones((num_layers, dim))
+params = jnp.ones((NUM_LAYERS, DIM))
 affine_chain = Chain([Affine(p) for p in params])
 affine_scan = Scan(eqx.filter_vmap(Affine)(params))
 
@@ -46,9 +47,9 @@ test_cases = {
 
 
 @pytest.mark.parametrize("scan,chain", test_cases.values(), ids=test_cases.keys())
-def test_scannable_chain(scan, chain):
+def test_scan(scan, chain):
     "Check Chain and Scan give consistent results."
-    x = jnp.ones(dim)
+    x = jnp.ones(DIM)
     condition = jnp.ones(chain.cond_shape) if chain.cond_shape is not None else None
     expected = pytest.approx(chain.transform(x, condition))
     assert expected == scan.transform(x, condition)
