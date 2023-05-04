@@ -25,7 +25,7 @@ class Bijection(Module):
     The methods of bijections do not generally support passing of additional batch
     dimensions, however, ``jax.vmap`` or ``eqx.filter_vmap`` can be used to vmap
     specific methods if desired, and a bijection can be explicitly vectorised using the
-    :py:class:`~flowjax.bijections.jax_transforms.Vmap` bijection.
+    :py:class:`~flowjax.bijections.jax_transforms.Batch` bijection.
 
     Bijections are registered as Jax PyTrees (as they are equinox modules), so are
     compatible with normal jax operations.

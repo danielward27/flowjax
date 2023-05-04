@@ -7,7 +7,7 @@ from .chain import Chain
 from .concatenate import Concatenate, Stack
 from .coupling import Coupling
 from .exp import Exp
-from .jax_transforms import Scan, Vmap
+from .jax_transforms import Scan, Batch
 from .masked_autoregressive import MaskedAutoregressive
 from .rational_quadratic_spline import RationalQuadraticSpline
 from .tanh import Tanh, TanhLinearTails
@@ -26,7 +26,7 @@ __all__ = [
     "TanhLinearTails",
     "Chain",
     "Scan",
-    "Vmap",
+    "Batch",
     "Invert",
     "Flip",
     "Permute",
