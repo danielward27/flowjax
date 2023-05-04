@@ -3,7 +3,7 @@
 # we generally opt to use `Scan`, which avoids excessive compilation
 # when the flow layers share the same structure.
 
-from typing import Callable, Optional
+from typing import Callable
 
 import equinox as eqx
 import jax.nn as jnn
@@ -43,7 +43,7 @@ class CouplingFlow(Transformed):
         key: KeyArray,
         base_dist: Distribution,
         transformer: Bijection,
-        cond_dim: Optional[int] = None,
+        cond_dim: int | None = None,
         flow_layers: int = 8,
         nn_width: int = 40,
         nn_depth: int = 2,
@@ -55,12 +55,12 @@ class CouplingFlow(Transformed):
             key (KeyArray): Jax PRNGKey.
             base_dist (Distribution): Base distribution.
             transformer (Bijection): Bijection to be parameterised by conditioner.
-            cond_dim (int, optional): Dimension of conditioning variables. Defaults to None.
-            flow_layers (int, optional): Number of coupling layers. Defaults to 5.
-            nn_width (int, optional): Conditioner hidden layer size. Defaults to 40.
-            nn_depth (int, optional): Conditioner depth. Defaults to 2.
-            nn_activation (int, optional): Conditioner activation function. Defaults to jnn.relu.
-            invert: (bool, optional): Whether to invert the bijection. Broadly, True will
+            cond_dim (int): Dimension of conditioning variables. Defaults to None.
+            flow_layers (int): Number of coupling layers. Defaults to 5.
+            nn_width (int): Conditioner hidden layer size. Defaults to 40.
+            nn_depth (int): Conditioner depth. Defaults to 2.
+            nn_activation (int): Conditioner activation function. Defaults to jnn.relu.
+            invert: (bool): Whether to invert the bijection. Broadly, True will
                 prioritise a faster `inverse` methods, leading to faster `log_prob`,
                 False will prioritise faster `transform` methods, leading to faster
                 `sample`. Defaults to True
@@ -120,7 +120,7 @@ class MaskedAutoregressiveFlow(Transformed):
         key: KeyArray,
         base_dist: Distribution,
         transformer: Bijection,
-        cond_dim: Optional[int] = None,
+        cond_dim: int | None = None,
         flow_layers: int = 8,
         nn_width: int = 40,
         nn_depth: int = 2,
@@ -132,12 +132,12 @@ class MaskedAutoregressiveFlow(Transformed):
             key (KeyArray): Random seed.
             base_dist (Distribution): Base distribution.
             transformer (Bijection): Bijection parameterised by autoregressive network.
-            cond_dim (int, optional): _description_. Defaults to 0.
-            flow_layers (int, optional): Number of flow layers. Defaults to 5.
-            nn_width (int, optional): Number of hidden layers in neural network. Defaults to 40.
-            nn_depth (int, optional): Depth of neural network. Defaults to 2.
-            nn_activation (Callable, optional): _description_. Defaults to jnn.relu.
-            invert (bool, optional): Whether to invert the bijection. Broadly, True will
+            cond_dim (int): _description_. Defaults to 0.
+            flow_layers (int): Number of flow layers. Defaults to 5.
+            nn_width (int): Number of hidden layers in neural network. Defaults to 40.
+            nn_depth (int): Depth of neural network. Defaults to 2.
+            nn_activation (Callable): _description_. Defaults to jnn.relu.
+            invert (bool): Whether to invert the bijection. Broadly, True will
                 prioritise a faster inverse, leading to faster `log_prob`, False will prioritise
                 faster forward, leading to faster `sample`. Defaults to True. Defaults to True.
         """
@@ -190,7 +190,7 @@ class BlockNeuralAutoregressiveFlow(Transformed):
         self,
         key: KeyArray,
         base_dist: Distribution,
-        cond_dim: Optional[int] = None,
+        cond_dim: int | None = None,
         nn_depth: int = 1,
         nn_block_dim: int = 8,
         flow_layers: int = 1,
@@ -200,13 +200,13 @@ class BlockNeuralAutoregressiveFlow(Transformed):
         Args:
             key (KeyArray): Jax PRNGKey.
             base_dist (Distribution): Base distribution.
-            cond_dim (Optional[int]): Dimension of conditional variables.
-            nn_depth (int, optional): Number of hidden layers within the networks.
+            cond_dim (int | None): Dimension of conditional variables.
+            nn_depth (int): Number of hidden layers within the networks.
                 Defaults to 1.
-            nn_block_dim (int, optional): Block size. Hidden layer width is
+            nn_block_dim (int): Block size. Hidden layer width is
                 dim*nn_block_dim. Defaults to 8.
-            flow_layers (int, optional): Number of BNAF layers. Defaults to 1.
-            invert: (bool, optional): Use `True` for access of `log_prob` only (e.g.
+            flow_layers (int): Number of BNAF layers. Defaults to 1.
+            invert: (bool): Use `True` for access of `log_prob` only (e.g.
                 fitting by maximum likelihood), `False` for the forward direction
                 (sampling) only (e.g. for fitting variationally).
         """
@@ -262,26 +262,26 @@ class TriangularSplineFlow(Transformed):
         self,
         key: KeyArray,
         base_dist: Distribution,
-        cond_dim: Optional[int] = None,
+        cond_dim: int | None = None,
         flow_layers: int = 8,
         knots: int = 8,
         tanh_max_val: float = 3.0,
         invert: bool = True,
-        permute_strategy: Optional[str] = None,
+        permute_strategy: str | None = None,
         init: Callable = glorot_uniform(),
     ):
         """
         Args:
             key (KeyArray): Jax random seed.
             base_dist (Distribution): Base distribution of the flow.
-            cond_dim (Optional[int], optional): The number of conditioning features.
+            cond_dim (int | None): The number of conditioning features.
                 Defaults to None.
-            flow_layers (int, optional): _description_. Defaults to 8.
-            knots (int, optional): _description_. Defaults to 8.
-            tanh_max_val (float, optional): _description_. Defaults to 3.0.
-            invert (bool, optional): _description_. Defaults to True.
-            permute_strategy (Optional[str], optional): _description_. Defaults to None.
-            init (Callable, optional): _description_. Defaults to glorot_uniform().
+            flow_layers (int): _description_. Defaults to 8.
+            knots (int): _description_. Defaults to 8.
+            tanh_max_val (float): _description_. Defaults to 3.0.
+            invert (bool): _description_. Defaults to True.
+            permute_strategy (str | None): _description_. Defaults to None.
+            init (Callable): _description_. Defaults to glorot_uniform().
         """
         if len(base_dist.shape) != 1:
             raise ValueError(f"Expected base_dist.ndim==1, got {base_dist.ndim}")

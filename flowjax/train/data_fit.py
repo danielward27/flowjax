@@ -1,5 +1,5 @@
 """Function to fit flows to samples from a distribution."""
-from typing import Any, Callable, Optional, Dict, List
+from typing import Any, Callable, Dict, List
 import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
@@ -17,14 +17,14 @@ def fit_to_data(
     key: jr.KeyArray,
     dist: Distribution,
     x: ArrayLike,
-    condition: Optional[ArrayLike] = None,
+    condition: ArrayLike | None = None,
     max_epochs: int = 50,
     max_patience: int = 5,
     batch_size: int = 256,
     val_prop: float = 0.1,
     learning_rate: float = 5e-4,
     clip_norm: float = 0.5,
-    optimizer: Optional[optax.GradientTransformation] = None,
+    optimizer: optax.GradientTransformation | None = None,
     filter_spec: Callable | PyTree = eqx.is_inexact_array,
     show_progress: bool = True,
 ):
@@ -35,22 +35,22 @@ def fit_to_data(
         key (KeyArray): Jax PRNGKey.
         dist (Distribution): Distribution object.
         x (Array): Samples from target distribution.
-        condition (Optional[Array], optional): Conditioning variables. Defaults to None.
-        max_epochs (int, optional): Maximum number of epochs. Defaults to 50.
-        max_patience (int, optional): Number of consecutive epochs with no validation
+        condition (Array | None): Conditioning variables. Defaults to None.
+        max_epochs (int): Maximum number of epochs. Defaults to 50.
+        max_patience (int): Number of consecutive epochs with no validation
             loss improvement after which training is terminated. Defaults to 5.
-        batch_size (int, optional): Batch size. Defaults to 256.
-        val_prop (float, optional): Proportion of data to use in validation set. Defaults to 0.1.
-        learning_rate (float, optional): Adam learning rate. Defaults to 5e-4.
-        clip_norm (float, optional): Maximum gradient norm before clipping occurs. Defaults to 0.5.
+        batch_size (int): Batch size. Defaults to 256.
+        val_prop (float): Proportion of data to use in validation set. Defaults to 0.1.
+        learning_rate (float): Adam learning rate. Defaults to 5e-4.
+        clip_norm (float): Maximum gradient norm before clipping occurs. Defaults to 0.5.
         optimizer (optax.GradientTransformation): Optax optimizer. If provided, this
             overrides the default Adam optimizer, and the learning_rate and clip_norm
             arguments are ignored. Defaults to None.
-        filter_spec (Callable | PyTree, optional): Equinox `filter_spec` for
+        filter_spec (Callable | PyTree): Equinox `filter_spec` for
             specifying trainable parameters. Either a callable `leaf -> bool`, or a
             PyTree with prefix structure matching `dist` with True/False values.
             Defaults to `eqx.is_inexact_array`.
-        show_progress (bool, optional): Whether to show progress bar. Defaults to True.
+        show_progress (bool): Whether to show progress bar. Defaults to True.
     """
     x = jnp.asarray(x)
 

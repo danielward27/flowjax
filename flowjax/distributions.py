@@ -3,7 +3,7 @@ and a Transformed distribution class.
 """
 from abc import abstractmethod
 from math import prod
-from typing import Optional, Tuple
+from typing import Tuple
 import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
@@ -57,15 +57,15 @@ class Distribution(eqx.Module):
     cond_shape: Tuple[int, ...] | None
 
     @abstractmethod
-    def _log_prob(self, x: Array, condition: Optional[Array] = None) -> Array:
+    def _log_prob(self, x: Array, condition: Array | None = None) -> Array:
         """Evaluate the log probability of point x."""
 
     @abstractmethod
-    def _sample(self, key: jr.KeyArray, condition: Optional[Array] = None) -> Array:
+    def _sample(self, key: jr.KeyArray, condition: Array | None = None) -> Array:
         """Sample a point from the distribution."""
 
     def _sample_and_log_prob(
-        self, key: jr.KeyArray, condition: Optional[Array] = None
+        self, key: jr.KeyArray, condition: Array | None = None
     ) -> Tuple[Array, Array]:
         """Sample a point from the distribution, and return its log probability.
         Subclasses can reimplement this method in cases where more efficient methods
@@ -75,13 +75,13 @@ class Distribution(eqx.Module):
         log_prob = self._log_prob(x, condition)
         return x, log_prob
 
-    def log_prob(self, x: Array, condition: Optional[Array] = None) -> Array:
+    def log_prob(self, x: Array, condition: Array | None = None) -> Array:
         """Evaluate the log probability. Uses numpy like broadcasting if additional
         leading dimensions are passed.
 
         Args:
             x (Array): Points at which to evaluate density.
-            condition (Optional[Array], optional): Conditioning variables. Defaults to None.
+            condition (Array | None): Conditioning variables. Defaults to None.
 
         Returns:
             Array: Jax array of log probabilities.
@@ -103,7 +103,7 @@ class Distribution(eqx.Module):
         self,
         key: jr.KeyArray,
         sample_shape: Tuple[int, ...] = (),
-        condition: Optional[Array] = None,
+        condition: Array | None = None,
     ) -> Array:
         """Sample from the distribution. For unconditional distributions, the output will
         be of shape ``sample_shape + dist.shape``.
@@ -158,8 +158,8 @@ class Distribution(eqx.Module):
 
         Args:
             key (jr.KeyArray): Jax random key.
-            condition (Optional[Array], optional): Conditioning variables. Defaults to None.
-            sample_shape (Tuple[int, ...], optional): Sample shape. Defaults to ().
+            condition (Array | None): Conditioning variables. Defaults to None.
+            sample_shape (Tuple[int, ...]): Sample shape. Defaults to ().
 
         """
         self._argcheck(condition=condition)
@@ -173,7 +173,7 @@ class Distribution(eqx.Module):
         self,
         key: jr.KeyArray,
         sample_shape: Tuple[int, ...] = (),
-        condition: Optional[Array] = None,
+        condition: Array | None = None,
     ):
         """Sample the distribution and return the samples and corresponding log probabilities.
         For transformed distributions (especially flows), this will generally be more efficient
@@ -185,8 +185,8 @@ class Distribution(eqx.Module):
 
         Args:
             key (jr.KeyArray): Jax random key.
-            condition (Optional[Array], optional): Conditioning variables. Defaults to None.
-            sample_shape (Tuple[int, ...], optional): Sample shape. Defaults to ().
+            condition (Array | None): Conditioning variables. Defaults to None.
+            sample_shape (Tuple[int, ...]): Sample shape. Defaults to ().
         """
         self._argcheck(condition=condition)
 
@@ -316,17 +316,17 @@ class Transformed(Distribution):
             (self.bijection.cond_shape, self.base_dist.cond_shape)
         )
 
-    def _log_prob(self, x: Array, condition: Optional[Array] = None):
+    def _log_prob(self, x: Array, condition: Array | None = None):
         z, log_abs_det = self.bijection.inverse_and_log_abs_det_jacobian(x, condition)
         p_z = self.base_dist._log_prob(z, condition)  # pylint: disable W0212
         return p_z + log_abs_det
 
-    def _sample(self, key: jr.KeyArray, condition: Optional[Array] = None):
+    def _sample(self, key: jr.KeyArray, condition: Array | None = None):
         z = self.base_dist._sample(key, condition)  # pylint: disable W0212
         x = self.bijection.transform(z, condition)
         return x
 
-    def _sample_and_log_prob(self, key: jr.KeyArray, condition: Optional[Array] = None):
+    def _sample_and_log_prob(self, key: jr.KeyArray, condition: Array | None = None):
         # We overwrite the naive implementation of calling both methods seperately to
         # avoid computing the inverse transformation.
         x, log_prob_base = self.base_dist._sample_and_log_prob(  # pylint: disable W0212
@@ -349,10 +349,10 @@ class StandardNormal(Distribution):
         self.shape = shape
         self.cond_shape = None
 
-    def _log_prob(self, x: Array, condition: Optional[Array] = None):
+    def _log_prob(self, x: Array, condition: Array | None = None):
         return jstats.norm.logpdf(x).sum()
 
-    def _sample(self, key: jr.KeyArray, condition: Optional[Array] = None):
+    def _sample(self, key: jr.KeyArray, condition: Array | None = None):
         return jr.normal(key, self.shape)
 
 
@@ -392,10 +392,10 @@ class _StandardUniform(Distribution):
         self.shape = shape
         self.cond_shape = None
 
-    def _log_prob(self, x: Array, condition: Optional[Array] = None):
+    def _log_prob(self, x: Array, condition: Array | None = None):
         return jstats.uniform.logpdf(x).sum()
 
-    def _sample(self, key: jr.KeyArray, condition: Optional[Array] = None):
+    def _sample(self, key: jr.KeyArray, condition: Array | None = None):
         return jr.uniform(key, shape=self.shape)
 
 
@@ -441,10 +441,10 @@ class _StandardGumbel(Distribution):
         self.shape = shape
         self.cond_shape = None
 
-    def _log_prob(self, x: Array, condition: Optional[Array] = None):
+    def _log_prob(self, x: Array, condition: Array | None = None):
         return -(x + jnp.exp(-x)).sum()
 
-    def _sample(self, key: jr.KeyArray, condition: Optional[Array] = None):
+    def _sample(self, key: jr.KeyArray, condition: Array | None = None):
         return jr.gumbel(key, shape=self.shape)
 
 
@@ -459,7 +459,7 @@ class Gumbel(Transformed):
 
         Args:
             loc (Array): Location paramter.
-            scale (Array, optional): Scale parameter. Defaults to 1.0.
+            scale (Array): Scale parameter. Defaults to 1.0.
         """
         shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
         base_dist = _StandardGumbel(shape)
@@ -488,10 +488,10 @@ class _StandardCauchy(Distribution):
         self.shape = shape
         self.cond_shape = None
 
-    def _log_prob(self, x: Array, condition: Optional[Array] = None):
+    def _log_prob(self, x: Array, condition: Array | None = None):
         return jstats.cauchy.logpdf(x).sum()
 
-    def _sample(self, key: jr.KeyArray, condition: Optional[Array] = None):
+    def _sample(self, key: jr.KeyArray, condition: Array | None = None):
         return jr.cauchy(key, shape=self.shape)
 
 
@@ -506,7 +506,7 @@ class Cauchy(Transformed):
 
         Args:
             loc (Array): Location paramter.
-            scale (Array, optional): Scale parameter. Defaults to 1.0.
+            scale (Array): Scale parameter. Defaults to 1.0.
         """
         shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
         base_dist = _StandardCauchy(shape)
@@ -534,10 +534,10 @@ class _StandardStudentT(Distribution):
         self.cond_shape = None
         self.log_df = jnp.log(df)
 
-    def _log_prob(self, x: Array, condition: Optional[Array] = None):
+    def _log_prob(self, x: Array, condition: Array | None = None):
         return jstats.t.logpdf(x, df=self.df).sum()
 
-    def _sample(self, key: jr.KeyArray, condition: Optional[Array] = None):
+    def _sample(self, key: jr.KeyArray, condition: Array | None = None):
         return jr.t(key, df=self.df, shape=self.shape)
 
     @property
@@ -559,7 +559,7 @@ class StudentT(Transformed):
         Args:
             df (Array): The degrees of freedom.
             loc (Array): Location parameter. Defaults to 0.0.
-            scale (Array, optional): Scale parameter. Defaults to 1.0.
+            scale (Array): Scale parameter. Defaults to 1.0.
         """
         df, loc, scale = jnp.broadcast_arrays(df, loc, scale)
         base_dist = _StandardStudentT(df)

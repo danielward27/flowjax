@@ -139,9 +139,9 @@ class RationalQuadraticSpline(Batch):
         Args:
             knots (int): Number of knots.
             interval (float): interval to transform, [-interval, interval].
-            shape (Tuple[int, ...], optional): Shape of transformation. Defaults to ().
-            min_derivative (float, optional): Minimum dervivative. Defaults to 1e-3.
-            softmax_adjust (float, optional): Controls minimum bin width and height by
+            shape (Tuple[int, ...]): Shape of transformation. Defaults to ().
+            min_derivative (float): Minimum dervivative. Defaults to 1e-3.
+            softmax_adjust (float): Controls minimum bin width and height by
                 rescaling softmax output, e.g. 0=no adjustment, 1=average softmax output
                 with evenly spaced widths, >1 promotes more evenly spaced widths.
                 See ``real_to_increasing_on_interval``.. Defaults to 1e-2.

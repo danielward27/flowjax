@@ -1,5 +1,5 @@
 """Block autoregressive neural network components."""
-from typing import Callable, Optional
+from typing import Callable
 
 import equinox as eqx
 import jax
@@ -24,7 +24,7 @@ class BlockAutoregressiveLinear(eqx.Module):
 
     n_blocks: int
     block_shape: tuple
-    cond_dim: Optional[int]
+    cond_dim: int | None
     W: Array
     bias: Array
     W_log_scale: Array
@@ -39,7 +39,7 @@ class BlockAutoregressiveLinear(eqx.Module):
         key: KeyArray,
         n_blocks: int,
         block_shape: tuple,
-        cond_dim: Optional[int] = None,
+        cond_dim: int | None = None,
         init: Callable = glorot_uniform(),
     ):
         """
@@ -49,7 +49,7 @@ class BlockAutoregressiveLinear(eqx.Module):
             block_shape (Tuple): The shape of the (unconstrained) blocks.
             cond_dim (int | None): Number of additional conditioning variables.
                 Defaults to None.
-            init (Callable, optional): Default initialisation method for the weight
+            init (Callable): Default initialisation method for the weight
                 matrix. Defaults to ``glorot_uniform()``.
         """
         self.cond_dim = cond_dim

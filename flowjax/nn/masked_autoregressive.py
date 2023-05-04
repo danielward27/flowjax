@@ -26,7 +26,7 @@ class MaskedLinear(Module):
         Args:
             mask (Array): Mask with shape (out_features, in_features).
             key (KeyArray): Jax PRNGKey
-            use_bias (bool, optional): Whether to include bias terms. Defaults to True.
+            use_bias (bool): Whether to include bias terms. Defaults to True.
         """
         self.linear = Linear(mask.shape[1], mask.shape[0], use_bias, key=key)
         self.mask = mask
@@ -76,8 +76,8 @@ class AutoregressiveMLP(Module):
             hidden_ranks (Array): Ranks of the hidden layer(s).
             out_ranks (Array): Ranks of the outputs.
             depth (int): Number of hidden layers.
-            activation (Callable, optional): Activation function. Defaults to jnn.relu.
-            final_activation (Callable, optional): Final activation function. Defaults to _identity.
+            activation (Callable): Activation function. Defaults to jnn.relu.
+            final_activation (Callable): Final activation function. Defaults to _identity.
             key (KeyArray): Jax PRNGKey.
         """
         masks = []

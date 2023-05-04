@@ -1,5 +1,5 @@
 """Block Neural Autoregressive bijection implementation."""
-from typing import Callable, Optional, List, Any
+from typing import Callable, List, Any
 
 import jax
 import jax.numpy as jnp
@@ -25,7 +25,7 @@ class BlockAutoregressiveNetwork(Bijection):
         cond_dim: int | None,
         depth: int,
         block_dim: int,
-        activation: Optional[Callable] = None,
+        activation: Callable | None = None,
     ):
         """
         Args:
@@ -34,7 +34,7 @@ class BlockAutoregressiveNetwork(Bijection):
             cond_dim (Tuple[int, ...] | None): Dimension of extra conditioning variables.
             depth (int): Number of hidden layers in the network.
             block_dim (int): Block dimension (hidden layer size is `dim*block_dim`).
-            activation (Callable, optional): Activation function. Defaults to BlockTanh.
+            activation (Callable): Activation function. Defaults to BlockTanh.
         """
         activation = BlockTanh(dim) if activation is None else activation
         layers = []  # type: List[Any]

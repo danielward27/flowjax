@@ -1,5 +1,5 @@
 """Basic training script for fitting a flow using variational inference."""
-from typing import Any, Callable, Optional
+from typing import Any, Callable
 
 import equinox as eqx
 import jax.random as jr
@@ -35,7 +35,7 @@ def fit_to_variational_target(
     samples_per_step: int = 500,
     learning_rate: float = 5e-4,
     clip_norm: float = 0.5,
-    optimizer: Optional[optax.GradientTransformation] = None,
+    optimizer: optax.GradientTransformation | None = None,
     filter_spec: Callable | PyTree = eqx.is_inexact_array,
     show_progress: bool = True,
 ):
@@ -49,24 +49,24 @@ def fit_to_variational_target(
             using equinox.is_inexact_array.
         target (Callable): The variational target (this is usually the unormalized log
             posterior)
-        loss_fn (Callable, optional): The loss function to optimize. The loss function
+        loss_fn (Callable): The loss function to optimize. The loss function
             should take a random key, the distribution, a callable that maps samples
             from the distribution to a scalar loss, and a number of samples to use.
             Defaults to elbo_loss.
-        steps (int, optional): The number of training steps to run. Defaults to 100.
-        samples_per_step (int, optional): number of samples to use at each step.
+        steps (int): The number of training steps to run. Defaults to 100.
+        samples_per_step (int): number of samples to use at each step.
             Defaults to 500.
-        learning_rate (float, optional): Adam learning rate. Defaults to 5e-4.
-        clip_norm (float, optional): Maximum gradient norm before clipping occurs.
+        learning_rate (float): Adam learning rate. Defaults to 5e-4.
+        clip_norm (float): Maximum gradient norm before clipping occurs.
             Defaults to 0.5.
-        optimizer (Optional[optax.GradientTransformation]): Optax optimizer. If provided,
+        optimizer (optax.GradientTransformation | None): Optax optimizer. If provided,
             this overrides the default Adam optimizer, and the learning_rate and
             clip_norm arguments are ignored. Defaults to None.
-        filter_spec (Callable | PyTree, optional): Equinox `filter_spec` for
+        filter_spec (Callable | PyTree): Equinox `filter_spec` for
             specifying trainable parameters. Either a callable `leaf -> bool`, or a
             PyTree with prefix structure matching `dist` with True/False values.
             Defaults to `eqx.is_inexact_array`.
-        show_progress (bool, optional): Whether to show progress bar. Defaults to True.
+        show_progress (bool): Whether to show progress bar. Defaults to True.
     """
     if optimizer is None:
         optimizer = optimizer = optax.chain(

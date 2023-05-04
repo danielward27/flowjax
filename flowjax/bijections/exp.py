@@ -1,5 +1,4 @@
 """Exponential bijection"""
-from typing import Optional
 import jax.numpy as jnp
 
 from flowjax.bijections.bijection import Bijection
@@ -8,10 +7,10 @@ from flowjax.bijections.bijection import Bijection
 class Exp(Bijection):
     """Elementwise exponential transform (forward) and log transform (inverse)."""
 
-    def __init__(self, shape: Optional[tuple[int, ...]] = None):
+    def __init__(self, shape: tuple[int, ...] | None = None):
         """
         Args:
-            shape (Optional[tuple[int, ...]], optional): Shape of the bijection.
+            shape (tuple[int, ...] | None): Shape of the bijection.
                 Defaults to None.
         """
         self.shape = shape

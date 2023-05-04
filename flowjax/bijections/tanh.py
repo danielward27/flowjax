@@ -1,6 +1,5 @@
 """Tanh bijection."""
 import math
-from typing import Optional
 
 import jax
 import jax.numpy as jnp
@@ -16,10 +15,10 @@ def _tanh_log_grad(x):
 class Tanh(Bijection):
     """Tanh bijection."""
 
-    def __init__(self, shape: Optional[tuple[int, ...]] = None) -> None:
+    def __init__(self, shape: tuple[int, ...] | None = None) -> None:
         """
         Args:
-            shape (Optional[tuple[int, ...]], optional): Shape of the bijection. Defaults to None.
+            shape (tuple[int, ...] | None): Shape of the bijection. Defaults to None.
         """
         self.shape = shape
         self.cond_shape = None
@@ -55,12 +54,12 @@ class TanhLinearTails(Bijection):
     intercept: float
     linear_grad: float
 
-    def __init__(self, max_val: float, shape: Optional[tuple[int, ...]] = None):
+    def __init__(self, max_val: float, shape: tuple[int, ...] | None = None):
         """Create a tanh bijection with linear "tails" beyond +/- max_val.
 
         Args:
             max_val (int): Value above or below which the function becomes linear.
-            shape (Optional[tuple[int, ...]]): The shape of the bijection. Defaults to
+            shape (tuple[int, ...] | None): The shape of the bijection. Defaults to
                 None.
         """
         self.max_val = max_val

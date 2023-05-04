@@ -7,7 +7,7 @@ of flows).
 """
 
 from abc import abstractmethod
-from typing import Optional, Tuple
+from typing import Tuple
 
 from equinox import Module
 from jax import Array
@@ -45,26 +45,26 @@ class Bijection(Module):
     cond_shape: Tuple[int, ...] | None
 
     @abstractmethod
-    def transform(self, x: Array, condition: Optional[Array] = None) -> Array:
+    def transform(self, x: Array, condition: Array | None = None) -> Array:
         """Apply transformation."""
 
     @abstractmethod
     def transform_and_log_abs_det_jacobian(
-        self, x: Array, condition: Optional[Array] = None
+        self, x: Array, condition: Array | None = None
     ) -> Tuple[Array, Array]:
         """Apply transformation and compute log absolute value of the Jacobian determinant."""
 
     @abstractmethod
-    def inverse(self, y: Array, condition: Optional[Array] = None) -> Array:
+    def inverse(self, y: Array, condition: Array | None = None) -> Array:
         """Invert the transformation."""
 
     @abstractmethod
     def inverse_and_log_abs_det_jacobian(
-        self, y: Array, condition: Optional[Array] = None
+        self, y: Array, condition: Array | None = None
     ) -> Tuple[Array, Array]:
         """Invert the transformation and compute log absolute value of the Jacobian determinant."""
 
-    def _argcheck(self, x: Array, condition: Optional[Array] = None):
+    def _argcheck(self, x: Array, condition: Array | None = None):
         """Utility argcheck that can be added to bijection methods as required."""
         if self.shape is not None:
             if x.shape != self.shape:

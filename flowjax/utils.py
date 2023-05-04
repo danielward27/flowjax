@@ -17,8 +17,8 @@ def real_to_increasing_on_interval(
 
     Args:
         arr (Array): Parameter vector.
-        B (float, optional): Interval to transform output. Defaults to 1.
-        softmax_adjust (float, optional): Rescales softmax output using (widths +
+        B (float): Interval to transform output. Defaults to 1.
+        softmax_adjust (float): Rescales softmax output using (widths +
             softmax_adjust/widths.size) / (1 + softmax_adjust). e.g. 0=no adjustment,
             1=average softmax output with evenly spaced widths, >1 promotes more evenly
             spaced widths.

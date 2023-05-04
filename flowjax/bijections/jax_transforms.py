@@ -1,6 +1,6 @@
 """Bijections that wrap jax function transforms (scan and vmap)."""
 from functools import partial
-from typing import Any, Optional, Callable
+from typing import Any, Callable
 
 import equinox as eqx
 from jax.lax import scan
@@ -34,7 +34,7 @@ class Batch(Bijection):
         bijection: Bijection,
         batch_shape: tuple[int, ...],
         vectorize_bijection: bool,
-        vectorize_condition: Optional[bool] = None,
+        vectorize_condition: bool | None = None,
     ):
         """
         Args:
@@ -47,7 +47,7 @@ class Batch(Bijection):
                 compatible bijections, see eqx.filter_vmap.
                 * If False: we broadcast the parameters, meaning
                 the same bijection parameters are used for each x.
-            vectorize_condition (Optional[bool]): Whether to vectorize or broadcast the
+            vectorize_condition (bool | None): Whether to vectorize or broadcast the
                 conditioning variables. If broadcasting, the condition shape is
                 unchanged. If vectorising, the condition shape will be
                 ``batch_shape + bijection.cond_shape``. Defaults to None.

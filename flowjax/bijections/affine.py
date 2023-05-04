@@ -1,5 +1,4 @@
 """Affine bijections."""
-from typing import Optional
 
 import jax.numpy as jnp
 from jax import Array
@@ -21,8 +20,8 @@ class Affine(Bijection):
     def __init__(self, loc: ArrayLike = 0, scale: ArrayLike = 1):
         """
         Args:
-            loc (int, optional): Location parameter. Defaults to 0.
-            scale (int, optional): Scale parameter. Defaults to 1.
+            loc (int): Location parameter. Defaults to 0.
+            scale (int): Scale parameter. Defaults to 1.
         """
         loc, scale = [jnp.asarray(a, dtype=jnp.float32) for a in (loc, scale)]
         self.shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
@@ -60,7 +59,7 @@ class TriangularAffine(Bijection):
     diag_idxs: Array
     tri_mask: Array
     lower: bool
-    weight_log_scale: Optional[Array]
+    weight_log_scale: Array | None
     _arr: Array
     _log_diag: Array
 
@@ -75,9 +74,9 @@ class TriangularAffine(Bijection):
         Args:
             loc (Array): Location parameter.
             arr (Array): Triangular matrix.
-            lower (bool, optional): Whether the mask should select the lower or upper
+            lower (bool): Whether the mask should select the lower or upper
                 triangular matrix (other elements ignored). Defaults to True.
-            weight_log_scale (Optional[Array], optional): If provided, carry out weight
+            weight_log_scale (Array | None): If provided, carry out weight
                 normalisation.
         """
         if (arr.ndim != 2) or (arr.shape[0] != arr.shape[1]):

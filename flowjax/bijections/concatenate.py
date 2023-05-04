@@ -23,7 +23,7 @@ class Concatenate(Bijection):
         Args:
             bijections (Sequence[Bijection]): Bijections, to stack into a single
                 bijection.
-            axis (int, optional): Axis along which to stack. Defaults to 0.
+            axis (int): Axis along which to stack. Defaults to 0.
         """
         self.bijections = bijections
         self.axis = axis
@@ -116,7 +116,7 @@ class Stack(Bijection):
         """
         Args:
             bijections (list[Bijection]): Bijections.
-            axis (int, optional): Axis along which to stack. Defaults to 0.
+            axis (int): Axis along which to stack. Defaults to 0.
         """
         self.axis = axis
         self.bijections = bijections

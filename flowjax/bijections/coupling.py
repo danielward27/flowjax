@@ -42,7 +42,7 @@ class Coupling(Bijection):
             cond_dim (int | None): Dimension of additional conditioning variables.
             nn_width (int): Neural network hidden layer width.
             nn_depth (int): Neural network hidden layer size.
-            nn_activation (Callable, optional): Neural network activation function.
+            nn_activation (Callable): Neural network activation function.
                 Defaults to jnn.relu.
         """
         if transformer.shape != () or transformer.cond_shape is not None:

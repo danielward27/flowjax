@@ -44,7 +44,7 @@ class MaskedAutoregressive(Bijection):
             cond_dim (int | None): Dimension of any conditioning variables.
             nn_width (int): Neural network width.
             nn_depth (int): Neural network depth.
-            nn_activation (Callable, optional): Neural network activation. Defaults to jnn.relu.
+            nn_activation (Callable): Neural network activation. Defaults to jnn.relu.
         """
         if transformer.shape != () or transformer.cond_shape is not None:
             raise ValueError(

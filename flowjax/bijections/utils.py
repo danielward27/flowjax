@@ -1,5 +1,5 @@
 """Utility bijections (embedding network, permutations, inversion etc.)"""
-from typing import Callable, Optional, Tuple
+from typing import Callable, Tuple
 
 import jax.numpy as jnp
 from jax import Array
@@ -89,10 +89,10 @@ class Permute(Bijection):
 class Flip(Bijection):
     """Flip the input array. Condition argument is ignored."""
 
-    def __init__(self, shape: Optional[tuple[int, ...]] = None) -> None:
+    def __init__(self, shape: tuple[int, ...] | None = None) -> None:
         """
         Args:
-            shape (Optional[tuple[int, ...]], optional): The shape of the bijection. Defaults to None.
+            shape (tuple[int, ...] | None): The shape of the bijection. Defaults to None.
         """
         self.shape = shape
         self.cond_shape = None
@@ -121,14 +121,14 @@ class Partial(Bijection):
     idxs: int | slice | Array | tuple
 
     def __init__(
-        self, bijection: Bijection, idxs, shape: Optional[tuple[int, ...]] = None
+        self, bijection: Bijection, idxs, shape: tuple[int, ...] | None = None
     ):
         """
         Args:
             bijection (Bijection): Bijection that is compatible with the subset of x
                 indexed by idxs. idxs: Indices (Integer, a slice, or an ndarray with
                 integer/bool dtype) of the transformed portion.
-            shape (Optional[tuple[int, ...]]): Shape of the bijection. Defaults to None.
+            shape (tuple[int, ...] | None): Shape of the bijection. Defaults to None.
         """
         self.bijection = bijection
         self.idxs = idxs

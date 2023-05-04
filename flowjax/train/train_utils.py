@@ -12,7 +12,7 @@ def train_val_split(key: jr.KeyArray, arrays: Sequence[Array], val_prop: float =
     Args:
         key (KeyArray): Jax PRNGKey
         arrays List[Array]: List of arrays.
-        val_prop (float, optional): Proportion of data to use for validation. Defaults to 0.1.
+        val_prop (float): Proportion of data to use for validation. Defaults to 0.1.
 
     Returns:
         Tuple[Tuple]: (train_arrays, validation_arrays)
