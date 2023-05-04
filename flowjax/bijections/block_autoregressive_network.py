@@ -7,7 +7,10 @@ from jax import random
 from jax.random import KeyArray
 
 from flowjax.bijections.bijection import Bijection
-from flowjax.nn.block_autoregressive import BlockAutoregressiveLinear, BlockTanh
+from flowjax.nn.block_autoregressive import (
+    BlockAutoregressiveLinear,
+    _block_tanh_activation,
+)
 
 
 class BlockAutoregressiveNetwork(Bijection):
@@ -34,9 +37,9 @@ class BlockAutoregressiveNetwork(Bijection):
             cond_dim (tuple[int, ...] | None): Dimension of extra conditioning variables.
             depth (int): Number of hidden layers in the network.
             block_dim (int): Block dimension (hidden layer size is `dim*block_dim`).
-            activation (Callable): Activation function. Defaults to BlockTanh.
+            activation (Callable): Activation function. Defaults to block_tanh.
         """
-        activation = BlockTanh(dim) if activation is None else activation
+        activation = _block_tanh_activation(dim) if activation is None else activation
         layers = []  # type: list[Any]
         if depth == 0:
             layers.append(BlockAutoregressiveLinear(key, dim, (1, 1), cond_dim))
@@ -50,10 +53,10 @@ class BlockAutoregressiveNetwork(Bijection):
             ]
             cond_dims = [cond_dim] + [None] * depth
 
-            for layer_key, block_shape, cd in zip(keys, block_shapes, cond_dims):
+            for layer_key, block_shape, cond_d in zip(keys, block_shapes, cond_dims):
                 layers.extend(
                     [
-                        BlockAutoregressiveLinear(layer_key, dim, block_shape, cd),
+                        BlockAutoregressiveLinear(layer_key, dim, block_shape, cond_d),
                         activation,
                     ]
                 )
@@ -75,16 +78,16 @@ class BlockAutoregressiveNetwork(Bijection):
 
     def transform_and_log_det(self, x, condition=None):
         self._argcheck(x, condition)
-        x, log_det_3d_0 = self.layers[0](x, condition)
-        log_det_3ds = [log_det_3d_0]
+        x, log_jacobian_3d_0 = self.layers[0](x, condition)
+        log_jacobian_3ds = [log_jacobian_3d_0]
         for layer in self.layers[1:]:
             x, log_det_3d = layer(x)
-            log_det_3ds.append(log_det_3d)
+            log_jacobian_3ds.append(log_det_3d)
 
-        logdet = log_det_3ds[-1]
-        for ld in reversed(log_det_3ds[:-1]):  # TODO avoid loop
-            logdet = logmatmulexp(logdet, ld)
-        return x, logdet.sum()
+        log_det = log_jacobian_3ds[-1]
+        for log_jacobian in reversed(log_jacobian_3ds[:-1]):
+            log_det = logmatmulexp(log_det, log_jacobian)
+        return x, log_det.sum()
 
     def inverse(self, *args, **kwargs):
         raise NotImplementedError(

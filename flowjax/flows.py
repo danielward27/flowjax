@@ -76,8 +76,8 @@ class CouplingFlow(Transformed):
             coupling = Coupling(
                 key=c_key,
                 transformer=transformer,
-                d=dim // 2,
-                D=dim,
+                untransformed_dim=dim // 2,
+                dim=dim,
                 cond_dim=cond_dim,
                 nn_width=nn_width,
                 nn_depth=nn_depth,

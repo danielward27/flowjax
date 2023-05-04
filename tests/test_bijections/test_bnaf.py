@@ -6,7 +6,7 @@ from jax.scipy.linalg import block_diag
 
 from flowjax.bijections.block_autoregressive_network import (
     BlockAutoregressiveNetwork,
-    BlockTanh,
+    _block_tanh_activation,
 )
 from flowjax.masks import block_diag_mask
 
@@ -37,11 +37,11 @@ def test_BlockAutoregressiveNetwork_conditioning():
     assert jnp.all(y1 != y2)
 
 
-def test_BlockTanh():
+def test_block_tanh_activation():
     n_blocks = 2
     block_size = 3
     x = random.uniform(random.PRNGKey(0), (n_blocks * block_size,))
-    tanh = BlockTanh(n_blocks)
+    tanh = _block_tanh_activation(n_blocks)
 
     y, log_det_3d = tanh(x)
     auto_jacobian = jax.jacobian(lambda a: tanh(a)[0])(x)
