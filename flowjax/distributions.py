@@ -4,7 +4,6 @@ and a Transformed distribution class.
 from abc import abstractmethod
 from math import prod
 from typing import Optional, Tuple, Union
-
 import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
@@ -164,27 +163,9 @@ class Distribution(eqx.Module):
 
         """
         self._argcheck(condition=condition)
-
-        if condition is None:
-            key_shape = sample_shape
-            excluded = frozenset([1])
-            sig = _get_ufunc_signature([(2,)], [self.shape])
-        else:
-            # Assert so static type checker can rule out NoneType
-            assert self.cond_shape is not None and self.cond_ndim is not None
-            leading_cond_shape = (
-                condition.shape[: -len(self.cond_shape)]
-                if self.cond_ndim > 0
-                else condition.shape
-            )
-            key_shape = sample_shape + leading_cond_shape
-            excluded = frozenset()
-            sig = _get_ufunc_signature([(2,), self.cond_shape], [self.shape])
-
-        key_size = max(1, prod(key_shape))  # Still need 1 key for scalar input
-        keys = jnp.reshape(jr.split(key, key_size), key_shape + (2,))  # type: ignore
-
-        return jnp.vectorize(self._sample, excluded=excluded, signature=sig)(
+        excluded, signature = self._vectorize_sample_args()
+        keys = self._get_sample_keys(key, sample_shape, condition)
+        return jnp.vectorize(self._sample, excluded=excluded, signature=signature)(
             keys, condition
         )  # type: ignore
 
@@ -209,30 +190,41 @@ class Distribution(eqx.Module):
         """
         self._argcheck(condition=condition)
 
-        if condition is None:
-            key_shape = sample_shape
+        excluded, signature = self._vectorize_sample_args(sample_and_log_prob=True)
+        keys = self._get_sample_keys(key, sample_shape, condition)
+
+        return jnp.vectorize(
+            self._sample_and_log_prob, excluded=excluded, signature=signature
+        )(keys, condition)
+
+    def _vectorize_sample_args(self, sample_and_log_prob=False):
+        """Get the excluded arguments and ufunc signature for sample or sample_and_log_prob"""
+        out_shapes = [self.shape, ()] if sample_and_log_prob else [self.shape]
+        if self.cond_shape is None:
             excluded = frozenset([1])
-            sig = _get_ufunc_signature([(2,)], [self.shape, ()])
+            in_shapes = [(2,)]
         else:
-            # Assert so static type checker can rule out NoneType
-            assert self.cond_shape is not None and self.cond_ndim is not None
+            excluded = frozenset()
+            in_shapes = [(2,), self.cond_shape]
+        signature = _get_ufunc_signature(in_shapes, out_shapes)
+        return excluded, signature
+
+    def _get_sample_keys(self, key, sample_shape, condition):
+        """Splits a key into an arrray of keys with shape
+        sample_shape + leading_cond_shape + (2,)."""
+        if self.cond_ndim is None:
+            key_shape = sample_shape
+        else:
             leading_cond_shape = (
-                condition.shape[: -len(self.cond_shape)]
+                condition.shape[: -self.cond_ndim]
                 if self.cond_ndim > 0
                 else condition.shape
             )
             key_shape = sample_shape + leading_cond_shape
-            excluded = frozenset()
-            sig = _get_ufunc_signature([(2,), self.cond_shape], [self.shape, ()])
 
-        key_size = max(1, prod(key_shape))  # Still need 1 key for scalar input
+        key_size = max(1, prod(key_shape))  # Still need 1 key for scalar sample
         keys = jnp.reshape(jr.split(key, key_size), key_shape + (2,))  # type: ignore
-
-        return jnp.vectorize(
-            self._sample_and_log_prob, excluded=excluded, signature=sig
-        )(
-            keys, condition
-        )  # TODO avoid code duplication in sample/sample and log prob
+        return keys
 
     def _argcheck(self, x=None, condition=None):
         # jnp.vectorize would catch ndim mismatches, but it doesn't check axis lengths.
