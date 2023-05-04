@@ -1,25 +1,27 @@
-from typing import Optional
+"""Affine bijections."""
 
 import jax.numpy as jnp
+from jax import Array
 from jax.experimental import checkify
 from jax.scipy.linalg import solve_triangular
+from jax.typing import ArrayLike
 
-from flowjax.bijections import Bijection
-from flowjax.utils import Array
-from jax.experimental import checkify
+from flowjax.bijections.bijection import Bijection
 
 
 class Affine(Bijection):
+    """Elementwise affine transformation ``y = a*x + b``. loc and scale should broadcast
+    to the desired shape of the bijection.
+    """
+
     loc: Array
     log_scale: Array
-    
-    def __init__(self, loc: Array=0, scale: Array=1):
-        """Elementwise affine transformation y = ax + b. loc and scale should broadcast
-        to the desired shape of the bijection.
 
+    def __init__(self, loc: ArrayLike = 0, scale: ArrayLike = 1):
+        """
         Args:
-            loc (int, optional): Location parameter. Defaults to 0.
-            scale (int, optional): Scale parameter. Defaults to 1.
+            loc (int): Location parameter. Defaults to 0.
+            scale (int): Scale parameter. Defaults to 1.
         """
         loc, scale = [jnp.asarray(a, dtype=jnp.float32) for a in (loc, scale)]
         self.shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
@@ -32,7 +34,7 @@ class Affine(Bijection):
         self._argcheck(x)
         return x * self.scale + self.loc
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=None):
+    def transform_and_log_det(self, x, condition=None):
         self._argcheck(x)
         return x * self.scale + self.loc, self.log_scale.sum()
 
@@ -40,12 +42,13 @@ class Affine(Bijection):
         self._argcheck(y)
         return (y - self.loc) / self.scale
 
-    def inverse_and_log_abs_det_jacobian(self, y, condition=None):
+    def inverse_and_log_det(self, y, condition=None):
         self._argcheck(y)
         return (y - self.loc) / self.scale, -self.log_scale.sum()
 
     @property
     def scale(self):
+        """The scale parameter of the affine transformation."""
         return jnp.exp(self.log_scale)
 
 
@@ -56,7 +59,7 @@ class TriangularAffine(Bijection):
     diag_idxs: Array
     tri_mask: Array
     lower: bool
-    weight_log_scale: Optional[Array]
+    weight_log_scale: Array | None
     _arr: Array
     _log_diag: Array
 
@@ -71,12 +74,13 @@ class TriangularAffine(Bijection):
         Args:
             loc (Array): Location parameter.
             arr (Array): Triangular matrix.
-            lower (bool, optional): Whether the mask should select the lower or upper triangular matrix (other elements ignored). Defaults to True.
-            weight_log_scale (Optional[Array], optional): If provided, carry out weight normalisation.
+            lower (bool): Whether the mask should select the lower or upper
+                triangular matrix (other elements ignored). Defaults to True.
+            weight_log_scale (Array | None): If provided, carry out weight
+                normalisation.
         """
-
         if (arr.ndim != 2) or (arr.shape[0] != arr.shape[1]):
-            ValueError("arr must be a square, 2-dimensional matrix.")
+            raise ValueError("arr must be a square, 2-dimensional matrix.")
         checkify.check(
             jnp.all(jnp.diag(arr) > 0),
             "arr diagonal entries must be greater than 0",
@@ -98,7 +102,7 @@ class TriangularAffine(Bijection):
 
     @property
     def arr(self):
-        "Get triangular array, (applies masking and min_diag constraint)."
+        """Get triangular array, (applies masking and min_diag constraint)."""
         diag = jnp.exp(self._log_diag)
         off_diag = self.tri_mask * self._arr
         arr = off_diag.at[self.diag_idxs].set(diag)
@@ -113,25 +117,26 @@ class TriangularAffine(Bijection):
         self._argcheck(x)
         return self.arr @ x + self.loc
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=None):
+    def transform_and_log_det(self, x, condition=None):
         self._argcheck(x)
-        a = self.arr
-        return a @ x + self.loc, jnp.log(jnp.diag(a)).sum()
+        arr = self.arr
+        return arr @ x + self.loc, jnp.log(jnp.diag(arr)).sum()
 
     def inverse(self, y, condition=None):
         self._argcheck(y)
         return solve_triangular(self.arr, y - self.loc, lower=self.lower)
 
-    def inverse_and_log_abs_det_jacobian(self, y, condition=None):
+    def inverse_and_log_det(self, y, condition=None):
         self._argcheck(y)
-        a = self.arr
-        x = solve_triangular(a, y - self.loc, lower=self.lower)
-        return x, -jnp.log(jnp.diag(a)).sum()
+        arr = self.arr
+        x = solve_triangular(arr, y - self.loc, lower=self.lower)
+        return x, -jnp.log(jnp.diag(arr)).sum()
 
 
 class AdditiveLinearCondition(Bijection):
     """Carries out ``y = x + W @ condition``, as the forward transformation and
-    ``x = y - W @ condition`` as the inverse."""
+    ``x = y - W @ condition`` as the inverse.
+    """
 
     W: Array
 
@@ -141,13 +146,14 @@ class AdditiveLinearCondition(Bijection):
             arr (Array): Array (``W`` in the description.)
         """
         self.W = arr
-        super().__init__(shape=(arr.shape[-2],), cond_shape=(arr.shape[-1],))
+        self.shape = (arr.shape[-2],)
+        self.cond_shape = (arr.shape[-1],)
 
     def transform(self, x, condition=None):
         self._argcheck(x, condition)
         return x + self.W @ condition
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=None):
+    def transform_and_log_det(self, x, condition=None):
         self._argcheck(x, condition)
         return self.transform(x, condition), jnp.array(0)
 
@@ -155,6 +161,6 @@ class AdditiveLinearCondition(Bijection):
         self._argcheck(y, condition)
         return y - self.W @ condition
 
-    def inverse_and_log_abs_det_jacobian(self, y, condition=None):
+    def inverse_and_log_det(self, y, condition=None):
         self._argcheck(y, condition)
         return self.inverse(y, condition), jnp.array(0)

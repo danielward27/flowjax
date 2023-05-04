@@ -1,6 +1,7 @@
-import pytest
 import jax.random as jr
+import pytest
 
+from flowjax.bijections import Affine, RationalQuadraticSpline
 from flowjax.distributions import StandardNormal
 from flowjax.flows import (
     BlockNeuralAutoregressiveFlow,
@@ -9,71 +10,69 @@ from flowjax.flows import (
     TriangularSplineFlow,
 )
 
-from flowjax.bijections import Affine, RationalQuadraticSpline
-
-dim = 3
-key = jr.PRNGKey(0)
-kwargs = {
+DIM = 3
+KEY = jr.PRNGKey(0)
+KWARGS = {
     "key": jr.PRNGKey(0),
-    "base_dist": StandardNormal((dim,)),
+    "base_dist": StandardNormal((DIM,)),
     "flow_layers": 2,
 }
 
 testcases = {
-    "BNAF": BlockNeuralAutoregressiveFlow(**kwargs),
-    "TriangularSplineFlow": TriangularSplineFlow(**kwargs),
-    "Affine_Coupling": CouplingFlow(transformer=Affine(), **kwargs),
+    "BNAF": BlockNeuralAutoregressiveFlow(**KWARGS),
+    "TriangularSplineFlow": TriangularSplineFlow(**KWARGS),
+    "Affine_Coupling": CouplingFlow(transformer=Affine(), **KWARGS),
     "Spline_Coupling": CouplingFlow(
-        transformer=RationalQuadraticSpline(3, 2), **kwargs
+        transformer=RationalQuadraticSpline(3, 2), **KWARGS
     ),
     "Affine_MaskedAutoregessive": MaskedAutoregressiveFlow(
-        transformer=Affine(), **kwargs
-        ),
+        transformer=Affine(), **KWARGS
+    ),
 }
-
 
 
 @pytest.mark.parametrize("flow", testcases.values(), ids=testcases.keys())
 def test_unconditional_flow_sample(flow):
     try:
-        assert flow._sample(key).shape == flow.shape
+        assert flow._sample(KEY).shape == flow.shape
     except NotImplementedError:
         pass
 
 
 @pytest.mark.parametrize("flow", testcases.values(), ids=testcases.keys())
 def test_unconditional_flow_log_prob(flow):
-    x = jr.normal(key, flow.shape)
+    x = jr.normal(KEY, flow.shape)
     assert flow._log_prob(x).shape == ()
 
 
-
-
 conditional_testcases = {
-    "BNAF": BlockNeuralAutoregressiveFlow(**kwargs, cond_dim=2),
-    "TriangularSplineFlow": TriangularSplineFlow(**kwargs, cond_dim=2),
-    "Affine_Coupling": CouplingFlow(transformer=Affine(), **kwargs, cond_dim=2),
+    "BNAF": BlockNeuralAutoregressiveFlow(**KWARGS, cond_dim=2),
+    "TriangularSplineFlow": TriangularSplineFlow(**KWARGS, cond_dim=2),
+    "Affine_Coupling": CouplingFlow(transformer=Affine(), **KWARGS, cond_dim=2),
     "Spline_Coupling": CouplingFlow(
-        transformer=RationalQuadraticSpline(3, 2), **kwargs, cond_dim=2
+        transformer=RationalQuadraticSpline(3, 2), **KWARGS, cond_dim=2
     ),
     "Affine_MaskedAutoregessive": MaskedAutoregressiveFlow(
-        transformer=Affine(), **kwargs, cond_dim=2
-        ),
+        transformer=Affine(), **KWARGS, cond_dim=2
+    ),
 }
 
 
-@pytest.mark.parametrize("flow", conditional_testcases.values(), ids=conditional_testcases.keys())
+@pytest.mark.parametrize(
+    "flow", conditional_testcases.values(), ids=conditional_testcases.keys()
+)
 def test_conditional_flow_sample(flow):
-    cond = jr.normal(key, flow.cond_shape)
+    cond = jr.normal(KEY, flow.cond_shape)
     try:
-        assert flow._sample(key, cond).shape == flow.shape
+        assert flow._sample(KEY, cond).shape == flow.shape
     except NotImplementedError:
         pass
 
 
-@pytest.mark.parametrize("flow", conditional_testcases.values(), ids=conditional_testcases.keys())
+@pytest.mark.parametrize(
+    "flow", conditional_testcases.values(), ids=conditional_testcases.keys()
+)
 def test_conditional_flow_log_prob(flow):
-    x = jr.normal(key, flow.shape)
-    cond = jr.normal(key, flow.cond_shape)
+    x = jr.normal(KEY, flow.shape)
+    cond = jr.normal(KEY, flow.cond_shape)
     assert flow._log_prob(x, cond).shape == ()
-    

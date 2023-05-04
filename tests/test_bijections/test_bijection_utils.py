@@ -1,7 +1,7 @@
 import jax.numpy as jnp
+import jax.random as jr
 import pytest
 from jax.experimental.checkify import JaxRuntimeError
-import jax.random as jr
 
 from flowjax.bijections import Affine, Partial, Permute
 
@@ -21,7 +21,7 @@ def test_partial(idx, expected):
     "Check values only change where we expect"
     x = jnp.zeros(4)
     shape = x[idx].shape
-    bijection = Partial(Affine(jnp.ones(shape)), idx)
+    bijection = Partial(Affine(jnp.ones(shape)), idx, x.shape)
     y = bijection.transform(x)
     assert jnp.all((x != y) == expected)
 

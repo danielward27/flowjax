@@ -6,7 +6,6 @@ from jax.scipy.linalg import block_diag
 
 from flowjax.masks import rank_based_mask
 from flowjax.nn import AutoregressiveMLP, BlockAutoregressiveLinear, MaskedLinear
-from flowjax.utils import tile_until_length
 
 
 def test_BlockAutoregressiveLinear():
@@ -39,7 +38,7 @@ def test_AutoregressiveMLP():
     key = random.PRNGKey(0)
     in_size = 4
     in_ranks = jnp.arange(in_size)
-    hidden_ranks = tile_until_length(in_ranks, 6)
+    hidden_ranks = jnp.arange(6) % in_size
     out_ranks = jnp.arange(in_size).repeat(2)
     mlp = AutoregressiveMLP(in_ranks, hidden_ranks, out_ranks, depth=3, key=key)
     x = jnp.ones(in_size)

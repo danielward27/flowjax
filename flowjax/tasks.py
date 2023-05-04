@@ -1,11 +1,11 @@
-"Example tasks"
+"""Example tasks"""
 
-import jax.random as jr
 import jax.numpy as jnp
+import jax.random as jr
 
 
 def two_moons(key, n_samples, noise_std=0.2):
-    "Two moon distribution."
+    """Two moon distribution."""
     angle_key, noise_key = jr.split(key)
     angle = jr.uniform(angle_key, (n_samples,)) * 2 * jnp.pi
     x = 2 * jnp.cos(angle)

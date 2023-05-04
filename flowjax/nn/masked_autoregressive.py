@@ -1,33 +1,42 @@
-from typing import Callable, List
+"""Autoregressive linear layers and multilayer perceptron."""
+from typing import Callable
 
 import jax.nn as jnn
-import jax.numpy as jnp
 from equinox import Module
 from equinox.nn import Linear
-from jax import random
+from jax import Array, random
 from jax.random import KeyArray
 
 from flowjax.masks import rank_based_mask
-from flowjax.utils import Array, _identity
+
+
+def _identity(x):
+    return x
 
 
 class MaskedLinear(Module):
+    """Masked linear neural network layer."""
+
     linear: Linear
     mask: Array
 
     def __init__(self, mask: Array, use_bias: bool = True, *, key: KeyArray):
         """
-        Masked linear layer.
 
         Args:
             mask (Array): Mask with shape (out_features, in_features).
             key (KeyArray): Jax PRNGKey
-            use_bias (bool, optional): Whether to include bias terms. Defaults to True.
+            use_bias (bool): Whether to include bias terms. Defaults to True.
         """
         self.linear = Linear(mask.shape[1], mask.shape[0], use_bias, key=key)
         self.mask = mask
 
     def __call__(self, x: Array):
+        """Run the masked linear layer
+
+        Args:
+            x (Array): Array with shape ``(mask.shape[1], )``
+        """
         x = self.linear.weight * self.mask @ x
         if self.linear.bias is not None:
             x = x + self.linear.bias
@@ -35,6 +44,10 @@ class MaskedLinear(Module):
 
 
 class AutoregressiveMLP(Module):
+    """An autoregressive multilayer perceptron, similar to ``equinox.nn.composed.MLP``.
+    Connections will only exist where in_ranks < out_ranks.
+    """
+
     in_size: int
     out_size: int
     width_size: int
@@ -42,7 +55,7 @@ class AutoregressiveMLP(Module):
     in_ranks: Array
     out_ranks: Array
     hidden_ranks: Array
-    layers: List[MaskedLinear]
+    layers: list[MaskedLinear]
     activation: Callable
     final_activation: Callable
 
@@ -57,19 +70,16 @@ class AutoregressiveMLP(Module):
         *,
         key
     ) -> None:
-        """An autoregressive multilayer perceptron, similar to ``equinox.nn.composed.MLP``.
-        Connections will only exist where in_ranks < out_ranks.
-
+        """
         Args:
             in_ranks (Array): Ranks of the inputs.
             hidden_ranks (Array): Ranks of the hidden layer(s).
             out_ranks (Array): Ranks of the outputs.
             depth (int): Number of hidden layers.
-            activation (Callable, optional): Activation function. Defaults to jnn.relu.
-            final_activation (Callable, optional): Final activation function. Defaults to _identity.
-            key (KeyArray): Jax PRNGKey
+            activation (Callable): Activation function. Defaults to jnn.relu.
+            final_activation (Callable): Final activation function. Defaults to _identity.
+            key (KeyArray): Jax PRNGKey.
         """
-
         masks = []
         if depth == 0:
             masks.append(rank_based_mask(in_ranks, out_ranks, eq=False))

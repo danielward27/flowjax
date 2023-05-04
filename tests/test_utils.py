@@ -1,28 +1,8 @@
 import jax.numpy as jnp
-import pytest
 import jax.random as jr
+import pytest
 
-from flowjax.utils import (
-    tile_until_length,
-    inv_cum_sum,
-    merge_shapes,
-    check_shapes,
-    _get_ufunc_signature,
-)
-
-
-def test_tile_until_length():
-    x = jnp.array([1, 2])
-
-    y = tile_until_length(x, 4)
-    assert jnp.all(y == jnp.array([1, 2, 1, 2]))
-
-    y = tile_until_length(x, 3)
-    assert jnp.all(y == jnp.array([1, 2, 1]))
-
-    y = tile_until_length(x, 1)
-    assert jnp.all(y == jnp.array([1]))
-
+from flowjax.utils import _get_ufunc_signature, inv_cum_sum, merge_cond_shapes
 
 test_cases = [
     # arrays, expected_shape
@@ -51,29 +31,18 @@ test_cases = [
 ]
 
 
-@pytest.mark.parametrize("input", [t[0] for t in test_cases])
-def test_check_shapes(input):
-    check_shapes(input)
-
-
-@pytest.mark.parametrize("input,expected", test_cases)
-def test_merge_shapes(input, expected):
-    assert merge_shapes(input) == expected
+@pytest.mark.parametrize("input_,expected", test_cases)
+def test_merge_shapes(input_, expected):
+    assert merge_cond_shapes(input_) == expected
 
 
 test_cases_error = [[(2, 3), (2, 1)], [(2, 3), (4, 2, 3)]]
 
 
-@pytest.mark.parametrize("input", test_cases_error)
-def test_check_shapes_errors(input):
+@pytest.mark.parametrize("input_", test_cases_error)
+def test_merge_shapes_errors(input_):
     with pytest.raises(ValueError):
-        check_shapes(input)
-
-
-@pytest.mark.parametrize("input", test_cases_error)
-def test_merge_shapes_errors(input):
-    with pytest.raises(ValueError):
-        merge_shapes(input)
+        merge_cond_shapes(input_)
 
 
 test_cases = [
@@ -85,6 +54,6 @@ test_cases = [
 ]
 
 
-@pytest.mark.parametrize("input,expected", test_cases)
-def test_get_ufunc_signature(input, expected):
-    assert _get_ufunc_signature(*input) == expected
+@pytest.mark.parametrize("input_,expected", test_cases)
+def test_get_ufunc_signature(input_, expected):
+    assert _get_ufunc_signature(*input_) == expected

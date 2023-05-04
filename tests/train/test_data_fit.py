@@ -6,11 +6,7 @@ from jax import random
 
 from flowjax.bijections import Affine
 from flowjax.distributions import Normal, Transformed
-from flowjax.train.data_fit import (
-    count_fruitless,
-    fit_to_data,
-    train_val_split,
-)
+from flowjax.train.data_fit import count_fruitless, fit_to_data, train_val_split
 
 
 def test_count_fruitless():
@@ -30,7 +26,6 @@ def test_train_val_split():
     assert test[1].shape == (10, 5)
 
 
-
 def test_data_fit_filter_spec():
     dim = 3
     mean, std = jnp.ones(dim), jnp.ones(dim)
@@ -48,7 +43,7 @@ def test_data_fit_filter_spec():
 
     # But we can provide a filter spec to avoid e.g. training the base distribution parameters.
     before = eqx.filter(flow, eqx.is_inexact_array)
-    filter_spec = jtu.tree_map(lambda x: eqx.is_inexact_array(x), flow)
+    filter_spec = jtu.tree_map(eqx.is_inexact_array, flow)
     filter_spec = eqx.tree_at(lambda tree: tree.base_dist, filter_spec, replace=False)
     flow, _ = fit_to_data(
         random.PRNGKey(0), flow, x, max_epochs=1, batch_size=50, filter_spec=filter_spec

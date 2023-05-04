@@ -1,21 +1,18 @@
-"""
-Abstact base classes for the `Bijection` and `Bijection` types. Note when implementing bijections,
-by convention we try to i) implement the "transform" methods as the faster/more intuitive approach 
-(compared to the inverse methods); and ii) implement only the forward methods if an inverse
-is not available. The `Invert` bijection can be used to invert the orientation if a fast inverse is
-desired (e.g. maximum likelihood fitting of flows).
+"""Abstact base classes for the `Bijection` and `Bijection` types. Note when implementing
+bijections, by convention we try to i) implement the "transform" methods as the
+faster/more intuitive approach (compared to the inverse methods); and ii) implement only
+the forward methods if an inverse is not available. The `Invert` bijection can be used
+to invert the orientation if a fast inverse is desired (e.g. maximum likelihood fitting
+of flows).
 """
 
-from abc import ABC, abstractmethod
-from typing import Optional, Tuple, Union
+from abc import abstractmethod
 
 from equinox import Module
+from jax import Array
 
-from flowjax.utils import Array
 
-
-class Bijection(ABC, Module):
-
+class Bijection(Module):
     """Bijection base class. Similar to :py:class:`~flowjax.distributions.Distribution`,
     bijections have a ``shape`` and a ``cond_shape`` attribute. To allow easy composing
     of bijections, all bijections support passing of conditioning variables (even if
@@ -27,7 +24,7 @@ class Bijection(ABC, Module):
     The methods of bijections do not generally support passing of additional batch
     dimensions, however, ``jax.vmap`` or ``eqx.filter_vmap`` can be used to vmap
     specific methods if desired, and a bijection can be explicitly vectorised using the
-    :py:class:`~flowjax.bijections.jax_transforms.Vmap` bijection.
+    :py:class:`~flowjax.bijections.jax_transforms.Batch` bijection.
 
     Bijections are registered as Jax PyTrees (as they are equinox modules), so are
     compatible with normal jax operations.
@@ -36,44 +33,46 @@ class Bijection(ABC, Module):
 
         (1) Inherit from ``Bijection``.
         (2) Define the attributes ``shape`` and ``cond_shape``
-        (3) Implement the abstract methods ``transform``, ``transform_and_log_abs_det_jacobian``,
-            ``inverse`` and ``inverse_and_log_abs_det_jacobian``. These should act on inputs compatible
-            with the shapes ``shape`` for ``x``, and ``cond_shape`` for ``condition``.
+        (3) Implement the abstract methods ``transform``, ``transform_and_log_det``,
+            ``inverse`` and ``inverse_and_log_det``. These should act on
+            inputs compatible with the shapes ``shape`` for ``x``, and ``cond_shape``
+            for ``condition``.
 
     """
 
-    shape: Union[None, Tuple[int]]
-    cond_shape: Union[None, Tuple[int]]
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
 
     @abstractmethod
-    def transform(self, x: Array, condition: Optional[Array] = None) -> Array:
+    def transform(self, x: Array, condition: Array | None = None) -> Array:
         """Apply transformation."""
 
     @abstractmethod
-    def transform_and_log_abs_det_jacobian(
-        self, x: Array, condition: Optional[Array] = None
-    ) -> Tuple:
+    def transform_and_log_det(
+        self, x: Array, condition: Array | None = None
+    ) -> tuple[Array, Array]:
         """Apply transformation and compute log absolute value of the Jacobian determinant."""
 
     @abstractmethod
-    def inverse(self, y: Array, condition: Optional[Array] = None) -> Array:
+    def inverse(self, y: Array, condition: Array | None = None) -> Array:
         """Invert the transformation."""
 
     @abstractmethod
-    def inverse_and_log_abs_det_jacobian(
-        self, y: Array, condition: Optional[Array] = None
-    ) -> Array:
+    def inverse_and_log_det(
+        self, y: Array, condition: Array | None = None
+    ) -> tuple[Array, Array]:
         """Invert the transformation and compute log absolute value of the Jacobian determinant."""
 
-    def _argcheck(self, x, condition=None):
-        "Utility argcheck that can be added to bijection methods as required."
-        if x.shape != self.shape:
-            raise ValueError(f"Expected x.shape {self.shape}, got {x.shape}")
+    def _argcheck(self, x: Array, condition: Array | None = None):
+        """Utility argcheck that can be added to bijection methods as required."""
+        if self.shape is not None:
+            if x.shape != self.shape:
+                raise ValueError(f"Expected x.shape {self.shape}, got {x.shape}")
 
         if self.cond_shape is not None:
             if condition is None:
                 raise ValueError("Condition should be provided")
-            elif condition.shape != self.cond_shape:
+            if condition.shape != self.cond_shape:
                 raise ValueError(
                     f"Expected condition.shape {self.cond_shape}, got {condition.shape}"
                 )
