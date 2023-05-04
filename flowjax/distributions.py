@@ -211,12 +211,12 @@ class Distribution(eqx.Module):
     def _get_sample_keys(self, key, sample_shape, condition):
         """Splits a key into an arrray of keys with shape
         sample_shape + leading_cond_shape + (2,)."""
-        if self.cond_ndim is None:
+        if self.cond_shape is None:
             key_shape = sample_shape
         else:
             leading_cond_shape = (
-                condition.shape[: -self.cond_ndim]  # type: ignore
-                if self.cond_ndim > 0
+                condition.shape[: -len(self.cond_shape)]
+                if len(self.cond_shape) > 0
                 else condition.shape
             )
             key_shape = sample_shape + leading_cond_shape
@@ -247,16 +247,14 @@ class Distribution(eqx.Module):
                 raise ValueError(
                     "condition should not be provided for unconditional distribution."
                 )
-            assert self.cond_ndim is not None
             condition_trailing = (
-                condition.shape[-self.cond_ndim :] if self.cond_ndim > 0 else ()  # type: ignore
+                condition.shape[-len(self.cond_shape) :] if self.cond_ndim > 0 else ()  # type: ignore
             )
             if condition_trailing != self.cond_shape:
                 raise ValueError(
                     "Expected trailing dimensions in the condition to match "
                     "distribution.cond_shape, but got condition shape "
-                    f"{condition.shape}, and distribution.cond_shape "
-                    f" {self.cond_shape}."
+                    f"{condition.shape}, and distribution.cond_shape {self.cond_shape}."
                 )
 
     @property
@@ -321,20 +319,17 @@ class Transformed(Distribution):
         return p_z + log_abs_det
 
     def _sample(self, key: jr.KeyArray, condition: Array | None = None):
-        z = self.base_dist._sample(key, condition)  # pylint: disable W0212
-        x = self.bijection.transform(z, condition)
-        return x
+        base_sample = self.base_dist._sample(key, condition)
+        return self.bijection.transform(base_sample, condition)
 
     def _sample_and_log_prob(self, key: jr.KeyArray, condition: Array | None = None):
         # We overwrite the naive implementation of calling both methods seperately to
         # avoid computing the inverse transformation.
-        x, log_prob_base = self.base_dist._sample_and_log_prob(  # pylint: disable W0212
-            key, condition
+        base_sample, log_prob_base = self.base_dist._sample_and_log_prob(key, condition)
+        sample, forward_log_dets = self.bijection.transform_and_log_abs_det_jacobian(
+            base_sample, condition
         )
-        y, forward_log_dets = self.bijection.transform_and_log_abs_det_jacobian(
-            x, condition
-        )
-        return y, log_prob_base - forward_log_dets
+        return sample, log_prob_base - forward_log_dets
 
 
 class StandardNormal(Distribution):
