@@ -1,5 +1,5 @@
 """Block Neural Autoregressive bijection implementation."""
-from typing import Callable, List, Any
+from typing import Callable, Any
 
 import jax
 import jax.numpy as jnp
@@ -37,7 +37,7 @@ class BlockAutoregressiveNetwork(Bijection):
             activation (Callable): Activation function. Defaults to BlockTanh.
         """
         activation = BlockTanh(dim) if activation is None else activation
-        layers = []  # type: List[Any]
+        layers = []  # type: list[Any]
         if depth == 0:
             layers.append(BlockAutoregressiveLinear(key, dim, (1, 1), cond_dim))
         else:

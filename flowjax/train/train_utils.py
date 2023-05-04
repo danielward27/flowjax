@@ -1,5 +1,5 @@
 """Utility functions for training."""
-from typing import List, Sequence
+from typing import Sequence
 
 import jax.numpy as jnp
 import jax.random as jr
@@ -11,7 +11,7 @@ def train_val_split(key: jr.KeyArray, arrays: Sequence[Array], val_prop: float =
 
     Args:
         key (KeyArray): Jax PRNGKey
-        arrays List[Array]: List of arrays.
+        arrays Sequence[Array]: Sequence of arrays.
         val_prop (float): Proportion of data to use for validation. Defaults to 0.1.
 
     Returns:
@@ -28,12 +28,12 @@ def train_val_split(key: jr.KeyArray, arrays: Sequence[Array], val_prop: float =
     return train, val
 
 
-def count_fruitless(losses: List[float]) -> int:
+def count_fruitless(losses: list[float]) -> int:
     """Given a list of losses from each epoch, count the number of epochs since
     the minimum loss.
 
     Args:
-        losses (List[float]): List of losses.
+        losses (list[float]): List of losses.
 
     """
     min_idx = jnp.argmin(jnp.array(losses)).item()

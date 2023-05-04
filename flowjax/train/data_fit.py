@@ -1,5 +1,5 @@
 """Function to fit flows to samples from a distribution."""
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict
 import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
@@ -94,7 +94,7 @@ def fit_to_data(
             f"({train_len})."
         )
 
-    losses = {"train": [], "val": []}  # type: Dict[str, List[float]]
+    losses = {"train": [], "val": []}  # type: Dict[str, list[float]]
 
     loop = tqdm(range(max_epochs), disable=not show_progress)
 

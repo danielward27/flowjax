@@ -1,5 +1,5 @@
 """Autoregressive linear layers and multilayer perceptron."""
-from typing import Callable, List
+from typing import Callable
 
 import jax.nn as jnn
 from equinox import Module
@@ -55,7 +55,7 @@ class AutoregressiveMLP(Module):
     in_ranks: Array
     out_ranks: Array
     hidden_ranks: Array
-    layers: List[MaskedLinear]
+    layers: list[MaskedLinear]
     activation: Callable
     final_activation: Callable
 
