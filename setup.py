@@ -26,7 +26,7 @@ setup(
     install_requires=[
         "jax",
         "jaxlib>=0.3",
-        "equinox",
+        "equinox>=0.10",
         "tqdm",
         "optax",
     ],
