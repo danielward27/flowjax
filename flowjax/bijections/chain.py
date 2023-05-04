@@ -6,7 +6,7 @@ from typing import Sequence
 from jax import Array
 
 from flowjax.bijections.bijection import Bijection
-from flowjax.utils import merge_shapes
+from flowjax.utils import merge_cond_shapes, check_shapes_match
 
 
 class Chain(Bijection):
@@ -19,8 +19,9 @@ class Chain(Bijection):
         Args:
             bijections (Sequence[Bijection]): Sequence of bijections.
         """
-        self.shape = merge_shapes([s.shape for s in bijections])
-        self.cond_shape = merge_shapes([b.cond_shape for b in bijections])
+        check_shapes_match([b.shape for b in bijections])
+        self.shape = bijections[0].shape
+        self.cond_shape = merge_cond_shapes([b.cond_shape for b in bijections])
         self.bijections = tuple(bijections)
 
     def transform(self, x, condition=None):

@@ -85,7 +85,7 @@ class CouplingFlow(Transformed):
             )
 
             if permute_strategy == "flip":
-                return Chain([coupling, Flip()])
+                return Chain([coupling, Flip((dim,))])
             if permute_strategy == "random":
                 perm = Permute(random.permutation(p_key, jnp.arange(dim)))
                 return Chain([coupling, perm])
@@ -159,7 +159,7 @@ class MaskedAutoregressiveFlow(Transformed):
                 nn_activation=nn_activation,
             )
             if permute_strategy == "flip":
-                return Chain([masked_autoregressive, Flip()])
+                return Chain([masked_autoregressive, Flip((dim,))])
             if permute_strategy == "random":
                 perm = Permute(random.permutation(p_key, jnp.arange(dim)))
                 return Chain([masked_autoregressive, perm])
@@ -226,7 +226,7 @@ class BlockNeuralAutoregressiveFlow(Transformed):
                 block_dim=nn_block_dim,
             )
             if permute_strategy == "flip":
-                return Chain([ban, Flip()])
+                return Chain([ban, Flip((dim,))])
             if permute_strategy == "random":
                 perm = Permute(random.permutation(p_key, jnp.arange(dim)))
                 return Chain([ban, perm])
@@ -301,9 +301,9 @@ class TriangularSplineFlow(Transformed):
             )
 
             bijections = [
-                TanhLinearTails(tanh_max_val),
+                TanhLinearTails(tanh_max_val, (dim,)),
                 RationalQuadraticSpline(knots, interval=1, shape=(dim,)),
-                Invert(TanhLinearTails(tanh_max_val)),
+                Invert(TanhLinearTails(tanh_max_val, (dim,))),
                 lower_tri,
             ]
 
@@ -312,7 +312,7 @@ class TriangularSplineFlow(Transformed):
                 bijections.append(linear_condition)
 
             if permute_strategy == "flip":
-                bijections.append(Flip())
+                bijections.append(Flip((dim,)))
             elif permute_strategy == "random":
                 bijections.append(
                     Permute(random.permutation(perm_key, jnp.arange(dim)))

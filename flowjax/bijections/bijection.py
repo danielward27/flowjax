@@ -40,7 +40,7 @@ class Bijection(Module):
 
     """
 
-    shape: tuple[int, ...] | None
+    shape: tuple[int, ...]
     cond_shape: tuple[int, ...] | None
 
     @abstractmethod

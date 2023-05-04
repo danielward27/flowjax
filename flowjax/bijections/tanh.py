@@ -15,7 +15,7 @@ def _tanh_log_grad(x):
 class Tanh(Bijection):
     """Tanh bijection."""
 
-    def __init__(self, shape: tuple[int, ...] | None = None) -> None:
+    def __init__(self, shape: tuple[int, ...] = ()) -> None:
         """
         Args:
             shape (tuple[int, ...] | None): Shape of the bijection. Defaults to None.
@@ -54,7 +54,7 @@ class TanhLinearTails(Bijection):
     intercept: float
     linear_grad: float
 
-    def __init__(self, max_val: float, shape: tuple[int, ...] | None = None):
+    def __init__(self, max_val: float, shape: tuple[int, ...] = ()):
         """Create a tanh bijection with linear "tails" beyond +/- max_val.
 
         Args:

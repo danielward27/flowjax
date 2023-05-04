@@ -10,7 +10,7 @@ from flowjax.bijections import Affine, Chain, Coupling, Flip, Permute, Scan
 
 
 def test_chain_dunders():
-    bijection = Chain([Flip(), Permute(jnp.array([0, 1]))])
+    bijection = Chain([Flip((2,)), Permute(jnp.array([0, 1]))])
     assert len(bijection) == 2
     assert isinstance(bijection[0], Flip)
     assert isinstance(bijection[1], Permute)

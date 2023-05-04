@@ -12,7 +12,7 @@ from jax.scipy import stats as jstats
 from jax.typing import ArrayLike
 
 from flowjax.bijections import Affine, Bijection
-from flowjax.utils import _get_ufunc_signature, merge_shapes
+from flowjax.utils import _get_ufunc_signature, merge_cond_shapes
 
 
 class Distribution(eqx.Module):
@@ -309,7 +309,7 @@ class Transformed(Distribution):
         self.base_dist = base_dist
         self.bijection = bijection
         self.shape = self.base_dist.shape
-        self.cond_shape = merge_shapes(
+        self.cond_shape = merge_cond_shapes(
             (self.bijection.cond_shape, self.base_dist.cond_shape)
         )
 

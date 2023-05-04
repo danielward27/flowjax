@@ -56,8 +56,6 @@ class Batch(Bijection):
             raise ValueError(
                 "vectorize_condition must be specified for conditional bijections."
             )
-        if bijection.shape is None:
-            raise ValueError("Cannot add batch dimensions to bijection with shape None")
 
         self.in_axes = (
             eqx.if_array(axis=0) if vectorize_bijection else None,

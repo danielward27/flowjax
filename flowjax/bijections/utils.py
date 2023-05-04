@@ -89,7 +89,7 @@ class Permute(Bijection):
 class Flip(Bijection):
     """Flip the input array. Condition argument is ignored."""
 
-    def __init__(self, shape: tuple[int, ...] | None = None) -> None:
+    def __init__(self, shape: tuple[int, ...]) -> None:
         """
         Args:
             shape (tuple[int, ...] | None): The shape of the bijection. Defaults to None.
@@ -120,9 +120,7 @@ class Partial(Bijection):
     bijection: Bijection
     idxs: int | slice | Array | tuple
 
-    def __init__(
-        self, bijection: Bijection, idxs, shape: tuple[int, ...] | None = None
-    ):
+    def __init__(self, bijection: Bijection, idxs, shape: tuple[int, ...]):
         """
         Args:
             bijection (Bijection): Bijection that is compatible with the subset of x
@@ -134,6 +132,13 @@ class Partial(Bijection):
         self.idxs = idxs
         self.shape = shape
         self.cond_shape = bijection.cond_shape
+
+        if jnp.zeros(shape)[idxs].shape != bijection.shape:
+            raise ValueError(
+                f"The bijection shape is incompatible with the subset of the input "
+                f"indexed by 'idxs'. The bijection has a shape of {bijection.shape}, "
+                f"while the subset has a shape of {jnp.zeros(shape)[idxs].shape}."
+            )
 
     def transform(self, x: Array, condition=None):
         self._argcheck(x)

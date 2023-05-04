@@ -7,7 +7,7 @@ from flowjax.bijections.bijection import Bijection
 class Exp(Bijection):
     """Elementwise exponential transform (forward) and log transform (inverse)."""
 
-    def __init__(self, shape: tuple[int, ...] | None = None):
+    def __init__(self, shape: tuple[int, ...] = ()):
         """
         Args:
             shape (tuple[int, ...] | None): Shape of the bijection.

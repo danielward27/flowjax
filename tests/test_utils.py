@@ -2,7 +2,7 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytest
 
-from flowjax.utils import _get_ufunc_signature, inv_cum_sum, merge_shapes
+from flowjax.utils import _get_ufunc_signature, inv_cum_sum, merge_cond_shapes
 
 test_cases = [
     # arrays, expected_shape
@@ -33,7 +33,7 @@ test_cases = [
 
 @pytest.mark.parametrize("input_,expected", test_cases)
 def test_merge_shapes(input_, expected):
-    assert merge_shapes(input_) == expected
+    assert merge_cond_shapes(input_) == expected
 
 
 test_cases_error = [[(2, 3), (2, 1)], [(2, 3), (4, 2, 3)]]
@@ -42,7 +42,7 @@ test_cases_error = [[(2, 3), (2, 1)], [(2, 3), (4, 2, 3)]]
 @pytest.mark.parametrize("input_", test_cases_error)
 def test_merge_shapes_errors(input_):
     with pytest.raises(ValueError):
-        merge_shapes(input_)
+        merge_cond_shapes(input_)
 
 
 test_cases = [

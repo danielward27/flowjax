@@ -41,19 +41,21 @@ def get_maf_layer(key):
 
 
 bijections = {
-    "Flip": Flip(),
+    "Flip": Flip((DIM,)),
     "Permute": Permute(jnp.flip(jnp.arange(DIM))),
     "Permute (3D)": Permute(
         jnp.reshape(jr.permutation(KEY, jnp.arange(2 * 3 * 4)), (2, 3, 4))
     ),
-    "Partial (int)": Partial(Affine(jnp.array(2), jnp.array(2)), 0),
-    "Partial (bool array)": Partial(Flip(), jnp.array([True, False] * 2 + [True])),
-    "Partial (int array)": Partial(Flip(), jnp.array([0, 4])),
-    "Partial (slice)": Partial(Affine(jnp.zeros(3)), slice(0, 3)),
+    "Partial (int)": Partial(Affine(jnp.array(2), jnp.array(2)), 0, (DIM,)),
+    "Partial (bool array)": Partial(
+        Flip((3,)), jnp.array([True, False, True, False, True]), (DIM,)
+    ),
+    "Partial (int array)": Partial(Flip((2,)), jnp.array([0, 4]), (DIM,)),
+    "Partial (slice)": Partial(Affine(jnp.zeros(3)), slice(0, 3), (DIM,)),
     "Affine": Affine(jnp.ones(DIM), jnp.full(DIM, 2)),
-    "Tanh": Tanh(),
-    "Exp": Exp(),
-    "TanhLinearTails": TanhLinearTails(1),
+    "Tanh": Tanh((DIM,)),
+    "Exp": Exp((DIM,)),
+    "TanhLinearTails": TanhLinearTails(1, (DIM,)),
     "TriangularAffine (lower)": TriangularAffine(jnp.arange(DIM), POS_DEF_TRAINGLES),
     "TriangularAffine (upper)": TriangularAffine(
         jnp.arange(DIM), POS_DEF_TRAINGLES, lower=False
@@ -108,7 +110,7 @@ bijections = {
         eqx.nn.MLP(2, 1, 3, 1, key=KEY),
         (COND_DIM,),  # Raw
     ),
-    "Chain": Chain([Flip(), Affine(jnp.ones(DIM), jnp.full(DIM, 2))]),
+    "Chain": Chain([Flip((DIM,)), Affine(jnp.ones(DIM), jnp.full(DIM, 2))]),
     "Scan": Scan(eqx.filter_vmap(get_maf_layer)(jr.split(KEY, 3))),
     "Concatenate": Concatenate([Affine(jnp.ones(3)), Tanh(shape=(3,))]),
     "ConcatenateAxis1": Concatenate(

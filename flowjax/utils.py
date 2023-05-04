@@ -36,7 +36,7 @@ def inv_cum_sum(x):
     return x - jnp.pad(x[:-1], (1, 0))
 
 
-def merge_shapes(shapes: Sequence):
+def merge_cond_shapes(shapes: Sequence):
     """Merges shapes (tuples of ints or None) used in bijections and distributions.
     Returns None if all shapes are None, otherwise checks the shapes match, and returns
     the shape.
@@ -49,6 +49,17 @@ def merge_shapes(shapes: Sequence):
     if all(s == shapes[0] for s in shapes):
         return shapes[0]
     raise ValueError("The shapes do not match.")
+
+
+def check_shapes_match(shapes: list[tuple[int, ...]]):
+    """Check shapes match and produce a useful error message."""
+
+    for i, shape in enumerate(shapes):
+        if shape != shapes[0]:
+            raise ValueError(
+                f"Expected shapes to match, but index 0 had shape {shapes[0]}, and "
+                f"index {i} had shape {shape}."
+            )
 
 
 def _get_ufunc_signature(in_shapes, out_shapes):

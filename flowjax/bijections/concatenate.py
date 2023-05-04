@@ -1,12 +1,12 @@
 """Module contains bijections formed by "stacking/concatenating" other bijections."""
 
-from typing import Sequence, TypeGuard
+from typing import Sequence
 
 import jax.numpy as jnp
 from jax import Array
 
 from flowjax.bijections.bijection import Bijection
-from flowjax.utils import merge_shapes
+from flowjax.utils import merge_cond_shapes, check_shapes_match
 
 
 class Concatenate(Bijection):
@@ -30,13 +30,12 @@ class Concatenate(Bijection):
 
         shapes = [b.shape for b in bijections]
         self._argcheck_shapes(shapes)
-        assert _no_none_shapes(shapes)  # narrows type for typecheckers
         axis = range(len(shapes[0]))[axis]  # Avoids issues when axis==-1
         self.shape = (
             shapes[0][:axis] + (sum(s[axis] for s in shapes),) + shapes[0][axis + 1 :]
         )
         self.split_idxs = jnp.array([s[axis] for s in shapes[:-1]])
-        self.cond_shape = merge_shapes([b.cond_shape for b in bijections])
+        self.cond_shape = merge_cond_shapes([b.cond_shape for b in bijections])
 
     def transform(self, x, condition=None):
         self._argcheck(x, condition)
@@ -79,23 +78,10 @@ class Concatenate(Bijection):
         x_parts, log_dets = zip(*xs_log_dets)
         return jnp.concatenate(x_parts, self.axis), sum(log_dets)
 
-    def _argcheck_shapes(self, shapes: list[tuple[int, ...] | None]):
-        if not _no_none_shapes(shapes):
-            raise ValueError(
-                "Cannot concatenate bijections with shape None. You may be able "
-                "to specify the shape of the bijection during instantiation."
-            )
-
-        dim = len(shapes[0])
-        axis = range(dim)[self.axis]
+    def _argcheck_shapes(self, shapes: list[tuple[int, ...]]):
+        axis = range(len(shapes[0]))[self.axis]
 
         for i, shp in enumerate(shapes):
-            if len(shp) != dim:
-                raise ValueError(
-                    f"Bijections must have consistent number of dimensions, but index "
-                    f"0 has {dim} dimensions and index {i} has {len(shp)}."
-                )
-
             if shp[:axis] + shp[axis + 1 :] != shapes[0][:axis] + shapes[0][axis + 1 :]:
                 raise ValueError(
                     f"Expected bijection shapes to match except along axis {axis}, but "
@@ -122,18 +108,10 @@ class Stack(Bijection):
         self.bijections = bijections
 
         shapes = [b.shape for b in bijections]
+        check_shapes_match(shapes)
 
-        if not _no_none_shapes(shapes):
-            raise ValueError(
-                "Cannot stack bijections with shape None. You may be able to "
-                "specify the shape of the bijection during instantiation."
-            )
-
-        if not all(s == shapes[0] for s in shapes):
-            raise ValueError("All input bijections must have the same shape.")
-
-        self.shape = (*shapes[0][:axis], len(bijections), *shapes[0][axis:])
-        self.cond_shape = merge_shapes([b.cond_shape for b in bijections])
+        self.shape = shapes[0][:axis] + (len(bijections),) + shapes[0][axis:]
+        self.cond_shape = merge_cond_shapes([b.cond_shape for b in bijections])
 
     def transform(self, x, condition=None):
         self._argcheck(x, condition)
@@ -173,9 +151,3 @@ class Stack(Bijection):
     def _split_and_squeeze(self, array: Array):
         arrays = jnp.split(array, len(self.bijections), axis=self.axis)
         return [a.squeeze(axis=self.axis) for a in arrays]
-
-
-def _no_none_shapes(
-    shapes: list[tuple[int, ...] | None]
-) -> TypeGuard[list[tuple[int, ...]]]:
-    return not any(s is None for s in shapes)
