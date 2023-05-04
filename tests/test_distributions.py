@@ -2,10 +2,19 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytest
 
-from flowjax.distributions import (Cauchy, Distribution, Gumbel, Normal,
-                                   StandardNormal, StudentT, Uniform,
-                                   _StandardCauchy, _StandardGumbel,
-                                   _StandardStudentT, _StandardUniform)
+from flowjax.distributions import (
+    Cauchy,
+    Distribution,
+    Gumbel,
+    Normal,
+    StandardNormal,
+    StudentT,
+    Uniform,
+    _StandardCauchy,
+    _StandardGumbel,
+    _StandardStudentT,
+    _StandardUniform,
+)
 
 # This sets up a number of constructors shape -> instance for testing
 # the generic API of Distribution classes.
@@ -123,7 +132,6 @@ def test_broadcasting_unconditional(dist_shape, sample_shape):
 def test_broadcasting_conditional(
     dist_shape, sample_shape, condition_shape, leading_cond_shape
 ):
-
     key = jr.PRNGKey(0)
     d = _TestDist(dist_shape, condition_shape)
     condition = jnp.zeros(leading_cond_shape + condition_shape)

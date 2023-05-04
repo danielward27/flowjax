@@ -5,8 +5,7 @@ from jax import random
 from jax.scipy.linalg import block_diag
 
 from flowjax.masks import rank_based_mask
-from flowjax.nn import (AutoregressiveMLP, BlockAutoregressiveLinear,
-                        MaskedLinear)
+from flowjax.nn import AutoregressiveMLP, BlockAutoregressiveLinear, MaskedLinear
 
 
 def test_BlockAutoregressiveLinear():

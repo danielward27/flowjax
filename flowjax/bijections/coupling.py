@@ -114,9 +114,7 @@ class Coupling(Bijection):
         x = jnp.hstack((x_cond, x_trans))
         return x, log_det
 
-    def _flat_params_to_transformer(
-        self, params: Array
-    ):
+    def _flat_params_to_transformer(self, params: Array):
         """Reshape to dim X params_per_dim, then vmap."""
         dim = self.D - self.d
         transformer_params = jnp.reshape(params, (dim, -1))
