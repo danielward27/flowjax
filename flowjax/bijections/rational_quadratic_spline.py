@@ -1,6 +1,5 @@
 """Rational quadratic spline bijections (https://arxiv.org/abs/1906.04032)."""
 
-from typing import Tuple
 
 import equinox as eqx
 import jax
@@ -131,7 +130,7 @@ class RationalQuadraticSpline(Batch):
         self,
         knots: int,
         interval: float,
-        shape: Tuple[int, ...] = (),
+        shape: tuple[int, ...] = (),
         min_derivative: float = 1e-3,
         softmax_adjust: float = 1e-2,
     ) -> None:
@@ -139,7 +138,7 @@ class RationalQuadraticSpline(Batch):
         Args:
             knots (int): Number of knots.
             interval (float): interval to transform, [-interval, interval].
-            shape (Tuple[int, ...]): Shape of transformation. Defaults to ().
+            shape (tuple[int, ...]): Shape of transformation. Defaults to ().
             min_derivative (float): Minimum dervivative. Defaults to 1e-3.
             softmax_adjust (float): Controls minimum bin width and height by
                 rescaling softmax output, e.g. 0=no adjustment, 1=average softmax output

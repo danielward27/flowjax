@@ -46,7 +46,7 @@ class BlockAutoregressiveLinear(eqx.Module):
         Args:
             key KeyArray: Random key
             n_blocks (int): Number of diagonal blocks (dimension of original input).
-            block_shape (Tuple): The shape of the (unconstrained) blocks.
+            block_shape (tuple): The shape of the (unconstrained) blocks.
             cond_dim (int | None): Number of additional conditioning variables.
                 Defaults to None.
             init (Callable): Default initialisation method for the weight
@@ -127,7 +127,7 @@ class BlockTanh:
         (n_blocks, *block_size). Condition is ignored.
 
         Returns:
-            Tuple: output, jacobian
+            tuple: output, jacobian
         """
         log_det = _tanh_log_grad(x)
         return jnp.tanh(x), _3d_log_det(log_det, self.n_blocks)

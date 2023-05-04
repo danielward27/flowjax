@@ -15,7 +15,7 @@ def train_val_split(key: jr.KeyArray, arrays: Sequence[Array], val_prop: float =
         val_prop (float): Proportion of data to use for validation. Defaults to 0.1.
 
     Returns:
-        Tuple[Tuple]: (train_arrays, validation_arrays)
+        tuple[tuple]: (train_arrays, validation_arrays)
     """
     if not 0 <= val_prop <= 1:
         raise ValueError("val_prop should be between 0 and 1.")

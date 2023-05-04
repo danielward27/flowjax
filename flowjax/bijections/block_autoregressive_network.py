@@ -31,7 +31,7 @@ class BlockAutoregressiveNetwork(Bijection):
         Args:
             key (KeyArray): Jax PRNGKey
             dim (int): Dimension of the distribution.
-            cond_dim (Tuple[int, ...] | None): Dimension of extra conditioning variables.
+            cond_dim (tuple[int, ...] | None): Dimension of extra conditioning variables.
             depth (int): Number of hidden layers in the network.
             block_dim (int): Block dimension (hidden layer size is `dim*block_dim`).
             activation (Callable): Activation function. Defaults to BlockTanh.

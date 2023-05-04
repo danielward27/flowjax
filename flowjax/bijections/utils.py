@@ -1,5 +1,5 @@
 """Utility bijections (embedding network, permutations, inversion etc.)"""
-from typing import Callable, Tuple
+from typing import Callable
 
 import jax.numpy as jnp
 from jax import Array
@@ -44,8 +44,8 @@ class Invert(Bijection):
 class Permute(Bijection):
     """Permutation transformation."""
 
-    permutation: Tuple[Array, ...]
-    inverse_permutation: Tuple[Array, ...]
+    permutation: tuple[Array, ...]
+    inverse_permutation: tuple[Array, ...]
 
     def __init__(self, permutation: Array):
         """
@@ -172,7 +172,7 @@ class EmbedCondition(Bijection):
         self,
         bijection: Bijection,
         embedding_net: Callable,
-        raw_cond_shape: Tuple[int, ...],
+        raw_cond_shape: tuple[int, ...],
     ) -> None:
         """
         Args:
@@ -180,7 +180,7 @@ class EmbedCondition(Bijection):
                 embedded size.
             embedding_net (Callable): A callable (e.g. equinox module) that embeds a
                 conditioning variable to size ``bijection.cond_dim``.
-            raw_cond_shape (Tuple[int, ...] | None): The dimension of the raw
+            raw_cond_shape (tuple[int, ...] | None): The dimension of the raw
                 conditioning variable.
         """
         self.bijection = bijection

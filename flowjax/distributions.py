@@ -3,7 +3,6 @@ and a Transformed distribution class.
 """
 from abc import abstractmethod
 from math import prod
-from typing import Tuple
 import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
@@ -53,8 +52,8 @@ class Distribution(eqx.Module):
 
     """
 
-    shape: Tuple[int, ...]
-    cond_shape: Tuple[int, ...] | None
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
 
     @abstractmethod
     def _log_prob(self, x: Array, condition: Array | None = None) -> Array:
@@ -66,7 +65,7 @@ class Distribution(eqx.Module):
 
     def _sample_and_log_prob(
         self, key: jr.KeyArray, condition: Array | None = None
-    ) -> Tuple[Array, Array]:
+    ) -> tuple[Array, Array]:
         """Sample a point from the distribution, and return its log probability.
         Subclasses can reimplement this method in cases where more efficient methods
         exists (e.g. see Transformed).
@@ -102,7 +101,7 @@ class Distribution(eqx.Module):
     def sample(
         self,
         key: jr.KeyArray,
-        sample_shape: Tuple[int, ...] = (),
+        sample_shape: tuple[int, ...] = (),
         condition: Array | None = None,
     ) -> Array:
         """Sample from the distribution. For unconditional distributions, the output will
@@ -159,7 +158,7 @@ class Distribution(eqx.Module):
         Args:
             key (jr.KeyArray): Jax random key.
             condition (Array | None): Conditioning variables. Defaults to None.
-            sample_shape (Tuple[int, ...]): Sample shape. Defaults to ().
+            sample_shape (tuple[int, ...]): Sample shape. Defaults to ().
 
         """
         self._argcheck(condition=condition)
@@ -172,7 +171,7 @@ class Distribution(eqx.Module):
     def sample_and_log_prob(
         self,
         key: jr.KeyArray,
-        sample_shape: Tuple[int, ...] = (),
+        sample_shape: tuple[int, ...] = (),
         condition: Array | None = None,
     ):
         """Sample the distribution and return the samples and corresponding log probabilities.
@@ -186,7 +185,7 @@ class Distribution(eqx.Module):
         Args:
             key (jr.KeyArray): Jax random key.
             condition (Array | None): Conditioning variables. Defaults to None.
-            sample_shape (Tuple[int, ...]): Sample shape. Defaults to ().
+            sample_shape (tuple[int, ...]): Sample shape. Defaults to ().
         """
         self._argcheck(condition=condition)
 
@@ -281,7 +280,7 @@ class Transformed(Distribution):
 
     base_dist: Distribution
     bijection: Bijection
-    cond_shape: Tuple[int, ...] | None
+    cond_shape: tuple[int, ...] | None
 
     def __init__(
         self,
@@ -341,10 +340,10 @@ class Transformed(Distribution):
 class StandardNormal(Distribution):
     """Implements a standard normal distribution, condition is ignored."""
 
-    def __init__(self, shape: Tuple[int, ...] = ()):
+    def __init__(self, shape: tuple[int, ...] = ()):
         """
         Args:
-            shape (Tuple[int, ...]): The shape of the normal distribution. Defaults to ().
+            shape (tuple[int, ...]): The shape of the normal distribution. Defaults to ().
         """
         self.shape = shape
         self.cond_shape = None
@@ -388,7 +387,7 @@ class Normal(Transformed):
 class _StandardUniform(Distribution):
     """Implements a standard independent Uniform distribution, ie X ~ Uniform([0, 1]^dim)."""
 
-    def __init__(self, shape: Tuple[int, ...] = ()):
+    def __init__(self, shape: tuple[int, ...] = ()):
         self.shape = shape
         self.cond_shape = None
 
@@ -437,7 +436,7 @@ class Uniform(Transformed):
 class _StandardGumbel(Distribution):
     """Standard gumbel distribution (https://en.wikipedia.org/wiki/Gumbel_distribution)."""
 
-    def __init__(self, shape: Tuple[int, ...] = ()):
+    def __init__(self, shape: tuple[int, ...] = ()):
         self.shape = shape
         self.cond_shape = None
 
@@ -484,7 +483,7 @@ class _StandardCauchy(Distribution):
     Ref: https://en.wikipedia.org/wiki/Cauchy_distribution
     """
 
-    def __init__(self, shape: Tuple[int, ...] = ()):
+    def __init__(self, shape: tuple[int, ...] = ()):
         self.shape = shape
         self.cond_shape = None
 

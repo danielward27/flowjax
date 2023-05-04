@@ -1,7 +1,7 @@
 """Module contains the Chain bijection, that allows sequentially application of arbitrary
 bijections, with compatible shapes.
 """
-from typing import Sequence, Tuple
+from typing import Sequence
 
 from jax import Array
 
@@ -12,7 +12,7 @@ from flowjax.utils import merge_shapes
 class Chain(Bijection):
     """Chain together arbitrary bijections to form another bijection."""
 
-    bijections: Tuple[Bijection]
+    bijections: tuple[Bijection]
 
     def __init__(self, bijections: Sequence[Bijection]):
         """
