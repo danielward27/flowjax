@@ -33,9 +33,7 @@ class Concatenate(Bijection):
         assert _no_none_shapes(shapes)  # narrows type for typecheckers
         axis = range(len(shapes[0]))[axis]  # Avoids issues when axis==-1
         self.shape = (
-            *shapes[0][:axis],
-            sum(s[axis] for s in shapes),
-            *shapes[0][axis + 1 :],
+            shapes[0][:axis] + (sum(s[axis] for s in shapes),) + shapes[0][axis + 1 :]
         )
         self.split_idxs = jnp.array([s[axis] for s in shapes[:-1]])
         self.cond_shape = merge_shapes([b.cond_shape for b in bijections])
@@ -91,20 +89,17 @@ class Concatenate(Bijection):
         dim = len(shapes[0])
         axis = range(dim)[self.axis]
 
-        for i, shape in enumerate(shapes):
-            if len(shape) != dim:
+        for i, shp in enumerate(shapes):
+            if len(shp) != dim:
                 raise ValueError(
                     f"Bijections must have consistent number of dimensions, but index "
-                    f"0 has {dim} dimensions and index {i} has {len(shape)}."
+                    f"0 has {dim} dimensions and index {i} has {len(shp)}."
                 )
 
-            if (*shape[:axis], *shape[axis + 1 :]) != (
-                *shapes[0][:axis],
-                *shapes[0][axis + 1 :],
-            ):
+            if shp[:axis] + shp[axis + 1 :] != shapes[0][:axis] + shapes[0][axis + 1 :]:
                 raise ValueError(
                     f"Expected bijection shapes to match except along axis {axis}, but "
-                    f"index 0 had shape {shapes[0]}, and index {i} had shape {shape}."
+                    f"index 0 had shape {shapes[0]}, and index {i} had shape {shp}."
                 )
 
 
