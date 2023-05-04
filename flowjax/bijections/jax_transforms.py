@@ -11,7 +11,19 @@ from flowjax.bijections.bijection import Bijection
 class Batch(Bijection):
     """Add batch dimensions to a bijection, such that the new shape is
     batch_shape + bijection.shape. The batch dimensions are added using multiple
-    applications of eqx.filter_vmap."""
+    applications of eqx.filter_vmap.
+
+    Example:
+
+    .. doctest::
+
+        >>> import jax.numpy as jnp
+        >>> from flowjax.bijections import Batch, Affine
+        >>> x = jnp.ones(2)
+        >>> batched = Batch(Affine(1), (2,), vectorize_bijection=False)
+        >>> batched.transform(x)
+        Array([2., 2.], dtype=float32)
+    """
 
     bijection: Bijection
     in_axes: tuple
@@ -30,15 +42,15 @@ class Batch(Bijection):
             batch_shape (tuple[int, ...]): The shape of the batch dimension.
             vectorize_bijection (bool): Whether to vectorise bijection parameters.
                 * If True: we vectorize across the leading dimensions in the array
-                    leaves of the bijection. In this case, the array leaves must
-                    have leading dimensions equal to batch_shape. For construction of
-                    compatible bijections, see eqx.filter_vmap.
+                leaves of the bijection. In this case, the array leaves must
+                have leading dimensions equal to batch_shape. For construction of
+                compatible bijections, see eqx.filter_vmap.
                 * If False: we broadcast the parameters, meaning
-                    the same bijection parameters are used for each x.
+                the same bijection parameters are used for each x.
             vectorize_condition (Optional[bool]): Whether to vectorize or broadcast the
                 conditioning variables. If broadcasting, the condition shape is
                 unchanged. If vectorising, the condition shape will be
-                ``batch_shape + bijection.cond_shape``.
+                ``batch_shape + bijection.cond_shape``. Defaults to None.
         """
         if vectorize_condition is None and bijection.cond_shape is not None:
             raise ValueError(
