@@ -27,7 +27,7 @@ class Tanh(Bijection):
         self._argcheck(x)
         return jnp.tanh(x)
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=None):
+    def transform_and_log_det(self, x, condition=None):
         self._argcheck(x)
         return jnp.tanh(x), jnp.sum(_tanh_log_grad(x))
 
@@ -35,7 +35,7 @@ class Tanh(Bijection):
         self._argcheck(y)
         return jnp.arctanh(y)
 
-    def inverse_and_log_abs_det_jacobian(self, y, condition=None):
+    def inverse_and_log_det(self, y, condition=None):
         self._argcheck(y)
         x = jnp.arctanh(y)
         return x, -jnp.sum(_tanh_log_grad(x))
@@ -75,7 +75,7 @@ class TanhLinearTails(Bijection):
         tanh_y = jnp.tanh(x)
         return jnp.where(is_linear, linear_y, tanh_y)
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=None):
+    def transform_and_log_det(self, x, condition=None):
         self._argcheck(x)
         y = self.transform(x)
         log_grads = jnp.where(
@@ -90,7 +90,7 @@ class TanhLinearTails(Bijection):
         x_arctan = jnp.arctanh(y)
         return jnp.where(is_linear, x_linear, x_arctan)
 
-    def inverse_and_log_abs_det_jacobian(self, y, condition=None):
+    def inverse_and_log_det(self, y, condition=None):
         self._argcheck(y)
         x = self.inverse(y)
         log_grads = jnp.where(

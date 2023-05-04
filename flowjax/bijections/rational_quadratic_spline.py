@@ -77,7 +77,7 @@ class _ScalarRationalQuadraticSpline(Bijection):
         y = yk + num / den  # eq. 4
         return jnp.where(in_bounds, y, x)
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=None):
+    def transform_and_log_det(self, x, condition=None):
         y = self.transform(x)
         derivative = self.derivative(x)
         return y, jnp.log(derivative).sum()
@@ -101,7 +101,7 @@ class _ScalarRationalQuadraticSpline(Bijection):
         x = xi * (xk1 - xk) + xk
         return jnp.where(in_bounds, x, y)
 
-    def inverse_and_log_abs_det_jacobian(self, y, condition=None):
+    def inverse_and_log_det(self, y, condition=None):
         x = self.inverse(y)
         derivative = self.derivative(x)
         return x, -jnp.log(derivative).sum()

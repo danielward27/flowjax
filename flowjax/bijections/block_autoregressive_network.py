@@ -73,7 +73,7 @@ class BlockAutoregressiveNetwork(Bijection):
             x = layer(x)[0]
         return x
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=None):
+    def transform_and_log_det(self, x, condition=None):
         self._argcheck(x, condition)
         x, log_det_3d_0 = self.layers[0](x, condition)
         log_det_3ds = [log_det_3d_0]
@@ -91,7 +91,7 @@ class BlockAutoregressiveNetwork(Bijection):
             "This transform would require numerical methods for inversion."
         )
 
-    def inverse_and_log_abs_det_jacobian(self, *args, **kwargs):
+    def inverse_and_log_det(self, *args, **kwargs):
         raise NotImplementedError(
             "This transform would require numerical methods for inversion."
         )

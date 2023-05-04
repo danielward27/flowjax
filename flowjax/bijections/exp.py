@@ -20,7 +20,7 @@ class Exp(Bijection):
         self._argcheck(x)
         return jnp.exp(x)
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=None):
+    def transform_and_log_det(self, x, condition=None):
         self._argcheck(x)
         return jnp.exp(x), x.sum()
 
@@ -28,7 +28,7 @@ class Exp(Bijection):
         self._argcheck(y)
         return jnp.log(y)
 
-    def inverse_and_log_abs_det_jacobian(self, y, condition=None):
+    def inverse_and_log_det(self, y, condition=None):
         self._argcheck(y)
         x = jnp.log(y)
         return x, -x.sum()

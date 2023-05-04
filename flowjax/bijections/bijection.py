@@ -33,8 +33,8 @@ class Bijection(Module):
 
         (1) Inherit from ``Bijection``.
         (2) Define the attributes ``shape`` and ``cond_shape``
-        (3) Implement the abstract methods ``transform``, ``transform_and_log_abs_det_jacobian``,
-            ``inverse`` and ``inverse_and_log_abs_det_jacobian``. These should act on
+        (3) Implement the abstract methods ``transform``, ``transform_and_log_det``,
+            ``inverse`` and ``inverse_and_log_det``. These should act on
             inputs compatible with the shapes ``shape`` for ``x``, and ``cond_shape``
             for ``condition``.
 
@@ -48,7 +48,7 @@ class Bijection(Module):
         """Apply transformation."""
 
     @abstractmethod
-    def transform_and_log_abs_det_jacobian(
+    def transform_and_log_det(
         self, x: Array, condition: Array | None = None
     ) -> tuple[Array, Array]:
         """Apply transformation and compute log absolute value of the Jacobian determinant."""
@@ -58,7 +58,7 @@ class Bijection(Module):
         """Invert the transformation."""
 
     @abstractmethod
-    def inverse_and_log_abs_det_jacobian(
+    def inverse_and_log_det(
         self, y: Array, condition: Array | None = None
     ) -> tuple[Array, Array]:
         """Invert the transformation and compute log absolute value of the Jacobian determinant."""

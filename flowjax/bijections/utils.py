@@ -31,14 +31,14 @@ class Invert(Bijection):
     def transform(self, x, condition=None):
         return self.bijection.inverse(x, condition)
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=None):
-        return self.bijection.inverse_and_log_abs_det_jacobian(x, condition)
+    def transform_and_log_det(self, x, condition=None):
+        return self.bijection.inverse_and_log_det(x, condition)
 
     def inverse(self, y, condition=None):
         return self.bijection.transform(y, condition)
 
-    def inverse_and_log_abs_det_jacobian(self, y, condition=None):
-        return self.bijection.transform_and_log_abs_det_jacobian(y, condition)
+    def inverse_and_log_det(self, y, condition=None):
+        return self.bijection.transform_and_log_det(y, condition)
 
 
 class Permute(Bijection):
@@ -75,14 +75,14 @@ class Permute(Bijection):
         self._argcheck(x)
         return x[self.permutation]
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=None):
+    def transform_and_log_det(self, x, condition=None):
         return x[self.permutation], jnp.array(0)
 
     def inverse(self, y, condition=None):
         self._argcheck(y)
         return y[self.inverse_permutation]
 
-    def inverse_and_log_abs_det_jacobian(self, y, condition=None):
+    def inverse_and_log_det(self, y, condition=None):
         return y[self.inverse_permutation], jnp.array(0)
 
 
@@ -101,7 +101,7 @@ class Flip(Bijection):
         self._argcheck(x)
         return jnp.flip(x)
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=None):
+    def transform_and_log_det(self, x, condition=None):
         self._argcheck(x)
         return jnp.flip(x), jnp.array(0)
 
@@ -109,7 +109,7 @@ class Flip(Bijection):
         self._argcheck(y)
         return jnp.flip(y)
 
-    def inverse_and_log_abs_det_jacobian(self, y, condition=None):
+    def inverse_and_log_det(self, y, condition=None):
         self._argcheck(y)
         return jnp.flip(y), jnp.array(0)
 
@@ -140,11 +140,9 @@ class Partial(Bijection):
         y = self.bijection.transform(x[self.idxs], condition)
         return x.at[self.idxs].set(y)
 
-    def transform_and_log_abs_det_jacobian(self, x: Array, condition=None):
+    def transform_and_log_det(self, x: Array, condition=None):
         self._argcheck(x)
-        y, log_det = self.bijection.transform_and_log_abs_det_jacobian(
-            x[self.idxs], condition
-        )
+        y, log_det = self.bijection.transform_and_log_det(x[self.idxs], condition)
         return x.at[self.idxs].set(y), log_det
 
     def inverse(self, y: Array, condition=None):
@@ -152,11 +150,9 @@ class Partial(Bijection):
         x = self.bijection.inverse(y[self.idxs], condition)
         return y.at[self.idxs].set(x)
 
-    def inverse_and_log_abs_det_jacobian(self, y: Array, condition=None):
+    def inverse_and_log_det(self, y: Array, condition=None):
         self._argcheck(y)
-        x, log_det = self.bijection.inverse_and_log_abs_det_jacobian(
-            y[self.idxs], condition
-        )
+        x, log_det = self.bijection.inverse_and_log_det(y[self.idxs], condition)
         return y.at[self.idxs].set(x), log_det
 
 
@@ -194,17 +190,17 @@ class EmbedCondition(Bijection):
         condition = self.embedding_net(condition)
         return self.bijection.transform(x, condition)
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=None):
+    def transform_and_log_det(self, x, condition=None):
         self._argcheck(x, condition)
         condition = self.embedding_net(condition)
-        return self.bijection.transform_and_log_abs_det_jacobian(x, condition)
+        return self.bijection.transform_and_log_det(x, condition)
 
     def inverse(self, y, condition=None):
         self._argcheck(y, condition)
         condition = self.embedding_net(condition)
         return self.bijection.inverse(y, condition)
 
-    def inverse_and_log_abs_det_jacobian(self, y, condition=None):
+    def inverse_and_log_det(self, y, condition=None):
         self._argcheck(y, condition)
         condition = self.embedding_net(condition)
-        return self.bijection.inverse_and_log_abs_det_jacobian(y, condition)
+        return self.bijection.inverse_and_log_det(y, condition)

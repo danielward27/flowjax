@@ -92,11 +92,11 @@ class MaskedAutoregressive(Bijection):
         transformer = self._flat_params_to_transformer(transformer_params)
         return transformer.transform(x)
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=None):
+    def transform_and_log_det(self, x, condition=None):
         nn_input = x if condition is None else jnp.hstack((x, condition))
         transformer_params = self.autoregressive_mlp(nn_input)
         transformer = self._flat_params_to_transformer(transformer_params)
-        return transformer.transform_and_log_abs_det_jacobian(x)
+        return transformer.transform_and_log_det(x)
 
     def inverse(self, y, condition=None):
         init = (y, 0)
@@ -114,9 +114,9 @@ class MaskedAutoregressive(Bijection):
         x = y.at[rank].set(x[rank])
         return (x, rank + 1), None
 
-    def inverse_and_log_abs_det_jacobian(self, y, condition=None):
+    def inverse_and_log_det(self, y, condition=None):
         x = self.inverse(y, condition)
-        log_det = self.transform_and_log_abs_det_jacobian(x, condition)[1]
+        log_det = self.transform_and_log_det(x, condition)[1]
         return x, -log_det
 
     def _flat_params_to_transformer(self, params: Array):

@@ -83,11 +83,11 @@ class Batch(Bijection):
 
         return self.multi_vmap(fn)(self.bijection, x, condition)
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=None):
+    def transform_and_log_det(self, x, condition=None):
         self._argcheck(x, condition)
 
         def fn(bijection, x, condition):
-            return bijection.transform_and_log_abs_det_jacobian(x, condition)
+            return bijection.transform_and_log_det(x, condition)
 
         y, log_det = self.multi_vmap(fn)(self.bijection, x, condition)
         return y, jnp.sum(log_det)
@@ -100,11 +100,11 @@ class Batch(Bijection):
 
         return self.multi_vmap(fn)(self.bijection, y, condition)
 
-    def inverse_and_log_abs_det_jacobian(self, y, condition=None):
+    def inverse_and_log_det(self, y, condition=None):
         self._argcheck(y, condition)
 
         def fn(bijection, x, condition):
-            return bijection.inverse_and_log_abs_det_jacobian(x, condition)
+            return bijection.inverse_and_log_det(x, condition)
 
         x, log_det = self.multi_vmap(fn)(self.bijection, y, condition)
         return x, jnp.sum(log_det)
@@ -162,15 +162,13 @@ class Scan(Bijection):
         y, _ = scan(fn, x, self.params)
         return y
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=None):
+    def transform_and_log_det(self, x, condition=None):
         self._argcheck(x, condition)
 
         def fn(carry, params, condition):
             x, log_det = carry
             bijection = eqx.combine(self.static, params)
-            y, log_det_i = bijection.transform_and_log_abs_det_jacobian(  # type: ignore
-                x, condition
-            )
+            y, log_det_i = bijection.transform_and_log_det(x, condition)  # type: ignore
             return ((y, log_det + log_det_i.sum()), None)
 
         fn = partial(fn, condition=condition)
@@ -189,15 +187,13 @@ class Scan(Bijection):
         x, _ = scan(fn, y, self.params, reverse=True)
         return x
 
-    def inverse_and_log_abs_det_jacobian(self, y, condition=None):
+    def inverse_and_log_det(self, y, condition=None):
         self._argcheck(y, condition)
 
         def fn(carry, params, condition):
             y, log_det = carry
             bijection = eqx.combine(self.static, params)
-            x, log_det_i = bijection.inverse_and_log_abs_det_jacobian(  # type: ignore
-                y, condition
-            )
+            x, log_det_i = bijection.inverse_and_log_det(y, condition)  # type: ignore
             return ((x, log_det + log_det_i.sum()), None)
 
         fn = partial(fn, condition=condition)

@@ -34,7 +34,7 @@ class Affine(Bijection):
         self._argcheck(x)
         return x * self.scale + self.loc
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=None):
+    def transform_and_log_det(self, x, condition=None):
         self._argcheck(x)
         return x * self.scale + self.loc, self.log_scale.sum()
 
@@ -42,7 +42,7 @@ class Affine(Bijection):
         self._argcheck(y)
         return (y - self.loc) / self.scale
 
-    def inverse_and_log_abs_det_jacobian(self, y, condition=None):
+    def inverse_and_log_det(self, y, condition=None):
         self._argcheck(y)
         return (y - self.loc) / self.scale, -self.log_scale.sum()
 
@@ -117,7 +117,7 @@ class TriangularAffine(Bijection):
         self._argcheck(x)
         return self.arr @ x + self.loc
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=None):
+    def transform_and_log_det(self, x, condition=None):
         self._argcheck(x)
         arr = self.arr
         return arr @ x + self.loc, jnp.log(jnp.diag(arr)).sum()
@@ -126,7 +126,7 @@ class TriangularAffine(Bijection):
         self._argcheck(y)
         return solve_triangular(self.arr, y - self.loc, lower=self.lower)
 
-    def inverse_and_log_abs_det_jacobian(self, y, condition=None):
+    def inverse_and_log_det(self, y, condition=None):
         self._argcheck(y)
         arr = self.arr
         x = solve_triangular(arr, y - self.loc, lower=self.lower)
@@ -153,7 +153,7 @@ class AdditiveLinearCondition(Bijection):
         self._argcheck(x, condition)
         return x + self.W @ condition
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=None):
+    def transform_and_log_det(self, x, condition=None):
         self._argcheck(x, condition)
         return self.transform(x, condition), jnp.array(0)
 
@@ -161,6 +161,6 @@ class AdditiveLinearCondition(Bijection):
         self._argcheck(y, condition)
         return y - self.W @ condition
 
-    def inverse_and_log_abs_det_jacobian(self, y, condition=None):
+    def inverse_and_log_det(self, y, condition=None):
         self._argcheck(y, condition)
         return self.inverse(y, condition), jnp.array(0)

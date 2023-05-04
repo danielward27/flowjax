@@ -87,12 +87,12 @@ class Coupling(Bijection):
         y = jnp.hstack((x_cond, y_trans))
         return y
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=None):
+    def transform_and_log_det(self, x, condition=None):
         x_cond, x_trans = x[: self.d], x[self.d :]
         nn_input = x_cond if condition is None else jnp.hstack((x_cond, condition))
         transformer_params = self.conditioner(nn_input)
         transformer = self._flat_params_to_transformer(transformer_params)
-        y_trans, log_det = transformer.transform_and_log_abs_det_jacobian(x_trans)
+        y_trans, log_det = transformer.transform_and_log_det(x_trans)
         y = jnp.hstack((x_cond, y_trans))
         return y, log_det
 
@@ -105,12 +105,12 @@ class Coupling(Bijection):
         x = jnp.hstack((x_cond, x_trans))
         return x
 
-    def inverse_and_log_abs_det_jacobian(self, y, condition=None):
+    def inverse_and_log_det(self, y, condition=None):
         x_cond, y_trans = y[: self.d], y[self.d :]
         nn_input = x_cond if condition is None else jnp.concatenate((x_cond, condition))
         transformer_params = self.conditioner(nn_input)
         transformer = self._flat_params_to_transformer(transformer_params)
-        x_trans, log_det = transformer.inverse_and_log_abs_det_jacobian(y_trans)
+        x_trans, log_det = transformer.inverse_and_log_det(y_trans)
         x = jnp.hstack((x_cond, x_trans))
         return x, log_det
 

@@ -57,8 +57,8 @@ def test_scannable_chain(scan, chain):
     realised = scan.inverse(x, condition)
     assert expected == realised
 
-    expected = chain.transform_and_log_abs_det_jacobian(x, condition)
-    realised = scan.transform_and_log_abs_det_jacobian(x, condition)
+    expected = chain.transform_and_log_det(x, condition)
+    realised = scan.transform_and_log_det(x, condition)
     assert jnp.all(
         jnp.array([pytest.approx(a) == b for (a, b) in zip(expected, realised)])
     )

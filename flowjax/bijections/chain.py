@@ -28,12 +28,10 @@ class Chain(Bijection):
             x = bijection.transform(x, condition)
         return x
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=None):
+    def transform_and_log_det(self, x, condition=None):
         log_abs_det_jac = 0
         for bijection in self.bijections:
-            x, log_abs_det_jac_i = bijection.transform_and_log_abs_det_jacobian(
-                x, condition
-            )
+            x, log_abs_det_jac_i = bijection.transform_and_log_det(x, condition)
             log_abs_det_jac += log_abs_det_jac_i.sum()
         return x, log_abs_det_jac
 
@@ -42,12 +40,10 @@ class Chain(Bijection):
             y = bijection.inverse(y, condition)
         return y
 
-    def inverse_and_log_abs_det_jacobian(self, y, condition=None):
+    def inverse_and_log_det(self, y, condition=None):
         log_abs_det_jac = 0
         for bijection in reversed(self.bijections):
-            y, log_abs_det_jac_i = bijection.inverse_and_log_abs_det_jacobian(
-                y, condition
-            )
+            y, log_abs_det_jac_i = bijection.inverse_and_log_det(y, condition)
             log_abs_det_jac += log_abs_det_jac_i.sum()
         return y, log_abs_det_jac
 

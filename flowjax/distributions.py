@@ -314,7 +314,7 @@ class Transformed(Distribution):
         )
 
     def _log_prob(self, x: Array, condition: Array | None = None):
-        z, log_abs_det = self.bijection.inverse_and_log_abs_det_jacobian(x, condition)
+        z, log_abs_det = self.bijection.inverse_and_log_det(x, condition)
         p_z = self.base_dist._log_prob(z, condition)  # pylint: disable W0212
         return p_z + log_abs_det
 
@@ -326,7 +326,7 @@ class Transformed(Distribution):
         # We overwrite the naive implementation of calling both methods seperately to
         # avoid computing the inverse transformation.
         base_sample, log_prob_base = self.base_dist._sample_and_log_prob(key, condition)
-        sample, forward_log_dets = self.bijection.transform_and_log_abs_det_jacobian(
+        sample, forward_log_dets = self.bijection.transform_and_log_det(
             base_sample, condition
         )
         return sample, log_prob_base - forward_log_dets

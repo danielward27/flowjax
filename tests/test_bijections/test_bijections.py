@@ -144,7 +144,7 @@ def test_transform_inverse(bijection):
 
 @pytest.mark.parametrize("bijection", bijections.values(), ids=bijections.keys())
 def test_transform_inverse_and_log_dets(bijection):
-    """Tests the transform_and_log_abs_det_jacobian and inverse_and_log_abs_det_jacobian methods,
+    """Tests the transform_and_log_det and inverse_and_log_det methods,
     by 1) checking invertibility and 2) comparing log dets to those obtained with
     automatic differentiation."""
     shape = bijection.shape if bijection.shape is not None else (DIM,)
@@ -163,11 +163,11 @@ def test_transform_inverse_and_log_dets(bijection):
 
     auto_jacobian = jax.jacobian(flat_transform)(x.ravel(), cond)
     auto_log_det = jnp.log(jnp.abs(jnp.linalg.det(auto_jacobian)))
-    y, logdet = bijection.transform_and_log_abs_det_jacobian(x, cond)
+    y, logdet = bijection.transform_and_log_det(x, cond)
     assert logdet == pytest.approx(auto_log_det, abs=1e-4)
 
     try:
-        x_reconstructed, logdetinv = bijection.inverse_and_log_abs_det_jacobian(y, cond)
+        x_reconstructed, logdetinv = bijection.inverse_and_log_det(y, cond)
         assert logdetinv == pytest.approx(-auto_log_det, abs=1e-4)
         assert x == pytest.approx(x_reconstructed, abs=1e-4)
 

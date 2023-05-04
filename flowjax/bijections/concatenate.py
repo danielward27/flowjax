@@ -47,12 +47,12 @@ class Concatenate(Bijection):
         ]
         return jnp.concatenate(y_parts, axis=self.axis)
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=None):
+    def transform_and_log_det(self, x, condition=None):
         self._argcheck(x, condition)
         x_parts = jnp.array_split(x, self.split_idxs, axis=self.axis)
 
         ys_log_dets = [
-            b.transform_and_log_abs_det_jacobian(x, condition)
+            b.transform_and_log_det(x, condition)
             for b, x in zip(self.bijections, x_parts)
         ]
 
@@ -67,12 +67,12 @@ class Concatenate(Bijection):
         ]
         return jnp.concatenate(x_parts, axis=self.axis)
 
-    def inverse_and_log_abs_det_jacobian(self, y, condition=None):
+    def inverse_and_log_det(self, y, condition=None):
         self._argcheck(y, condition)
         y_parts = jnp.array_split(y, self.split_idxs, axis=self.axis)
 
         xs_log_dets = [
-            b.inverse_and_log_abs_det_jacobian(y, condition)
+            b.inverse_and_log_det(y, condition)
             for b, y in zip(self.bijections, y_parts)
         ]
 
@@ -143,11 +143,11 @@ class Stack(Bijection):
         ]
         return jnp.stack(y_parts, self.axis)
 
-    def transform_and_log_abs_det_jacobian(self, x, condition=None):
+    def transform_and_log_det(self, x, condition=None):
         self._argcheck(x, condition)
         x_parts = self._split_and_squeeze(x)
         ys_log_det = [
-            b.transform_and_log_abs_det_jacobian(x, condition)
+            b.transform_and_log_det(x, condition)
             for b, x in zip(self.bijections, x_parts)
         ]
 
@@ -160,11 +160,11 @@ class Stack(Bijection):
         x_parts = [b.inverse(y, condition) for (b, y) in zip(self.bijections, y_parts)]
         return jnp.stack(x_parts, self.axis)
 
-    def inverse_and_log_abs_det_jacobian(self, y, condition=None):
+    def inverse_and_log_det(self, y, condition=None):
         self._argcheck(y, condition)
         y_parts = self._split_and_squeeze(y)
         xs_log_det = [
-            b.inverse_and_log_abs_det_jacobian(y, condition)
+            b.inverse_and_log_det(y, condition)
             for b, y in zip(self.bijections, y_parts)
         ]
         x_parts, log_dets = zip(*xs_log_det)
