@@ -65,6 +65,8 @@ class _ScalarRationalQuadraticSpline(Bijection):
         return jax.nn.softplus(self.unbounded_derivatives) + self.min_derivative
 
     def transform(self, x, condition=None):
+        # Following notation from the paper
+        # pylint: disable=C0103
         x_pos, y_pos, derivatives = self.x_pos, self.y_pos, self.derivatives
         in_bounds = jnp.logical_and(x > -self.interval, x < self.interval)
         x_robust = jnp.where(in_bounds, x, 0)  # To avoid nans
@@ -83,6 +85,8 @@ class _ScalarRationalQuadraticSpline(Bijection):
         return y, jnp.log(derivative).sum()
 
     def inverse(self, y, condition=None):
+        # Following notation from the paper
+        # pylint: disable=C0103
         x_pos, y_pos, derivatives = self.x_pos, self.y_pos, self.derivatives
         in_bounds = jnp.logical_and(y > -self.interval, y < self.interval)
 
@@ -106,8 +110,10 @@ class _ScalarRationalQuadraticSpline(Bijection):
         derivative = self.derivative(x)
         return x, -jnp.log(derivative).sum()
 
-    def derivative(self, x) -> Array:  # eq. 5
+    def derivative(self, x) -> Array:
         """The derivative dy/dx of the forward transformation."""
+        # Following notation from the paper (eq. 5)
+        # pylint: disable=C0103
         x_pos, y_pos, derivatives = self.x_pos, self.y_pos, self.derivatives
         in_bounds = jnp.logical_and(x > -self.interval, x < self.interval)
         x_robust = jnp.where(in_bounds, x, 0)  # To avoid nans
