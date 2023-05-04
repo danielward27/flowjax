@@ -1,5 +1,5 @@
 """Utility bijections (embedding network, permutations, inversion etc.)"""
-from typing import Callable, Optional, Tuple, Union
+from typing import Callable, Optional, Tuple
 
 import jax.numpy as jnp
 from jax import Array
@@ -118,7 +118,7 @@ class Partial(Bijection):
     """Applies bijection to specific indices of an input."""
 
     bijection: Bijection
-    idxs: Union[int, slice, Array, tuple]
+    idxs: int | slice | Array | tuple
 
     def __init__(
         self, bijection: Bijection, idxs, shape: Optional[tuple[int, ...]] = None
@@ -180,7 +180,7 @@ class EmbedCondition(Bijection):
                 embedded size.
             embedding_net (Callable): A callable (e.g. equinox module) that embeds a
                 conditioning variable to size ``bijection.cond_dim``.
-            raw_cond_shape (Union[None, Tuple[int, ...]]): The dimension of the raw
+            raw_cond_shape (Tuple[int, ...] | None): The dimension of the raw
                 conditioning variable.
         """
         self.bijection = bijection

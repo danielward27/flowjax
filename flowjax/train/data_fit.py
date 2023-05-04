@@ -1,5 +1,5 @@
 """Function to fit flows to samples from a distribution."""
-from typing import Any, Callable, Optional, Union, Dict, List
+from typing import Any, Callable, Optional, Dict, List
 import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
@@ -25,7 +25,7 @@ def fit_to_data(
     learning_rate: float = 5e-4,
     clip_norm: float = 0.5,
     optimizer: Optional[optax.GradientTransformation] = None,
-    filter_spec: Union[Callable, PyTree] = eqx.is_inexact_array,
+    filter_spec: Callable | PyTree = eqx.is_inexact_array,
     show_progress: bool = True,
 ):
     """Train a distribution (e.g. a flow) to samples by maximum likelihood. Note that
@@ -46,7 +46,7 @@ def fit_to_data(
         optimizer (optax.GradientTransformation): Optax optimizer. If provided, this
             overrides the default Adam optimizer, and the learning_rate and clip_norm
             arguments are ignored. Defaults to None.
-        filter_spec (Union[Callable, PyTree], optional): Equinox `filter_spec` for
+        filter_spec (Callable | PyTree, optional): Equinox `filter_spec` for
             specifying trainable parameters. Either a callable `leaf -> bool`, or a
             PyTree with prefix structure matching `dist` with True/False values.
             Defaults to `eqx.is_inexact_array`.

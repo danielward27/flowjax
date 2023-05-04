@@ -47,7 +47,7 @@ class BlockAutoregressiveLinear(eqx.Module):
             key KeyArray: Random key
             n_blocks (int): Number of diagonal blocks (dimension of original input).
             block_shape (Tuple): The shape of the (unconstrained) blocks.
-            cond_dim (Union[None, int]): Number of additional conditioning variables.
+            cond_dim (int | None): Number of additional conditioning variables.
                 Defaults to None.
             init (Callable, optional): Default initialisation method for the weight
                 matrix. Defaults to ``glorot_uniform()``.

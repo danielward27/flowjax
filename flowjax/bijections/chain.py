@@ -1,7 +1,7 @@
 """Module contains the Chain bijection, that allows sequentially application of arbitrary
 bijections, with compatible shapes.
 """
-from typing import Sequence, Tuple, Union
+from typing import Sequence, Tuple
 
 from jax import Array
 
@@ -51,7 +51,7 @@ class Chain(Bijection):
             log_abs_det_jac += log_abs_det_jac_i.sum()
         return y, log_abs_det_jac
 
-    def __getitem__(self, i: Union[int, slice]) -> Bijection:
+    def __getitem__(self, i: int | slice) -> Bijection:
         if isinstance(i, int):
             return self.bijections[i]
         if isinstance(i, slice):

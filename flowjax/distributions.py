@@ -3,7 +3,7 @@ and a Transformed distribution class.
 """
 from abc import abstractmethod
 from math import prod
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple
 import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
@@ -54,7 +54,7 @@ class Distribution(eqx.Module):
     """
 
     shape: Tuple[int, ...]
-    cond_shape: Union[None, Tuple[int, ...]]
+    cond_shape: Tuple[int, ...] | None
 
     @abstractmethod
     def _log_prob(self, x: Array, condition: Optional[Array] = None) -> Array:
@@ -281,7 +281,7 @@ class Transformed(Distribution):
 
     base_dist: Distribution
     bijection: Bijection
-    cond_shape: Union[None, Tuple[int, ...]]
+    cond_shape: Tuple[int, ...] | None
 
     def __init__(
         self,

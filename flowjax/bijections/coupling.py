@@ -1,7 +1,7 @@
 """Implemenetation of Coupling flow layer with arbitrary transformer.
 See https://arxiv.org/abs/1605.08803 for more information.
 """
-from typing import Callable, Union
+from typing import Callable
 
 import equinox as eqx
 import jax.nn as jnn
@@ -27,7 +27,7 @@ class Coupling(Bijection):
         transformer: Bijection,
         d: int,
         D: int,
-        cond_dim: Union[None, int],
+        cond_dim: int | None,
         nn_width: int,
         nn_depth: int,
         nn_activation: Callable = jnn.relu,
@@ -39,7 +39,7 @@ class Coupling(Bijection):
                 parameterised by the conditioner neural netork.
             d (int): Number of untransformed conditioning variables.
             D (int): Total dimension.
-            cond_dim (Union[None, int]): Dimension of additional conditioning variables.
+            cond_dim (int | None): Dimension of additional conditioning variables.
             nn_width (int): Neural network hidden layer width.
             nn_depth (int): Neural network hidden layer size.
             nn_activation (Callable, optional): Neural network activation function.

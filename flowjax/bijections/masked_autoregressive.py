@@ -1,7 +1,7 @@
 """Masked autoregressive network and bijection."""
 
 from functools import partial
-from typing import Callable, Union
+from typing import Callable
 
 import equinox as eqx
 import jax
@@ -30,7 +30,7 @@ class MaskedAutoregressive(Bijection):
         key: KeyArray,
         transformer: Bijection,
         dim: int,
-        cond_dim: Union[None, int],
+        cond_dim: int | None,
         nn_width: int,
         nn_depth: int,
         nn_activation: Callable = jnn.relu,
@@ -41,7 +41,7 @@ class MaskedAutoregressive(Bijection):
             transformer (Bijection): Bijection with shape () to be parameterised by the
                 autoregressive network.
             dim (int): Dimension.
-            cond_dim (Union[None, int]): Dimension of any conditioning variables.
+            cond_dim (int | None): Dimension of any conditioning variables.
             nn_width (int): Neural network width.
             nn_depth (int): Neural network depth.
             nn_activation (Callable, optional): Neural network activation. Defaults to jnn.relu.

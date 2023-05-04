@@ -1,6 +1,6 @@
 """Module contains bijections formed by "stacking/concatenating" other bijections."""
 
-from typing import Sequence, Tuple, TypeGuard, Union
+from typing import Sequence, Tuple, TypeGuard
 
 import jax.numpy as jnp
 from jax import Array
@@ -79,7 +79,7 @@ class Concatenate(Bijection):
         x_parts, log_dets = zip(*xs_log_dets)
         return jnp.concatenate(x_parts, self.axis), sum(log_dets)
 
-    def _argcheck_shapes(self, shapes: list[Union[Tuple[int, ...], None]]):
+    def _argcheck_shapes(self, shapes: list[Tuple[int, ...] | None]):
         if not _no_none_shapes(shapes):
             raise ValueError(
                 "Cannot concatenate bijections with shape None. You may be able "
@@ -176,6 +176,6 @@ class Stack(Bijection):
 
 
 def _no_none_shapes(
-    shapes: list[Union[None, Tuple[int, ...]]]
+    shapes: list[Tuple[int, ...] | None]
 ) -> TypeGuard[list[Tuple[int, ...]]]:
     return not any(s is None for s in shapes)

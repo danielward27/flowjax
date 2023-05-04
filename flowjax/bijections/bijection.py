@@ -7,7 +7,7 @@ of flows).
 """
 
 from abc import abstractmethod
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple
 
 from equinox import Module
 from jax import Array
@@ -41,8 +41,8 @@ class Bijection(Module):
 
     """
 
-    shape: Union[None, Tuple[int, ...]]
-    cond_shape: Union[None, Tuple[int, ...]]
+    shape: Tuple[int, ...] | None
+    cond_shape: Tuple[int, ...] | None
 
     @abstractmethod
     def transform(self, x: Array, condition: Optional[Array] = None) -> Array:
