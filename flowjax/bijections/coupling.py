@@ -116,7 +116,7 @@ class Coupling(Bijection):
 
     def _flat_params_to_transformer(
         self, params: Array
-    ):  # TODO code repetition with MAF
+    ):
         """Reshape to dim X params_per_dim, then vmap."""
         dim = self.D - self.d
         transformer_params = jnp.reshape(params, (dim, -1))

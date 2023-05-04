@@ -80,11 +80,10 @@ def get_ravelled_bijection_constructor(
         filter_spec: Filter function. Defaults to eqx.is_inexact_array.
     """
     params, static = eqx.partition(bijection, filter_spec)  # type: ignore
-    bias, unravel = ravel_pytree(params)
+    current, unravel = ravel_pytree(params)
 
     def constructor(ravelled_params: Array):
-        ravelled_params = ravelled_params + bias
         params = unravel(ravelled_params)
         return eqx.combine(params, static)
 
-    return constructor, bias
+    return constructor, current

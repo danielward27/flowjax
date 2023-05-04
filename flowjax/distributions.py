@@ -215,7 +215,7 @@ class Distribution(eqx.Module):
             key_shape = sample_shape
         else:
             leading_cond_shape = (
-                condition.shape[: -self.cond_ndim]
+                condition.shape[: -self.cond_ndim]  # type: ignore
                 if self.cond_ndim > 0
                 else condition.shape
             )
@@ -249,7 +249,7 @@ class Distribution(eqx.Module):
                 )
             assert self.cond_ndim is not None
             condition_trailing = (
-                condition.shape[-self.cond_ndim :] if self.cond_ndim > 0 else ()
+                condition.shape[-self.cond_ndim :] if self.cond_ndim > 0 else ()  # type: ignore
             )
             if condition_trailing != self.cond_shape:
                 raise ValueError(

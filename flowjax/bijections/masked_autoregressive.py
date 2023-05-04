@@ -119,9 +119,7 @@ class MaskedAutoregressive(Bijection):
         log_det = self.transform_and_log_abs_det_jacobian(x, condition)[1]
         return x, -log_det
 
-    def _flat_params_to_transformer(
-        self, params: Array
-    ):  # TODO code repetition with MAF
+    def _flat_params_to_transformer(self, params: Array):
         """Reshape to dim X params_per_dim, then vmap."""
         dim = self.shape[-1]  # type: ignore
         transformer_params = jnp.reshape(params, (dim, -1))
