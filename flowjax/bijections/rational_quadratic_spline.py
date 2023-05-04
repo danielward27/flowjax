@@ -8,7 +8,7 @@ import jax.numpy as jnp
 from jax import Array
 
 from flowjax.bijections.bijection import Bijection
-from flowjax.bijections.jax_transforms import Vmap
+from flowjax.bijections.jax_transforms import Batch
 from flowjax.utils import real_to_increasing_on_interval
 
 
@@ -122,7 +122,7 @@ class _ScalarRationalQuadraticSpline(Bijection):
         return jnp.where(in_bounds, derivative, 1.0)  # type: ignore
 
 
-class RationalQuadraticSpline(Vmap):
+class RationalQuadraticSpline(Batch):
     """Elementwise rational quadratic spline transform (https://arxiv.org/abs/1906.04032),
     initialised at the identity function.
     """
@@ -147,15 +147,14 @@ class RationalQuadraticSpline(Vmap):
                 See ``real_to_increasing_on_interval``.. Defaults to 1e-2.
         """
 
-        # Dummy variable included for vmapping
-        def constructor(dummy):  # pylint: disable=W0613
+        def constructor():
             return _ScalarRationalQuadraticSpline(
                 knots, interval, min_derivative, softmax_adjust
             )
 
         # Create constructor with appropriate number of batch dimensions
-        for _ in shape:
-            constructor = eqx.filter_vmap(constructor)
+        for dim in reversed(shape):
+            constructor = eqx.filter_vmap(constructor, axis_size=dim)
 
-        spline = constructor(jnp.zeros(shape))
-        super().__init__(spline, shape)
+        spline = constructor()
+        super().__init__(spline, shape, vectorize_bijection=True)

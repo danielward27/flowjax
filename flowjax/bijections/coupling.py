@@ -9,7 +9,7 @@ import jax.numpy as jnp
 from jax.random import KeyArray
 
 from flowjax.bijections.bijection import Bijection
-from flowjax.bijections.jax_transforms import Vmap
+from flowjax.bijections.jax_transforms import Batch
 from flowjax.utils import Array, get_ravelled_bijection_constructor
 
 
@@ -35,8 +35,8 @@ class Coupling(Bijection):
         """
         Args:
             key (KeyArray): Jax PRNGKey
-            transformer (Bijection): Bijection with shape () to be parameterised by the
-                conditioner neural netork.
+            transformer (Bijection): Unconditional bijection with shape () to be
+                parameterised by the conditioner neural netork.
             d (int): Number of untransformed conditioning variables.
             D (int): Total dimension.
             cond_dim (Union[None, int]): Dimension of additional conditioning variables.
@@ -121,4 +121,4 @@ class Coupling(Bijection):
         dim = self.D - self.d
         transformer_params = jnp.reshape(params, (dim, -1))
         transformer = eqx.filter_vmap(self.transformer_constructor)(transformer_params)
-        return Vmap(transformer, (dim,))
+        return Batch(transformer, (dim,), vectorize_bijection=True)
