@@ -267,7 +267,6 @@ class TriangularSplineFlow(Transformed):
         knots: int = 8,
         tanh_max_val: float = 3.0,
         invert: bool = True,
-        permute_strategy: str | None = None,
         init: Callable = glorot_uniform(),
     ):
         """
@@ -276,18 +275,20 @@ class TriangularSplineFlow(Transformed):
             base_dist (Distribution): Base distribution of the flow.
             cond_dim (int | None): The number of conditioning features.
                 Defaults to None.
-            flow_layers (int): _description_. Defaults to 8.
-            knots (int): _description_. Defaults to 8.
-            tanh_max_val (float): _description_. Defaults to 3.0.
-            invert (bool): _description_. Defaults to True.
-            permute_strategy (str | None): _description_. Defaults to None.
-            init (Callable): _description_. Defaults to glorot_uniform().
+            flow_layers (int): Number of flow layers. Defaults to 8.
+            knots (int): Number of knots in the splines. Defaults to 8.
+            tanh_max_val (float): Maximum absolute value beyond which we use linear
+                "tails" in the tanh function. Defaults to 3.0.
+            invert: (bool): Use `True` for access of `log_prob` only (e.g.
+                fitting by maximum likelihood), `False` for the forward direction
+                (sampling) only (e.g. for fitting variationally).
+            init (Callable): Initialisation method for the lower triangular weights.
+                Defaults to glorot_uniform().
         """
         if len(base_dist.shape) != 1:
             raise ValueError(f"Expected base_dist.ndim==1, got {base_dist.ndim}")
 
         dim = base_dist.shape[-1]
-
         permute_strategy = _default_permute_strategy(dim)
 
         def make_layer(key):
