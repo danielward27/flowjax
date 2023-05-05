@@ -41,12 +41,13 @@ class Batch(Bijection):
             bijection (Bijection): Bijection to add batch dimensions to.
             batch_shape (tuple[int, ...]): The shape of the batch dimension.
             vectorize_bijection (bool): Whether to vectorise bijection parameters.
-                * If True: we vectorize across the leading dimensions in the array
+                If True, we vectorize across the leading dimensions in the array
                 leaves of the bijection. In this case, the array leaves must
                 have leading dimensions equal to batch_shape. For construction of
-                compatible bijections, see eqx.filter_vmap.
-                * If False: we broadcast the parameters, meaning
-                the same bijection parameters are used for each x.
+                compatible bijections, see ``eqx.filter_vmap``. If False: we broadcast
+                the parameters, i.e. the same bijection parameters are used for each x.
+
+
             vectorize_condition (bool | None): Whether to vectorize or broadcast the
                 conditioning variables. If broadcasting, the condition shape is
                 unchanged. If vectorising, the condition shape will be
