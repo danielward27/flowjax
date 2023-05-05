@@ -48,7 +48,6 @@ This package is new and may have substantial breaking changes between major rele
 ## TODO
 A few limitations / things that could be worth including in the future:
 - Add ability to "reshape" bijections.
-- Ability to "stack" bijections on a given (or new) axis.
 
 ## Related
 We make use of the [Equinox](https://arxiv.org/abs/2111.00254) package, which facilitates object-oriented programming with Jax. 
