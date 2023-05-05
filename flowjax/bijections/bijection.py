@@ -16,10 +16,7 @@ class Bijection(Module):
     """Bijection base class. Similar to :py:class:`~flowjax.distributions.Distribution`,
     bijections have a ``shape`` and a ``cond_shape`` attribute. To allow easy composing
     of bijections, all bijections support passing of conditioning variables (even if
-    ignored). Unlike distributions, the ``shape`` attribute can be None, for cases where
-    the shape may be unknown, or unimportant (e.g. the
-    :py:class:`~flowjax.bijections.tanh.Tanh` bijection is compatible with any shape of
-    input).
+    ignored).
 
     The methods of bijections do not generally support passing of additional batch
     dimensions, however, ``jax.vmap`` or ``eqx.filter_vmap`` can be used to vmap
@@ -29,10 +26,11 @@ class Bijection(Module):
     Bijections are registered as Jax PyTrees (as they are equinox modules), so are
     compatible with normal jax operations.
 
-    Implementing a bijection
+    **Implementing a bijection**
 
         (1) Inherit from ``Bijection``.
-        (2) Define the attributes ``shape`` and ``cond_shape``
+        (2) Define the attributes ``shape`` and ``cond_shape``. A ``cond_shape`` of
+            ``None`` is used to represent unconditional bijections.
         (3) Implement the abstract methods ``transform``, ``transform_and_log_det``,
             ``inverse`` and ``inverse_and_log_det``. These should act on
             inputs compatible with the shapes ``shape`` for ``x``, and ``cond_shape``

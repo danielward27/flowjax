@@ -35,11 +35,11 @@ class Distribution(eqx.Module):
     Distributions are registered as jax PyTrees (as they are equinox modules), and as such
     they are compatible with normal jax operations.
 
-    Implementing a distribution
+    **Implementing a distribution**
 
         (1) Inherit from ``Distribution``.
-        (2) Define attributes ``shape`` and ``cond_shape`` (cond shape should be None
-            for unconditional distributions).
+        (2) Define attributes ``shape`` and ``cond_shape``. ``cond_shape`` should be
+            ``None`` for unconditional distributions.
         (3) Define the ``_sample`` method, which samples a point with a shape of
             ``shape``, (given a conditioning variable with shape ``cond_shape`` for
             conditional distributions).
