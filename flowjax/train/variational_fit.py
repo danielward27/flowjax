@@ -12,7 +12,6 @@ from flowjax.distributions import Distribution
 PyTree = Any
 
 
-@eqx.filter_jit
 def elbo_loss(
     dist: Distribution,
     target: Callable[[Array], Array],
@@ -44,15 +43,15 @@ def fit_to_variational_target(
     (e.g. an unnormalized density).
 
     Args:
-        key (KeyArray): Jax PRNGKey.
+        key (jr.KeyArray): Jax PRNGKey.
         dist (Distribution): Distribution object, trainable parameters are found
             using equinox.is_inexact_array.
-        target (Callable): The variational target (this is usually the unormalized log
+        target (Callable[[Array], Array]): The variational target (this is usually the unormalized log
             posterior)
-        loss_fn (Callable): The loss function to optimize. The loss function
-            should take a random key, the distribution, a callable that maps samples
-            from the distribution to a scalar loss, and a number of samples to use.
-            Defaults to elbo_loss.
+        loss_fn (Callable[[Distribution, Callable, jr.KeyArray, int], Array]): The loss
+            function to optimize. The loss function should take the distribution to train,
+            the target function, key and an int (number of samples) and map to a scalar
+            loss. Defaults to elbo_loss.
         steps (int): The number of training steps to run. Defaults to 100.
         samples_per_step (int): number of samples to use at each step.
             Defaults to 500.

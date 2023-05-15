@@ -33,7 +33,7 @@ In general you should consider the form and scales of the target samples. For ex
     import jax.random as jr
     
     key = jr.PRNGKey(0)
-    x = jr.normal(key, (256,3))
+    x = jr.normal(key, (1000,3))
     flow = Normal(jnp.ones(3))
 
 .. doctest::
@@ -54,7 +54,6 @@ The methods of distributions and bijections are not jitted by default. For examp
 .. testsetup::
 
     from flowjax.distributions import Normal
-    from flowjax.train import fit_to_data
     import jax.numpy as jnp
     import jax.random as jr
     
