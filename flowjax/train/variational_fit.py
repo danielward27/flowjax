@@ -12,7 +12,6 @@ from flowjax.distributions import Distribution
 PyTree = Any
 
 
-@eqx.filter_jit
 def elbo_loss(
     dist: Distribution,
     target: Callable[[Array], Array],
