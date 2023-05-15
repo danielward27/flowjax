@@ -20,8 +20,8 @@ class Affine(Bijection):
     def __init__(self, loc: ArrayLike = 0, scale: ArrayLike = 1):
         """
         Args:
-            loc (int): Location parameter. Defaults to 0.
-            scale (int): Scale parameter. Defaults to 1.
+            loc (ArrayLike): Location parameter. Defaults to 0.
+            scale (ArrayLike): Scale parameter. Defaults to 1.
         """
         loc, scale = [jnp.asarray(a, dtype=jnp.float32) for a in (loc, scale)]
         self.shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))

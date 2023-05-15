@@ -30,7 +30,7 @@ setup(
         "tqdm",
         "optax",
     ],
-    python_requires=">=3.7",
+    python_requires=">=3.10",
     extras_require={"dev": ["pytest"]},
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
