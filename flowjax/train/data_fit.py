@@ -29,13 +29,13 @@ def fit_to_data(
     show_progress: bool = True,
 ):
     """Train a distribution (e.g. a flow) to samples by maximum likelihood. Note that
-        the last batch in each epoch is dropped if truncated.
+    the last batch in each epoch is dropped if truncated.
 
     Args:
         key (KeyArray): Jax PRNGKey.
         dist (Distribution): Distribution object.
-        x (Array): Samples from target distribution.
-        condition (Array | None): Conditioning variables. Defaults to None.
+        x (ArrayLike): Samples from target distribution.
+        condition (ArrayLike | None): Conditioning variables. Defaults to None.
         max_epochs (int): Maximum number of epochs. Defaults to 50.
         max_patience (int): Number of consecutive epochs with no validation
             loss improvement after which training is terminated. Defaults to 5.

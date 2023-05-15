@@ -49,3 +49,6 @@ html_theme_options = {
 }
 
 pygments_style = "xcode"
+
+autodoc_typehints = "none"
+autodoc_preserve_defaults = True
