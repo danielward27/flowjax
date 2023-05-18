@@ -142,22 +142,22 @@ class Partial(Bijection):
                 f"while the subset has a shape of {jnp.zeros(shape)[idxs].shape}."
             )
 
-    def transform(self, x: Array, condition=None):
+    def transform(self, x, condition=None):
         x, condition = self._argcheck_and_cast(x, condition)
         y = self.bijection.transform(x[self.idxs], condition)
         return x.at[self.idxs].set(y)
 
-    def transform_and_log_det(self, x: Array, condition=None):
+    def transform_and_log_det(self, x, condition=None):
         x, condition = self._argcheck_and_cast(x, condition)
         y, log_det = self.bijection.transform_and_log_det(x[self.idxs], condition)
         return x.at[self.idxs].set(y), log_det
 
-    def inverse(self, y: Array, condition=None):
+    def inverse(self, y, condition=None):
         y, condition = self._argcheck_and_cast(y, condition)
         x = self.bijection.inverse(y[self.idxs], condition)
         return y.at[self.idxs].set(x)
 
-    def inverse_and_log_det(self, y: Array, condition=None):
+    def inverse_and_log_det(self, y, condition=None):
         y, condition = self._argcheck_and_cast(y, condition)
         x, log_det = self.bijection.inverse_and_log_det(y[self.idxs], condition)
         return y.at[self.idxs].set(x), log_det
