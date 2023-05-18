@@ -1,10 +1,12 @@
 """Affine bijections."""
 
+from typing import Callable
 import jax.numpy as jnp
 from jax import Array
 from jax.experimental import checkify
 from jax.scipy.linalg import solve_triangular
 from jax.typing import ArrayLike
+import warnings
 
 from flowjax.bijections.bijection import Bijection
 
@@ -133,6 +135,52 @@ class TriangularAffine(Bijection):
         return x, -jnp.log(jnp.diag(arr)).sum()
 
 
+class AdditiveCondition(Bijection):
+    """Given a callable ``f``, carries out ``y = x + f(condition)`` as the forward
+    transformation and ``x = y - f(condition)`` as the inverse transformation. Note that
+    the callable can be a callable module with trainable parameters if desired.
+
+    If used to transform a distribution, this allows the "location" to be changed as a
+    function of the conditioning variables.
+    """
+
+    module: Callable[[ArrayLike], ArrayLike]
+
+    def __init__(
+        self,
+        module: Callable[[ArrayLike], ArrayLike],
+        shape: tuple[int, ...],
+        cond_shape: tuple[int, ...],
+    ):
+        """
+        Args:
+            module (Callable[[ArrayLike], ArrayLike]): A callable (e.g. a function or
+                callable module) that maps array with shape cond_shape, to a shape
+                that is broadcastable with the shape of the bijection.
+            shape (tuple[int, ...]): The shape of the bijection.
+            cond_shape (tuple[int, ...]): The condition shape of the bijection.
+        """
+        self.module = module
+        self.shape = shape
+        self.cond_shape = cond_shape
+
+    def transform(self, x, condition=None):
+        self._argcheck(x, condition)
+        return x + self.module(condition)  # type: ignore - validated in argcheck
+
+    def transform_and_log_det(self, x, condition=None):
+        self._argcheck(x, condition)
+        return self.transform(x, condition), jnp.array(0)
+
+    def inverse(self, y, condition=None):
+        self._argcheck(y, condition)
+        return y - self.module(condition)  # type: ignore
+
+    def inverse_and_log_det(self, y, condition=None):
+        self._argcheck(y, condition)
+        return self.inverse(y, condition), jnp.array(0)  # type: ignore
+
+
 class AdditiveLinearCondition(Bijection):
     """Carries out ``y = x + W @ condition``, as the forward transformation and
     ``x = y - W @ condition`` as the inverse.
@@ -145,6 +193,10 @@ class AdditiveLinearCondition(Bijection):
         Args:
             arr (Array): Array (``W`` in the description.)
         """
+        warnings.warn(
+            "AdditiveLinearCondition is deprecated in favour of the more general "
+            "AdditiveCondition as of v9.1.0."
+        )
         self.W = arr
         self.shape = (arr.shape[-2],)
         self.cond_shape = (arr.shape[-1],)

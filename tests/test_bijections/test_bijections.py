@@ -6,6 +6,7 @@ import jax.random as jr
 import pytest
 
 from flowjax.bijections import (
+    AdditiveCondition,
     AdditiveLinearCondition,
     Affine,
     BlockAutoregressiveNetwork,
@@ -104,6 +105,9 @@ bijections = {
     ),
     "AdditiveLinearCondition": AdditiveLinearCondition(
         jr.uniform(KEY, (DIM, COND_DIM))
+    ),
+    "AdditiveCondtition": AdditiveCondition(
+        lambda condition: jnp.arange(DIM) * jnp.sum(condition), (DIM,), (COND_DIM,)
     ),
     "EmbedCondition": EmbedCondition(
         BlockAutoregressiveNetwork(KEY, dim=DIM, cond_dim=1, block_dim=3, depth=1),
