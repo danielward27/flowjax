@@ -75,7 +75,7 @@ class Batch(Bijection):
             self.cond_shape = self.bijection.cond_shape
 
     def transform(self, x, condition=None):
-        self._argcheck(x, condition)
+        x, condition = self._argcheck_and_cast(x, condition)
 
         def _transform(bijection, x, condition):
             return bijection.transform(x, condition)
@@ -83,7 +83,7 @@ class Batch(Bijection):
         return self.multi_vmap(_transform)(self.bijection, x, condition)
 
     def transform_and_log_det(self, x, condition=None):
-        self._argcheck(x, condition)
+        x, condition = self._argcheck_and_cast(x, condition)
 
         def _transform_and_log_det(bijection, x, condition):
             return bijection.transform_and_log_det(x, condition)
@@ -94,7 +94,7 @@ class Batch(Bijection):
         return y, jnp.sum(log_det)
 
     def inverse(self, y, condition=None):
-        self._argcheck(y, condition)
+        y, condition = self._argcheck_and_cast(y, condition)
 
         def _inverse(bijection, x, condition):
             return bijection.inverse(x, condition)
@@ -102,7 +102,7 @@ class Batch(Bijection):
         return self.multi_vmap(_inverse)(self.bijection, y, condition)
 
     def inverse_and_log_det(self, y, condition=None):
-        self._argcheck(y, condition)
+        y, condition = self._argcheck_and_cast(y, condition)
 
         def _inverse_and_log_det(bijection, x, condition):
             return bijection.inverse_and_log_det(x, condition)
@@ -152,7 +152,7 @@ class Scan(Bijection):
         self.cond_shape = bijection.cond_shape
 
     def transform(self, x, condition=None):
-        self._argcheck(x, condition)
+        x, condition = self._argcheck_and_cast(x, condition)
 
         def step(x, params, condition=None):
             bijection = eqx.combine(self.static, params)
@@ -164,7 +164,7 @@ class Scan(Bijection):
         return y
 
     def transform_and_log_det(self, x, condition=None):
-        self._argcheck(x, condition)
+        x, condition = self._argcheck_and_cast(x, condition)
 
         def step(carry, params, condition):
             x, log_det = carry
@@ -177,7 +177,7 @@ class Scan(Bijection):
         return y, log_det
 
     def inverse(self, y, condition=None):
-        self._argcheck(y, condition)
+        y, _ = self._argcheck_and_cast(y, condition)
 
         def step(y, params, condition):
             bijection = eqx.combine(self.static, params)
@@ -189,7 +189,7 @@ class Scan(Bijection):
         return x
 
     def inverse_and_log_det(self, y, condition=None):
-        self._argcheck(y, condition)
+        y, _ = self._argcheck_and_cast(y, condition)
 
         def step(carry, params, condition):
             y, log_det = carry

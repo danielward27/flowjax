@@ -33,19 +33,19 @@ class Affine(Bijection):
         self.log_scale = jnp.broadcast_to(jnp.log(scale), self.shape)
 
     def transform(self, x, condition=None):
-        self._argcheck(x)
+        x, _ = self._argcheck_and_cast(x)
         return x * self.scale + self.loc
 
     def transform_and_log_det(self, x, condition=None):
-        self._argcheck(x)
+        x, _ = self._argcheck_and_cast(x)
         return x * self.scale + self.loc, self.log_scale.sum()
 
     def inverse(self, y, condition=None):
-        self._argcheck(y)
+        y, _ = self._argcheck_and_cast(y)
         return (y - self.loc) / self.scale
 
     def inverse_and_log_det(self, y, condition=None):
-        self._argcheck(y)
+        y, _ = self._argcheck_and_cast(y)
         return (y - self.loc) / self.scale, -self.log_scale.sum()
 
     @property
@@ -116,20 +116,20 @@ class TriangularAffine(Bijection):
         return arr
 
     def transform(self, x, condition=None):
-        self._argcheck(x)
+        x, _ = self._argcheck_and_cast(x)
         return self.arr @ x + self.loc
 
     def transform_and_log_det(self, x, condition=None):
-        self._argcheck(x)
+        x, _ = self._argcheck_and_cast(x)
         arr = self.arr
         return arr @ x + self.loc, jnp.log(jnp.diag(arr)).sum()
 
     def inverse(self, y, condition=None):
-        self._argcheck(y)
+        y, _ = self._argcheck_and_cast(y)
         return solve_triangular(self.arr, y - self.loc, lower=self.lower)
 
     def inverse_and_log_det(self, y, condition=None):
-        self._argcheck(y)
+        y, _ = self._argcheck_and_cast(y)
         arr = self.arr
         x = solve_triangular(arr, y - self.loc, lower=self.lower)
         return x, -jnp.log(jnp.diag(arr)).sum()
@@ -165,24 +165,26 @@ class AdditiveCondition(Bijection):
         self.cond_shape = cond_shape
 
     def transform(self, x, condition=None):
-        self._argcheck(x, condition)
+        x, condition = self._argcheck_and_cast(x, condition)
         return x + self.module(condition)  # type: ignore - validated in argcheck
 
     def transform_and_log_det(self, x, condition=None):
-        self._argcheck(x, condition)
+        x, condition = self._argcheck_and_cast(x, condition)
         return self.transform(x, condition), jnp.array(0)
 
     def inverse(self, y, condition=None):
-        self._argcheck(y, condition)
+        y, condition = self._argcheck_and_cast(y, condition)
         return y - self.module(condition)  # type: ignore
 
     def inverse_and_log_det(self, y, condition=None):
-        self._argcheck(y, condition)
+        y, condition = self._argcheck_and_cast(y, condition)
         return self.inverse(y, condition), jnp.array(0)  # type: ignore
 
 
 class AdditiveLinearCondition(Bijection):
-    """Carries out ``y = x + W @ condition``, as the forward transformation and
+    """Deprecated as of v9.1.0. Use ``AdditiveCondition`` bijection instead.
+
+    Carries out ``y = x + W @ condition``, as the forward transformation and
     ``x = y - W @ condition`` as the inverse.
     """
 
@@ -202,17 +204,17 @@ class AdditiveLinearCondition(Bijection):
         self.cond_shape = (arr.shape[-1],)
 
     def transform(self, x, condition=None):
-        self._argcheck(x, condition)
+        x, condition = self._argcheck_and_cast(x, condition)
         return x + self.W @ condition
 
     def transform_and_log_det(self, x, condition=None):
-        self._argcheck(x, condition)
+        x, condition = self._argcheck_and_cast(x, condition)
         return self.transform(x, condition), jnp.array(0)
 
     def inverse(self, y, condition=None):
-        self._argcheck(y, condition)
+        y, condition = self._argcheck_and_cast(y, condition)
         return y - self.W @ condition
 
     def inverse_and_log_det(self, y, condition=None):
-        self._argcheck(y, condition)
+        y, condition = self._argcheck_and_cast(y, condition)
         return self.inverse(y, condition), jnp.array(0)
