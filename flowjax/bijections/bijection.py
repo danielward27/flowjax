@@ -10,6 +10,8 @@ from abc import abstractmethod
 
 from equinox import Module
 from jax import Array
+from jax.typing import ArrayLike
+import jax.numpy as jnp
 
 
 class Bijection(Module):
@@ -42,35 +44,45 @@ class Bijection(Module):
     cond_shape: tuple[int, ...] | None
 
     @abstractmethod
-    def transform(self, x: Array, condition: Array | None = None) -> Array:
+    def transform(self, x: ArrayLike, condition: ArrayLike | None = None) -> Array:
         """Apply transformation."""
 
     @abstractmethod
     def transform_and_log_det(
-        self, x: Array, condition: Array | None = None
+        self, x: ArrayLike, condition: ArrayLike | None = None
     ) -> tuple[Array, Array]:
         """Apply transformation and compute log absolute value of the Jacobian determinant."""
 
     @abstractmethod
-    def inverse(self, y: Array, condition: Array | None = None) -> Array:
+    def inverse(self, y: ArrayLike, condition: ArrayLike | None = None) -> Array:
         """Invert the transformation."""
 
     @abstractmethod
     def inverse_and_log_det(
-        self, y: Array, condition: Array | None = None
+        self, y: ArrayLike, condition: ArrayLike | None = None
     ) -> tuple[Array, Array]:
         """Invert the transformation and compute log absolute value of the Jacobian determinant."""
 
-    def _argcheck(self, x: Array, condition: Array | None = None):
-        """Utility argcheck that can be added to bijection methods as required."""
-        if self.shape is not None:
-            if x.shape != self.shape:
-                raise ValueError(f"Expected x.shape {self.shape}, got {x.shape}")
+    def _argcheck_and_cast(
+        self, x: ArrayLike, condition: ArrayLike | None = None
+    ) -> tuple[Array, Array | None]:
+        """Utility function that checks input shapes against the bijection shapes,
+        and casts inputs to arrays if required. Note this permits passing a condition
+        in the case when bijection.cond_shape is None."""
+        if not isinstance(x, ArrayLike):
+            raise ValueError(f"Expected arraylike input; got {x}")
+        x = jnp.asarray(x)
 
-        if self.cond_shape is not None:
-            if condition is None:
-                raise ValueError("Condition should be provided")
-            if condition.shape != self.cond_shape:
+        if x.shape != self.shape:
+            raise ValueError(f"Expected x.shape {self.shape}; got {x.shape}")
+
+        if isinstance(condition, ArrayLike):
+            condition = jnp.asarray(condition)
+            if self.cond_shape is not None and condition.shape != self.cond_shape:
                 raise ValueError(
-                    f"Expected condition.shape {self.cond_shape}, got {condition.shape}"
+                    f"Expected condition.shape {self.cond_shape}; got {condition.shape}"
                 )
+        elif self.cond_shape is not None:
+            raise ValueError(f"Expected condition to be arraylike; got {condition}")
+
+        return x, condition
