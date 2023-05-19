@@ -25,7 +25,7 @@ class Affine(Bijection):
             loc (ArrayLike): Location parameter. Defaults to 0.
             scale (ArrayLike): Scale parameter. Defaults to 1.
         """
-        loc, scale = [jnp.asarray(a, dtype=jnp.float32) for a in (loc, scale)]
+        loc, scale = [jnp.asarray(a, dtype=float) for a in (loc, scale)]
         self.shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
         self.cond_shape = None
 
