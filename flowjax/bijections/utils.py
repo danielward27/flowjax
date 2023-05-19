@@ -4,7 +4,7 @@ from typing import Callable
 import jax.numpy as jnp
 from jax import Array
 from jax.experimental import checkify
-
+from jax.typing import ArrayLike
 from flowjax.bijections.bijection import Bijection
 
 
@@ -47,13 +47,14 @@ class Permute(Bijection):
     permutation: tuple[Array, ...]
     inverse_permutation: tuple[Array, ...]
 
-    def __init__(self, permutation: Array):
+    def __init__(self, permutation: ArrayLike):
         """
         Args:
-            permutation (Array): An array with shape matching the array to transform,
+            permutation (ArrayLike): An array with shape matching the array to transform,
                 with elements 0-(array.size-1) representing the new order based on the
                 flattened array (uses, C-like ordering).
         """
+        permutation = jnp.asarray(permutation)
         checkify.check(
             (permutation.ravel().sort() == jnp.arange(permutation.size)).all(),
             "Invalid permutation array provided.",

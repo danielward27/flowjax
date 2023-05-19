@@ -36,7 +36,7 @@ class Chain(Bijection):
             log_abs_det_jac += log_abs_det_jac_i.sum()
         return x, log_abs_det_jac
 
-    def inverse(self, y: Array, condition=None):
+    def inverse(self, y, condition=None):
         for bijection in reversed(self.bijections):
             y = bijection.inverse(y, condition)
         return y

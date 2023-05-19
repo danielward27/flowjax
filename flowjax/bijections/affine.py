@@ -67,20 +67,21 @@ class TriangularAffine(Bijection):
 
     def __init__(
         self,
-        loc: Array,
-        arr: Array,
+        loc: ArrayLike,
+        arr: ArrayLike,
         lower: bool = True,
         weight_normalisation: bool = False,
     ):
         """
         Args:
-            loc (Array): Location parameter.
-            arr (Array): Triangular matrix.
+            loc (ArrayLike): Location parameter.
+            arr (ArrayLike): Triangular matrix.
             lower (bool): Whether the mask should select the lower or upper
                 triangular matrix (other elements ignored). Defaults to True.
             weight_log_scale (Array | None): If provided, carry out weight
                 normalisation.
         """
+        loc, arr = jnp.asarray(loc), jnp.asarray(arr)
         if (arr.ndim != 2) or (arr.shape[0] != arr.shape[1]):
             raise ValueError("arr must be a square, 2-dimensional matrix.")
         checkify.check(
