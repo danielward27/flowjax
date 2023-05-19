@@ -13,7 +13,7 @@ from jax.nn.initializers import glorot_uniform
 from jax.random import KeyArray
 
 from flowjax.bijections import (
-    AdditiveLinearCondition,
+    AdditiveCondition,
     Bijection,
     BlockAutoregressiveNetwork,
     Chain,
@@ -28,6 +28,7 @@ from flowjax.bijections import (
     TriangularAffine,
 )
 from flowjax.distributions import Distribution, Transformed
+from equinox.nn import Linear
 
 
 class CouplingFlow(Transformed):
@@ -292,11 +293,9 @@ class TriangularSplineFlow(Transformed):
         permute_strategy = _default_permute_strategy(dim)
 
         def make_layer(key):
-            lt_key, perm_key = random.split(key)
-            c_dim = 0 if cond_dim is None else cond_dim
-            weights = init(lt_key, (dim, dim + c_dim))
-            lt_weights = weights[:, :dim].at[jnp.diag_indices(dim)].set(1)
-            cond_weights = weights[:, dim:]
+            lt_key, perm_key, cond_key = random.split(key, 3)
+            weights = init(lt_key, (dim, dim))
+            lt_weights = weights.at[jnp.diag_indices(dim)].set(1)
             lower_tri = TriangularAffine(
                 jnp.zeros(dim), lt_weights, weight_normalisation=True
             )
@@ -309,7 +308,11 @@ class TriangularSplineFlow(Transformed):
             ]
 
             if cond_dim is not None:
-                linear_condition = AdditiveLinearCondition(cond_weights)
+                linear_condition = AdditiveCondition(
+                    Linear(cond_dim, dim, use_bias=False, key=cond_key),
+                    (dim,),
+                    (cond_dim,),
+                )
                 bijections.append(linear_condition)
 
             if permute_strategy == "flip":
