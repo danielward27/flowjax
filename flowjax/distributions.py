@@ -226,8 +226,6 @@ class Distribution(eqx.Module):
         keys = jnp.reshape(jr.split(key, key_size), key_shape + (2,))  # type: ignore
         return keys
 
-    # jnp.vectorize would catch ndim mismatches, but it doesn't check axis lengths.
-
     def _argcheck_and_cast_x(self, x) -> Array:
         if not isinstance(x, ArrayLike):
             raise ValueError(f"Expected x to be arraylike; got {x}")
@@ -364,8 +362,8 @@ class Normal(Transformed):
     def __init__(self, loc: ArrayLike = 0, scale: ArrayLike = 1):
         """
         Args:
-            loc (Array): Means. Defaults to 0.
-            scale (Array): Standard deviations. Defaults to 1.
+            loc (ArrayLike): Means. Defaults to 0.
+            scale (ArrayLike): Standard deviations. Defaults to 1.
         """
         shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
         base_dist = StandardNormal(shape)
@@ -407,11 +405,11 @@ class Uniform(Transformed):
     def __init__(self, minval: ArrayLike, maxval: ArrayLike):
         """
         Args:
-            minval (Array): Minimum values.
-            maxval (Array): Maximum values.
+            minval (ArrayLike): Minimum values.
+            maxval (ArrayLike): Maximum values.
         """
-        shape = jnp.broadcast_shapes(jnp.shape(minval), jnp.shape(maxval))
-        minval, maxval = jnp.array(minval), jnp.array(maxval)
+        minval, maxval = jnp.asarray(minval), jnp.asarray(maxval)
+        shape = jnp.broadcast_shapes(minval.shape, maxval.shape)
         checkify.check(
             jnp.all(maxval >= minval),
             "Minimums must be less than the maximums.",
@@ -456,8 +454,8 @@ class Gumbel(Transformed):
         `loc` and `scale` should broadcast to the dimension of the distribution.
 
         Args:
-            loc (Array): Location paramter.
-            scale (Array): Scale parameter. Defaults to 1.0.
+            loc (ArrayLike): Location paramter.
+            scale (ArrayLike): Scale parameter. Defaults to 1.0.
         """
         shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
         base_dist = _StandardGumbel(shape)
@@ -503,8 +501,8 @@ class Cauchy(Transformed):
         `loc` and `scale` should broadcast to the dimension of the distribution.
 
         Args:
-            loc (Array): Location paramter.
-            scale (Array): Scale parameter. Defaults to 1.0.
+            loc (ArrayLike): Location paramter.
+            scale (ArrayLike): Scale parameter. Defaults to 1.0.
         """
         shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
         base_dist = _StandardCauchy(shape)
@@ -550,14 +548,14 @@ class StudentT(Transformed):
     bijection: Affine
     base_dist: _StandardStudentT
 
-    def __init__(self, df: Array, loc: ArrayLike = 0, scale: ArrayLike = 1):
+    def __init__(self, df: ArrayLike, loc: ArrayLike = 0, scale: ArrayLike = 1):
         """
         `df`, `loc` and `scale` broadcast to the dimension of the distribution.
 
         Args:
-            df (Array): The degrees of freedom.
-            loc (Array): Location parameter. Defaults to 0.0.
-            scale (Array): Scale parameter. Defaults to 1.0.
+            df (ArrayLike): The degrees of freedom.
+            loc (ArrayLike): Location parameter. Defaults to 0.0.
+            scale (ArrayLike): Scale parameter. Defaults to 1.0.
         """
         df, loc, scale = jnp.broadcast_arrays(df, loc, scale)
         base_dist = _StandardStudentT(df)
