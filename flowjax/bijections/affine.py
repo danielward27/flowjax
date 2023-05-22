@@ -161,6 +161,21 @@ class AdditiveCondition(Bijection):
                 that is broadcastable with the shape of the bijection.
             shape (tuple[int, ...]): The shape of the bijection.
             cond_shape (tuple[int, ...]): The condition shape of the bijection.
+
+        Example:
+            Conditioning using a linear transformation
+
+            .. doctest::
+
+                >>> from flowjax.bijections import AdditiveCondition
+                >>> from equinox.nn import Linear
+                >>> import jax.numpy as jnp
+                >>> import jax.random as jr
+                >>> bijection = AdditiveCondition(
+                >>>     Linear(2, 3, key=jr.PRNGKey(0)), shape=(3,), cond_shape=(2,)
+                >>>     )
+                >>> bijection.transform(jnp.ones(3), condition=jnp.ones(2))
+                Array([1.9670618, 0.8156546, 1.7763454], dtype=float32)
         """
         self.module = module
         self.shape = shape
