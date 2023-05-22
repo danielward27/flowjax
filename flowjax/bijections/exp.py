@@ -17,18 +17,18 @@ class Exp(Bijection):
         self.cond_shape = None
 
     def transform(self, x, condition=None):
-        self._argcheck(x)
+        x, _ = self._argcheck_and_cast(x)
         return jnp.exp(x)
 
     def transform_and_log_det(self, x, condition=None):
-        self._argcheck(x)
+        x, _ = self._argcheck_and_cast(x)
         return jnp.exp(x), x.sum()
 
     def inverse(self, y, condition=None):
-        self._argcheck(y)
+        y, _ = self._argcheck_and_cast(y)
         return jnp.log(y)
 
     def inverse_and_log_det(self, y, condition=None):
-        self._argcheck(y)
+        y, _ = self._argcheck_and_cast(y)
         x = jnp.log(y)
         return x, -x.sum()

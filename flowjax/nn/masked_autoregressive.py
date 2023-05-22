@@ -6,7 +6,8 @@ from equinox import Module
 from equinox.nn import Linear
 from jax import Array, random
 from jax.random import KeyArray
-
+from jax.typing import ArrayLike
+import jax.numpy as jnp
 from flowjax.masks import rank_based_mask
 
 
@@ -20,23 +21,25 @@ class MaskedLinear(Module):
     linear: Linear
     mask: Array
 
-    def __init__(self, mask: Array, use_bias: bool = True, *, key: KeyArray):
+    def __init__(self, mask: ArrayLike, use_bias: bool = True, *, key: KeyArray):
         """
 
         Args:
-            mask (Array): Mask with shape (out_features, in_features).
+            mask (ArrayLike): Mask with shape (out_features, in_features).
             key (KeyArray): Jax PRNGKey
             use_bias (bool): Whether to include bias terms. Defaults to True.
         """
+        mask = jnp.asarray(mask)
         self.linear = Linear(mask.shape[1], mask.shape[0], use_bias, key=key)
         self.mask = mask
 
-    def __call__(self, x: Array):
+    def __call__(self, x: ArrayLike):
         """Run the masked linear layer
 
         Args:
-            x (Array): Array with shape ``(mask.shape[1], )``
+            x (ArrayLike): Array with shape ``(mask.shape[1], )``
         """
+        x = jnp.asarray(x)
         x = self.linear.weight * self.mask @ x
         if self.linear.bias is not None:
             x = x + self.linear.bias
@@ -61,9 +64,9 @@ class AutoregressiveMLP(Module):
 
     def __init__(
         self,
-        in_ranks: Array,
-        hidden_ranks: Array,
-        out_ranks: Array,
+        in_ranks: ArrayLike,
+        hidden_ranks: ArrayLike,
+        out_ranks: ArrayLike,
         depth: int,
         activation: Callable = jnn.relu,
         final_activation: Callable = _identity,
@@ -72,14 +75,17 @@ class AutoregressiveMLP(Module):
     ) -> None:
         """
         Args:
-            in_ranks (Array): Ranks of the inputs.
-            hidden_ranks (Array): Ranks of the hidden layer(s).
-            out_ranks (Array): Ranks of the outputs.
+            in_ranks (ArrayLike): Ranks of the inputs.
+            hidden_ranks (ArrayLike): Ranks of the hidden layer(s).
+            out_ranks (ArrayLike): Ranks of the outputs.
             depth (int): Number of hidden layers.
             activation (Callable): Activation function. Defaults to jnn.relu.
             final_activation (Callable): Final activation function. Defaults to _identity.
             key (KeyArray): Jax PRNGKey.
         """
+        in_ranks, hidden_ranks, out_ranks = [
+            jnp.asarray(a) for a in [in_ranks, hidden_ranks, out_ranks]
+        ]
         masks = []
         if depth == 0:
             masks.append(rank_based_mask(in_ranks, out_ranks, eq=False))

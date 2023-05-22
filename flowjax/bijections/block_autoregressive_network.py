@@ -70,14 +70,14 @@ class BlockAutoregressiveNetwork(Bijection):
         self.cond_shape = (cond_dim,) if cond_dim is not None else None
 
     def transform(self, x, condition=None):
-        self._argcheck(x, condition)
+        x, condition = self._argcheck_and_cast(x, condition)
         x = self.layers[0](x, condition)[0]
         for layer in self.layers[1:]:
             x = layer(x)[0]
         return x
 
     def transform_and_log_det(self, x, condition=None):
-        self._argcheck(x, condition)
+        x, condition = self._argcheck_and_cast(x, condition)
         x, log_jacobian_3d_0 = self.layers[0](x, condition)
         log_jacobian_3ds = [log_jacobian_3d_0]
         for layer in self.layers[1:]:

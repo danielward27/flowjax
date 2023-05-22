@@ -38,7 +38,7 @@ class Concatenate(Bijection):
         self.cond_shape = merge_cond_shapes([b.cond_shape for b in bijections])
 
     def transform(self, x, condition=None):
-        self._argcheck(x, condition)
+        x, condition = self._argcheck_and_cast(x, condition)
         x_parts = jnp.array_split(x, self.split_idxs, axis=self.axis)
         y_parts = [
             b.transform(x_part, condition)
@@ -47,7 +47,7 @@ class Concatenate(Bijection):
         return jnp.concatenate(y_parts, axis=self.axis)
 
     def transform_and_log_det(self, x, condition=None):
-        self._argcheck(x, condition)
+        x, condition = self._argcheck_and_cast(x, condition)
         x_parts = jnp.array_split(x, self.split_idxs, axis=self.axis)
 
         ys_log_dets = [
@@ -59,7 +59,7 @@ class Concatenate(Bijection):
         return jnp.concatenate(y_parts, self.axis), sum(log_dets)
 
     def inverse(self, y, condition=None):
-        self._argcheck(y, condition)
+        y, condition = self._argcheck_and_cast(y, condition)
         y_parts = jnp.array_split(y, self.split_idxs, axis=self.axis)
         x_parts = [
             b.inverse(y_part, condition) for b, y_part in zip(self.bijections, y_parts)
@@ -67,7 +67,7 @@ class Concatenate(Bijection):
         return jnp.concatenate(x_parts, axis=self.axis)
 
     def inverse_and_log_det(self, y, condition=None):
-        self._argcheck(y, condition)
+        y, condition = self._argcheck_and_cast(y, condition)
         y_parts = jnp.array_split(y, self.split_idxs, axis=self.axis)
 
         xs_log_dets = [
@@ -114,7 +114,7 @@ class Stack(Bijection):
         self.cond_shape = merge_cond_shapes([b.cond_shape for b in bijections])
 
     def transform(self, x, condition=None):
-        self._argcheck(x, condition)
+        x, condition = self._argcheck_and_cast(x, condition)
         x_parts = self._split_and_squeeze(x)
         y_parts = [
             b.transform(x, condition) for (b, x) in zip(self.bijections, x_parts)
@@ -122,7 +122,7 @@ class Stack(Bijection):
         return jnp.stack(y_parts, self.axis)
 
     def transform_and_log_det(self, x, condition=None):
-        self._argcheck(x, condition)
+        x, condition = self._argcheck_and_cast(x, condition)
         x_parts = self._split_and_squeeze(x)
         ys_log_det = [
             b.transform_and_log_det(x, condition)
@@ -133,13 +133,13 @@ class Stack(Bijection):
         return jnp.stack(y_parts, self.axis), sum(log_dets)
 
     def inverse(self, y, condition=None):
-        self._argcheck(y, condition)
+        y, condition = self._argcheck_and_cast(y, condition)
         y_parts = self._split_and_squeeze(y)
         x_parts = [b.inverse(y, condition) for (b, y) in zip(self.bijections, y_parts)]
         return jnp.stack(x_parts, self.axis)
 
     def inverse_and_log_det(self, y, condition=None):
-        self._argcheck(y, condition)
+        y, condition = self._argcheck_and_cast(y, condition)
         y_parts = self._split_and_squeeze(y)
         xs_log_det = [
             b.inverse_and_log_det(y, condition)

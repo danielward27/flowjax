@@ -4,7 +4,7 @@ from typing import Callable
 import jax.numpy as jnp
 from jax import Array
 from jax.experimental import checkify
-
+from jax.typing import ArrayLike
 from flowjax.bijections.bijection import Bijection
 
 
@@ -47,13 +47,14 @@ class Permute(Bijection):
     permutation: tuple[Array, ...]
     inverse_permutation: tuple[Array, ...]
 
-    def __init__(self, permutation: Array):
+    def __init__(self, permutation: ArrayLike):
         """
         Args:
-            permutation (Array): An array with shape matching the array to transform,
+            permutation (ArrayLike): An array with shape matching the array to transform,
                 with elements 0-(array.size-1) representing the new order based on the
                 flattened array (uses, C-like ordering).
         """
+        permutation = jnp.asarray(permutation)
         checkify.check(
             (permutation.ravel().sort() == jnp.arange(permutation.size)).all(),
             "Invalid permutation array provided.",
@@ -72,17 +73,19 @@ class Permute(Bijection):
         )
 
     def transform(self, x, condition=None):
-        self._argcheck(x)
+        x, _ = self._argcheck_and_cast(x)
         return x[self.permutation]
 
     def transform_and_log_det(self, x, condition=None):
+        x, _ = self._argcheck_and_cast(x)
         return x[self.permutation], jnp.array(0)
 
     def inverse(self, y, condition=None):
-        self._argcheck(y)
+        y, _ = self._argcheck_and_cast(y)
         return y[self.inverse_permutation]
 
     def inverse_and_log_det(self, y, condition=None):
+        x, _ = self._argcheck_and_cast(y)
         return y[self.inverse_permutation], jnp.array(0)
 
 
@@ -98,19 +101,19 @@ class Flip(Bijection):
         self.cond_shape = None
 
     def transform(self, x, condition=None):
-        self._argcheck(x)
+        x, _ = self._argcheck_and_cast(x)
         return jnp.flip(x)
 
     def transform_and_log_det(self, x, condition=None):
-        self._argcheck(x)
+        x, _ = self._argcheck_and_cast(x)
         return jnp.flip(x), jnp.array(0)
 
     def inverse(self, y, condition=None):
-        self._argcheck(y)
+        y, _ = self._argcheck_and_cast(y)
         return jnp.flip(y)
 
     def inverse_and_log_det(self, y, condition=None):
-        self._argcheck(y)
+        y, _ = self._argcheck_and_cast(y)
         return jnp.flip(y), jnp.array(0)
 
 
@@ -140,23 +143,23 @@ class Partial(Bijection):
                 f"while the subset has a shape of {jnp.zeros(shape)[idxs].shape}."
             )
 
-    def transform(self, x: Array, condition=None):
-        self._argcheck(x)
+    def transform(self, x, condition=None):
+        x, condition = self._argcheck_and_cast(x, condition)
         y = self.bijection.transform(x[self.idxs], condition)
         return x.at[self.idxs].set(y)
 
-    def transform_and_log_det(self, x: Array, condition=None):
-        self._argcheck(x)
+    def transform_and_log_det(self, x, condition=None):
+        x, condition = self._argcheck_and_cast(x, condition)
         y, log_det = self.bijection.transform_and_log_det(x[self.idxs], condition)
         return x.at[self.idxs].set(y), log_det
 
-    def inverse(self, y: Array, condition=None):
-        self._argcheck(y)
+    def inverse(self, y, condition=None):
+        y, condition = self._argcheck_and_cast(y, condition)
         x = self.bijection.inverse(y[self.idxs], condition)
         return y.at[self.idxs].set(x)
 
-    def inverse_and_log_det(self, y: Array, condition=None):
-        self._argcheck(y)
+    def inverse_and_log_det(self, y, condition=None):
+        y, condition = self._argcheck_and_cast(y, condition)
         x, log_det = self.bijection.inverse_and_log_det(y[self.idxs], condition)
         return y.at[self.idxs].set(x), log_det
 
@@ -191,21 +194,21 @@ class EmbedCondition(Bijection):
         self.cond_shape = raw_cond_shape
 
     def transform(self, x, condition=None):
-        self._argcheck(x, condition)
+        x, condition = self._argcheck_and_cast(x, condition)
         condition = self.embedding_net(condition)
         return self.bijection.transform(x, condition)
 
     def transform_and_log_det(self, x, condition=None):
-        self._argcheck(x, condition)
+        x, condition = self._argcheck_and_cast(x, condition)
         condition = self.embedding_net(condition)
         return self.bijection.transform_and_log_det(x, condition)
 
     def inverse(self, y, condition=None):
-        self._argcheck(y, condition)
+        y, condition = self._argcheck_and_cast(y, condition)
         condition = self.embedding_net(condition)
         return self.bijection.inverse(y, condition)
 
     def inverse_and_log_det(self, y, condition=None):
-        self._argcheck(y, condition)
+        y, condition = self._argcheck_and_cast(y, condition)
         condition = self.embedding_net(condition)
         return self.bijection.inverse_and_log_det(y, condition)

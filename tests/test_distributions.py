@@ -1,5 +1,6 @@
 import jax.numpy as jnp
 import jax.random as jr
+import numpy as np
 import pytest
 
 from flowjax.distributions import (
@@ -47,7 +48,7 @@ def test_sample(distribution, shape):
     sample = d.sample(jr.PRNGKey(0))
     assert sample.shape == shape
 
-    sample_shape = (2, 2)
+    sample_shape = (1, 2)
     sample = d.sample(jr.PRNGKey(0), sample_shape)
     assert sample.shape == sample_shape + shape
 
@@ -60,9 +61,15 @@ def test_log_prob(distribution, shape):
 
     assert d.log_prob(x).shape == ()
 
-    sample_shape = (2, 3)
+    sample_shape = (1, 2)
     x = d.sample(jr.PRNGKey(0), sample_shape)
     assert d.log_prob(x).shape == sample_shape
+
+    # test arraylike input
+    assert jnp.all(d.log_prob(np.array(x)) == d.log_prob(x))
+
+    if d.shape == ():
+        assert d.log_prob(jnp.array(0)) == d.log_prob(0)
 
 
 @pytest.mark.parametrize("distribution", _test_distributions)

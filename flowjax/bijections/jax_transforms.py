@@ -12,17 +12,6 @@ class Batch(Bijection):
     """Add batch dimensions to a bijection, such that the new shape is
     batch_shape + bijection.shape. The batch dimensions are added using multiple
     applications of eqx.filter_vmap.
-
-    Example:
-
-    .. doctest::
-
-        >>> import jax.numpy as jnp
-        >>> from flowjax.bijections import Batch, Affine
-        >>> x = jnp.ones(2)
-        >>> batched = Batch(Affine(1), (2,), vectorize_bijection=False)
-        >>> batched.transform(x)
-        Array([2., 2.], dtype=float32)
     """
 
     bijection: Bijection
@@ -46,12 +35,21 @@ class Batch(Bijection):
                 have leading dimensions equal to batch_shape. For construction of
                 compatible bijections, see ``eqx.filter_vmap``. If False: we broadcast
                 the parameters, i.e. the same bijection parameters are used for each x.
-
-
             vectorize_condition (bool | None): Whether to vectorize or broadcast the
                 conditioning variables. If broadcasting, the condition shape is
                 unchanged. If vectorising, the condition shape will be
                 ``batch_shape + bijection.cond_shape``. Defaults to None.
+
+        Example:
+
+            .. doctest::
+
+                >>> import jax.numpy as jnp
+                >>> from flowjax.bijections import Batch, Affine
+                >>> x = jnp.ones(2)
+                >>> batched = Batch(Affine(1), (2,), vectorize_bijection=False)
+                >>> batched.transform(x)
+                Array([2., 2.], dtype=float32)
         """
         if vectorize_condition is None and bijection.cond_shape is not None:
             raise ValueError(
@@ -75,7 +73,7 @@ class Batch(Bijection):
             self.cond_shape = self.bijection.cond_shape
 
     def transform(self, x, condition=None):
-        self._argcheck(x, condition)
+        x, condition = self._argcheck_and_cast(x, condition)
 
         def _transform(bijection, x, condition):
             return bijection.transform(x, condition)
@@ -83,7 +81,7 @@ class Batch(Bijection):
         return self.multi_vmap(_transform)(self.bijection, x, condition)
 
     def transform_and_log_det(self, x, condition=None):
-        self._argcheck(x, condition)
+        x, condition = self._argcheck_and_cast(x, condition)
 
         def _transform_and_log_det(bijection, x, condition):
             return bijection.transform_and_log_det(x, condition)
@@ -94,7 +92,7 @@ class Batch(Bijection):
         return y, jnp.sum(log_det)
 
     def inverse(self, y, condition=None):
-        self._argcheck(y, condition)
+        y, condition = self._argcheck_and_cast(y, condition)
 
         def _inverse(bijection, x, condition):
             return bijection.inverse(x, condition)
@@ -102,7 +100,7 @@ class Batch(Bijection):
         return self.multi_vmap(_inverse)(self.bijection, y, condition)
 
     def inverse_and_log_det(self, y, condition=None):
-        self._argcheck(y, condition)
+        y, condition = self._argcheck_and_cast(y, condition)
 
         def _inverse_and_log_det(bijection, x, condition):
             return bijection.inverse_and_log_det(x, condition)
@@ -152,7 +150,7 @@ class Scan(Bijection):
         self.cond_shape = bijection.cond_shape
 
     def transform(self, x, condition=None):
-        self._argcheck(x, condition)
+        x, condition = self._argcheck_and_cast(x, condition)
 
         def step(x, params, condition=None):
             bijection = eqx.combine(self.static, params)
@@ -164,7 +162,7 @@ class Scan(Bijection):
         return y
 
     def transform_and_log_det(self, x, condition=None):
-        self._argcheck(x, condition)
+        x, condition = self._argcheck_and_cast(x, condition)
 
         def step(carry, params, condition):
             x, log_det = carry
@@ -177,7 +175,7 @@ class Scan(Bijection):
         return y, log_det
 
     def inverse(self, y, condition=None):
-        self._argcheck(y, condition)
+        y, _ = self._argcheck_and_cast(y, condition)
 
         def step(y, params, condition):
             bijection = eqx.combine(self.static, params)
@@ -189,7 +187,7 @@ class Scan(Bijection):
         return x
 
     def inverse_and_log_det(self, y, condition=None):
-        self._argcheck(y, condition)
+        y, _ = self._argcheck_and_cast(y, condition)
 
         def step(carry, params, condition):
             y, log_det = carry
