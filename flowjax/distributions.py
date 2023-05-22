@@ -70,7 +70,7 @@ class Distribution(eqx.Module):
     ) -> tuple[Array, Array]:
         """Sample a point from the distribution, and return its log probability.
         Subclasses can reimplement this method in cases where more efficient methods
-        exists (e.g. see Transformed).
+        exists (e.g. for :class:`Transformed` distributions).
         """
         x = self._sample(key, condition)
         log_prob = self._log_prob(x, condition)
@@ -108,9 +108,19 @@ class Distribution(eqx.Module):
         condition: ArrayLike | None = None,
     ) -> Array:
         """Sample from the distribution. For unconditional distributions, the output will
-        be of shape ``sample_shape + dist.shape``.
+        be of shape ``sample_shape + dist.shape``. For conditional distributions,
+        a batch dimension in the condition is supported, and the output shape will be
+        sample_shape + condition_batch_shape + dist.shape. See the example for more
+        information.
+
+        Args:
+            key (jr.KeyArray): Jax random key.
+            condition (ArrayLike | None): Conditioning variables. Defaults to None.
+            sample_shape (tuple[int, ...]): Sample shape. Defaults to ().
 
         Example:
+            The below example shows the behaviour of sampling, for an unconditional
+            and a conditional distribution.
 
             .. testsetup::
 
@@ -158,10 +168,6 @@ class Distribution(eqx.Module):
                 >>> samples.shape
                 (10, 5, 2)
 
-        Args:
-            key (jr.KeyArray): Jax random key.
-            condition (ArrayLike | None): Conditioning variables. Defaults to None.
-            sample_shape (tuple[int, ...]): Sample shape. Defaults to ().
 
         """
         condition = self._argcheck_and_cast_condition(condition)
@@ -179,11 +185,9 @@ class Distribution(eqx.Module):
     ):
         """Sample the distribution and return the samples and corresponding log probabilities.
         For transformed distributions (especially flows), this will generally be more efficient
-        than calling the methods seperately.
-
-        Refer to the :py:meth:`~flowjax.distributions.Distribution.sample` and
-        Refer to the :py:meth:`~flowjax.distributions.Distribution.log_prob` documentation
-        for more information.
+        than calling the methods seperately. Refer to the
+        :py:meth:`~flowjax.distributions.Distribution.sample` documentation for more
+        information.
 
         Args:
             key (jr.KeyArray): Jax random key.
@@ -333,7 +337,9 @@ class Transformed(Distribution):
 
 
 class StandardNormal(Distribution):
-    """Implements a standard normal distribution, condition is ignored."""
+    """Implements a standard normal distribution, condition is ignored. Unlike
+    :class:`Normal`, this has no trainable parameters.
+    """
 
     def __init__(self, shape: tuple[int, ...] = ()):
         """

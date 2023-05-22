@@ -12,17 +12,6 @@ class Batch(Bijection):
     """Add batch dimensions to a bijection, such that the new shape is
     batch_shape + bijection.shape. The batch dimensions are added using multiple
     applications of eqx.filter_vmap.
-
-    Example:
-
-    .. doctest::
-
-        >>> import jax.numpy as jnp
-        >>> from flowjax.bijections import Batch, Affine
-        >>> x = jnp.ones(2)
-        >>> batched = Batch(Affine(1), (2,), vectorize_bijection=False)
-        >>> batched.transform(x)
-        Array([2., 2.], dtype=float32)
     """
 
     bijection: Bijection
@@ -46,12 +35,21 @@ class Batch(Bijection):
                 have leading dimensions equal to batch_shape. For construction of
                 compatible bijections, see ``eqx.filter_vmap``. If False: we broadcast
                 the parameters, i.e. the same bijection parameters are used for each x.
-
-
             vectorize_condition (bool | None): Whether to vectorize or broadcast the
                 conditioning variables. If broadcasting, the condition shape is
                 unchanged. If vectorising, the condition shape will be
                 ``batch_shape + bijection.cond_shape``. Defaults to None.
+
+        Example:
+
+            .. doctest::
+
+                >>> import jax.numpy as jnp
+                >>> from flowjax.bijections import Batch, Affine
+                >>> x = jnp.ones(2)
+                >>> batched = Batch(Affine(1), (2,), vectorize_bijection=False)
+                >>> batched.transform(x)
+                Array([2., 2.], dtype=float32)
         """
         if vectorize_condition is None and bijection.cond_shape is not None:
             raise ValueError(
