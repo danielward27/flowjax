@@ -11,7 +11,8 @@ from abc import abstractmethod
 from equinox import Module
 from jax import Array
 from jax.typing import ArrayLike
-import jax.numpy as jnp
+
+from flowjax.utils import arraylike_to_array
 
 
 class Bijection(Module):
@@ -69,20 +70,17 @@ class Bijection(Module):
         """Utility function that checks input shapes against the bijection shapes,
         and casts inputs to arrays if required. Note this permits passing a condition
         in the case when bijection.cond_shape is None."""
-        if not isinstance(x, ArrayLike):
-            raise ValueError(f"Expected arraylike input; got {x}")
-        x = jnp.asarray(x)
+        x = arraylike_to_array(x, err_name="x")
 
         if x.shape != self.shape:
             raise ValueError(f"Expected x.shape {self.shape}; got {x.shape}")
 
-        if isinstance(condition, ArrayLike):
-            condition = jnp.asarray(condition)
+        if condition is not None:
+            condition = arraylike_to_array(condition, err_name="condition")
+
             if self.cond_shape is not None and condition.shape != self.cond_shape:
                 raise ValueError(
                     f"Expected condition.shape {self.cond_shape}; got {condition.shape}"
                 )
-        elif self.cond_shape is not None:
-            raise ValueError(f"Expected condition to be arraylike; got {condition}")
 
         return x, condition

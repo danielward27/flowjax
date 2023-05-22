@@ -14,6 +14,8 @@ from jax.typing import ArrayLike
 from flowjax.bijections import Affine, Bijection
 from flowjax.utils import _get_ufunc_signature, merge_cond_shapes
 
+from flowjax.utils import arraylike_to_array
+
 
 class Distribution(eqx.Module):
     """Distribution base class. Distributions all have an attribute ``shape``,
@@ -227,9 +229,7 @@ class Distribution(eqx.Module):
         return keys
 
     def _argcheck_and_cast_x(self, x) -> Array:
-        if not isinstance(x, ArrayLike):
-            raise ValueError(f"Expected x to be arraylike; got {x}")
-        x = jnp.asarray(x)
+        x = arraylike_to_array(x, err_name="x")
         x_trailing = x.shape[-self.ndim :] if self.ndim > 0 else ()
         if x_trailing != self.shape:
             raise ValueError(
@@ -246,9 +246,7 @@ class Distribution(eqx.Module):
                     f"got {condition}."
                 )
             return None
-        if not isinstance(condition, ArrayLike):
-            raise ValueError(f"Expected condition to be arraylike; got {condition}")
-        condition = jnp.asarray(condition)
+        condition = arraylike_to_array(condition, err_name="condition")
         condition_trailing = (
             condition.shape[-len(self.cond_shape) :] if self.cond_ndim > 0 else ()  # type: ignore
         )
@@ -408,7 +406,7 @@ class Uniform(Transformed):
             minval (ArrayLike): Minimum values.
             maxval (ArrayLike): Maximum values.
         """
-        minval, maxval = jnp.asarray(minval), jnp.asarray(maxval)
+        minval, maxval = arraylike_to_array(minval), arraylike_to_array(maxval)
         shape = jnp.broadcast_shapes(minval.shape, maxval.shape)
         checkify.check(
             jnp.all(maxval >= minval),

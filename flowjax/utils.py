@@ -6,8 +6,7 @@ import jax
 import jax.numpy as jnp
 from jax import Array
 from jax.flatten_util import ravel_pytree
-
-from flowjax.bijections.bijection import Bijection
+from jax.typing import ArrayLike
 
 
 def real_to_increasing_on_interval(
@@ -79,9 +78,7 @@ def _get_ufunc_signature(in_shapes, out_shapes):
     return f"{in_shapes_str}->{out_shapes_str}"
 
 
-def get_ravelled_bijection_constructor(
-    bijection: Bijection, filter_spec=eqx.is_inexact_array
-):
+def get_ravelled_bijection_constructor(bijection, filter_spec=eqx.is_inexact_array):
     """Given a bijection, returns a tuple containing
     1) a constructor for the bijection from a flattened array; 2) the current flattened
     parameters.
@@ -98,3 +95,21 @@ def get_ravelled_bijection_constructor(
         return eqx.combine(params, static)
 
     return constructor, current
+
+
+def arraylike_to_array(arr, err_name: str = "input", **kwargs) -> Array:
+    """Combines jnp.asarray, with an isinstance(arr, ArrayLike) check. This
+    allows inputs to be jax.numpy arrays, numpy arrays, python built in numeric types
+    (float, int) etc, but does not allow list or tuple inputs (which are not arraylike
+    and can introduce overhead and confusing behaviour in certain cases).
+
+    Args:
+        arr: Arraylike input to convert to a jax array.
+        err_name (str, optional): Name of the input in the error message. Defaults to "input".
+        **kwargs: Key word arguments passed to jnp.asarray.
+    """
+    if not isinstance(arr, ArrayLike):
+        raise ValueError(
+            f"Expected {err_name} to be arraylike; got {type(arr).__name__}."
+        )
+    return jnp.asarray(arr, **kwargs)

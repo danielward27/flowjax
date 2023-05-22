@@ -7,7 +7,6 @@ import pytest
 
 from flowjax.bijections import (
     AdditiveCondition,
-    AdditiveLinearCondition,
     Affine,
     BlockAutoregressiveNetwork,
     Chain,
@@ -102,9 +101,6 @@ bijections = {
     ),
     "BlockAutoregressiveNetwork (conditional)": BlockAutoregressiveNetwork(
         KEY, dim=DIM, cond_dim=COND_DIM, block_dim=3, depth=1
-    ),
-    "AdditiveLinearCondition": AdditiveLinearCondition(
-        jr.uniform(KEY, (DIM, COND_DIM))
     ),
     "AdditiveCondtition": AdditiveCondition(
         lambda condition: jnp.arange(DIM) * jnp.sum(condition), (DIM,), (COND_DIM,)

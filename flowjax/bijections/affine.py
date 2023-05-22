@@ -7,6 +7,7 @@ from jax.experimental import checkify
 from jax.scipy.linalg import solve_triangular
 from jax.typing import ArrayLike
 import warnings
+from flowjax.utils import arraylike_to_array
 
 from flowjax.bijections.bijection import Bijection
 
@@ -25,7 +26,7 @@ class Affine(Bijection):
             loc (ArrayLike): Location parameter. Defaults to 0.
             scale (ArrayLike): Scale parameter. Defaults to 1.
         """
-        loc, scale = [jnp.asarray(a, dtype=float) for a in (loc, scale)]
+        loc, scale = [arraylike_to_array(a, dtype=float) for a in (loc, scale)]
         self.shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
         self.cond_shape = None
 
@@ -81,7 +82,7 @@ class TriangularAffine(Bijection):
             weight_log_scale (Array | None): If provided, carry out weight
                 normalisation.
         """
-        loc, arr = jnp.asarray(loc), jnp.asarray(arr)
+        loc, arr = [arraylike_to_array(a, dtype=float) for a in (loc, arr)]
         if (arr.ndim != 2) or (arr.shape[0] != arr.shape[1]):
             raise ValueError("arr must be a square, 2-dimensional matrix.")
         checkify.check(
