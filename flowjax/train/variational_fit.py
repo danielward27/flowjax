@@ -2,9 +2,10 @@
 from typing import Any, Callable
 
 import equinox as eqx
-import jax.random as jr
 import optax
 from jax import Array
+import jax.random as jr
+from jax.typing import ArrayLike
 from tqdm import tqdm
 
 from flowjax.distributions import Distribution
@@ -14,24 +15,54 @@ PyTree = Any
 
 def elbo_loss(
     dist: Distribution,
-    target: Callable[[Array], Array],
+    target: Callable[[ArrayLike, ArrayLike | None], ArrayLike],
     key: jr.KeyArray,
     num_samples: int,
 ) -> Array:
-    """The evidence lower bound loss function."""
     samples, approx_density = dist.sample_and_log_prob(key, (num_samples,))
     target_density = target(samples)
     losses = approx_density - target_density
     return losses.mean()
 
 
+class Elbo:
+    """Elbo loss function, approximated using samples."""
+
+    num_particles: int
+    target: Callable[[ArrayLike, ArrayLike | None], Array]
+
+    def __init__(
+        self, num_particles: int, target: Callable[[ArrayLike, ArrayLike | None], Array]
+    ):
+        """
+        Args:
+            num_particles (int): Number of samples to use in the ELBO approximation.
+            target (Callable[[ArrayLike, ArrayLike | None], Array]): The target,
+                e.g. log posterior density up to an additive constant. This must take
+                two arguments, an array of points to evaluate, and corresponding
+                conditioning variables (or None, if an unconditional distribution is
+                used).
+        """
+        self.num_particles = num_particles
+        self.target = target
+
+    def __call__(
+        self, dist: Distribution, key: jr.KeyArray, condition: ArrayLike | None = None
+    ):
+        """Computes an estimate of the negative ELBO loss."""
+        samples, log_probs = dist.sample_and_log_prob(
+            key, (self.num_particles,), condition
+        )
+        target_density = self.target(samples, condition)
+        losses = log_probs - target_density
+        return losses.mean()
+
+
 def fit_to_variational_target(
     key: jr.KeyArray,
     dist: Distribution,
-    target: Callable[[Array], Array],
-    loss_fn: Callable[[Distribution, Callable, jr.KeyArray, int], Array] = elbo_loss,
+    loss_fn: Callable[[Distribution, jr.KeyArray, ArrayLike | None], Array],
     steps: int = 100,
-    samples_per_step: int = 500,
     learning_rate: float = 5e-4,
     clip_norm: float = 0.5,
     optimizer: optax.GradientTransformation | None = None,
