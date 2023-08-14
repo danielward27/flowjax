@@ -4,7 +4,7 @@ from typing import Any, Callable
 import equinox as eqx
 import jax.random as jr
 import optax
-from jax import Array
+from jax import Array, vmap
 from jax.typing import ArrayLike
 from tqdm import tqdm
 
@@ -23,8 +23,9 @@ class ElboLoss:
         """
         Args:
             num_samples (int): Number of samples to use in the ELBO approximation.
-            target (Callable[[ArrayLike], Array]): The target,
-                e.g. log posterior density up to an additive constant.
+            target (Callable[[ArrayLike], Array]): The target, i.e. log posterior
+                density up to an additive constant / the negative of the potential
+                function, evaluated for a single point.
         """
         self.target = target
         self.num_samples = num_samples
@@ -32,7 +33,7 @@ class ElboLoss:
     def __call__(self, dist: Distribution, key: jr.KeyArray):
         """Computes an estimate of the negative ELBO loss."""
         samples, log_probs = dist.sample_and_log_prob(key, (self.num_samples,))
-        target_density = self.target(samples)
+        target_density = vmap(self.target)(samples)
         losses = log_probs - target_density
         return losses.mean()
 
