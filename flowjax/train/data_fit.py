@@ -1,5 +1,6 @@
 """Function to fit flows to samples from a distribution."""
 from typing import Any, Callable, Dict
+
 import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
@@ -88,11 +89,6 @@ def fit_to_data(
         train_val_split_key, inputs, val_prop=val_prop
     )
     train_len, val_len = train_args[0].shape[0], val_args[0].shape[0]
-    if batch_size > train_len:
-        raise ValueError(
-            f"The batch size ({batch_size}) cannot be greater than the train set size "
-            f"({train_len})."
-        )
 
     losses = {"train": [], "val": []}  # type: Dict[str, list[float]]
 
@@ -104,16 +100,18 @@ def fit_to_data(
         train_args = tuple(a[permutation] for a in train_args)
 
         epoch_train_loss = 0
-        batch_start_idxs = range(0, train_len - batch_size + 1, batch_size)
+        train_batch_size = min(batch_size, train_len)
+        batch_start_idxs = range(0, train_len - train_batch_size + 1, train_batch_size)
         for i in batch_start_idxs:
-            batch = tuple(a[i : i + batch_size] for a in train_args)
+            batch = tuple(a[i : i + train_batch_size] for a in train_args)
             dist, opt_state, loss_i = step(dist, optimizer, opt_state, *batch)
             epoch_train_loss += loss_i.item() / len(batch_start_idxs)
 
         epoch_val_loss = 0
-        batch_start_idxs = range(0, val_len - batch_size + 1, batch_size)
+        val_batch_size = min(batch_size, val_len)
+        batch_start_idxs = range(0, val_len - val_batch_size + 1, val_batch_size)
         for i in batch_start_idxs:
-            batch = tuple(a[i : i + batch_size] for a in val_args)
+            batch = tuple(a[i : i + val_batch_size] for a in val_args)
 
             epoch_val_loss += loss_fn(
                 *eqx.partition(dist, filter_spec), *batch
