@@ -5,6 +5,7 @@ import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
 import optax
+from jax import Array
 from jax.scipy.special import logsumexp
 from jax.typing import ArrayLike
 from tqdm import tqdm
@@ -116,10 +117,10 @@ def fit_to_data_sequential(
     x_sim: ArrayLike,
     x_obs: ArrayLike,
     is_first_round: bool,
-    n_contrastive: int = 5,
+    n_contrastive: int = 10,
     max_epochs: int = 50,
     max_patience: int = 5,
-    batch_size: int = 100,
+    batch_size: int = 50,
     val_prop: float = 0.1,
     learning_rate: float = 5e-4,
     clip_norm: float = 0.5,
@@ -162,7 +163,7 @@ def fit_to_data_sequential(
         proposal = eqx.combine(params, static)
         sim_log_odds = proposal.log_prob(theta, x_sim) - prior.log_prob(theta)
 
-        contrastive = jnp.swapaxes(contrastive, 0, 1)  # Allow log prob broadcast
+        contrastive = jnp.swapaxes(contrastive, 0, 1)  # (contrastive, batch, theta_dim)
         contrast_log_odds = proposal.log_prob(contrastive, x_sim) - prior.log_prob(
             contrastive
         )
