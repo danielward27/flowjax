@@ -116,8 +116,7 @@ def fit_to_data_sequential(
     theta: ArrayLike,
     x_sim: ArrayLike,
     x_obs: ArrayLike,
-    is_first_round: bool,
-    n_contrastive: int = 10,
+    n_contrastive: int = 5,
     max_epochs: int = 50,
     max_patience: int = 5,
     batch_size: int = 50,
@@ -145,12 +144,8 @@ def fit_to_data_sequential(
     params, static = eqx.partition(proposal, filter_spec)
     opt_state = optimizer.init(params)
 
-    # TODO this will be memory intensive and should be batched
     key, subkey = jr.split(key)
-    if is_first_round:
-        contrastive = prior.sample(subkey, (theta.shape[0], n_contrastive))
-    else:
-        contrastive = proposal.sample(subkey, (theta.shape[0], n_contrastive), x_obs)
+    contrastive = jr.choice(subkey, theta, (theta.shape[0], n_contrastive))
 
     # Train val split
     key, subkey = jr.split(key)
@@ -162,12 +157,11 @@ def fit_to_data_sequential(
     def loss_fn(params, theta, x_sim, contrastive):
         proposal = eqx.combine(params, static)
         sim_log_odds = proposal.log_prob(theta, x_sim) - prior.log_prob(theta)
-
         contrastive = jnp.swapaxes(contrastive, 0, 1)  # (contrastive, batch, theta_dim)
         contrast_log_odds = proposal.log_prob(contrastive, x_sim) - prior.log_prob(
             contrastive
         )
-        contrast_log_odds = jnp.clip(contrast_log_odds, -5)  # Clip for stability
+        contrast_log_odds = jnp.clip(contrast_log_odds, -3)  # Clip for stability
         return -(sim_log_odds - logsumexp(contrast_log_odds, axis=0)).mean()
 
     loop = tqdm(range(max_epochs), disable=not show_progress)
