@@ -109,7 +109,7 @@ class Distribution(eqx.Module):
         """Sample from the distribution. For unconditional distributions, the output will
         be of shape ``sample_shape + dist.shape``. For conditional distributions,
         a batch dimension in the condition is supported, and the output shape will be
-        sample_shape + condition_batch_shape + dist.shape. See the example for more
+        ``sample_shape + condition_batch_shape + dist.shape``. See the example for more
         information.
 
         Args:
