@@ -9,9 +9,11 @@ from jax import Array
 from jax.scipy.special import logsumexp
 from jax.typing import ArrayLike
 from tqdm import tqdm
+from functools import partial
+from math import ceil
 
 from flowjax.distributions import Distribution
-from flowjax.train.train_utils import count_fruitless, train_val_split
+from flowjax.train.train_utils import count_fruitless, get_batches, train_val_split
 
 PyTree = Any
 
@@ -85,20 +87,30 @@ def fit_to_data(
     loop = tqdm(range(max_epochs), disable=not show_progress)
 
     for _ in loop:
+        # Permute arrays
         key, subkey = jr.split(key)
         train_args = [jr.permutation(subkey, a) for a in train_args]
-        params, opt_state, epoch_train_loss = train_epoch(
-            optimizer, opt_state, loss_fn, batch_size, params, train_args
-        )
 
+        key, subkey = jr.split(key)
         val_args = [jr.permutation(subkey, a) for a in val_args]
-        epoch_val_loss = validation_epoch(loss_fn, batch_size, params, val_args)
 
-        losses["train"].append(epoch_train_loss)
-        losses["val"].append(epoch_val_loss)
+        # Train epoch
+        batch_losses = []
+        for batch in zip(*get_batches(train_args, batch_size)):
+            params, opt_state, loss_i = step(
+                optimizer, opt_state, loss_fn, params, batch
+            )
+            batch_losses.append(loss_i)
+        losses["train"].append(sum(batch_losses) / len(batch_losses))
+
+        # Val epoch
+        batch_losses = []
+        for batch in zip(*get_batches(val_args, batch_size)):
+            batch_losses.append(loss_fn(params, *batch))
+        losses["val"].append(sum(batch_losses) / len(batch_losses))
 
         loop.set_postfix({k: v[-1] for k, v in losses.items()})
-        if epoch_val_loss == min(losses["val"]):
+        if losses["val"][-1] == min(losses["val"]):
             best_params = params
 
         elif count_fruitless(losses["val"]) > max_patience:
@@ -115,7 +127,6 @@ def fit_to_data_sequential(
     prior: Distribution,
     theta: ArrayLike,
     x_sim: ArrayLike,
-    x_obs: ArrayLike,
     n_contrastive: int = 5,
     max_epochs: int = 50,
     max_patience: int = 5,
@@ -133,8 +144,32 @@ def fit_to_data_sequential(
     References:
         - https://arxiv.org/abs/1905.07488
         - https://arxiv.org/abs/2002.03712
+
+    Args:
+        key (jr.KeyArray): Jax key.
+        proposal (Distribution): The proposal distribution to train.
+        prior (Distribution): The prior distribution.
+        theta (ArrayLike): A batch of simulation parameters.
+        x_sim (ArrayLike): A batch of simulation outputs, corresponding to theta.
+        n_contrastive (int, optional): The number of contrasting theta values used in
+            the loss computation. Defaults to 5.
+        max_epochs (int, optional): The maximum number of epochs. Defaults to 50.
+        max_patience (int, optional): Number of consecutive epochs with no validation
+            loss improvement after which training is terminated. Defaults to 5.
+        batch_size (int, optional): Batch size. Defaults to 50.
+        val_prop (float, optional): Proportion of data to use for validation. Defaults to 0.1.
+        learning_rate (float, optional): Adam learning rate. Defaults to 5e-4.
+        clip_norm (float, optional): Maximum gradient norm before clipping occurs. Defaults to 0.5.
+        optimizer (optax.GradientTransformation): Optax optimizer. If provided, this
+            overrides the default Adam optimizer, and the learning_rate and clip_norm
+            arguments are ignored. Defaults to None.
+        filter_spec (Callable | PyTree): Equinox `filter_spec` for
+            specifying trainable parameters. Either a callable `leaf -> bool`, or a
+            PyTree with prefix structure matching `dist` with True/False values.
+            Defaults to `eqx.is_inexact_array`.
+        show_progress (bool): Whether to show progress bar. Defaults to True.
     """
-    theta, x_sim, x_obs = jnp.asarray(theta), jnp.asarray(x_sim), jnp.asarray(x_obs)
+    theta, x_sim = jnp.asarray(theta), jnp.asarray(x_sim)
 
     if optimizer is None:
         optimizer = optax.chain(
@@ -144,25 +179,25 @@ def fit_to_data_sequential(
     params, static = eqx.partition(proposal, filter_spec)
     opt_state = optimizer.init(params)
 
+    # Sample contrastive parameters
     key, subkey = jr.split(key)
-    contrastive = jr.choice(subkey, theta, (theta.shape[0], n_contrastive))
+    contrastive = jr.choice(subkey, theta, (n_contrastive, theta.shape[0]))
 
     # Train val split
     key, subkey = jr.split(key)
     train_args, val_args = train_val_split(
-        subkey, (theta, x_sim, contrastive), val_prop=val_prop
+        subkey, (theta, x_sim, contrastive), val_prop=val_prop, axis=[0, 0, 1]
     )
 
     @eqx.filter_jit
     def loss_fn(params, theta, x_sim, contrastive):
         proposal = eqx.combine(params, static)
         sim_log_odds = proposal.log_prob(theta, x_sim) - prior.log_prob(theta)
-        contrastive = jnp.swapaxes(contrastive, 0, 1)  # (contrastive, batch, theta_dim)
-        contrast_log_odds = proposal.log_prob(contrastive, x_sim) - prior.log_prob(
+        contrastive_log_odds = proposal.log_prob(contrastive, x_sim) - prior.log_prob(
             contrastive
         )
-        contrast_log_odds = jnp.clip(contrast_log_odds, -3)  # Clip for stability
-        return -(sim_log_odds - logsumexp(contrast_log_odds, axis=0)).mean()
+        contrastive_log_odds = jnp.clip(contrastive_log_odds, -5)  # Clip for stability
+        return -(sim_log_odds - logsumexp(contrastive_log_odds, axis=0)).mean()
 
     loop = tqdm(range(max_epochs), disable=not show_progress)
 
@@ -177,21 +212,22 @@ def fit_to_data_sequential(
         key, subkey = jr.split(key)
         val_args = [jr.permutation(subkey, a) for a in val_args]
 
-        params, opt_state, epoch_train_loss = train_epoch(
-            optimizer=optimizer,
-            opt_state=opt_state,
-            loss_fn=loss_fn,
-            batch_size=batch_size,
-            params=params,
-            batchable=train_args,
-        )
+        # Train epoch
+        batch_losses = []
+        for batch in zip(*get_batches(train_args, batch_size, axis=[0, 0, 1])):
+            params, opt_state, loss_i = step(
+                optimizer, opt_state, loss_fn, params, batch
+            )
+            batch_losses.append(loss_i)
+        losses["train"].append(sum(batch_losses) / len(batch_losses))
 
-        epoch_val_loss = validation_epoch(loss_fn, batch_size, params, val_args)
+        # Val epoch
+        batch_losses = []
+        for batch in zip(*get_batches(val_args, batch_size, axis=[0, 0, 1])):
+            batch_losses.append(loss_fn(params, *batch))
+        losses["val"].append(sum(batch_losses) / len(batch_losses))
 
-        losses["train"].append(epoch_train_loss)
-        losses["val"].append(epoch_val_loss)
-
-        if epoch_val_loss == min(losses["val"]):
+        if losses["val"][-1] == min(losses["val"]):
             best_params = params
 
         elif count_fruitless(losses["val"]) > max_patience:
@@ -202,52 +238,6 @@ def fit_to_data_sequential(
 
     proposal = eqx.combine(best_params, static)  # type: ignore
     return proposal, losses
-
-
-def train_epoch(
-    optimizer: optax.GradientTransformation,
-    opt_state: PyTree,
-    loss_fn: Callable,
-    batch_size: int,
-    params: PyTree,
-    batchable: Iterable[Array],
-):
-    """Carry out a single epoch of training, returning the parameters optimizer state
-    and the loss value. We assume args are arrays that can be batched along axis 0.
-
-    Args:
-        optimizer (optax.GradientTransformation): The optimizer to use.
-        opt_state: The optimizer state.
-        loss_fn (Callable): The loss function taking (params, batchable, non_batchable).
-        batch_size (int): The batch size.
-        params (PyTree): The parameters to update.
-        batchable: Batchable arguments unpacked into the loss after params.
-    """
-    train_len = batchable[0].shape[0]
-    batch_size = min(train_len, batch_size)
-    batch_start_idxs = range(0, train_len - batch_size + 1, batch_size)
-    epoch_loss = 0
-    for i in batch_start_idxs:
-        batch = [a[i : i + batch_size] for a in batchable]
-        params, opt_state, loss_i = step(optimizer, opt_state, loss_fn, params, batch)
-        epoch_loss += loss_i / len(batch_start_idxs)
-    return params, opt_state, epoch_loss
-
-
-def validation_epoch(
-    loss_fn: Callable, batch_size: int, params: PyTree, batchable: Iterable[Array]
-):
-    """Compute the loss for the validation set."""
-    val_len = batchable[0].shape[0]
-    batch_size = min(batch_size, val_len)
-    batch_start_idxs = range(0, val_len - batch_size + 1, batch_size)
-
-    epoch_loss = 0
-    for i in batch_start_idxs:
-        batch = [a[i : i + batch_size] for a in batchable]
-        epoch_loss += loss_fn(params, *batch).item() / len(batch_start_idxs)
-
-    return epoch_loss
 
 
 @eqx.filter_jit
