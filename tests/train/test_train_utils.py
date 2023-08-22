@@ -3,7 +3,7 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytest
 
-from flowjax.train.train_utils import train_val_split
+from flowjax.train.train_utils import count_fruitless, get_batches, train_val_split
 
 
 def test_train_val_split():
@@ -28,3 +28,21 @@ def test_train_val_split():
     assert val[0].shape == (1, 2)
     assert train[1].shape == (3, 4)
     assert val[1].shape == (3, 1)
+
+
+def test_count_fruitless():
+    assert count_fruitless([12, 2, 3, 4]) == 2
+    assert count_fruitless([0]) == 0
+    assert count_fruitless([0, 12]) == 1
+
+
+def test_get_batches():
+    arrays = [jnp.arange(26).reshape(13, 2)] * 2
+    out = get_batches(arrays, batch_size=4, axis=0)
+    assert out[0].shape == (3, 4, 2)
+
+    # Batch along non zero axis
+    arrays = [arrays[0].T, arrays[1]]
+    out = get_batches(arrays, batch_size=4, axis=[1, 0])
+    assert out[0].shape == (3, 2, 4)
+    assert out[1].shape == (3, 4, 2)
