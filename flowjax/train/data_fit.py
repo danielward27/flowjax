@@ -212,6 +212,10 @@ def fit_to_data_sequential(
         key, subkey = jr.split(key)
         val_args = [jr.permutation(subkey, a) for a in val_args]
 
+        # Permute contrasting samples independently
+        train_args[-1] = jr.permutation(subkey, train_args[-1])
+        val_args[-1] = jr.permutation(subkey, val_args[-1])
+
         # Train epoch
         batch_losses = []
         for batch in zip(*get_batches(train_args, batch_size, axis=[0, 0, 1])):
