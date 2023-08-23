@@ -81,7 +81,7 @@ class TriangularAffine(Bijection):
     diag_idxs: Array
     tri_mask: Array
     lower: bool
-    postitivity_constraint: Bijection
+    positivity_constraint: Bijection
     _arr: Array
     _diag: Array
     _weight_scale: Array | None
