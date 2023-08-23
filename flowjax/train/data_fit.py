@@ -2,7 +2,6 @@
 from typing import Any, Callable, Iterable
 
 import equinox as eqx
-import jax
 import jax.numpy as jnp
 import jax.random as jr
 import optax
@@ -24,7 +23,7 @@ def fit_to_data(
     condition: ArrayLike | None = None,
     max_epochs: int = 100,
     max_patience: int = 5,
-    batch_size: int = 256,
+    batch_size: int = 100,
     val_prop: float = 0.1,
     learning_rate: float = 5e-4,
     optimizer: optax.GradientTransformation | None = None,
@@ -39,10 +38,10 @@ def fit_to_data(
         dist (Distribution): Distribution object.
         x (ArrayLike): Samples from target distribution.
         condition (ArrayLike | None): Conditioning variables. Defaults to None.
-        max_epochs (int): Maximum number of epochs. Defaults to 50.
+        max_epochs (int): Maximum number of epochs. Defaults to 100.
         max_patience (int): Number of consecutive epochs with no validation
             loss improvement after which training is terminated. Defaults to 5.
-        batch_size (int): Batch size. Defaults to 256.
+        batch_size (int): Batch size. Defaults to 100.
         val_prop (float): Proportion of data to use in validation set. Defaults to 0.1.
         learning_rate (float): Adam learning rate. Defaults to 5e-4.
         optimizer (optax.GradientTransformation): Optax optimizer. If provided, this
@@ -146,7 +145,7 @@ def fit_to_data_sequential(
         x_sim (ArrayLike): A batch of simulation outputs, corresponding to theta.
         n_contrastive (int, optional): The number of contrasting theta values used in
             the loss computation. Defaults to 5.
-        max_epochs (int, optional): The maximum number of epochs. Defaults to 50.
+        max_epochs (int, optional): The maximum number of epochs. Defaults to 100.
         max_patience (int, optional): Number of consecutive epochs with no validation
             loss improvement after which training is terminated. Defaults to 5.
         batch_size (int, optional): Batch size. Defaults to 50.
@@ -192,7 +191,6 @@ def fit_to_data_sequential(
 
     loop = tqdm(range(max_epochs), disable=not show_progress)
 
-    key, subkey = jr.split(key)
     best_params = params
     losses = {"train": [], "val": []}
     for _ in loop:
@@ -203,14 +201,11 @@ def fit_to_data_sequential(
         key, subkey = jr.split(key)
         val_args = [jr.permutation(subkey, a) for a in val_args]
 
-        # Permute contrasting samples independently
+        # Permute contrasting samples independently of other data
         for axis in (0, 1):
             for args in [train_args, val_args]:
                 key, subkey = jr.split(key)
-                args[-1] = jax.jit(jr.permutation)(subkey, args[-1])
-
-            key, subkey = jr.split(key)
-            val_args[-1] = jr.permutation(subkey, val_args[-1])
+                args[-1] = eqx.filter_jit(jr.permutation)(subkey, args[-1], axis)
 
         # Train epoch
         batch_losses = []
