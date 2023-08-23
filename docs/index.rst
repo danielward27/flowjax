@@ -18,6 +18,7 @@ Installation
    examples/conditional
    examples/variational_inference
    examples/bounded
+   examples/snpe
 
 .. toctree::
    :caption: API
