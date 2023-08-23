@@ -81,7 +81,8 @@ class AutoregressiveMLP(Module):
             out_ranks (ArrayLike): Ranks of the outputs.
             depth (int): Number of hidden layers.
             activation (Callable): Activation function. Defaults to jnn.relu.
-            final_activation (Callable): Final activation function. Defaults to _identity.
+            final_activation (Callable): Final activation function. Defaults to
+                _identity.
             key (KeyArray): Jax PRNGKey.
         """
         in_ranks, hidden_ranks, out_ranks = [

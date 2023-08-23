@@ -1,12 +1,10 @@
-"""Module contains the Chain bijection, that allows sequentially application of arbitrary
-bijections, with compatible shapes.
+"""Module contains the Chain bijection, that allows sequentially application of
+arbitrary bijections, with compatible shapes.
 """
 from typing import Sequence
 
-from jax import Array
-
 from flowjax.bijections.bijection import Bijection
-from flowjax.utils import merge_cond_shapes, check_shapes_match
+from flowjax.utils import check_shapes_match, merge_cond_shapes
 
 
 class Chain(Bijection):

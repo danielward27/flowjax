@@ -1,15 +1,16 @@
 """Affine bijections."""
 
+import warnings
 from typing import Callable
+
 import jax.numpy as jnp
 from jax import Array
 from jax.experimental import checkify
 from jax.scipy.linalg import solve_triangular
 from jax.typing import ArrayLike
-import warnings
-from flowjax.utils import arraylike_to_array
 
 from flowjax.bijections.bijection import Bijection
+from flowjax.utils import arraylike_to_array
 
 
 class Affine(Bijection):
@@ -18,9 +19,14 @@ class Affine(Bijection):
     """
 
     loc: Array
-    log_scale: Array
+    _scale: Array
+    # positivity_constraint: Bijection
 
-    def __init__(self, loc: ArrayLike = 0, scale: ArrayLike = 1):
+    def __init__(
+        self,
+        loc: ArrayLike = 0,
+        scale: ArrayLike = 1,
+    ):
         """
         Args:
             loc (ArrayLike): Location parameter. Defaults to 0.
@@ -31,7 +37,7 @@ class Affine(Bijection):
         self.cond_shape = None
 
         self.loc = jnp.broadcast_to(loc, self.shape)
-        self.log_scale = jnp.broadcast_to(jnp.log(scale), self.shape)
+        self._scale = jnp.broadcast_to(jnp.log(scale), self.shape)
 
     def transform(self, x, condition=None):
         x, _ = self._argcheck_and_cast(x)
@@ -39,7 +45,7 @@ class Affine(Bijection):
 
     def transform_and_log_det(self, x, condition=None):
         x, _ = self._argcheck_and_cast(x)
-        return x * self.scale + self.loc, self.log_scale.sum()
+        return x * self.scale + self.loc, self._scale.sum()
 
     def inverse(self, y, condition=None):
         y, _ = self._argcheck_and_cast(y)
@@ -47,16 +53,17 @@ class Affine(Bijection):
 
     def inverse_and_log_det(self, y, condition=None):
         y, _ = self._argcheck_and_cast(y)
-        return (y - self.loc) / self.scale, -self.log_scale.sum()
+        return (y - self.loc) / self.scale, -self._scale.sum()
 
     @property
     def scale(self):
         """The scale parameter of the affine transformation."""
-        return jnp.exp(self.log_scale)
+        return jnp.exp(self._scale)
 
 
 class TriangularAffine(Bijection):
-    """Transformation of the form ``Ax + b``, where ``A`` is a lower or upper triangular matrix."""
+    """Transformation of the form ``Ax + b``, where ``A`` is a lower or upper triangular
+    matrix."""
 
     loc: Array
     diag_idxs: Array

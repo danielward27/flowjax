@@ -17,7 +17,8 @@ def train_val_split(
 
     Args:
         key (KeyArray): Jax PRNGKey
-        arrays Sequence[Array]: Sequence of arrays, with matching size on specified axis.
+        arrays Sequence[Array]: Sequence of arrays, with matching size on specified
+            axis.
         val_prop (float): Proportion of data to use for validation. Defaults to 0.1.
         axis (int | Sequence[int]): Axis along which to carry out split. A sequence of
             integers matching the length of arrays can be provided to specify different
@@ -64,15 +65,15 @@ def get_batches(
     arrays: Sequence[Array], batch_size: int, axis: int | Sequence[int] = 0
 ):
     """Reshape a sequence of arrays to have a leading dimension of size
-    ``data_len // batch_size``, i.e. the number of batches. Batching occurs along the axis
-    specified, e.g. for axis=0, each input array would be reshaped to
+    ``data_len // batch_size``, i.e. the number of batches. Batching occurs along the
+    axis specified, e.g. for axis=0, each input array would be reshaped to
     ``(num_batches, batch_size, *array.shape[1:])``.
 
     Considerations:
         - The values in the last batch are dropped if truncated, i.e. if
             ``data_len % batch_size != 0``.
-        - If the batch size is greater than the length of the data, then we set the batch
-            size to be equal to the data length.
+        - If the batch size is greater than the length of the data, then we set the
+            batch size to be equal to the data length.
 
     Args:
         arrays (Sequence[Array]): Sequence of arrays, with shape matching on specified

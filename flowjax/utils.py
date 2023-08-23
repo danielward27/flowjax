@@ -12,7 +12,8 @@ from jax.typing import ArrayLike
 def real_to_increasing_on_interval(
     arr: Array, B: float = 1, softmax_adjust: float = 1e-2
 ):
-    """Transform unconstrained parameter vector to monotonically increasing positions on [-B, B].
+    """Transform unconstrained parameter vector to monotonically increasing positions on
+    [-B, B].
 
     Args:
         arr (Array): Parameter vector.
@@ -62,7 +63,7 @@ def check_shapes_match(shapes: list[tuple[int, ...]]):
 
 
 def _get_ufunc_signature(in_shapes, out_shapes):
-    """Convert a sequence of in_shapes, and out_shapes to a universal function signature.
+    """Convert a sequence of in_shapes and out_shapes to a universal function signature.
 
     Example:
         >>> _get_ufunc_signature([(3,),(2,3)], [()])
@@ -105,7 +106,8 @@ def arraylike_to_array(arr, err_name: str = "input", **kwargs) -> Array:
 
     Args:
         arr: Arraylike input to convert to a jax array.
-        err_name (str, optional): Name of the input in the error message. Defaults to "input".
+        err_name (str, optional): Name of the input in the error message. Defaults to
+            "input".
         **kwargs: Key word arguments passed to jnp.asarray.
     """
     if not isinstance(arr, ArrayLike):
