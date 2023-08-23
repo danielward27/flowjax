@@ -3,8 +3,9 @@ from functools import partial
 from typing import Any, Callable
 
 import equinox as eqx
-from jax.lax import scan
 import jax.numpy as jnp
+from jax.lax import scan
+
 from flowjax.bijections.bijection import Bijection
 
 
@@ -125,8 +126,8 @@ class Scan(Bijection):
 
     def __init__(self, bijection: Bijection):
         """
-        The array leaves in `bijection` should have an additional leading axis to scan over.
-        Often it is convenient to construct these using `equinox.filter_vmap`.
+        The array leaves in `bijection` should have an additional leading axis to scan
+        over. Often it is convenient to construct these using `equinox.filter_vmap`.
 
         Args:
             bijection (Bijection): A bijection, in which the arrays leaves have an
@@ -145,7 +146,7 @@ class Scan(Bijection):
                 >>> affine = Scan(Affine(params))
 
         """
-        self.params, self.static = eqx.partition(bijection, eqx.is_array)  # type: ignore
+        self.params, self.static = eqx.partition(bijection, eqx.is_array)
         self.shape = bijection.shape
         self.cond_shape = bijection.cond_shape
 
@@ -154,7 +155,7 @@ class Scan(Bijection):
 
         def step(x, params, condition=None):
             bijection = eqx.combine(self.static, params)
-            result = bijection.transform(x, condition)  # type: ignore
+            result = bijection.transform(x, condition)
             return (result, None)
 
         step = partial(step, condition=condition)

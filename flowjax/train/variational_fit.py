@@ -102,7 +102,7 @@ def fit_to_variational_target(
     best_params = params
     for _ in loop:
         key, subkey = jr.split(key)
-        params, opt_state, loss = step(params, static, subkey, optimizer, opt_state)  # type: ignore
+        params, opt_state, loss = step(params, static, subkey, optimizer, opt_state)
         losses.append(loss.item())
         loop.set_postfix({"loss": loss.item()})
         if loss.item() == min(losses):

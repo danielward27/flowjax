@@ -1,15 +1,17 @@
 """Affine bijections."""
 
+import warnings
 from typing import Callable
+
 import jax.numpy as jnp
 from jax import Array
 from jax.experimental import checkify
 from jax.scipy.linalg import solve_triangular
 from jax.typing import ArrayLike
-import warnings
-from flowjax.utils import arraylike_to_array
 
 from flowjax.bijections.bijection import Bijection
+from flowjax.bijections.softplus import SoftPlus
+from flowjax.utils import arraylike_to_array
 
 
 class Affine(Bijection):
@@ -18,20 +20,34 @@ class Affine(Bijection):
     """
 
     loc: Array
-    log_scale: Array
+    _scale: Array
+    positivity_constraint: Bijection
 
-    def __init__(self, loc: ArrayLike = 0, scale: ArrayLike = 1):
+    def __init__(
+        self,
+        loc: ArrayLike = 0,
+        scale: ArrayLike = 1,
+        positivity_constraint: Bijection | None = None,
+    ):
         """
         Args:
             loc (ArrayLike): Location parameter. Defaults to 0.
             scale (ArrayLike): Scale parameter. Defaults to 1.
+            postivity_constraint (Bijection): Bijection with shape matching the Affine
+                bijection, that maps the scale parameter from an unbounded domain to the
+                positive domain. Defaults to SoftPlus.
         """
         loc, scale = [arraylike_to_array(a, dtype=float) for a in (loc, scale)]
-        self.shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
+        self.shape = jnp.broadcast_shapes(loc.shape, scale.shape)
         self.cond_shape = None
 
         self.loc = jnp.broadcast_to(loc, self.shape)
-        self.log_scale = jnp.broadcast_to(jnp.log(scale), self.shape)
+
+        if positivity_constraint is None:
+            positivity_constraint = SoftPlus(self.shape)
+
+        self.positivity_constraint = positivity_constraint
+        self._scale = positivity_constraint.inverse(jnp.broadcast_to(scale, self.shape))
 
     def transform(self, x, condition=None):
         x, _ = self._argcheck_and_cast(x)
@@ -39,7 +55,8 @@ class Affine(Bijection):
 
     def transform_and_log_det(self, x, condition=None):
         x, _ = self._argcheck_and_cast(x)
-        return x * self.scale + self.loc, self.log_scale.sum()
+        scale = self.scale
+        return x * scale + self.loc, jnp.log(scale).sum()
 
     def inverse(self, y, condition=None):
         y, _ = self._argcheck_and_cast(y)
@@ -47,24 +64,27 @@ class Affine(Bijection):
 
     def inverse_and_log_det(self, y, condition=None):
         y, _ = self._argcheck_and_cast(y)
-        return (y - self.loc) / self.scale, -self.log_scale.sum()
+        scale = self.scale
+        return (y - self.loc) / scale, -jnp.log(scale).sum()
 
     @property
     def scale(self):
         """The scale parameter of the affine transformation."""
-        return jnp.exp(self.log_scale)
+        return self.positivity_constraint.transform(self._scale)
 
 
 class TriangularAffine(Bijection):
-    """Transformation of the form ``Ax + b``, where ``A`` is a lower or upper triangular matrix."""
+    r"""Transformation of the form :math:`Ax + b`, where :math:`A` is a lower or upper
+    triangular matrix."""
 
     loc: Array
     diag_idxs: Array
     tri_mask: Array
     lower: bool
-    weight_log_scale: Array | None
+    positivity_constraint: Bijection
     _arr: Array
-    _log_diag: Array
+    _diag: Array
+    _weight_scale: Array | None
 
     def __init__(
         self,
@@ -72,22 +92,27 @@ class TriangularAffine(Bijection):
         arr: ArrayLike,
         lower: bool = True,
         weight_normalisation: bool = False,
+        positivity_constraint: Bijection | None = None,
     ):
         """
         Args:
             loc (ArrayLike): Location parameter.
             arr (ArrayLike): Triangular matrix.
             lower (bool): Whether the mask should select the lower or upper
-                triangular matrix (other elements ignored). Defaults to True.
-            weight_log_scale (Array | None): If provided, carry out weight
-                normalisation.
+                triangular matrix (other elements ignored). Defaults to True (lower).
+            weight_normalisation (bool): If true, carry out weight normalisation.
+            postivity_constraint (Bijection): Bijection with shape matching the
+                dimension of the triangular affine bijection, that maps the diagonal
+                entries of the array from an unbounded domain to the positive domain.
+                Also used for weight normalisation parameters, if used. Defaults to
+                SoftPlus.
         """
         loc, arr = [arraylike_to_array(a, dtype=float) for a in (loc, arr)]
         if (arr.ndim != 2) or (arr.shape[0] != arr.shape[1]):
             raise ValueError("arr must be a square, 2-dimensional matrix.")
         checkify.check(
             jnp.all(jnp.diag(arr) > 0),
-            "arr diagonal entries must be greater than 0",
+            "arr diagonal entries must be positive",
         )
         dim = arr.shape[0]
         self.diag_idxs = jnp.diag_indices(dim)
@@ -95,25 +120,36 @@ class TriangularAffine(Bijection):
         self.tri_mask = tri_mask if lower else tri_mask.T
         self.lower = lower
 
-        # inexact arrays
-        self.loc = jnp.broadcast_to(loc, (dim,))
-        self._arr = arr
-        self._log_diag = jnp.log(jnp.diag(arr))
-        self.weight_log_scale = jnp.zeros((dim, 1)) if weight_normalisation else None
-
         self.shape = (dim,)
         self.cond_shape = None
 
+        if positivity_constraint is None:
+            positivity_constraint = SoftPlus(self.shape)
+
+        self.positivity_constraint = positivity_constraint
+        self._diag = positivity_constraint.inverse(jnp.diag(arr))
+
+        # inexact arrays
+        self.loc = jnp.broadcast_to(loc, (dim,))
+        self._arr = arr
+
+        if weight_normalisation:
+            self._weight_scale = positivity_constraint.inverse(jnp.ones((dim,)))
+        else:
+            self._weight_scale = None
+
     @property
     def arr(self):
-        """Get triangular array, (applies masking and min_diag constraint)."""
-        diag = jnp.exp(self._log_diag)
+        """Get triangular array, (applies masking, constrains diagonal and weight
+        normalisation)."""
+        diag = self.positivity_constraint.transform(self._diag)
         off_diag = self.tri_mask * self._arr
         arr = off_diag.at[self.diag_idxs].set(diag)
 
-        if self.weight_log_scale is not None:
+        if self._weight_scale is not None:
             norms = jnp.linalg.norm(arr, axis=1, keepdims=True)
-            arr = jnp.exp(self.weight_log_scale) * arr / norms
+            scale = self.positivity_constraint.transform(self._weight_scale)[:, None]
+            arr = scale * arr / norms
 
         return arr
 

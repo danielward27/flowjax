@@ -44,8 +44,8 @@ class Tanh(Bijection):
 class TanhLinearTails(Bijection):
     """
     Tanh bijection, with linear "tails" beyond +/- max_val. Note due to the linear
-    tails this does not guarantee the forward transformation will be constrained to [-1, 1].
-    This transform can be useful to "encourage" values to be within an interval
+    tails this does not guarantee the forward transformation will be constrained to
+    [-1, 1]. This transform can be useful to "encourage" values to be within an interval
     (e.g. to subsequently apply some transformation defined on that interval), whilst
     avoiding issues with numerical instability.
     """

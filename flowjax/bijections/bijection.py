@@ -1,9 +1,9 @@
-"""Abstact base classes for the `Bijection` and `Bijection` types. Note when implementing
-bijections, by convention we try to i) implement the "transform" methods as the
-faster/more intuitive approach (compared to the inverse methods); and ii) implement only
-the forward methods if an inverse is not available. The `Invert` bijection can be used
-to invert the orientation if a fast inverse is desired (e.g. maximum likelihood fitting
-of flows).
+"""Abstact base classes for the `Bijection` and `Bijection` types. Note when
+implementing bijections, by convention we try to i) implement the "transform" methods as
+the faster/more intuitive approach (compared to the inverse methods); and ii) implement
+only the forward methods if an inverse is not available. The `Invert` bijection can be
+used to invert the orientation if a fast inverse is desired (e.g. maximum likelihood
+fitting of flows).
 """
 
 from abc import abstractmethod
@@ -52,7 +52,8 @@ class Bijection(Module):
     def transform_and_log_det(
         self, x: ArrayLike, condition: ArrayLike | None = None
     ) -> tuple[Array, Array]:
-        """Apply transformation and compute log absolute value of the Jacobian determinant."""
+        """Apply transformation and compute log absolute value of the Jacobian
+        determinant."""
 
     @abstractmethod
     def inverse(self, y: ArrayLike, condition: ArrayLike | None = None) -> Array:
@@ -62,7 +63,8 @@ class Bijection(Module):
     def inverse_and_log_det(
         self, y: ArrayLike, condition: ArrayLike | None = None
     ) -> tuple[Array, Array]:
-        """Invert the transformation and compute log absolute value of the Jacobian determinant."""
+        """Invert the transformation and compute log absolute value of the Jacobian
+        determinant."""
 
     def _argcheck_and_cast(
         self, x: ArrayLike, condition: ArrayLike | None = None

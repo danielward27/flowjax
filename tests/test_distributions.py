@@ -94,7 +94,8 @@ def test_uniform_params():
     assert dist.maxval == pytest.approx(jnp.array([3.0, 4.0]))
 
 
-# Since the broadcasting behaviour is shared by all, we test it for a single unconditional and conditional distribution only
+# Since the broadcasting behaviour is shared by all distributions
+# we test it for a single unconditional and conditional distribution only.
 
 dist_shape, sample_shape, condition_shape = [[(), (2,), (3, 4)] for _ in range(3)]
 

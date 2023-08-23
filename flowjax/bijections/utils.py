@@ -5,6 +5,7 @@ import jax.numpy as jnp
 from jax import Array
 from jax.experimental import checkify
 from jax.typing import ArrayLike
+
 from flowjax.bijections.bijection import Bijection
 
 
@@ -50,9 +51,9 @@ class Permute(Bijection):
     def __init__(self, permutation: ArrayLike):
         """
         Args:
-            permutation (ArrayLike): An array with shape matching the array to transform,
-                with elements 0-(array.size-1) representing the new order based on the
-                flattened array (uses, C-like ordering).
+            permutation (ArrayLike): An array with shape matching the array to
+                transform, with elements 0-(array.size-1) representing the new order
+                based on the flattened array (uses, C-like ordering).
         """
         permutation = jnp.asarray(permutation)
         checkify.check(
@@ -95,7 +96,8 @@ class Flip(Bijection):
     def __init__(self, shape: tuple[int, ...]) -> None:
         """
         Args:
-            shape (tuple[int, ...] | None): The shape of the bijection. Defaults to None.
+            shape (tuple[int, ...] | None): The shape of the bijection.
+                Defaults to None.
         """
         self.shape = shape
         self.cond_shape = None
@@ -165,8 +167,8 @@ class Partial(Bijection):
 
 
 class EmbedCondition(Bijection):
-    """Use an embedding network to reduce the dimensionality of the conditioning variable.
-    The returned bijection has cond_dim equal to the raw condition size.
+    """Use an embedding network to reduce the dimensionality of the conditioning
+    variable. The returned bijection has cond_dim equal to the raw condition size.
     """
 
     bijection: Bijection

@@ -1,5 +1,5 @@
 """Function to fit flows to samples from a distribution."""
-from typing import Any, Callable, Dict, Iterable
+from typing import Any, Callable, Iterable
 
 import equinox as eqx
 import jax.numpy as jnp
@@ -9,8 +9,6 @@ from jax import Array
 from jax.scipy.special import logsumexp
 from jax.typing import ArrayLike
 from tqdm import tqdm
-from functools import partial
-from math import ceil
 
 from flowjax.distributions import Distribution
 from flowjax.train.train_utils import count_fruitless, get_batches, train_val_split
@@ -47,7 +45,7 @@ def fit_to_data(
         batch_size (int): Batch size. Defaults to 256.
         val_prop (float): Proportion of data to use in validation set. Defaults to 0.1.
         learning_rate (float): Adam learning rate. Defaults to 5e-4.
-        clip_norm (float): Maximum gradient norm before clipping occurs. Defaults to 0.5.
+        clip_norm (float): Maximum gradient norm before clipping. Defaults to 0.5.
         optimizer (optax.GradientTransformation): Optax optimizer. If provided, this
             overrides the default Adam optimizer, and the learning_rate and clip_norm
             arguments are ignored. Defaults to None.
@@ -157,9 +155,11 @@ def fit_to_data_sequential(
         max_patience (int, optional): Number of consecutive epochs with no validation
             loss improvement after which training is terminated. Defaults to 5.
         batch_size (int, optional): Batch size. Defaults to 50.
-        val_prop (float, optional): Proportion of data to use for validation. Defaults to 0.1.
+        val_prop (float, optional): Proportion of data to use for validation.
+            Defaults to 0.1.
         learning_rate (float, optional): Adam learning rate. Defaults to 5e-4.
-        clip_norm (float, optional): Maximum gradient norm before clipping occurs. Defaults to 0.5.
+        clip_norm (float, optional): Maximum gradient norm before clipping.
+            Defaults to 0.5.
         optimizer (optax.GradientTransformation): Optax optimizer. If provided, this
             overrides the default Adam optimizer, and the learning_rate and clip_norm
             arguments are ignored. Defaults to None.

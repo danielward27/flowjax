@@ -1,7 +1,6 @@
 import equinox as eqx
 import jax.numpy as jnp
 import jax.tree_util as jtu
-import pytest
 from jax import random
 
 from flowjax.bijections import Affine
@@ -24,7 +23,7 @@ def test_data_fit_filter_spec():
     assert jnp.all(before.base_dist.bijection.loc != after.base_dist.bijection.loc)
     assert jnp.all(before.bijection.loc != after.bijection.loc)
 
-    # But we can provide a filter spec to avoid e.g. training the base distribution parameters.
+    # We can provide a filter spec to avoid e.g. training the base distribution.
     before = eqx.filter(flow, eqx.is_inexact_array)
     filter_spec = jtu.tree_map(eqx.is_inexact_array, flow)
     filter_spec = eqx.tree_at(lambda tree: tree.base_dist, filter_spec, replace=False)

@@ -33,8 +33,8 @@ class Distribution(eqx.Module):
         >>> dist.cond_shape is None
         True
 
-    Distributions are registered as jax PyTrees (as they are equinox modules), and as such
-    they are compatible with normal jax operations.
+    Distributions are registered as jax PyTrees (as they are equinox modules), and as
+    such they are compatible with normal jax operations.
 
     **Implementing a distribution**
 
@@ -106,8 +106,8 @@ class Distribution(eqx.Module):
         sample_shape: tuple[int, ...] = (),
         condition: ArrayLike | None = None,
     ) -> Array:
-        """Sample from the distribution. For unconditional distributions, the output will
-        be of shape ``sample_shape + dist.shape``. For conditional distributions,
+        """Sample from the distribution. For unconditional distributions, the output
+        will be of shape ``sample_shape + dist.shape``. For conditional distributions,
         a batch dimension in the condition is supported, and the output shape will be
         ``sample_shape + condition_batch_shape + dist.shape``. See the example for more
         information.
@@ -182,9 +182,9 @@ class Distribution(eqx.Module):
         sample_shape: tuple[int, ...] = (),
         condition: ArrayLike | None = None,
     ):
-        """Sample the distribution and return the samples and corresponding log probabilities.
-        For transformed distributions (especially flows), this will generally be more efficient
-        than calling the methods seperately. Refer to the
+        """Sample the distribution and return the samples and corresponding log
+        probabilities. For transformed distributions (especially flows), this will
+        generally be more efficient than calling the methods seperately. Refer to the
         :py:meth:`~flowjax.distributions.Distribution.sample` documentation for more
         information.
 
@@ -203,7 +203,8 @@ class Distribution(eqx.Module):
         )(keys, condition)
 
     def _vectorize_sample_args(self, sample_and_log_prob=False):
-        """Get the excluded arguments and ufunc signature for sample or sample_and_log_prob"""
+        """Get the excluded arguments and ufunc signature for sample or
+        sample_and_log_prob"""
         out_shapes = [self.shape, ()] if sample_and_log_prob else [self.shape]
         if self.cond_shape is None:
             excluded = frozenset([1])
@@ -251,7 +252,7 @@ class Distribution(eqx.Module):
             return None
         condition = arraylike_to_array(condition, err_name="condition")
         condition_trailing = (
-            condition.shape[-len(self.cond_shape) :] if self.cond_ndim > 0 else ()  # type: ignore
+            condition.shape[-len(self.cond_shape) :] if self.cond_ndim > 0 else ()
         )
         if condition_trailing != self.cond_shape:
             raise ValueError(
@@ -267,7 +268,8 @@ class Distribution(eqx.Module):
 
     @property
     def cond_ndim(self):
-        """The number of dimensions of the conditioning variable (length of cond_shape)."""
+        """The number of dimensions of the conditioning variable (length of
+        cond_shape)."""
         if self.cond_shape is not None:
             return len(self.cond_shape)
         return None
@@ -305,9 +307,10 @@ class Transformed(Distribution):
 
 
         .. warning::
-            It is the currently the users responsibility to ensure the bijection is valid
-            across the entire support of the distribution. Failure to do so may lead to
-            to unexpected results. In future versions explicit constraints may be introduced.
+            It is the currently the users responsibility to ensure the bijection is
+            valid across the entire support of the distribution. Failure to do so may
+            lead to to unexpected results. In future versions explicit constraints may
+            be introduced.
         """
         self.base_dist = base_dist
         self.bijection = bijection
@@ -343,7 +346,8 @@ class StandardNormal(Distribution):
     def __init__(self, shape: tuple[int, ...] = ()):
         """
         Args:
-            shape (tuple[int, ...]): The shape of the normal distribution. Defaults to ().
+            shape (tuple[int, ...]): The shape of the normal distribution. Defaults to
+                ().
         """
         self.shape = shape
         self.cond_shape = None
@@ -385,7 +389,8 @@ class Normal(Transformed):
 
 
 class _StandardUniform(Distribution):
-    """Implements a standard independent Uniform distribution, ie X ~ Uniform([0, 1]^dim)."""
+    r"""Implements a standard independent Uniform distribution, ie
+    :math:`X \sim Uniform([0, 1]^d)`."""
 
     def __init__(self, shape: tuple[int, ...] = ()):
         self.shape = shape

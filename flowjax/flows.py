@@ -8,6 +8,7 @@ from typing import Callable
 import equinox as eqx
 import jax.nn as jnn
 import jax.numpy as jnp
+from equinox.nn import Linear
 from jax import random
 from jax.nn.initializers import glorot_uniform
 from jax.random import KeyArray
@@ -28,7 +29,6 @@ from flowjax.bijections import (
     TriangularAffine,
 )
 from flowjax.distributions import Distribution, Transformed
-from equinox.nn import Linear
 
 
 class CouplingFlow(Transformed):
@@ -139,8 +139,8 @@ class MaskedAutoregressiveFlow(Transformed):
             nn_depth (int): Depth of neural network. Defaults to 2.
             nn_activation (Callable): _description_. Defaults to jnn.relu.
             invert (bool): Whether to invert the bijection. Broadly, True will
-                prioritise a faster inverse, leading to faster `log_prob`, False will prioritise
-                faster forward, leading to faster `sample`. Defaults to True. Defaults to True.
+                prioritise a faster inverse, leading to faster `log_prob`, False will
+                prioritise faster forward, leading to faster `sample`. Defaults to True.
         """
         if len(base_dist.shape) != 1:
             raise ValueError(f"Expected base_dist.ndim==1, got {base_dist.ndim}")
