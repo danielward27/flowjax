@@ -1,6 +1,5 @@
 """Affine bijections."""
 
-import warnings
 from typing import Callable
 
 import jax.numpy as jnp
