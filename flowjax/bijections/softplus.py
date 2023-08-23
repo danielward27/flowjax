@@ -18,7 +18,7 @@ class SoftPlus(Bijection):
 
     def transform_and_log_det(self, x, condition=None):
         x, _ = self._argcheck_and_cast(x)
-        return softplus(x), -softplus(-x)
+        return softplus(x), -softplus(-x).sum()
 
     def inverse(self, y, condition=None):
         y, _ = self._argcheck_and_cast(y)
@@ -27,4 +27,4 @@ class SoftPlus(Bijection):
     def inverse_and_log_det(self, y, condition=None):
         y, _ = self._argcheck_and_cast(y)
         x = self.inverse(y)
-        return x, softplus(-x)
+        return x, softplus(-x).sum()
