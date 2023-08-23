@@ -48,6 +48,7 @@ This package is new and may have substantial breaking changes between major rele
 ## TODO
 A few limitations / things that could be worth including in the future:
 - Add ability to "reshape" bijections.
+- Consider softplus vs exp for enforcing positivity constraints, e.g. for scale parameters.
 
 ## Related
 We make use of the [Equinox](https://arxiv.org/abs/2111.00254) package, which facilitates object-oriented programming with Jax. 

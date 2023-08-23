@@ -2,12 +2,13 @@
 from typing import Callable
 
 import jax.nn as jnn
+import jax.numpy as jnp
 from equinox import Module
 from equinox.nn import Linear
 from jax import Array, random
 from jax.random import KeyArray
 from jax.typing import ArrayLike
-import jax.numpy as jnp
+
 from flowjax.masks import rank_based_mask
 
 

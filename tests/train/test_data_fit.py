@@ -6,24 +6,7 @@ from jax import random
 
 from flowjax.bijections import Affine
 from flowjax.distributions import Normal, Transformed
-from flowjax.train.data_fit import count_fruitless, fit_to_data, train_val_split
-
-
-def test_count_fruitless():
-    assert count_fruitless([12, 2, 3, 4]) == 2
-    assert count_fruitless([0]) == 0
-    assert count_fruitless([0, 12]) == 1
-
-
-def test_train_val_split():
-    x = jnp.ones((100, 10))
-    y = jnp.zeros((100, 5))
-    key = random.PRNGKey(0)
-    train, test = train_val_split(key, (x, y))
-    assert train[0].shape == (90, 10)
-    assert train[1].shape == (90, 5)
-    assert test[0].shape == (10, 10)
-    assert test[1].shape == (10, 5)
+from flowjax.train.data_fit import fit_to_data
 
 
 def test_data_fit_filter_spec():

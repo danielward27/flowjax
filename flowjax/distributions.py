@@ -3,6 +3,7 @@ and a Transformed distribution class.
 """
 from abc import abstractmethod
 from math import prod
+
 import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
@@ -12,9 +13,7 @@ from jax.scipy import stats as jstats
 from jax.typing import ArrayLike
 
 from flowjax.bijections import Affine, Bijection
-from flowjax.utils import _get_ufunc_signature, merge_cond_shapes
-
-from flowjax.utils import arraylike_to_array
+from flowjax.utils import _get_ufunc_signature, arraylike_to_array, merge_cond_shapes
 
 
 class Distribution(eqx.Module):
@@ -110,7 +109,7 @@ class Distribution(eqx.Module):
         """Sample from the distribution. For unconditional distributions, the output will
         be of shape ``sample_shape + dist.shape``. For conditional distributions,
         a batch dimension in the condition is supported, and the output shape will be
-        sample_shape + condition_batch_shape + dist.shape. See the example for more
+        ``sample_shape + condition_batch_shape + dist.shape``. See the example for more
         information.
 
         Args:

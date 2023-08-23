@@ -1,15 +1,19 @@
 """Function to fit flows to samples from a distribution."""
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Iterable
 
 import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
 import optax
+from jax import Array
+from jax.scipy.special import logsumexp
 from jax.typing import ArrayLike
 from tqdm import tqdm
+from functools import partial
+from math import ceil
 
 from flowjax.distributions import Distribution
-from flowjax.train.train_utils import count_fruitless, train_val_split
+from flowjax.train.train_utils import count_fruitless, get_batches, train_val_split
 
 PyTree = Any
 
@@ -58,70 +62,177 @@ def fit_to_data(
     if condition is not None:
         condition = jnp.asarray(condition)
 
-    @eqx.filter_jit
-    def loss_fn(dist_trainable, dist_static, x, condition=None):
-        dist = eqx.combine(dist_trainable, dist_static)
-        return -dist.log_prob(x, condition).mean()
-
-    @eqx.filter_jit
-    def step(dist, optimizer, opt_state, x, condition=None):
-        dist_trainable, dist_static = eqx.partition(dist, filter_spec)
-        loss_val, grads = eqx.filter_value_and_grad(loss_fn)(
-            dist_trainable, dist_static, x, condition
-        )
-        updates, opt_state = optimizer.update(grads, opt_state)
-        dist = eqx.apply_updates(dist, updates)
-        return dist, opt_state, loss_val
-
+    params, static = eqx.partition(dist, filter_spec)  # type: ignore
     if optimizer is None:
         optimizer = optax.chain(
             optax.clip_by_global_norm(clip_norm),
             optax.adam(learning_rate=learning_rate),
         )
 
-    best_params, static = eqx.partition(dist, filter_spec)  # type: ignore
-    opt_state = optimizer.init(best_params)
+    best_params = params
+    opt_state = optimizer.init(params)
 
-    key, train_val_split_key = jr.split(key)
+    @eqx.filter_jit
+    def loss_fn(dist_trainable, x, condition=None):
+        dist = eqx.combine(dist_trainable, static)
+        return -dist.log_prob(x, condition).mean()
+
+    key, subkey = jr.split(key)
 
     inputs = (x,) if condition is None else (x, condition)
-    train_args, val_args = train_val_split(
-        train_val_split_key, inputs, val_prop=val_prop
-    )
-    train_len, val_len = train_args[0].shape[0], val_args[0].shape[0]
+    train_args, val_args = train_val_split(subkey, inputs, val_prop=val_prop)
 
     losses = {"train": [], "val": []}  # type: Dict[str, list[float]]
 
     loop = tqdm(range(max_epochs), disable=not show_progress)
 
     for _ in loop:
+        # Permute arrays
         key, subkey = jr.split(key)
-        permutation = jr.permutation(subkey, jnp.arange(train_len))
-        train_args = tuple(a[permutation] for a in train_args)
+        train_args = [jr.permutation(subkey, a) for a in train_args]
 
-        epoch_train_loss = 0
-        train_batch_size = min(batch_size, train_len)
-        batch_start_idxs = range(0, train_len - train_batch_size + 1, train_batch_size)
-        for i in batch_start_idxs:
-            batch = tuple(a[i : i + train_batch_size] for a in train_args)
-            dist, opt_state, loss_i = step(dist, optimizer, opt_state, *batch)
-            epoch_train_loss += loss_i.item() / len(batch_start_idxs)
+        key, subkey = jr.split(key)
+        val_args = [jr.permutation(subkey, a) for a in val_args]
 
-        epoch_val_loss = 0
-        val_batch_size = min(batch_size, val_len)
-        batch_start_idxs = range(0, val_len - val_batch_size + 1, val_batch_size)
-        for i in batch_start_idxs:
-            batch = tuple(a[i : i + val_batch_size] for a in val_args)
+        # Train epoch
+        batch_losses = []
+        for batch in zip(*get_batches(train_args, batch_size)):
+            params, opt_state, loss_i = step(
+                optimizer, opt_state, loss_fn, params, batch
+            )
+            batch_losses.append(loss_i)
+        losses["train"].append(sum(batch_losses) / len(batch_losses))
 
-            epoch_val_loss += loss_fn(
-                *eqx.partition(dist, filter_spec), *batch
-            ).item() / len(batch_start_idxs)
+        # Val epoch
+        batch_losses = []
+        for batch in zip(*get_batches(val_args, batch_size)):
+            batch_losses.append(loss_fn(params, *batch))
+        losses["val"].append(sum(batch_losses) / len(batch_losses))
 
-        losses["train"].append(epoch_train_loss)
-        losses["val"].append(epoch_val_loss)
+        loop.set_postfix({k: v[-1] for k, v in losses.items()})
+        if losses["val"][-1] == min(losses["val"]):
+            best_params = params
 
-        if epoch_val_loss == min(losses["val"]):
-            best_params = eqx.filter(dist, filter_spec)
+        elif count_fruitless(losses["val"]) > max_patience:
+            loop.set_postfix_str(f"{loop.postfix} (Max patience reached)")
+            break
+
+    dist = eqx.combine(best_params, static)  # type: ignore
+    return dist, losses
+
+
+def fit_to_data_sequential(
+    key: jr.KeyArray,
+    proposal: Distribution,
+    prior: Distribution,
+    theta: ArrayLike,
+    x_sim: ArrayLike,
+    n_contrastive: int = 5,
+    max_epochs: int = 50,
+    max_patience: int = 5,
+    batch_size: int = 50,
+    val_prop: float = 0.1,
+    learning_rate: float = 5e-4,
+    clip_norm: float = 0.5,
+    optimizer: optax.GradientTransformation | None = None,
+    filter_spec: Callable | PyTree = eqx.is_inexact_array,
+    show_progress: bool = True,
+):
+    """Carry out a single round of training of a sequential neural posterior estimation
+    algorithm (often referred to as SNPE-C). Learns a posterior p(theta|x_obs).
+
+    References:
+        - https://arxiv.org/abs/1905.07488
+        - https://arxiv.org/abs/2002.03712
+
+    Args:
+        key (jr.KeyArray): Jax key.
+        proposal (Distribution): The proposal distribution to train.
+        prior (Distribution): The prior distribution.
+        theta (ArrayLike): A batch of simulation parameters.
+        x_sim (ArrayLike): A batch of simulation outputs, corresponding to theta.
+        n_contrastive (int, optional): The number of contrasting theta values used in
+            the loss computation. Defaults to 5.
+        max_epochs (int, optional): The maximum number of epochs. Defaults to 50.
+        max_patience (int, optional): Number of consecutive epochs with no validation
+            loss improvement after which training is terminated. Defaults to 5.
+        batch_size (int, optional): Batch size. Defaults to 50.
+        val_prop (float, optional): Proportion of data to use for validation. Defaults to 0.1.
+        learning_rate (float, optional): Adam learning rate. Defaults to 5e-4.
+        clip_norm (float, optional): Maximum gradient norm before clipping occurs. Defaults to 0.5.
+        optimizer (optax.GradientTransformation): Optax optimizer. If provided, this
+            overrides the default Adam optimizer, and the learning_rate and clip_norm
+            arguments are ignored. Defaults to None.
+        filter_spec (Callable | PyTree): Equinox `filter_spec` for
+            specifying trainable parameters. Either a callable `leaf -> bool`, or a
+            PyTree with prefix structure matching `dist` with True/False values.
+            Defaults to `eqx.is_inexact_array`.
+        show_progress (bool): Whether to show progress bar. Defaults to True.
+    """
+    theta, x_sim = jnp.asarray(theta), jnp.asarray(x_sim)
+
+    if optimizer is None:
+        optimizer = optax.chain(
+            optax.clip_by_global_norm(clip_norm),
+            optax.adam(learning_rate=learning_rate),
+        )
+    params, static = eqx.partition(proposal, filter_spec)
+    opt_state = optimizer.init(params)
+
+    # Sample contrastive parameters
+    key, subkey = jr.split(key)
+    contrastive = jr.choice(subkey, theta, (n_contrastive, theta.shape[0]))
+
+    # Train val split
+    key, subkey = jr.split(key)
+    train_args, val_args = train_val_split(
+        subkey, (theta, x_sim, contrastive), val_prop=val_prop, axis=[0, 0, 1]
+    )
+
+    @eqx.filter_jit
+    def loss_fn(params, theta, x_sim, contrastive):
+        proposal = eqx.combine(params, static)
+        sim_log_odds = proposal.log_prob(theta, x_sim) - prior.log_prob(theta)
+        contrastive_log_odds = proposal.log_prob(contrastive, x_sim) - prior.log_prob(
+            contrastive
+        )
+        contrastive_log_odds = jnp.clip(contrastive_log_odds, -5)  # Clip for stability
+        return -(sim_log_odds - logsumexp(contrastive_log_odds, axis=0)).mean()
+
+    loop = tqdm(range(max_epochs), disable=not show_progress)
+
+    key, subkey = jr.split(key)
+    best_params = params
+    losses = {"train": [], "val": []}  # type: Dict[str, list[float]]
+    for _ in loop:
+        # Permute arrays
+        key, subkey = jr.split(key)
+        train_args = [jr.permutation(subkey, a) for a in train_args]
+
+        key, subkey = jr.split(key)
+        val_args = [jr.permutation(subkey, a) for a in val_args]
+
+        # Permute contrasting samples independently
+        train_args[-1] = jr.permutation(subkey, train_args[-1])
+        val_args[-1] = jr.permutation(subkey, val_args[-1])
+
+        # Train epoch
+        batch_losses = []
+        for batch in zip(*get_batches(train_args, batch_size, axis=[0, 0, 1])):
+            params, opt_state, loss_i = step(
+                optimizer, opt_state, loss_fn, params, batch
+            )
+            batch_losses.append(loss_i)
+        losses["train"].append(sum(batch_losses) / len(batch_losses))
+
+        # Val epoch
+        batch_losses = []
+        for batch in zip(*get_batches(val_args, batch_size, axis=[0, 0, 1])):
+            batch_losses.append(loss_fn(params, *batch))
+        losses["val"].append(sum(batch_losses) / len(batch_losses))
+
+        if losses["val"][-1] == min(losses["val"]):
+            best_params = params
 
         elif count_fruitless(losses["val"]) > max_patience:
             loop.set_postfix_str(f"{loop.postfix} (Max patience reached)")
@@ -129,5 +240,20 @@ def fit_to_data(
 
         loop.set_postfix({k: v[-1] for k, v in losses.items()})
 
-    dist = eqx.combine(best_params, static)  # type: ignore
-    return dist, losses
+    proposal = eqx.combine(best_params, static)  # type: ignore
+    return proposal, losses
+
+
+@eqx.filter_jit
+def step(
+    optimizer: optax.GradientTransformation,
+    opt_state: PyTree,
+    loss_fn: Callable,
+    params: PyTree,
+    batch: Iterable[Array],
+):
+    """Carry out a training step on a batch of data."""
+    loss_val, grads = eqx.filter_value_and_grad(loss_fn)(params, *batch)
+    updates, opt_state = optimizer.update(grads, opt_state)
+    params = eqx.apply_updates(params, updates)
+    return params, opt_state, loss_val
