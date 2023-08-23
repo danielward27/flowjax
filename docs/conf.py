@@ -2,6 +2,10 @@
 import os
 import sys
 
+import jax  # Avoid circular import
+
+jax  # Avoid unused module linting
+
 sys.path.insert(0, os.path.abspath(".."))
 
 # For the full list of built-in configuration values, see the documentation:
