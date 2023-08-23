@@ -20,12 +20,12 @@ from flowjax.bijections import (
     Permute,
     RationalQuadraticSpline,
     Scan,
+    SoftPlus,
     Stack,
     Tanh,
     TanhLinearTails,
     TriangularAffine,
 )
-
 
 DIM = 5
 COND_DIM = 2
@@ -55,6 +55,7 @@ bijections = {
     "Affine": Affine(jnp.ones(DIM), jnp.full(DIM, 2)),
     "Tanh": Tanh((DIM,)),
     "Exp": Exp((DIM,)),
+    "SoftPlus": SoftPlus((DIM,)),
     "TanhLinearTails": TanhLinearTails(1, (DIM,)),
     "TriangularAffine (lower)": TriangularAffine(jnp.arange(DIM), POS_DEF_TRAINGLES),
     "TriangularAffine (upper)": TriangularAffine(
@@ -88,7 +89,7 @@ bijections = {
     "MaskedAutoregressive_Affine (conditional)": MaskedAutoregressive(
         KEY, Affine(), cond_dim=COND_DIM, dim=DIM, nn_width=10, nn_depth=2
     ),
-    "MaskedAutoregressive_RationalQuadraticSpline (unconditional)": MaskedAutoregressive(
+    "MaskedAutoregressiveRationalQuadraticSpline (unconditional)": MaskedAutoregressive(
         KEY,
         RationalQuadraticSpline(5, 3),
         dim=DIM,

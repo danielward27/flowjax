@@ -1,40 +1,41 @@
 """Bijections from ``flowjax.bijections``"""
 
-from .affine import AdditiveLinearCondition, Affine, TriangularAffine, AdditiveCondition
+from .affine import AdditiveCondition, AdditiveLinearCondition, Affine, TriangularAffine
 from .bijection import Bijection
 from .block_autoregressive_network import BlockAutoregressiveNetwork
 from .chain import Chain
 from .concatenate import Concatenate, Stack
 from .coupling import Coupling
 from .exp import Exp
-from .jax_transforms import Scan, Batch
+from .jax_transforms import Batch, Scan
 from .masked_autoregressive import MaskedAutoregressive
 from .rational_quadratic_spline import RationalQuadraticSpline
+from .softplus import SoftPlus
 from .tanh import Tanh, TanhLinearTails
-
 from .utils import EmbedCondition, Flip, Invert, Partial, Permute
 
 __all__ = [
-    "Bijection",
-    "Affine",
-    "TriangularAffine",
-    "BlockAutoregressiveNetwork",
-    "Coupling",
-    "MaskedAutoregressive",
-    "Tanh",
-    "Exp",
-    "TanhLinearTails",
-    "Chain",
-    "Scan",
-    "Batch",
-    "Invert",
-    "Flip",
-    "Permute",
-    "AdditiveLinearCondition",
     "AdditiveCondition",
-    "Partial",
-    "EmbedCondition",
-    "RationalQuadraticSpline",
+    "AdditiveLinearCondition",
+    "Affine",
+    "Batch",
+    "Bijection",
+    "BlockAutoregressiveNetwork",
+    "Chain",
     "Concatenate",
+    "Coupling",
+    "EmbedCondition",
+    "Exp",
+    "Flip",
+    "Invert",
+    "MaskedAutoregressive",
+    "Partial",
+    "Permute",
+    "RationalQuadraticSpline",
+    "Scan",
+    "SoftPlus",
     "Stack",
+    "Tanh",
+    "TanhLinearTails",
+    "TriangularAffine",
 ]
