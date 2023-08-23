@@ -134,7 +134,7 @@ class TriangularAffine(Bijection):
         self._arr = arr
 
         if weight_normalisation:
-            self._weight_scale = positivity_constraint.inverse(jnp.ones((dim, 1)))
+            self._weight_scale = positivity_constraint.inverse(jnp.ones((dim,)))
         else:
             self._weight_scale = None
 
@@ -148,7 +148,8 @@ class TriangularAffine(Bijection):
 
         if self._weight_scale is not None:
             norms = jnp.linalg.norm(arr, axis=1, keepdims=True)
-            arr = self.positivity_constraint.transform(self._weight_scale) * arr / norms
+            scale = self.positivity_constraint.transform(self._weight_scale)[:, None]
+            arr = scale * arr / norms
 
         return arr
 
