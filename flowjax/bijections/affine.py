@@ -10,6 +10,7 @@ from jax.scipy.linalg import solve_triangular
 from jax.typing import ArrayLike
 
 from flowjax.bijections.bijection import Bijection
+from flowjax.bijections.softplus import SoftPlus
 from flowjax.utils import arraylike_to_array
 
 
@@ -20,24 +21,33 @@ class Affine(Bijection):
 
     loc: Array
     _scale: Array
-    # positivity_constraint: Bijection
+    positivity_constraint: Bijection
 
     def __init__(
         self,
         loc: ArrayLike = 0,
         scale: ArrayLike = 1,
+        positivity_constraint: Bijection = None,
     ):
         """
         Args:
             loc (ArrayLike): Location parameter. Defaults to 0.
             scale (ArrayLike): Scale parameter. Defaults to 1.
+            postivity_constraint (Bijection): Bijection with shape matching the Affine
+                bijection, that maps the scale parameter from an unbounded domain to the
+                positive domain. Defaults to SoftPlus.
         """
         loc, scale = [arraylike_to_array(a, dtype=float) for a in (loc, scale)]
-        self.shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
+        self.shape = jnp.broadcast_shapes(loc.shape, scale.shape)
         self.cond_shape = None
 
         self.loc = jnp.broadcast_to(loc, self.shape)
-        self._scale = jnp.broadcast_to(jnp.log(scale), self.shape)
+
+        if positivity_constraint is None:
+            positivity_constraint = SoftPlus(self.shape)
+
+        self.positivity_constraint = positivity_constraint
+        self._scale = positivity_constraint.inverse(jnp.broadcast_to(scale, self.shape))
 
     def transform(self, x, condition=None):
         x, _ = self._argcheck_and_cast(x)
@@ -45,7 +55,8 @@ class Affine(Bijection):
 
     def transform_and_log_det(self, x, condition=None):
         x, _ = self._argcheck_and_cast(x)
-        return x * self.scale + self.loc, self._scale.sum()
+        scale = self.scale
+        return x * scale + self.loc, jnp.log(scale).sum()
 
     def inverse(self, y, condition=None):
         y, _ = self._argcheck_and_cast(y)
@@ -53,12 +64,13 @@ class Affine(Bijection):
 
     def inverse_and_log_det(self, y, condition=None):
         y, _ = self._argcheck_and_cast(y)
-        return (y - self.loc) / self.scale, -self._scale.sum()
+        scale = self.scale
+        return (y - self.loc) / scale, -jnp.log(scale).sum()
 
     @property
     def scale(self):
         """The scale parameter of the affine transformation."""
-        return jnp.exp(self._scale)
+        return self.positivity_constraint.transform(self._scale)
 
 
 class TriangularAffine(Bijection):

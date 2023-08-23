@@ -2,7 +2,7 @@
 import jax.numpy as jnp
 from jax.nn import softplus
 
-from flowjax.bijections import Bijection
+from flowjax.bijections.bijection import Bijection
 
 
 class SoftPlus(Bijection):
