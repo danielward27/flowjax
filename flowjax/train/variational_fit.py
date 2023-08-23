@@ -44,7 +44,6 @@ def fit_to_variational_target(
     loss_fn: Callable[[Distribution, jr.KeyArray], Array],
     steps: int = 100,
     learning_rate: float = 5e-4,
-    clip_norm: float = 0.5,
     optimizer: optax.GradientTransformation | None = None,
     filter_spec: Callable | PyTree = eqx.is_inexact_array,
     show_progress: bool = True,
@@ -61,11 +60,9 @@ def fit_to_variational_target(
             to train and a key.
         steps (int, optional): The number of training steps to run. Defaults to 100.
         learning_rate (float, optional): Learning rate. Defaults to 5e-4.
-        clip_norm (float, optional): Maximum gradient norm before clipping occurs.
-            Defaults to 0.5.
         optimizer (optax.GradientTransformation | None, optional): Optax optimizer. If
             provided, this overrides the default Adam optimizer, and the learning_rate
-            and clip_norm arguments are ignored. Defaults to None.
+            is ignored. Defaults to None.
         filter_spec (Callable | PyTree, optional): Equinox `filter_spec` for
             specifying trainable parameters. Either a callable `leaf -> bool`, or a
             PyTree with prefix structure matching `dist` with True/False values.
@@ -76,10 +73,7 @@ def fit_to_variational_target(
         tuple: (distribution, losses).
     """
     if optimizer is None:
-        optimizer = optimizer = optax.chain(
-            optax.clip_by_global_norm(clip_norm),
-            optax.adam(learning_rate=learning_rate),
-        )
+        optimizer = optax.adam(learning_rate)
 
     @eqx.filter_value_and_grad
     def loss_val_and_grad(trainable, static, key):

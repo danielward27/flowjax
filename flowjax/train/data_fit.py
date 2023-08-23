@@ -2,6 +2,7 @@
 from typing import Any, Callable, Iterable
 
 import equinox as eqx
+import jax
 import jax.numpy as jnp
 import jax.random as jr
 import optax
@@ -26,7 +27,6 @@ def fit_to_data(
     batch_size: int = 256,
     val_prop: float = 0.1,
     learning_rate: float = 5e-4,
-    clip_norm: float = 0.5,
     optimizer: optax.GradientTransformation | None = None,
     filter_spec: Callable | PyTree = eqx.is_inexact_array,
     show_progress: bool = True,
@@ -45,10 +45,9 @@ def fit_to_data(
         batch_size (int): Batch size. Defaults to 256.
         val_prop (float): Proportion of data to use in validation set. Defaults to 0.1.
         learning_rate (float): Adam learning rate. Defaults to 5e-4.
-        clip_norm (float): Maximum gradient norm before clipping. Defaults to 0.5.
         optimizer (optax.GradientTransformation): Optax optimizer. If provided, this
-            overrides the default Adam optimizer, and the learning_rate and clip_norm
-            arguments are ignored. Defaults to None.
+            overrides the default Adam optimizer, and the learning_rate is ignored.
+            Defaults to None.
         filter_spec (Callable | PyTree): Equinox `filter_spec` for
             specifying trainable parameters. Either a callable `leaf -> bool`, or a
             PyTree with prefix structure matching `dist` with True/False values.
@@ -60,13 +59,10 @@ def fit_to_data(
     if condition is not None:
         condition = jnp.asarray(condition)
 
-    params, static = eqx.partition(dist, filter_spec)  # type: ignore
     if optimizer is None:
-        optimizer = optax.chain(
-            optax.clip_by_global_norm(clip_norm),
-            optax.adam(learning_rate=learning_rate),
-        )
+        optimizer = optax.adam(learning_rate)
 
+    params, static = eqx.partition(dist, filter_spec)  # type: ignore
     best_params = params
     opt_state = optimizer.init(params)
 
@@ -80,7 +76,7 @@ def fit_to_data(
     inputs = (x,) if condition is None else (x, condition)
     train_args, val_args = train_val_split(subkey, inputs, val_prop=val_prop)
 
-    losses = {"train": [], "val": []}  # type: Dict[str, list[float]]
+    losses = {"train": [], "val": []}
 
     loop = tqdm(range(max_epochs), disable=not show_progress)
 
@@ -131,7 +127,6 @@ def fit_to_data_sequential(
     batch_size: int = 50,
     val_prop: float = 0.1,
     learning_rate: float = 5e-4,
-    clip_norm: float = 0.5,
     optimizer: optax.GradientTransformation | None = None,
     filter_spec: Callable | PyTree = eqx.is_inexact_array,
     show_progress: bool = True,
@@ -158,11 +153,9 @@ def fit_to_data_sequential(
         val_prop (float, optional): Proportion of data to use for validation.
             Defaults to 0.1.
         learning_rate (float, optional): Adam learning rate. Defaults to 5e-4.
-        clip_norm (float, optional): Maximum gradient norm before clipping.
-            Defaults to 0.5.
         optimizer (optax.GradientTransformation): Optax optimizer. If provided, this
-            overrides the default Adam optimizer, and the learning_rate and clip_norm
-            arguments are ignored. Defaults to None.
+            overrides the default Adam optimizer, and the learning_rate is ignored.
+            Defaults to None.
         filter_spec (Callable | PyTree): Equinox `filter_spec` for
             specifying trainable parameters. Either a callable `leaf -> bool`, or a
             PyTree with prefix structure matching `dist` with True/False values.
@@ -172,10 +165,8 @@ def fit_to_data_sequential(
     theta, x_sim = jnp.asarray(theta), jnp.asarray(x_sim)
 
     if optimizer is None:
-        optimizer = optax.chain(
-            optax.clip_by_global_norm(clip_norm),
-            optax.adam(learning_rate=learning_rate),
-        )
+        optimizer = optax.adam(learning_rate)
+
     params, static = eqx.partition(proposal, filter_spec)
     opt_state = optimizer.init(params)
 
@@ -203,7 +194,7 @@ def fit_to_data_sequential(
 
     key, subkey = jr.split(key)
     best_params = params
-    losses = {"train": [], "val": []}  # type: Dict[str, list[float]]
+    losses = {"train": [], "val": []}
     for _ in loop:
         # Permute arrays
         key, subkey = jr.split(key)
@@ -213,8 +204,13 @@ def fit_to_data_sequential(
         val_args = [jr.permutation(subkey, a) for a in val_args]
 
         # Permute contrasting samples independently
-        train_args[-1] = jr.permutation(subkey, train_args[-1])
-        val_args[-1] = jr.permutation(subkey, val_args[-1])
+        for axis in (0, 1):
+            for args in [train_args, val_args]:
+                key, subkey = jr.split(key)
+                args[-1] = jax.jit(jr.permutation)(subkey, args[-1])
+
+            key, subkey = jr.split(key)
+            val_args[-1] = jr.permutation(subkey, val_args[-1])
 
         # Train epoch
         batch_losses = []
