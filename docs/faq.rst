@@ -4,7 +4,7 @@ FAQ
 Freezing parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Often it is useful to not train particular parameters. To achieve this we can provide a
-``filter_spec`` to :py:func:`~flowjax.train.train_flow`. For example, to avoid
+``filter_spec`` to :py:func:`~flowjax.train.data_fit.fit_to_data`. For example, to avoid
 training the base distribution, we could create a ``filter_spec`` as follows
 
 .. testsetup::
