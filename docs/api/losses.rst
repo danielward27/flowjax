@@ -6,4 +6,3 @@ Loss functions from ``flowjax.train.losses``.
    :members:
    :undoc-members:
    :show-inheritance:
-   :member-order: bysource

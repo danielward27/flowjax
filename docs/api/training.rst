@@ -6,7 +6,7 @@ corresponding conditioning variables if appropriate), we can use ``fit_to_data``
 
 .. autofunction:: flowjax.train.fit_to_data
 
-Alternatively, we can also  provide a function for performing variational inference with a flow. See the examples for 
-illustrations of how to use this function.
+Alternatively, we can use ``fit_to_variational_target`` to fit the flow to a function
+using variational inference.
 
 .. autofunction:: flowjax.train.fit_to_variational_target
