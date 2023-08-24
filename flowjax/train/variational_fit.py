@@ -4,44 +4,19 @@ from typing import Any, Callable
 import equinox as eqx
 import jax.random as jr
 import optax
-from jax import Array, vmap
-from jax.typing import ArrayLike
 from tqdm import tqdm
 
 from flowjax.distributions import Distribution
+from flowjax.train.losses import Loss
+from flowjax.train.train_utils import step
 
 PyTree = Any
-
-
-class ElboLoss:
-    """Elbo loss function, approximated using samples."""
-
-    target: Callable[[ArrayLike], Array]
-    num_samples: int
-
-    def __init__(self, target: Callable[[ArrayLike], Array], num_samples: int):
-        """
-        Args:
-            num_samples (int): Number of samples to use in the ELBO approximation.
-            target (Callable[[ArrayLike], Array]): The target, i.e. log posterior
-                density up to an additive constant / the negative of the potential
-                function, evaluated for a single point.
-        """
-        self.target = target
-        self.num_samples = num_samples
-
-    def __call__(self, dist: Distribution, key: jr.KeyArray):
-        """Computes an estimate of the negative ELBO loss."""
-        samples, log_probs = dist.sample_and_log_prob(key, (self.num_samples,))
-        target_density = vmap(self.target)(samples)
-        losses = log_probs - target_density
-        return losses.mean()
 
 
 def fit_to_variational_target(
     key: jr.KeyArray,
     dist: Distribution,
-    loss_fn: Callable[[Distribution, jr.KeyArray], Array],
+    loss_fn: Loss,
     steps: int = 100,
     learning_rate: float = 5e-4,
     optimizer: optax.GradientTransformation | None = None,
@@ -55,9 +30,7 @@ def fit_to_variational_target(
         key (jr.KeyArray): Jax PRNGKey.
         dist (Distribution): Distribution object, trainable parameters are found
             using equinox.is_inexact_array.
-        loss_fn (Callable[[Distribution, jr.KeyArray], Array]): The loss function to
-            optimize (e.g. the ElboLoss). The loss function should take the distribution
-            to train and a key.
+        loss_fn (Loss | None): The loss function to optimize (e.g. the ElboLoss).
         steps (int, optional): The number of training steps to run. Defaults to 100.
         learning_rate (float, optional): Learning rate. Defaults to 5e-4.
         optimizer (optax.GradientTransformation | None, optional): Optax optimizer. If
@@ -80,25 +53,20 @@ def fit_to_variational_target(
         model = eqx.combine(trainable, static)
         return loss_fn(model, key)
 
-    @eqx.filter_jit
-    def step(trainable, static, key, optimizer, opt_state):
-        loss_val, grads = loss_val_and_grad(trainable, static, key)
-        updates, opt_state = optimizer.update(grads, opt_state)
-        trainable = eqx.apply_updates(trainable, updates)
-        return trainable, opt_state, loss_val
-
     params, static = eqx.partition(dist, filter_spec)
     opt_state = optimizer.init(params)
 
     losses = []
-    loop = tqdm(range(steps), disable=not show_progress)
 
     best_params = params
-    for _ in loop:
-        key, subkey = jr.split(key)
-        params, opt_state, loss = step(params, static, subkey, optimizer, opt_state)
+    keys = tqdm(jr.split(key, steps), disable=not show_progress)
+
+    for key in keys:
+        params, opt_state, loss = step(
+            optimizer, opt_state, loss_fn, params, static, key
+        )
         losses.append(loss.item())
-        loop.set_postfix({"loss": loss.item()})
+        keys.set_postfix({"loss": loss.item()})
         if loss.item() == min(losses):
             best_params = params
 
