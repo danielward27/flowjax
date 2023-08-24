@@ -2,7 +2,7 @@
 <img src="./images/flowjax_logo.png?raw=true" alt="logo" width="500" ></img>
 </div>
 
-# FlowJax: Normalising Flows in Jax
+# FlowJax: Normalizing Flows in Jax
 
 ## Documentation
 Available [here](https://danielward27.github.io/flowjax/index.html).
@@ -28,14 +28,13 @@ flow, losses = fit_to_data(train_key, flow, x, learning_rate=0.05)
 flow.log_prob(x)
 ```
 
-The package currently supports the following:
-
-- `CouplingFlow` ([Dinh et al., 2017](https://arxiv.org/abs/1605.08803))
-- `MaskedAutoregressiveFlow` ([Papamakarios et al., 2017](https://arxiv.org/abs/1705.07057v4)).
-- Common "transformers", such as `Affine` and `RationalQuadraticSpline` (the latter used in neural spline flows; [Durkan et al., 2019](https://arxiv.org/abs/1906.04032))
+The package currently includes:
+- Many simple bijections and distributions, implemented as [Equinox](https://arxiv.org/abs/2111.00254) modules.
+- `CouplingFlow` ([Dinh et al., 2017](https://arxiv.org/abs/1605.08803)) and `MaskedAutoregressiveFlow` ([Papamakarios et al., 2017](https://arxiv.org/abs/1705.07057v4)) normalizing flow architectures.
+    - These can be used with arbitrary bijections as transformers, such as `Affine` or `RationalQuadraticSpline` (the latter used in neural spline flows; [Durkan et al., 2019](https://arxiv.org/abs/1906.04032)). 
 - `BlockNeuralAutoregressiveFlow`, as introduced by [De Cao et al., 2019](https://arxiv.org/abs/1904.04676)
 - `TriangularSplineFlow`, introduced here.
-
+- Training scripts for fitting by maximum likelihood, variational inference, or using contrastive learning for sequential neural posterior estimation ([Greenberg et al., 2019](https://arxiv.org/abs/1905.07488); [Durkan et al., 2020](https://arxiv.org/abs/2002.03712]))
 
 ## Installation
 ```
@@ -48,7 +47,6 @@ This package is new and may have substantial breaking changes between major rele
 ## TODO
 A few limitations / things that could be worth including in the future:
 - Add ability to "reshape" bijections.
-- Consider softplus vs exp for enforcing positivity constraints, e.g. for scale parameters.
 
 ## Related
 We make use of the [Equinox](https://arxiv.org/abs/2111.00254) package, which facilitates object-oriented programming with Jax. 
