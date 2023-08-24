@@ -22,13 +22,6 @@ def test_train_val_split():
     with pytest.raises(ValueError):
         train_val_split(key, arrays, val_prop=0.2)
 
-    # Axes as list
-    train, val = train_val_split(key, arrays, val_prop=0.2, axis=[0, 1])
-    assert train[0].shape == (4, 2)
-    assert val[0].shape == (1, 2)
-    assert train[1].shape == (3, 4)
-    assert val[1].shape == (3, 1)
-
 
 def test_count_fruitless():
     assert count_fruitless([12, 2, 3, 4]) == 2
@@ -38,11 +31,5 @@ def test_count_fruitless():
 
 def test_get_batches():
     arrays = [jnp.arange(26).reshape(13, 2)] * 2
-    out = get_batches(arrays, batch_size=4, axis=0)
+    out = get_batches(arrays, batch_size=4)
     assert out[0].shape == (3, 4, 2)
-
-    # Batch along non zero axis
-    arrays = [arrays[0].T, arrays[1]]
-    out = get_batches(arrays, batch_size=4, axis=[1, 0])
-    assert out[0].shape == (3, 2, 4)
-    assert out[1].shape == (3, 4, 2)

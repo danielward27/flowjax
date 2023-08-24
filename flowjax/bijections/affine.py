@@ -1,6 +1,5 @@
 """Affine bijections."""
 
-import warnings
 from typing import Callable
 
 import jax.numpy as jnp
@@ -232,42 +231,3 @@ class AdditiveCondition(Bijection):
     def inverse_and_log_det(self, y, condition=None):
         y, condition = self._argcheck_and_cast(y, condition)
         return self.inverse(y, condition), jnp.array(0)  # type: ignore
-
-
-class AdditiveLinearCondition(Bijection):
-    """Deprecated as of v9.1.0. Use ``AdditiveCondition`` bijection instead.
-
-    Carries out ``y = x + W @ condition``, as the forward transformation and
-    ``x = y - W @ condition`` as the inverse.
-    """
-
-    W: Array
-
-    def __init__(self, arr: Array):
-        """
-        Args:
-            arr (Array): Array (``W`` in the description.)
-        """
-        warnings.warn(
-            "AdditiveLinearCondition is deprecated in favour of the more general "
-            "AdditiveCondition as of v9.1.0."
-        )
-        self.W = arr
-        self.shape = (arr.shape[-2],)
-        self.cond_shape = (arr.shape[-1],)
-
-    def transform(self, x, condition=None):
-        x, condition = self._argcheck_and_cast(x, condition)
-        return x + self.W @ condition
-
-    def transform_and_log_det(self, x, condition=None):
-        x, condition = self._argcheck_and_cast(x, condition)
-        return self.transform(x, condition), jnp.array(0)
-
-    def inverse(self, y, condition=None):
-        y, condition = self._argcheck_and_cast(y, condition)
-        return y - self.W @ condition
-
-    def inverse_and_log_det(self, y, condition=None):
-        y, condition = self._argcheck_and_cast(y, condition)
-        return self.inverse(y, condition), jnp.array(0)

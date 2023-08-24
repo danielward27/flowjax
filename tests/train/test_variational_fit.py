@@ -3,7 +3,8 @@ import jax.random as jr
 import pytest
 
 from flowjax.distributions import Normal, StandardNormal
-from flowjax.train.variational_fit import ElboLoss, fit_to_variational_target
+from flowjax.train.losses import ElboLoss
+from flowjax.train.variational_fit import fit_to_variational_target
 
 test_shapes = [(), (2,), (2, 3, 4)]
 
@@ -13,8 +14,8 @@ def test_elbo_loss(shape):
     "Check finite scaler loss."
     target = StandardNormal(shape)
     vi_dist = StandardNormal(shape)
-    loss_fn = ElboLoss(target.log_prob, num_samples=100)
-    loss_val = loss_fn(vi_dist, jr.PRNGKey(0))
+    loss = ElboLoss(target.log_prob, num_samples=100)
+    loss_val = loss.loss(vi_dist, jr.PRNGKey(0))
     assert loss_val.shape == ()  # expect scalar loss
     assert jnp.isfinite(loss_val)  # expect finite loss
 

@@ -6,4 +6,3 @@ Distributions from ``flowjax.distributions``.
    :members:
    :undoc-members:
    :show-inheritance:
-   :member-order: bysource
