@@ -20,14 +20,11 @@ def step(
     opt_state: PyTree,
     loss_fn: Loss,
     params: Distribution,
-    static: Distribution,
     *args,
     **kwargs
 ):
     """Carry out a training step with *args and **kwargs passed to the loss function."""
-    loss_val, grads = eqx.filter_value_and_grad(loss_fn)(
-        params, static, *args, **kwargs
-    )
+    loss_val, grads = eqx.filter_value_and_grad(loss_fn)(params, *args, **kwargs)
     updates, opt_state = optimizer.update(grads, opt_state)
     params = eqx.apply_updates(params, updates)
     return params, opt_state, loss_val

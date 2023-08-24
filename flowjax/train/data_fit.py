@@ -90,7 +90,7 @@ def fit_to_data(
         for batch in zip(*get_batches(train_data, batch_size)):
             key, subkey = jr.split(key)
             params, opt_state, loss_i = step(
-                optimizer, opt_state, loss_fn, params, static, batch
+                optimizer, opt_state, loss_fn, params, static, *batch
             )
             batch_losses.append(loss_i)
         losses["train"].append(sum(batch_losses) / len(batch_losses))

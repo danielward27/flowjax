@@ -86,13 +86,13 @@ class ContrastiveLoss(Loss):
             )
         # Rolling window over theta batch to create contrastive samples.
         idx = jnp.arange(len(theta))[:, None] + jnp.arange(self.n_contrastive)[None, :]
-        contrastive = jnp.roll(theta[idx], -1, axis=0)  # Ensure mismatch with x_sim
+        contrastive = jnp.roll(theta[idx], -1, axis=0)  # Ensure mismatch with condition
         contrastive = jnp.swapaxes(contrastive, 0, 1)  # (contrastive, batch_size, dim)
         return contrastive
 
 
 class ElboLoss(Loss):
-    """Elbo loss function, approximated using samples."""
+    """The negative evidence lower bound (ELBO), approximated using samples."""
 
     target: Callable[[ArrayLike], Array]
     num_samples: int
