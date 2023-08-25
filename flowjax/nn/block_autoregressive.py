@@ -7,6 +7,7 @@ import jax.numpy as jnp
 from jax import Array, random
 from jax.nn.initializers import glorot_uniform
 from jax.random import KeyArray
+
 from flowjax.bijections.tanh import Tanh
 from flowjax.masks import block_diag_mask, block_tril_mask
 
@@ -40,7 +41,7 @@ class BlockAutoregressiveLinear(eqx.Module):
         n_blocks: int,
         block_shape: tuple,
         cond_dim: int | None = None,
-        init: Callable = glorot_uniform(),
+        init: Callable | None = None,
     ):
         """
         Args:
@@ -49,9 +50,10 @@ class BlockAutoregressiveLinear(eqx.Module):
             block_shape (tuple): The shape of the (unconstrained) blocks.
             cond_dim (int | None): Number of additional conditioning variables.
                 Defaults to None.
-            init (Callable): Default initialisation method for the weight
+            init (Callable | None): Default initialisation method for the weight
                 matrix. Defaults to ``glorot_uniform()``.
         """
+        init = init if init is not None else glorot_uniform()
         self.cond_dim = cond_dim
 
         if cond_dim is None:

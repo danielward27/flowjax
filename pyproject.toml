@@ -42,3 +42,6 @@ mypkg = "flowjax"
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+
+[tool.ruff]
+select = ["E", "F", "B"]

@@ -2,9 +2,9 @@
 import os
 import sys
 
-import jax  # Avoid circular import
+import jax  # noqa Avoid circular import
 
-jax  # Avoid unused module linting
+# Avoid unused module linting
 
 sys.path.insert(0, os.path.abspath(".."))
 

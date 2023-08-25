@@ -268,7 +268,7 @@ class TriangularSplineFlow(Transformed):
         knots: int = 8,
         tanh_max_val: float = 3.0,
         invert: bool = True,
-        init: Callable = glorot_uniform(),
+        init: Callable | None = None,
     ):
         """
         Args:
@@ -283,9 +283,10 @@ class TriangularSplineFlow(Transformed):
             invert: (bool): Use `True` for access of `log_prob` only (e.g.
                 fitting by maximum likelihood), `False` for the forward direction
                 (sampling) only (e.g. for fitting variationally).
-            init (Callable): Initialisation method for the lower triangular weights.
-                Defaults to glorot_uniform().
+            init (Callable | None): Initialisation method for the lower triangular
+                weights. Defaults to glorot_uniform().
         """
+        init = init if init is not None else glorot_uniform()
         if len(base_dist.shape) != 1:
             raise ValueError(f"Expected base_dist.ndim==1, got {base_dist.ndim}")
 
