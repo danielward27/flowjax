@@ -1,5 +1,7 @@
 """flowjax - Basic flowjax implementation in jax."""
 
-__version__ = "10.0.3"
-__author__ = "Daniel Ward <danielward27@outlook.com>"
+from importlib.metadata import version
+
+__version__ = version("flowjax")
 __all__ = []
+

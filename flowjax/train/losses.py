@@ -28,13 +28,6 @@ class Loss:
 class MaximumLikelihoodLoss(Loss):
     """Loss for fitting a flow with maximum likelihood (negative log likelihood). Can
     be used to learn either conditional or unconditional distributions.
-
-    Args:
-        params (Distribution): Trainable parameters for the distribution.
-        static (Distribution): Static parameters for the distribution.
-        x (Array): Target samples.
-        condition (Array | None, optional): Corresponding conditioning variables for
-            learning a conditional distribution. Defaults to None.
     """
 
     @staticmethod

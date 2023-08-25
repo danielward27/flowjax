@@ -17,7 +17,6 @@ sys.path.insert(0, os.path.abspath(".."))
 project = "FlowJax"
 copyright = "2022, Daniel Ward"
 author = "Daniel Ward"
-release = "v10.0.3"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
