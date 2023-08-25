@@ -39,3 +39,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.package-dir]
 mypkg = "flowjax"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
