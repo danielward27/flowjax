@@ -72,7 +72,7 @@ class AutoregressiveMLP(Module):
         activation: Callable = jnn.relu,
         final_activation: Callable = _identity,
         *,
-        key
+        key,
     ) -> None:
         """
         Args:
@@ -98,7 +98,9 @@ class AutoregressiveMLP(Module):
             masks.append(rank_based_mask(hidden_ranks, out_ranks, eq=False))
 
         keys = random.split(key, len(masks))
-        layers = [MaskedLinear(mask, key=key) for mask, key in zip(masks, keys)]
+        layers = [
+            MaskedLinear(mask, key=key) for mask, key in zip(masks, keys, strict=True)
+        ]
 
         self.layers = layers
         self.in_size = len(in_ranks)

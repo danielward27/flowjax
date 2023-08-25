@@ -1,12 +1,11 @@
-
 ### Documentation
 
-The documentation is supported by [Sphinx](https://www.sphinx-doc.org/en/master/). To build the docs, run from the top level directory:
-```
-sphinx-build docs docs/_build
-```
+The documentation is supported by [Sphinx](https://www.sphinx-doc.org/en/master/). To build the HTML pages locally, run
 
-To test the doctest code blocks in the documentation, run from the top level directory:
+```
+make -C docs html
+```
+from the docs directory. The documentation can then be viewed by opening `./docs/_build/html/index.html``. To test the doctest code blocks in the documentation, run from the top level directory:
 ```
 make -C docs doctest
 ```

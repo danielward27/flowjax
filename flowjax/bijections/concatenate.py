@@ -6,7 +6,7 @@ import jax.numpy as jnp
 from jax import Array
 
 from flowjax.bijections.bijection import Bijection
-from flowjax.utils import merge_cond_shapes, check_shapes_match
+from flowjax.utils import check_shapes_match, merge_cond_shapes
 
 
 class Concatenate(Bijection):
@@ -42,7 +42,7 @@ class Concatenate(Bijection):
         x_parts = jnp.array_split(x, self.split_idxs, axis=self.axis)
         y_parts = [
             b.transform(x_part, condition)
-            for b, x_part in zip(self.bijections, x_parts)
+            for b, x_part in zip(self.bijections, x_parts, strict=True)
         ]
         return jnp.concatenate(y_parts, axis=self.axis)
 
@@ -52,17 +52,18 @@ class Concatenate(Bijection):
 
         ys_log_dets = [
             b.transform_and_log_det(x, condition)
-            for b, x in zip(self.bijections, x_parts)
+            for b, x in zip(self.bijections, x_parts, strict=True)
         ]
 
-        y_parts, log_dets = zip(*ys_log_dets)
+        y_parts, log_dets = zip(*ys_log_dets, strict=True)
         return jnp.concatenate(y_parts, self.axis), sum(log_dets)
 
     def inverse(self, y, condition=None):
         y, condition = self._argcheck_and_cast(y, condition)
         y_parts = jnp.array_split(y, self.split_idxs, axis=self.axis)
         x_parts = [
-            b.inverse(y_part, condition) for b, y_part in zip(self.bijections, y_parts)
+            b.inverse(y_part, condition)
+            for b, y_part in zip(self.bijections, y_parts, strict=True)
         ]
         return jnp.concatenate(x_parts, axis=self.axis)
 
@@ -72,10 +73,10 @@ class Concatenate(Bijection):
 
         xs_log_dets = [
             b.inverse_and_log_det(y, condition)
-            for b, y in zip(self.bijections, y_parts)
+            for b, y in zip(self.bijections, y_parts, strict=True)
         ]
 
-        x_parts, log_dets = zip(*xs_log_dets)
+        x_parts, log_dets = zip(*xs_log_dets, strict=True)
         return jnp.concatenate(x_parts, self.axis), sum(log_dets)
 
     def _argcheck_shapes(self, shapes: list[tuple[int, ...]]):
@@ -117,7 +118,8 @@ class Stack(Bijection):
         x, condition = self._argcheck_and_cast(x, condition)
         x_parts = self._split_and_squeeze(x)
         y_parts = [
-            b.transform(x, condition) for (b, x) in zip(self.bijections, x_parts)
+            b.transform(x, condition)
+            for (b, x) in zip(self.bijections, x_parts, strict=True)
         ]
         return jnp.stack(y_parts, self.axis)
 
@@ -126,16 +128,19 @@ class Stack(Bijection):
         x_parts = self._split_and_squeeze(x)
         ys_log_det = [
             b.transform_and_log_det(x, condition)
-            for b, x in zip(self.bijections, x_parts)
+            for b, x in zip(self.bijections, x_parts, strict=True)
         ]
 
-        y_parts, log_dets = zip(*ys_log_det)
+        y_parts, log_dets = zip(*ys_log_det, strict=True)
         return jnp.stack(y_parts, self.axis), sum(log_dets)
 
     def inverse(self, y, condition=None):
         y, condition = self._argcheck_and_cast(y, condition)
         y_parts = self._split_and_squeeze(y)
-        x_parts = [b.inverse(y, condition) for (b, y) in zip(self.bijections, y_parts)]
+        x_parts = [
+            b.inverse(y, condition)
+            for (b, y) in zip(self.bijections, y_parts, strict=True)
+        ]
         return jnp.stack(x_parts, self.axis)
 
     def inverse_and_log_det(self, y, condition=None):
@@ -143,9 +148,9 @@ class Stack(Bijection):
         y_parts = self._split_and_squeeze(y)
         xs_log_det = [
             b.inverse_and_log_det(y, condition)
-            for b, y in zip(self.bijections, y_parts)
+            for b, y in zip(self.bijections, y_parts, strict=True)
         ]
-        x_parts, log_dets = zip(*xs_log_det)
+        x_parts, log_dets = zip(*xs_log_det, strict=True)
         return jnp.stack(x_parts, self.axis), sum(log_dets)
 
     def _split_and_squeeze(self, array: Array):

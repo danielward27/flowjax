@@ -1,5 +1,5 @@
 <div align="center">
-<img src="./images/flowjax_logo.png?raw=true" alt="logo" width="500" ></img>
+<img src="./flowjax_logo.png?raw=true" alt="logo" width="500" ></img>
 </div>
 
 # FlowJax: Normalizing Flows in Jax
@@ -39,6 +39,15 @@ The package currently includes:
 ## Installation
 ```
 pip install flowjax
+```
+
+## Development
+We can install a version for development as follows
+```
+git clone https://github.com/danielward27/flowjax.git
+cd flowjax
+pip install -e .[dev]
+sudo apt-get install pandoc  # Required for building documentation
 ```
 
 ## Warning

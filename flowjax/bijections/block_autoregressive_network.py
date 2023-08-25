@@ -53,7 +53,9 @@ class BlockAutoregressiveNetwork(Bijection):
             ]
             cond_dims = [cond_dim] + [None] * depth
 
-            for layer_key, block_shape, cond_d in zip(keys, block_shapes, cond_dims):
+            for layer_key, block_shape, cond_d in zip(
+                keys, block_shapes, cond_dims, strict=True
+            ):
                 layers.extend(
                     [
                         BlockAutoregressiveLinear(layer_key, dim, block_shape, cond_d),
