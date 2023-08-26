@@ -1,5 +1,5 @@
 <div align="center">
-<img src="./flowjax_logo.png?raw=true" alt="logo" width="500" ></img>
+<img src="./logo.png?raw=true" alt="logo" width="500" ></img>
 </div>
 
 # FlowJax: Normalizing Flows in Jax
