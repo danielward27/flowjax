@@ -45,3 +45,7 @@ pythonpath = ["."]
 
 [tool.ruff]
 select = ["E", "F", "B"]
+include = ["*.py", "*.pyi", "**/pyproject.toml", "*.ipynb"]
+
+[tool.ruff.pydocstyle]
+convention = "google"
