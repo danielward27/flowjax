@@ -21,7 +21,7 @@ def step(
     loss_fn: Loss,
     params: Distribution,
     *args,
-    **kwargs
+    **kwargs,
 ):
     """Carry out a training step with *args and **kwargs passed to the loss function."""
     loss_val, grads = eqx.filter_value_and_grad(loss_fn)(params, *args, **kwargs)

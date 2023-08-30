@@ -74,7 +74,7 @@ class _ScalarRationalQuadraticSpline(Bijection):
         xi = (x_robust - x_pos[k]) / (x_pos[k + 1] - x_pos[k])
         sk = (y_pos[k + 1] - y_pos[k]) / (x_pos[k + 1] - x_pos[k])
         dk, dk1, yk, yk1 = derivatives[k], derivatives[k + 1], y_pos[k], y_pos[k + 1]
-        num = (yk1 - yk) * (sk * xi ** 2 + dk * xi * (1 - xi))
+        num = (yk1 - yk) * (sk * xi**2 + dk * xi * (1 - xi))
         den = sk + (dk1 + dk - 2 * sk) * xi * (1 - xi)
         y = yk + num / den  # eq. 4
         return jnp.where(in_bounds, y, x)
@@ -100,7 +100,7 @@ class _ScalarRationalQuadraticSpline(Bijection):
         a = (yk1 - yk) * (sk - derivatives[k]) + y_delta_s_term
         b = (yk1 - yk) * derivatives[k] - y_delta_s_term
         c = -sk * (y_robust - yk)
-        sqrt_term = jnp.sqrt(b ** 2 - 4 * a * c)
+        sqrt_term = jnp.sqrt(b**2 - 4 * a * c)
         xi = (2 * c) / (-b - sqrt_term)
         x = xi * (xk1 - xk) + xk
         return jnp.where(in_bounds, x, y)
@@ -121,7 +121,7 @@ class _ScalarRationalQuadraticSpline(Bijection):
         xi = (x_robust - x_pos[k]) / (x_pos[k + 1] - x_pos[k])
         sk = (y_pos[k + 1] - y_pos[k]) / (x_pos[k + 1] - x_pos[k])
         dk, dk1 = derivatives[k], derivatives[k + 1]
-        num = sk ** 2 * (dk1 * xi ** 2 + 2 * sk * xi * (1 - xi) + dk * (1 - xi) ** 2)
+        num = sk**2 * (dk1 * xi**2 + 2 * sk * xi * (1 - xi) + dk * (1 - xi) ** 2)
         den = (sk + (dk1 + dk - 2 * sk) * xi * (1 - xi)) ** 2
         derivative = num / den
         return jnp.where(in_bounds, derivative, 1.0)  # type: ignore
