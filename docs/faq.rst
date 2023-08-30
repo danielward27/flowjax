@@ -81,3 +81,46 @@ The methods of distributions and bijections are not jitted by default. For examp
     ...     x = eqx.filter_jit(flow.sample)(batch_key, (batch_size,))
     ...     results.append(x)
     
+MCMC
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+MCMC is out of the scope of this package, but we can integrate with other packages to
+sample flowjax distributions with MCMC, for example using [numpyro](https://github.com/pyro-ppl/numpyro)
+
+.. code-block:: python
+
+    >>> from numpyro.infer import MCMC, NUTS
+    >>> import numpyro.distributions as ndist
+    >>> from numpyro.distributions import constraints
+    >>> from numpyro import sample
+    >>> import flowjax.distributions as fdist
+    >>> import jax.random as jr
+    >>> import numpy as np
+
+    >>> class NumpyroWrapper(ndist.Distribution):
+    ...     "Wraps a flowjax distribution into a numpyro distribution"
+
+    ...     def __init__(self, distribution: fdist.Distribution, support=constraints.real):
+    ...         self.distribution = distribution
+    ...         self.support = support
+    ...         super().__init__(batch_shape=(), event_shape=distribution.shape)
+     
+    >>>     def log_prob(self, value):
+    ...         return self.distribution.log_prob(value)
+    
+    >>>     def sample(self, key, sample_shape=...):
+    ...         return self.distribution.sample(key, sample_shape)
+
+
+    >>> def numpyro_model(X, y):
+    ...     "Example regression model defined in terms of flowjax distributions"
+    ...     beta = sample("beta", NumpyroWrapper(fdist.Normal(np.zeros(2))))
+    ...     sample("y", NumpyroWrapper(fdist.Normal(X @ beta)), obs=y)
+
+    >>> X = np.random.randn(100, 2)
+    >>> beta_true = np.array([-1, 1])
+    >>> y = X @ beta_true + np.random.randn(100)
+    >>> mcmc = MCMC(NUTS(numpyro_model), num_warmup=100, num_samples=1000)
+    >>> mcmc.run(jr.PRNGKey(0), X, y)
+
+This approach (or similar) may be useful if we want to use a flow as part of a 
+model.
