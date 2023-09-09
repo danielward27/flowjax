@@ -7,7 +7,6 @@ import optax
 from tqdm import tqdm
 
 from flowjax.distributions import Distribution
-from flowjax.train.losses import Loss
 from flowjax.train.train_utils import step
 
 PyTree = Any
@@ -16,7 +15,7 @@ PyTree = Any
 def fit_to_variational_target(
     key: jr.KeyArray,
     dist: Distribution,
-    loss_fn: Loss,
+    loss_fn: Callable,
     steps: int = 100,
     learning_rate: float = 5e-4,
     optimizer: optax.GradientTransformation | None = None,
@@ -30,7 +29,7 @@ def fit_to_variational_target(
         key (jr.KeyArray): Jax PRNGKey.
         dist (Distribution): Distribution object, trainable parameters are found
             using equinox.is_inexact_array.
-        loss_fn (Loss | None): The loss function to optimize (e.g. the ElboLoss).
+        loss_fn (Callable | None): The loss function to optimize (e.g. the ElboLoss).
         steps (int, optional): The number of training steps to run. Defaults to 100.
         learning_rate (float, optional): Learning rate. Defaults to 5e-4.
         optimizer (optax.GradientTransformation | None, optional): Optax optimizer. If

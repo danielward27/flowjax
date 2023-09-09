@@ -1,41 +1,36 @@
-"Common loss functions for training normalizing flows."
+"""Common loss functions for training normalizing flows. The loss functions are
+callables, with the first two arguments being the partitioned distribution (see
+equinox.partition)."""
 from typing import Callable
 
 import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
 from jax import Array, vmap
+from jax.lax import stop_gradient
 from jax.scipy.special import logsumexp
 from jax.typing import ArrayLike
 
 from flowjax.distributions import Distribution
 
 
-class Loss:
-    "Base class for loss functions. All losses must implement the loss method."
-
-    @eqx.filter_jit
-    def __call__(self, static, params, *args, **kwargs):
-        """Combine the partitioned model (see ``equinox.combine`` and
-        ``equinox.partition``) and compute the loss."""
-        model = eqx.combine(static, params)
-        return self.loss(model, *args, **kwargs)
-
-    def loss(self, *args, **kwargs):
-        raise NotImplementedError("The loss method must be implemented")
-
-
-class MaximumLikelihoodLoss(Loss):
+class MaximumLikelihoodLoss:
     """Loss for fitting a flow with maximum likelihood (negative log likelihood). Can
     be used to learn either conditional or unconditional distributions.
     """
 
     @staticmethod
-    def loss(dist: Distribution, x: Array, condition: Array | None = None):
+    def __call__(
+        static: Distribution,
+        params: Distribution,
+        x: Array,
+        condition: Array | None = None,
+    ):
+        dist = eqx.combine(static, params)
         return -dist.log_prob(x, condition).mean()
 
 
-class ContrastiveLoss(Loss):
+class ContrastiveLoss:
     r"""Loss function for use in a sequential neural posterior estimation algorithm.
     Learns a posterior ``p(x|condition)``. Contrastive samples for each ``x`` are
     generated from other x samples in the batch.
@@ -62,7 +57,14 @@ class ContrastiveLoss(Loss):
         self.prior = prior
         self.n_contrastive = n_contrastive
 
-    def loss(self, dist: Distribution, x: Array, condition: Array):
+    def __call__(
+        self,
+        static: Distribution,
+        params: Distribution,
+        x: Array,
+        condition: Array | None = None,
+    ):
+        dist = eqx.combine(params, static)
         contrastive = self._get_contrastive(x)
         joint_log_odds = dist.log_prob(x, condition) - self.prior.log_prob(x)
         contrastive_log_odds = dist.log_prob(
@@ -84,26 +86,50 @@ class ContrastiveLoss(Loss):
         return contrastive
 
 
-class ElboLoss(Loss):
+class ElboLoss:
     """The negative evidence lower bound (ELBO), approximated using samples."""
 
     target: Callable[[ArrayLike], Array]
     num_samples: int
+    stick_the_landing: bool
 
-    def __init__(self, target: Callable[[ArrayLike], Array], num_samples: int):
+    def __init__(
+        self,
+        target: Callable[[ArrayLike], Array],
+        num_samples: int,
+        stick_the_landing: bool = False,
+    ):
         """
         Args:
             num_samples (int): Number of samples to use in the ELBO approximation.
             target (Callable[[ArrayLike], Array]): The target, i.e. log posterior
                 density up to an additive constant / the negative of the potential
                 function, evaluated for a single point.
+            stick_the_landing (bool): Whether to use the (often) lower variance ELBO
+                gradient estimator introduced in https://arxiv.org/pdf/1703.09194.pdf.
+                Note for flows this requires evaluating the flow in both directions
+                (running the forward and inverse transformation). For some flow
+                architectures, this may be computationally expensive due to assymetrical
+                computational complexity between the forward and inverse transformation.
+                Defaults to False.
         """
         self.target = target
         self.num_samples = num_samples
+        self.stick_the_landing = stick_the_landing
 
-    def loss(self, dist: Distribution, key: jr.KeyArray):
-        """Computes an estimate of the negative ELBO loss."""
-        samples, log_probs = dist.sample_and_log_prob(key, (self.num_samples,))
+    @eqx.filter_jit
+    def __call__(self, params: Distribution, static: Distribution, key: jr.KeyArray):
+        dist = eqx.combine(params, static)
+
+        if self.stick_the_landing:
+            # Requries both forward and inverse pass
+            samples = dist.sample(key, (self.num_samples,))
+            dist = eqx.combine(stop_gradient(params), static)
+            log_probs = dist.log_prob(samples)
+
+        else:
+            # Requires only forward pass through the flow.
+            samples, log_probs = dist.sample_and_log_prob(key, (self.num_samples,))
+
         target_density = vmap(self.target)(samples)
-        losses = log_probs - target_density
-        return losses.mean()
+        return (log_probs - target_density).mean()

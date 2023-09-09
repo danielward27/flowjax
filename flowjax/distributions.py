@@ -9,6 +9,7 @@ import jax.numpy as jnp
 import jax.random as jr
 from jax import Array
 from jax.experimental import checkify
+from jax.lax import stop_gradient
 from jax.scipy import stats as jstats
 from jax.typing import ArrayLike
 
@@ -584,3 +585,47 @@ class StudentT(Transformed):
     def df(self):
         """The degrees of freedom of the distribution."""
         return self.base_dist.df
+
+
+class SpecializeCondition(Distribution):
+    """Utility class to specialise a conditional distribution to a particular instance
+    of the conditioning variable. This makes the distribution act like an unconditional
+    distribution, i.e. the distribution methods implicitly will use the condition passed
+    on instantiation of the class.
+    """
+
+    def __init__(
+        self,
+        dist: Distribution,
+        condition: ArrayLike,
+        stop_gradient: bool = True,
+    ):
+        """
+        Args:
+            dist (Distribution): Conditional distribution to specialize.
+            condition (ArrayLike, optional): Instance of conditioning variable with
+                shape matching ``dist.cond_shape``. Defaults to None.
+            stop_gradient (bool): Whether to use ``jax.lax.stop_gradient`` to prevent
+                training of the condition array. Defaults to True.
+        """
+        condition = arraylike_to_array(condition)
+        if self.dist.cond_shape != condition.shape:
+            raise ValueError(
+                f"Expected condition shape {self.dist.cond_shape}, got "
+                f"{condition.shape}"
+            )
+        self.dist = dist
+        self._condition = condition
+        self.shape = dist.shape
+        self.cond_shape = None
+        self.stop_gradient = stop_gradient
+
+    def _log_prob(self, x, condition=None):
+        return self.dist._log_prob(x, self.condition)
+
+    def _sample(self, key, condition=None):
+        return self.dist._sample(key, self.condition)
+
+    @property
+    def condition(self):
+        return stop_gradient(self._condition) if self.stop_gradient else self._condition
