@@ -132,4 +132,4 @@ class ElboLoss:
             samples, log_probs = dist.sample_and_log_prob(key, (self.num_samples,))
 
         target_density = vmap(self.target)(samples)
-        return log_probs.sum() - target_density.sum()
+        return (log_probs - target_density).mean()
