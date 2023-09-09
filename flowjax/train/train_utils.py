@@ -1,6 +1,6 @@
 """Utility functions for training."""
 from functools import partial
-from typing import Any, Sequence
+from typing import Any, Callable, Sequence
 
 import equinox as eqx
 import jax.numpy as jnp
@@ -9,7 +9,6 @@ import optax
 from jax import Array, jit
 
 from flowjax.distributions import Distribution
-from flowjax.train.losses import Loss
 
 PyTree = Any
 
@@ -18,7 +17,7 @@ PyTree = Any
 def step(
     optimizer: optax.GradientTransformation,
     opt_state: PyTree,
-    loss_fn: Loss,
+    loss_fn: Callable,
     params: Distribution,
     *args,
     **kwargs,

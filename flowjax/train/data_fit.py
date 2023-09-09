@@ -9,7 +9,7 @@ from jax.typing import ArrayLike
 from tqdm import tqdm
 
 from flowjax.distributions import Distribution
-from flowjax.train.losses import Loss, MaximumLikelihoodLoss
+from flowjax.train.losses import MaximumLikelihoodLoss
 from flowjax.train.train_utils import (
     count_fruitless,
     get_batches,
@@ -25,7 +25,7 @@ def fit_to_data(
     dist: Distribution,
     x: ArrayLike,
     condition: ArrayLike = None,
-    loss_fn: Loss | None = None,
+    loss_fn: Callable | None = None,
     max_epochs: int = 100,
     max_patience: int = 5,
     batch_size: int = 100,
@@ -43,7 +43,7 @@ def fit_to_data(
         dist (Distribution): Distribution object.
         x (ArrayLike): Samples from target distribution.
         condition (ArrayLike | None): Conditioning variables. Defaults to None.
-        loss_fn (Loss | None): Loss function. Defaults to MaximumLikelihoodLoss.
+        loss_fn (Callable | None): Loss function. Defaults to MaximumLikelihoodLoss.
         max_epochs (int): Maximum number of epochs. Defaults to 100.
         max_patience (int): Number of consecutive epochs with no validation
             loss improvement after which training is terminated. Defaults to 5.

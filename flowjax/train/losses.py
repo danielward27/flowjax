@@ -1,5 +1,7 @@
-"Common loss functions for training normalizing flows."
-from typing import Any, Callable
+"""Common loss functions for training normalizing flows. The loss functions are
+callables, with the first two arguments being the partitioned distribution (see
+equinox.partition)."""
+from typing import Callable
 
 import equinox as eqx
 import jax.numpy as jnp
@@ -12,31 +14,23 @@ from jax.typing import ArrayLike
 from flowjax.distributions import Distribution
 
 
-class Loss:
-    "Base class for loss functions. All losses must implement the loss method."
-
-    @eqx.filter_jit
-    def __call__(self, static, params, *args, **kwargs):
-        """Combine the partitioned model (see ``equinox.combine`` and
-        ``equinox.partition``) and compute the loss."""
-        model = eqx.combine(static, params)
-        return self.loss(model, *args, **kwargs)
-
-    def loss(self, *args, **kwargs):
-        raise NotImplementedError("The loss method must be implemented")
-
-
-class MaximumLikelihoodLoss(Loss):
+class MaximumLikelihoodLoss:
     """Loss for fitting a flow with maximum likelihood (negative log likelihood). Can
     be used to learn either conditional or unconditional distributions.
     """
 
     @staticmethod
-    def loss(dist: Distribution, x: Array, condition: Array | None = None):
+    def __call__(
+        static: Distribution,
+        params: Distribution,
+        x: Array,
+        condition: Array | None = None,
+    ):
+        dist = eqx.combine(static, params)
         return -dist.log_prob(x, condition).mean()
 
 
-class ContrastiveLoss(Loss):
+class ContrastiveLoss:
     r"""Loss function for use in a sequential neural posterior estimation algorithm.
     Learns a posterior ``p(x|condition)``. Contrastive samples for each ``x`` are
     generated from other x samples in the batch.
@@ -63,7 +57,14 @@ class ContrastiveLoss(Loss):
         self.prior = prior
         self.n_contrastive = n_contrastive
 
-    def loss(self, dist: Distribution, x: Array, condition: Array | None = None):
+    def __call__(
+        self,
+        static: Distribution,
+        params: Distribution,
+        x: Array,
+        condition: Array | None = None,
+    ):
+        dist = eqx.combine(params, static)
         contrastive = self._get_contrastive(x)
         joint_log_odds = dist.log_prob(x, condition) - self.prior.log_prob(x)
         contrastive_log_odds = dist.log_prob(
@@ -85,76 +86,50 @@ class ContrastiveLoss(Loss):
         return contrastive
 
 
-class ElboLoss(Loss):
+class ElboLoss:
     """The negative evidence lower bound (ELBO), approximated using samples."""
 
     target: Callable[[ArrayLike], Array]
     num_samples: int
+    stick_the_landing: bool
 
-    def __init__(self, target: Callable[[ArrayLike], Array], num_samples: int):
+    def __init__(
+        self,
+        target: Callable[[ArrayLike], Array],
+        num_samples: int,
+        stick_the_landing: bool = False,
+    ):
         """
         Args:
             num_samples (int): Number of samples to use in the ELBO approximation.
             target (Callable[[ArrayLike], Array]): The target, i.e. log posterior
                 density up to an additive constant / the negative of the potential
                 function, evaluated for a single point.
+            stick_the_landing (bool): Whether to use the (often) lower variance ELBO
+                gradient estimator introduced in https://arxiv.org/pdf/1703.09194.pdf.
+                Note for flows this requires evaluating the flow in both directions
+                (running the forward and inverse transformation). For some flow
+                architectures, this may be computationally expensive due to assymetrical
+                computational complexity between the forward and inverse transformation.
+                Defaults to False.
         """
         self.target = target
         self.num_samples = num_samples
+        self.stick_the_landing = stick_the_landing
 
-    def __call__(self, static: Distribution, params: Distribution, key: jr.KeyArray):
-        dist = eqx.combine(static, params)
+    @eqx.filter_jit
+    def __call__(self, params: Distribution, static: Distribution, key: jr.KeyArray):
+        dist = eqx.combine(params, static)
 
-        samples = dist.sample(key, (self.num_samples,))
+        if self.stick_the_landing:
+            # Requries both forward and inverse pass
+            samples = dist.sample(key, (self.num_samples,))
+            dist = eqx.combine(stop_gradient(params), static)
+            log_probs = dist.log_prob(samples)
 
-        def stop_grad_log_prob(params, static, samples):
-            params = stop_gradient(params)
-            dist = eqx.combine(params, static)
-            return dist.log_prob(samples)
+        else:
+            # Requires only forward pass through the flow.
+            samples, log_probs = dist.sample_and_log_prob(key, (self.num_samples,))
 
-        log_probs = stop_grad_log_prob(
-            *eqx.partition(dist, eqx.is_inexact_array), samples
-        ).sum()
-
-        target_density = vmap(self.target)(samples).sum()
-        return log_probs - target_density
-
-
-class RenyiElboLoss(Loss):
-    def __init__(
-        self, target: Callable[[ArrayLike], Array], num_samples: int, alpha: float
-    ):
-        """
-
-
-        .. warning::
-            For small alpha, e.g. alpha=0.1
-
-
-        Args:
-            target (Callable[[ArrayLike], Array]): _description_
-            num_samples (int): _description_
-            alpha (float): _description_
-
-        Raises:
-            ValueError: _description_
-        """
-        if alpha == 1:
-            raise ValueError("Use ElboLoss for case when alpha==1.")
-        self.alpha = alpha
-        self.target = target
-        self.num_samples = num_samples
-
-    def loss(self, dist, key):
-        # Following numpyro implementation:
-        # https://github.com/pyro-ppl/numpyro/blob/master/numpyro/infer/elbo.py
-        samples, log_probs = dist.sample_and_log_prob(key, (self.num_samples,))
         target_density = vmap(self.target)(samples)
-        elbo = target_density - log_probs
-        scaled_elbos = (1.0 - self.alpha) * elbo
-        avg_log_exp = logsumexp(scaled_elbos) - jnp.log(self.num_samples)
-        weights = jnp.exp(scaled_elbos - avg_log_exp)
-        renyi_elbo = avg_log_exp / (1.0 - self.alpha)
-        weighted_elbo = (stop_gradient(weights) * elbo).mean(0)
-        loss = -(stop_gradient(renyi_elbo - weighted_elbo) + weighted_elbo)
-        return loss.sum()
+        return log_probs.sum() - target_density.sum()
