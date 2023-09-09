@@ -1,3 +1,4 @@
+import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
 import pytest
@@ -15,7 +16,7 @@ def test_elbo_loss(shape):
     target = StandardNormal(shape)
     vi_dist = StandardNormal(shape)
     loss = ElboLoss(target.log_prob, num_samples=100)
-    loss_val = loss.loss(vi_dist, jr.PRNGKey(0))
+    loss_val = loss(*eqx.partition(vi_dist, eqx.is_inexact_array), jr.PRNGKey(0))
     assert loss_val.shape == ()  # expect scalar loss
     assert jnp.isfinite(loss_val)  # expect finite loss
 
