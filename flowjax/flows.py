@@ -374,7 +374,7 @@ class PlanarFlow(Transformed):
         dim = base_dist.shape[0]
         permute_strategy = _default_permute_strategy(dim)
 
-        def make_layer(key):  # coupling layer + permutation
+        def make_layer(key):  # Planar layer + permutation
             planar_key, perm_key = random.split(key)
             planar = Planar(planar_key, dim, cond_dim, **mlp_kwargs)
 

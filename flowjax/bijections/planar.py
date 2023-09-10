@@ -13,12 +13,12 @@ from flowjax.bijections import Bijection
 
 
 class Planar(Bijection):
-    """Planar bijection as used by https://arxiv.org/pdf/1505.05770.pdf. Specifically,
-    uses the transformation :math:`y + u \cdot \text{tanh}(self.w @ x + self.bias)`,
-    where :math:`` # TODO PARAM DIMS
+    r"""Planar bijection as used by https://arxiv.org/pdf/1505.05770.pdf. Uses the
+    transformation :math:`y + u \cdot \text{tanh}(w \cdot x + b)`, where
+    :math:`u \in \mathbb{R}^D, \ w \in \mathbb{R}^D` and :math:`b \in \mathbb{R}`.
 
     In the unconditional case, w, u  and b are learned directly. In the conditional case
-    they are parameterised by
+    they are parameterised by an MLP.
     """
 
     conditioner: eqx.Module | None
@@ -31,6 +31,14 @@ class Planar(Bijection):
         cond_dim: int | None = None,
         **mlp_kwargs,
     ):
+        """
+        Args:
+            key (jr.KeyArray): _description_
+            dim (int): _description_
+            cond_dim (int | None, optional): _description_. Defaults to None.
+            **mlp_kwargs: Key word arguments passed to the MLP conditioner. Ignored
+                when cond_dim is None.
+        """
         self.shape = (dim,)
 
         if cond_dim is None:
@@ -67,49 +75,39 @@ class Planar(Bijection):
 
 
 class _UnconditionalPlanar(Bijection):
-    """Planar bijection as used by https://arxiv.org/pdf/1505.05770.pdf. Specifically,
-    uses the transformation :math:`y + u \cdot \text{tanh}(self.w @ x + self.bias)`,
-    where :math:`` # TODO PARAM DIMS
+    """Unconditional planar bijection, used in Planar."""
 
-    In the unconditional case, w, u  and b are learned directly. In the conditional case
-    they are parameterised by
-    """
-
-    w: Array
-    _u: Array
+    weight: Array
+    _act_scale: Array
     bias: Array
 
-    def __init__(
-        self,
-        w,
-        u,
-        bias,
-    ):
-        """Construct an unconditional planar bijection. Note u here is unconstrained
-        and the constraint is applied in the get_u method."""
-        self.w = w
-        self._u = u
+    def __init__(self, weight, act_scale, bias):
+        """Construct an unconditional planar bijection. Note act_scale (u in the paper)
+        is unconstrained and the constraint to ensure invertiblitiy is applied in the
+        ``get_act_scale``."""
+        self.weight = weight
+        self._act_scale = act_scale
         self.bias = bias
-        self.shape = w.shape
+        self.shape = weight.shape
         self.cond_shape = None
 
     def transform(self, x, condition=None):
-        return x + self.get_u() * jnp.tanh(self.w @ x + self.bias)
+        return x + self.get_act_scale() * jnp.tanh(self.weight @ x + self.bias)
 
     def transform_and_log_det(self, x, condition=None):
-        u = self.get_u()
-        act = jnp.tanh(x @ self.w + self.bias)
+        u = self.get_act_scale()
+        act = jnp.tanh(x @ self.weight + self.bias)
         y = x + u * act
-        psi = (1 - act**2) * self.w
+        psi = (1 - act**2) * self.weight
         log_det = jnp.log(jnp.abs(1 + u @ psi))
         return y, log_det
 
-    def get_u(self):
+    def get_act_scale(self):
         """Apply constraint to u to ensure invertibility. See appendix A1 in
         https://arxiv.org/pdf/1505.05770.pdf."""
-        wtu = self._u @ self.w
+        wtu = self._act_scale @ self.weight
         m_wtu = -1 + jnp.log(1 + softplus(wtu))
-        u = self._u + (m_wtu - wtu) * self.w / norm(self.w) ** 2
+        u = self._act_scale + (m_wtu - wtu) * self.weight / norm(self.weight) ** 2
         return u
 
     def inverse(self, y, condition=None):
