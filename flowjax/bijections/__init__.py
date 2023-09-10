@@ -9,6 +9,7 @@ from .coupling import Coupling
 from .exp import Exp
 from .jax_transforms import Batch, Scan
 from .masked_autoregressive import MaskedAutoregressive
+from .planar import Planar
 from .rational_quadratic_spline import RationalQuadraticSpline
 from .softplus import SoftPlus
 from .tanh import Tanh, TanhLinearTails
@@ -30,6 +31,7 @@ __all__ = [
     "MaskedAutoregressive",
     "Partial",
     "Permute",
+    "Planar",
     "RationalQuadraticSpline",
     "Scan",
     "SoftPlus",

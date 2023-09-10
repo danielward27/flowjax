@@ -23,6 +23,7 @@ from flowjax.bijections import (
     Invert,
     MaskedAutoregressive,
     Permute,
+    Planar,
     RationalQuadraticSpline,
     Scan,
     TanhLinearTails,
@@ -335,6 +336,63 @@ class TriangularSplineFlow(Transformed):
         self.shape = (dim,)
         self.cond_shape = None if cond_dim is None else (cond_dim,)
 
+        super().__init__(base_dist, bijection)
+
+
+class PlanarFlow(Transformed):
+    """Planar flow as introduced in https://arxiv.org/pdf/1505.05770.pdf."""
+
+    flow_layers: int
+    permute_strategy: str
+
+    def __init__(
+        self,
+        key: KeyArray,
+        base_dist: Distribution,
+        cond_dim: int | None = None,
+        flow_layers: int = 8,
+        invert: bool = True,
+        **mlp_kwargs,
+    ):
+        """
+        Args:
+            key (KeyArray): Jax PRNGKey.
+            base_dist (Distribution): Base distribution.
+            cond_dim (int): Dimension of conditioning variables. Defaults to None.
+            flow_layers (int): Number of coupling layers. Defaults to 5.
+            nn_width (int): Conditioner hidden layer size. Defaults to 40.
+            nn_depth (int): Conditioner depth. Defaults to 2.
+            nn_activation (int): Conditioner activation function. Defaults to jnn.relu.
+            invert: (bool): Whether to invert the bijection. Broadly, True will
+                prioritise a faster `inverse` methods, leading to faster `log_prob`,
+                False will prioritise faster `transform` methods, leading to faster
+                `sample`. Defaults to True
+        """
+        if base_dist.ndim != 1:
+            raise ValueError(f"Expected base_dist.ndim==1, got {base_dist.ndim}")
+
+        dim = base_dist.shape[0]
+        permute_strategy = _default_permute_strategy(dim)
+
+        def make_layer(key):  # coupling layer + permutation
+            planar_key, perm_key = random.split(key)
+            planar = Planar(planar_key, dim, cond_dim, **mlp_kwargs)
+
+            if permute_strategy == "flip":
+                return Chain([planar, Flip((dim,))])
+            if permute_strategy == "random":
+                perm = Permute(random.permutation(perm_key, jnp.arange(dim)))
+                return Chain([planar, perm])
+            return planar
+
+        keys = random.split(key, flow_layers)
+        layers = eqx.filter_vmap(make_layer)(keys)
+        bijection = Invert(Scan(layers)) if invert else Scan(layers)
+
+        self.flow_layers = flow_layers
+        self.permute_strategy = permute_strategy
+        self.shape = (dim,)
+        self.cond_shape = None if cond_dim is None else (cond_dim,)
         super().__init__(base_dist, bijection)
 
 
