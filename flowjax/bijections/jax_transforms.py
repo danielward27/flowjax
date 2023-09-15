@@ -127,7 +127,7 @@ class Scan(Bijection):
     def __init__(self, bijection: Bijection):
         """
         The array leaves in `bijection` should have an additional leading axis to scan
-        over. Often it is convenient to construct these using `equinox.filter_vmap`.
+        over. Often it is convenient to construct these using ``equinox.filter_vmap``.
 
         Args:
             bijection (Bijection): A bijection, in which the arrays leaves have an

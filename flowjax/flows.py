@@ -340,7 +340,10 @@ class TriangularSplineFlow(Transformed):
 
 
 class PlanarFlow(Transformed):
-    """Planar flow as introduced in https://arxiv.org/pdf/1505.05770.pdf."""
+    """Planar flow as introduced in https://arxiv.org/pdf/1505.05770.pdf, alternating
+    between :py:class:`~flowjax.bijections.planar.Planar` and permutations. Note the
+    definition here is inverted compared to the original paper.
+    """
 
     flow_layers: int
     permute_strategy: str
@@ -359,14 +362,13 @@ class PlanarFlow(Transformed):
             key (KeyArray): Jax PRNGKey.
             base_dist (Distribution): Base distribution.
             cond_dim (int): Dimension of conditioning variables. Defaults to None.
-            flow_layers (int): Number of coupling layers. Defaults to 5.
-            nn_width (int): Conditioner hidden layer size. Defaults to 40.
-            nn_depth (int): Conditioner depth. Defaults to 2.
-            nn_activation (int): Conditioner activation function. Defaults to jnn.relu.
+            flow_layers (int): Number of flow layers. Defaults to 5.
             invert: (bool): Whether to invert the bijection. Broadly, True will
                 prioritise a faster `inverse` methods, leading to faster `log_prob`,
                 False will prioritise faster `transform` methods, leading to faster
                 `sample`. Defaults to True
+            **mlp_kwargs: Key word arguments to construct the MLP conditioner. Ignored
+                if cond_dim is None.
         """
         if base_dist.ndim != 1:
             raise ValueError(f"Expected base_dist.ndim==1, got {base_dist.ndim}")

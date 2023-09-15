@@ -15,10 +15,9 @@ from flowjax.bijections import Bijection
 class Planar(Bijection):
     r"""Planar bijection as used by https://arxiv.org/pdf/1505.05770.pdf. Uses the
     transformation :math:`y + u \cdot \text{tanh}(w \cdot x + b)`, where
-    :math:`u \in \mathbb{R}^D, \ w \in \mathbb{R}^D` and :math:`b \in \mathbb{R}`.
-
-    In the unconditional case, w, u  and b are learned directly. In the conditional case
-    they are parameterised by an MLP.
+    :math:`u \in \mathbb{R}^D, \ w \in \mathbb{R}^D` and :math:`b \in \mathbb{R}`. In
+    the unconditional case, :math:`w`, :math:`u`  and :math:`b` are learned directly.
+    In the conditional case they are parameterised by an MLP.
     """
 
     conditioner: eqx.Module | None
@@ -33,9 +32,10 @@ class Planar(Bijection):
     ):
         """
         Args:
-            key (jr.KeyArray): _description_
-            dim (int): _description_
-            cond_dim (int | None, optional): _description_. Defaults to None.
+            key (jr.KeyArray): Jax random seed.
+            dim (int): Dimension of the bijection.
+            cond_dim (int | None, optional): Dimension of extra conditioning variables.
+                Defaults to None.
             **mlp_kwargs: Key word arguments passed to the MLP conditioner. Ignored
                 when cond_dim is None.
         """
@@ -59,6 +59,7 @@ class Planar(Bijection):
         return self.get_planar(condition).transform_and_log_det(x)
 
     def get_planar(self, condition=None):
+        "Get the planar bijection with the conditioning applied if conditional."
         if self.cond_shape is not None:
             params = self.conditioner(condition)
         else:
