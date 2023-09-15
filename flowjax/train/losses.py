@@ -129,6 +129,10 @@ class ElboLoss:
         key: jr.KeyArray,
         condition: ArrayLike | None = None,
     ):
+        """
+        Compute the ELBO loss. If a set of conditioning variables are provided, we
+        compute the ELBO for each, and take the mean.
+        """
         dist = eqx.combine(params, static)
 
         if self.stick_the_landing:
