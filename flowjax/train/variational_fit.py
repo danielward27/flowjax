@@ -4,6 +4,7 @@ from typing import Any, Callable
 import equinox as eqx
 import jax.random as jr
 import optax
+from jax.typing import ArrayLike
 from tqdm import tqdm
 
 from flowjax.distributions import Distribution
@@ -17,6 +18,8 @@ def fit_to_variational_target(
     dist: Distribution,
     loss_fn: Callable,
     steps: int = 100,
+    condition: ArrayLike | None = None,
+    batch_size: int = 100,
     learning_rate: float = 5e-4,
     optimizer: optax.GradientTransformation | None = None,
     filter_spec: Callable | PyTree = eqx.is_inexact_array,
@@ -31,6 +34,13 @@ def fit_to_variational_target(
             using equinox.is_inexact_array.
         loss_fn (Callable | None): The loss function to optimize (e.g. the ElboLoss).
         steps (int, optional): The number of training steps to run. Defaults to 100.
+        condition (ArrayLike | None): Conditioning variables for learning an amortized
+            conditional distribution (with a batch axis on axis 0). For example, this
+            allows using a single density estimator to learn the posterior distribution
+            for multiple observations. Note that no cross validation is currently used,
+            so care should be used if attempting to generalise to new observations.
+        batch_size (int): Batch size for conditioning variables. Ignored if condition
+            is None.
         learning_rate (float, optional): Learning rate. Defaults to 5e-4.
         optimizer (optax.GradientTransformation | None, optional): Optax optimizer. If
             provided, this overrides the default Adam optimizer, and the learning_rate
@@ -47,11 +57,6 @@ def fit_to_variational_target(
     if optimizer is None:
         optimizer = optax.adam(learning_rate)
 
-    @eqx.filter_value_and_grad
-    def loss_val_and_grad(trainable, static, key):
-        model = eqx.combine(trainable, static)
-        return loss_fn(model, key)
-
     params, static = eqx.partition(dist, filter_spec)
     opt_state = optimizer.init(params)
 
@@ -61,8 +66,14 @@ def fit_to_variational_target(
     keys = tqdm(jr.split(key, steps), disable=not show_progress)
 
     for key in keys:
+        if condition is not None:
+            key, subkey = jr.split(key)
+            cond_batch = jr.choice(subkey, condition, (batch_size,))
+
+        loss_args = (key,) if condition is None else (key, cond_batch)
+
         params, opt_state, loss = step(
-            optimizer, opt_state, loss_fn, params, static, key
+            optimizer, opt_state, loss_fn, params, static, *loss_args
         )
         losses.append(loss.item())
         keys.set_postfix({"loss": loss.item()})

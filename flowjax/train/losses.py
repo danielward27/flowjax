@@ -97,16 +97,18 @@ class ElboLoss:
 
     def __init__(
         self,
-        target: Callable[[ArrayLike], Array],
+        target: Callable,
         num_samples: int,
         stick_the_landing: bool = False,
     ):
         """
         Args:
             num_samples (int): Number of samples to use in the ELBO approximation.
-            target (Callable[[ArrayLike], Array]): The target, i.e. log posterior
+            target (Callable): The target, i.e. log posterior
                 density up to an additive constant / the negative of the potential
-                function, evaluated for a single point.
+                function, evaluated for a single point. For amortized inference, the
+                signature must also accept a conditioning variable as the second
+                argument. i.e. often a particular observation.
             stick_the_landing (bool): Whether to use the (often) lower variance ELBO
                 gradient estimator introduced in https://arxiv.org/pdf/1703.09194.pdf.
                 Note for flows this requires evaluating the flow in both directions
@@ -120,18 +122,29 @@ class ElboLoss:
         self.stick_the_landing = stick_the_landing
 
     @eqx.filter_jit
-    def __call__(self, params: Distribution, static: Distribution, key: jr.KeyArray):
+    def __call__(
+        self,
+        params: Distribution,
+        static: Distribution,
+        key: jr.KeyArray,
+        condition: ArrayLike | None = None,
+    ):
         dist = eqx.combine(params, static)
 
         if self.stick_the_landing:
             # Requries both forward and inverse pass
-            samples = dist.sample(key, (self.num_samples,))
+            samples = dist.sample(key, (self.num_samples,), condition)
             dist = eqx.combine(stop_gradient(params), static)
-            log_probs = dist.log_prob(samples)
+            log_probs = dist.log_prob(samples, condition)
 
         else:
             # Requires only forward pass through the flow.
-            samples, log_probs = dist.sample_and_log_prob(key, (self.num_samples,))
+            samples, log_probs = dist.sample_and_log_prob(
+                key, (self.num_samples,), condition
+            )
+        if condition is not None:
+            target_lp = vmap(vmap(self.target), in_axes=[0, None])(samples, condition)
+        else:
+            target_lp = vmap(self.target)(samples)
 
-        target_density = vmap(self.target)(samples)
-        return (log_probs - target_density).mean()
+        return (log_probs - target_lp).mean()
