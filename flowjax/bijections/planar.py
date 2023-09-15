@@ -58,6 +58,12 @@ class Planar(Bijection):
         x, condition = self._argcheck_and_cast(x, condition)
         return self.get_planar(condition).transform_and_log_det(x)
 
+    def inverse(self, y, condition=None):
+        return self.get_planar(condition).inverse(y)
+
+    def inverse_and_log_det(self, y, condition=None):
+        return self.get_planar(condition).inverse_and_log_det(y)
+
     def get_planar(self, condition=None):
         "Get the planar bijection with the conditioning applied if conditional."
         if self.cond_shape is not None:
@@ -67,12 +73,6 @@ class Planar(Bijection):
         dim = self.shape[0]
         w, u, bias = params[:dim], params[dim : 2 * dim], params[-1]
         return _UnconditionalPlanar(w, u, bias)
-
-    def inverse(self, y, condition=None):
-        return self.get_planar(condition).inverse(y)
-
-    def inverse_and_log_det(self, y, condition=None):
-        return self.get_planar(condition).inverse_and_log_det(y)
 
 
 class _UnconditionalPlanar(Bijection):
