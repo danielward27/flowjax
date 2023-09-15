@@ -18,6 +18,7 @@ from flowjax.bijections import (
     MaskedAutoregressive,
     Partial,
     Permute,
+    Planar,
     RationalQuadraticSpline,
     Scan,
     SoftPlus,
@@ -124,6 +125,10 @@ bijections = {
     "StackAxis1": Stack([Tanh((2,)), Affine(jnp.ones(2)), Tanh((2,))], axis=1),
     "StackAxis-1": Stack(
         [Affine(jr.uniform(k, (1, 2, 3))) for k in jr.split(KEY, 3)], axis=-1
+    ),
+    "Planar": Planar(
+        KEY,
+        DIM,
     ),
 }
 

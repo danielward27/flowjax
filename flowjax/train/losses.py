@@ -19,8 +19,9 @@ class MaximumLikelihoodLoss:
     be used to learn either conditional or unconditional distributions.
     """
 
-    @staticmethod
+    @eqx.filter_jit
     def __call__(
+        self,
         static: Distribution,
         params: Distribution,
         x: Array,
@@ -57,6 +58,7 @@ class ContrastiveLoss:
         self.prior = prior
         self.n_contrastive = n_contrastive
 
+    @eqx.filter_jit
     def __call__(
         self,
         static: Distribution,
