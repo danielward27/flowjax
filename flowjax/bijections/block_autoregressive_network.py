@@ -76,7 +76,7 @@ class BlockAutoregressiveNetwork(Bijection):
                 to ensure invertibility of the network and in general should map
                 real -> real to ensure that when transforming a distribution (either
                 with the forward or inverse), the map is defined across the support of
-                the base distribution. Defaults to `LeakyTanh(3)`.
+                the base distribution. Defaults to ``LeakyTanh(3)``.
         """
         if activation is None:
             activation = LeakyTanh(3)

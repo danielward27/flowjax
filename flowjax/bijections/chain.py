@@ -58,3 +58,17 @@ class Chain(Bijection):
 
     def __len__(self):
         return len(self.bijections)
+
+    def merge_chains(self):
+        """Returns an equivilent Chain object, in which nested chains are flattened into
+        a sigle chain."""
+        bijections = self.bijections
+        while any(isinstance(b, Chain) for b in bijections):
+            bij = []
+            for b in bijections:
+                if isinstance(b, Chain):
+                    bij.extend(b.bijections)
+                else:
+                    bij.append(b)
+            bijections = bij
+        return Chain(bijections)
