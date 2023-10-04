@@ -1,25 +1,58 @@
 """Block Neural Autoregressive bijection implementation."""
 from typing import Callable
 
+import equinox as eqx
 import jax
 import jax.numpy as jnp
 from jax import random
 from jax.random import KeyArray
 
 from flowjax.bijections.bijection import Bijection
-from flowjax.nn.block_autoregressive import (
-    BlockAutoregressiveLinear,
-    _block_tanh_activation,
-)
+from flowjax.bijections.tanh import LeakyTanh
+from flowjax.nn.block_autoregressive import BlockAutoregressiveLinear
+
+
+class _CallableToBijection(Bijection):
+    """Wrap a callable e.g. a function or a callable module, into a bijection object
+    (inverse not implemented). We assume the callable acts on scalar values
+    and log_det can be computed in a stable manner with jax.grad.
+    """
+
+    fn: Callable
+
+    def __init__(self, fn: Callable):
+        if not isinstance(fn, Callable):
+            raise ValueError(f"Expected callable, got {type(fn)}.")
+        self.fn = fn
+        self.shape = ()
+        self.cond_shape = None
+
+    def transform(self, x, condition=None):
+        return self.fn(x)
+
+    def transform_and_log_det(self, x, condition=None):
+        y, grad = eqx.filter_value_and_grad(self.fn)(x)
+        return y, jnp.log(jnp.abs(grad))
+
+    def inverse(self, y, condition=None):
+        raise NotImplementedError()
+
+    def inverse_and_log_det(self, y, condition=None):
+        raise NotImplementedError()
 
 
 class BlockAutoregressiveNetwork(Bijection):
-    """Block Autoregressive Network (https://arxiv.org/abs/1904.04676)."""
+    r"""Block Autoregressive Network (https://arxiv.org/abs/1904.04676).Note that in
+    contrast to the original paper which uses tanh activations, by default we use
+    :py:class:`~flowjax.bijections.tanh.LeakyTanh`. This ensures the codomain of the
+    activation is the set of real values, which will ensure properly normalised
+    densities (see https://github.com/danielward27/flowjax/issues/102).
+    """
 
     depth: int
     layers: list
     block_dim: int
-    activation: Callable
+    activation: Bijection
 
     def __init__(
         self,
@@ -28,7 +61,7 @@ class BlockAutoregressiveNetwork(Bijection):
         cond_dim: int | None,
         depth: int,
         block_dim: int,
-        activation: Callable | None = None,
+        activation: Bijection | Callable | None = None,
     ):
         """
         Args:
@@ -37,9 +70,22 @@ class BlockAutoregressiveNetwork(Bijection):
             cond_dim (tuple[int, ...] | None): Dimension of conditioning variables.
             depth (int): Number of hidden layers in the network.
             block_dim (int): Block dimension (hidden layer size is `dim*block_dim`).
-            activation (Callable): Activation function. Defaults to block_tanh.
+            activation: (Bijection | Callable | None). Activation function, either
+                a scalar bijection or a callable that computes the activation for a
+                scalar value. Note that the activation should be bijective
+                to ensure invertibility of the network and in general should map
+                real -> real to ensure that when transforming a distribution (either
+                with the forward or inverse), the map is defined across the support of
+                the base distribution. Defaults to `LeakyTanh(3)`.
         """
-        activation = _block_tanh_activation(dim) if activation is None else activation
+        if activation is None:
+            activation = LeakyTanh(3)
+        elif isinstance(activation, Bijection):
+            if activation.shape != () or activation.cond_shape is not None:
+                raise ValueError("Bijection must be unconditional with shape ().")
+        else:
+            activation = _CallableToBijection(activation)
+
         layers = []
         if depth == 0:
             layers.append(BlockAutoregressiveLinear(key, dim, (1, 1), cond_dim))
@@ -56,35 +102,38 @@ class BlockAutoregressiveNetwork(Bijection):
             for layer_key, block_shape, cond_d in zip(
                 keys, block_shapes, cond_dims, strict=True
             ):
-                layers.extend(
-                    [
-                        BlockAutoregressiveLinear(layer_key, dim, block_shape, cond_d),
-                        activation,
-                    ]
+                layers.append(
+                    BlockAutoregressiveLinear(layer_key, dim, block_shape, cond_d)
                 )
-            layers = layers[:-1]  # remove last activation
 
         self.depth = depth
         self.layers = layers
         self.block_dim = block_dim
-        self.activation = activation
         self.shape = (dim,)
         self.cond_shape = (cond_dim,) if cond_dim is not None else None
+        self.activation = activation
 
     def transform(self, x, condition=None):
         x, condition = self._argcheck_and_cast(x, condition)
-        x = self.layers[0](x, condition)[0]
-        for layer in self.layers[1:]:
-            x = layer(x)[0]
-        return x
+        for layer in self.layers[:-1]:
+            x = layer(x, condition)[0]
+            x = eqx.filter_vmap(self.activation.transform)(x)
+            condition = None
+        return self.layers[-1](x)[0]
 
     def transform_and_log_det(self, x, condition=None):
         x, condition = self._argcheck_and_cast(x, condition)
-        x, log_jacobian_3d_0 = self.layers[0](x, condition)
-        log_jacobian_3ds = [log_jacobian_3d_0]
-        for layer in self.layers[1:]:
-            x, log_det_3d = layer(x)
+        log_jacobian_3ds = []
+        for layer in self.layers[:-1]:
+            x, log_det_3d = layer(x, condition)
             log_jacobian_3ds.append(log_det_3d)
+
+            x, log_det_3d = self._activation_and_log_det_3d(x)
+            log_jacobian_3ds.append(log_det_3d)
+            condition = None  # only pass array condition to first layer
+
+        x, log_det_3d = self.layers[-1](x)
+        log_jacobian_3ds.append(log_det_3d)
 
         log_det = log_jacobian_3ds[-1]
         for log_jacobian in reversed(log_jacobian_3ds[:-1]):
@@ -100,6 +149,16 @@ class BlockAutoregressiveNetwork(Bijection):
         raise NotImplementedError(
             "This transform would require numerical methods for inversion."
         )
+
+    def _activation_and_log_det_3d(self, x):
+        """Compute the activation and the log determinant with shape
+        (num_blocks, block_dim, block_dim)"""
+        x, log_abs_grads = eqx.filter_vmap(self.activation.transform_and_log_det)(x)
+        log_det_3d = jnp.full((self.shape[0], self.block_dim, self.block_dim), -jnp.inf)
+        log_det_3d = log_det_3d.at[
+            :, jnp.arange(self.block_dim), jnp.arange(self.block_dim)
+        ].set(log_abs_grads.reshape(self.shape[0], self.block_dim))
+        return x, log_det_3d
 
 
 def logmatmulexp(x, y):

@@ -2,13 +2,8 @@ import jax
 import jax.numpy as jnp
 import pytest
 from jax import random
-from jax.scipy.linalg import block_diag
 
-from flowjax.bijections.block_autoregressive_network import (
-    BlockAutoregressiveNetwork,
-    _block_tanh_activation,
-)
-from flowjax.masks import block_diag_mask
+from flowjax.bijections.block_autoregressive_network import BlockAutoregressiveNetwork
 
 
 def test_BlockAutoregressiveNetwork():
@@ -35,17 +30,3 @@ def test_BlockAutoregressiveNetwork_conditioning():
     y1 = barn.transform(x, jnp.ones(cond_dim))
     y2 = barn.transform(x, jnp.zeros(cond_dim))
     assert jnp.all(y1 != y2)
-
-
-def test_block_tanh_activation():
-    n_blocks = 2
-    block_size = 3
-    x = random.uniform(random.PRNGKey(0), (n_blocks * block_size,))
-    tanh = _block_tanh_activation(n_blocks)
-
-    y, log_det_3d = tanh(x)
-    auto_jacobian = jax.jacobian(lambda a: tanh(a)[0])(x)
-    mask = block_diag_mask((block_size, block_size), n_blocks)
-    assert block_diag(*jnp.exp(log_det_3d)) == pytest.approx(
-        auto_jacobian * mask, abs=1e-7
-    )

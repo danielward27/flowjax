@@ -1,15 +1,16 @@
 """Tanh bijection."""
 import math
+import warnings
 
-import jax
 import jax.numpy as jnp
+from jax.nn import softplus
 
 from flowjax.bijections.bijection import Bijection
 
 
 def _tanh_log_grad(x):
     """log gradient vector of tanh transformation."""
-    return -2 * (x + jax.nn.softplus(-2 * x) - jnp.log(2.0))
+    return -2 * (x + softplus(-2 * x) - jnp.log(2.0))
 
 
 class Tanh(Bijection):
@@ -41,13 +42,13 @@ class Tanh(Bijection):
         return x, -jnp.sum(_tanh_log_grad(x))
 
 
-class TanhLinearTails(Bijection):
+class LeakyTanh(Bijection):
     """
-    Tanh bijection, with linear "tails" beyond +/- max_val. Note due to the linear
-    tails this does not guarantee the forward transformation will be constrained to
-    [-1, 1]. This transform can be useful to "encourage" values to be within an interval
-    (e.g. to subsequently apply some transformation defined on that interval), whilst
-    avoiding issues with numerical instability.
+    Tanh bijection, with a linear transformation beyond +/- max_val. The value and
+    gradient of the linear segments are set to match tanh at +/- max_val. This bijection
+    can be useful to encourage values to be within an interval, whilst avoiding
+    numerical precision issues, or in cases we require a real -> real mapping so Tanh
+    is not appropriate.
     """
 
     max_val: float
@@ -55,14 +56,12 @@ class TanhLinearTails(Bijection):
     linear_grad: float
 
     def __init__(self, max_val: float, shape: tuple[int, ...] = ()):
-        """Create a tanh bijection with linear "tails" beyond +/- max_val.
-
-        Args:
-            max_val (int): Value above or below which the function becomes linear.
-            shape (tuple[int, ...] | None): The shape of the bijection. Defaults to
-                None.
         """
-        self.max_val = max_val
+        Args:
+            max_val (float): Value above or below which the function becomes linear.
+            shape (tuple[int, ...] | None): The shape of the bijection. Defaults to ().
+        """
+        self.max_val = float(max_val)
         self.linear_grad = math.exp(_tanh_log_grad(max_val))
         self.intercept = math.tanh(max_val) - self.linear_grad * max_val
         self.shape = shape
@@ -81,7 +80,7 @@ class TanhLinearTails(Bijection):
         log_grads = jnp.where(
             jnp.abs(x) >= self.max_val, jnp.log(self.linear_grad), _tanh_log_grad(x)
         )
-        return y, jnp.sum(log_grads)  # type: ignore
+        return y, jnp.sum(log_grads)
 
     def inverse(self, y, condition=None):
         y, _ = self._argcheck_and_cast(y)
@@ -98,4 +97,13 @@ class TanhLinearTails(Bijection):
             jnp.log(self.linear_grad),
             _tanh_log_grad(x),
         )
-        return x, -jnp.sum(log_grads)  # type: ignore
+        return x, -jnp.sum(log_grads)
+
+
+def TanhLinearTails(*args, **kwargs):
+    warnings.warn(
+        "This class has been renamed to LeakyTanh and TanhLinearTails will be removed. "
+        "please update to the new name.",
+        stacklevel=2,
+    )
+    return LeakyTanh(*args, **kwargs)

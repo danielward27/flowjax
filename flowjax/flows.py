@@ -21,12 +21,12 @@ from flowjax.bijections import (
     Coupling,
     Flip,
     Invert,
+    LeakyTanh,
     MaskedAutoregressive,
     Permute,
     Planar,
     RationalQuadraticSpline,
     Scan,
-    TanhLinearTails,
     TriangularAffine,
 )
 from flowjax.distributions import Distribution, Transformed
@@ -181,7 +181,13 @@ class MaskedAutoregressiveFlow(Transformed):
 
 
 class BlockNeuralAutoregressiveFlow(Transformed):
-    """Block neural autoregressive flow (BNAF) (https://arxiv.org/abs/1904.04676)."""
+    """Block neural autoregressive flow (BNAF) (https://arxiv.org/abs/1904.04676).
+    Each flow layer contains a
+    :py:class:`~flowjax.bijections.block_autoregressive_network.BlockAutoregressiveNetwork`
+    bijection. The bijection does not have an analytic inverse, so either ``log_prob``
+    or ``sample`` and ``sample_and_log_prob`` will be unavailable, controlled using the
+    invert argument.
+    """
 
     flow_layers: int
     nn_block_dim: int
@@ -197,6 +203,7 @@ class BlockNeuralAutoregressiveFlow(Transformed):
         nn_block_dim: int = 8,
         flow_layers: int = 1,
         invert: bool = True,
+        activation: Bijection | Callable | None = None,
     ):
         """
         Args:
@@ -208,9 +215,15 @@ class BlockNeuralAutoregressiveFlow(Transformed):
             nn_block_dim (int): Block size. Hidden layer width is
                 dim*nn_block_dim. Defaults to 8.
             flow_layers (int): Number of BNAF layers. Defaults to 1.
-            invert: (bool): Use `True` for access of `log_prob` only (e.g.
+            invert: (bool): Use `True` for access of ``log_prob`` only (e.g.
                 fitting by maximum likelihood), `False` for the forward direction
-                (sampling) only (e.g. for fitting variationally).
+                (``sample`` and ``sample_and_log_prob``) only (e.g. for fitting
+                variationally).
+            activation: (Bijection | Callable | None). Activation function used within
+                block neural autoregressive networks. Note this should be bijective and
+                in some use cases should map real -> real. For more information, see
+                :class:`~flowjax.bijections.block_autoregressive_network.BlockAutoregressiveNetwork`.
+                Defaults to :py:class:`~flowjax.bijections.tanh.LeakyTanh`.
         """
         if len(base_dist.shape) != 1:
             raise ValueError(f"Expected base_dist.ndim==1, got {base_dist.ndim}")
@@ -226,6 +239,7 @@ class BlockNeuralAutoregressiveFlow(Transformed):
                 cond_dim=cond_dim,
                 depth=nn_depth,
                 block_dim=nn_block_dim,
+                activation=activation,
             )
             if permute_strategy == "flip":
                 return Chain([ban, Flip((dim,))])
@@ -303,9 +317,9 @@ class TriangularSplineFlow(Transformed):
             )
 
             bijections = [
-                TanhLinearTails(tanh_max_val, (dim,)),
+                LeakyTanh(tanh_max_val, (dim,)),
                 RationalQuadraticSpline(knots, interval=1, shape=(dim,)),
-                Invert(TanhLinearTails(tanh_max_val, (dim,))),
+                Invert(LeakyTanh(tanh_max_val, (dim,))),
                 lower_tri,
             ]
 

@@ -2,12 +2,11 @@
 neural networks).
 """
 
-from .block_autoregressive import BlockAutoregressiveLinear, _block_tanh_activation
+from .block_autoregressive import BlockAutoregressiveLinear
 from .masked_autoregressive import AutoregressiveMLP, MaskedLinear
 
 __all__ = [
     "MaskedLinear",
     "AutoregressiveMLP",
     "BlockAutoregressiveLinear",
-    "_block_tanh_activation",
 ]
