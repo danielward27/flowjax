@@ -15,6 +15,7 @@ from flowjax.bijections import (
     EmbedCondition,
     Exp,
     Flip,
+    LeakyTanh,
     MaskedAutoregressive,
     Partial,
     Permute,
@@ -24,7 +25,6 @@ from flowjax.bijections import (
     SoftPlus,
     Stack,
     Tanh,
-    TanhLinearTails,
     TriangularAffine,
 )
 
@@ -55,9 +55,10 @@ bijections = {
     "Partial (slice)": Partial(Affine(jnp.zeros(3)), slice(0, 3), (DIM,)),
     "Affine": Affine(jnp.ones(DIM), jnp.full(DIM, 2)),
     "Tanh": Tanh((DIM,)),
+    "LeakyTanh": LeakyTanh(1, (DIM,)),
+    "LeakyTanh (broadcast max_val)": LeakyTanh(1, (2, 3)),
     "Exp": Exp((DIM,)),
     "SoftPlus": SoftPlus((DIM,)),
-    "TanhLinearTails": TanhLinearTails(1, (DIM,)),
     "TriangularAffine (lower)": TriangularAffine(jnp.arange(DIM), POS_DEF_TRAINGLES),
     "TriangularAffine (upper)": TriangularAffine(
         jnp.arange(DIM), POS_DEF_TRAINGLES, lower=False
@@ -173,11 +174,13 @@ def test_transform_inverse_and_log_dets(bijection):
     auto_log_det = jnp.log(jnp.abs(jnp.linalg.det(auto_jacobian)))
     y, logdet = bijection.transform_and_log_det(x, cond)
     assert logdet == pytest.approx(auto_log_det, abs=1e-4)
+    assert y == pytest.approx(bijection.transform(x, cond))
 
     try:
         x_reconstructed, logdetinv = bijection.inverse_and_log_det(y, cond)
         assert logdetinv == pytest.approx(-auto_log_det, abs=1e-4)
         assert x == pytest.approx(x_reconstructed, abs=1e-4)
+        assert x == pytest.approx(bijection.inverse(y, cond), abs=1e-4)
 
     except NotImplementedError:
         pass
