@@ -2,25 +2,18 @@
 from typing import Callable
 
 import equinox as eqx
-import jax
 import jax.numpy as jnp
 from jax import Array, random
 from jax.nn.initializers import glorot_uniform
 from jax.random import KeyArray
 
-from flowjax.bijections.tanh import Tanh
 from flowjax.masks import block_diag_mask, block_tril_mask
-
-
-def _tanh_log_grad(x):
-    """log gradient vector of tanh transformation."""
-    return -2 * (x + jax.nn.softplus(-2 * x) - jnp.log(2.0))
 
 
 class BlockAutoregressiveLinear(eqx.Module):
     """Block autoregressive neural network layer (https://arxiv.org/abs/1904.04676).
     Conditioning variables are incorporated by appending columns (one for each
-    conditioning variable) to the left of the block diagonal weight matrix.
+    conditioning variable) to the right of the block diagonal weight matrix.
     """
 
     n_blocks: int
@@ -114,26 +107,3 @@ class BlockAutoregressiveLinear(eqx.Module):
             self.n_blocks, *self.block_shape
         )
         return y, jnp.log(jac_3d)
-
-
-def _block_tanh_activation(n_blocks: int):
-    """Returms a Tanh activation compatible with a block neural autoregressive network,
-    i.e. returning the transformed variable and the absolute log gradients as a 3D
-    array with shape (n_blocks,) + block_shape
-    """
-
-    def activation(x: Array):
-        tanh = Tanh()
-        y, log_jacobian = jax.vmap(tanh.transform_and_log_det)(x)
-        return y, _reshape_jacobian_to_3d(log_jacobian, n_blocks)
-
-    return activation
-
-
-def _reshape_jacobian_to_3d(vals, n_blocks):
-    block_dim = vals.shape[0] // n_blocks
-    log_det = jnp.full((n_blocks, block_dim, block_dim), -jnp.inf)
-    log_det = log_det.at[:, jnp.arange(block_dim), jnp.arange(block_dim)].set(
-        vals.reshape(n_blocks, block_dim)
-    )
-    return log_det
