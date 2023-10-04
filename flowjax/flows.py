@@ -8,10 +8,9 @@ from typing import Callable
 import equinox as eqx
 import jax.nn as jnn
 import jax.numpy as jnp
+import jax.random as jr
 from equinox.nn import Linear
-from jax import random
 from jax.nn.initializers import glorot_uniform
-from jax.random import KeyArray
 
 from flowjax.bijections import (
     AdditiveCondition,
@@ -42,7 +41,7 @@ class CouplingFlow(Transformed):
 
     def __init__(
         self,
-        key: KeyArray,
+        key: jr.KeyArray,
         base_dist: Distribution,
         transformer: Bijection,
         cond_dim: int | None = None,
@@ -54,7 +53,7 @@ class CouplingFlow(Transformed):
     ):
         """
         Args:
-            key (KeyArray): Jax PRNGKey.
+            key (jr.KeyArray): Jax PRNGKey.
             base_dist (Distribution): Base distribution.
             transformer (Bijection): Bijection to be parameterised by conditioner.
             cond_dim (int): Dimension of conditioning variables. Defaults to None.
@@ -71,12 +70,11 @@ class CouplingFlow(Transformed):
             raise ValueError(f"Expected base_dist.ndim==1, got {base_dist.ndim}")
 
         dim = base_dist.shape[0]
-        permute_strategy = _default_permute_strategy(dim)
 
         def make_layer(key):  # coupling layer + permutation
-            c_key, p_key = random.split(key)
-            coupling = Coupling(
-                key=c_key,
+            bij_key, perm_key = jr.split(key)
+            bijection = Coupling(
+                key=bij_key,
                 transformer=transformer,
                 untransformed_dim=dim // 2,
                 dim=dim,
@@ -85,22 +83,17 @@ class CouplingFlow(Transformed):
                 nn_depth=nn_depth,
                 nn_activation=nn_activation,
             )
+            bijection = _add_default_permute(bijection, dim, perm_key)
+            return bijection
 
-            if permute_strategy == "flip":
-                return Chain([coupling, Flip((dim,))])
-            if permute_strategy == "random":
-                perm = Permute(random.permutation(p_key, jnp.arange(dim)))
-                return Chain([coupling, perm])
-            return coupling
-
-        keys = random.split(key, flow_layers)
+        keys = jr.split(key, flow_layers)
         layers = eqx.filter_vmap(make_layer)(keys)
         bijection = Invert(Scan(layers)) if invert else Scan(layers)
 
         self.nn_width = nn_width
         self.nn_depth = nn_depth
         self.flow_layers = flow_layers
-        self.permute_strategy = permute_strategy
+        self.permute_strategy = _get_default_permute_name(dim)
         self.shape = (dim,)
         self.cond_shape = None if cond_dim is None else (cond_dim,)
         super().__init__(base_dist, bijection)
@@ -119,7 +112,7 @@ class MaskedAutoregressiveFlow(Transformed):
 
     def __init__(
         self,
-        key: KeyArray,
+        key: jr.KeyArray,
         base_dist: Distribution,
         transformer: Bijection,
         cond_dim: int | None = None,
@@ -131,7 +124,7 @@ class MaskedAutoregressiveFlow(Transformed):
     ):
         """
         Args:
-            key (KeyArray): Random seed.
+            key (jr.KeyArray): Random seed.
             base_dist (Distribution): Base distribution.
             transformer (Bijection): Bijection parameterised by autoregressive network.
             cond_dim (int): _description_. Defaults to 0.
@@ -147,12 +140,11 @@ class MaskedAutoregressiveFlow(Transformed):
             raise ValueError(f"Expected base_dist.ndim==1, got {base_dist.ndim}")
 
         dim = base_dist.shape[0]
-        permute_strategy = _default_permute_strategy(dim)
 
         def make_layer(key):  # masked autoregressive layer + permutation
-            masked_auto_key, p_key = random.split(key)
-            masked_autoregressive = MaskedAutoregressive(
-                key=masked_auto_key,
+            bij_key, perm_key = jr.split(key)
+            bijection = MaskedAutoregressive(
+                key=bij_key,
                 transformer=transformer,
                 dim=dim,
                 cond_dim=cond_dim,
@@ -160,21 +152,17 @@ class MaskedAutoregressiveFlow(Transformed):
                 nn_depth=nn_depth,
                 nn_activation=nn_activation,
             )
-            if permute_strategy == "flip":
-                return Chain([masked_autoregressive, Flip((dim,))])
-            if permute_strategy == "random":
-                perm = Permute(random.permutation(p_key, jnp.arange(dim)))
-                return Chain([masked_autoregressive, perm])
-            return masked_autoregressive
+            bijection = _add_default_permute(bijection, dim, perm_key)
+            return bijection
 
-        keys = random.split(key, flow_layers)
+        keys = jr.split(key, flow_layers)
         layers = eqx.filter_vmap(make_layer)(keys)
         bijection = Invert(Scan(layers)) if invert else Scan(layers)
 
         self.nn_width = nn_width
         self.nn_depth = nn_depth
         self.flow_layers = flow_layers
-        self.permute_strategy = permute_strategy
+        self.permute_strategy = _get_default_permute_name(dim)
         self.shape = (dim,)
         self.cond_shape = None if cond_dim is None else (cond_dim,)
         super().__init__(base_dist, bijection)
@@ -196,7 +184,7 @@ class BlockNeuralAutoregressiveFlow(Transformed):
 
     def __init__(
         self,
-        key: KeyArray,
+        key: jr.KeyArray,
         base_dist: Distribution,
         cond_dim: int | None = None,
         nn_depth: int = 1,
@@ -207,7 +195,7 @@ class BlockNeuralAutoregressiveFlow(Transformed):
     ):
         """
         Args:
-            key (KeyArray): Jax PRNGKey.
+            key (jr.KeyArray): Jax PRNGKey.
             base_dist (Distribution): Base distribution.
             cond_dim (int | None): Dimension of conditional variables.
             nn_depth (int): Number of hidden layers within the networks.
@@ -229,34 +217,28 @@ class BlockNeuralAutoregressiveFlow(Transformed):
             raise ValueError(f"Expected base_dist.ndim==1, got {base_dist.ndim}")
 
         dim = base_dist.shape[-1]
-        permute_strategy = _default_permute_strategy(base_dist.shape[0])
 
-        def make_layer(key):  # masked autoregressive layer + permutation
-            ban_key, p_key = random.split(key)
-            ban = BlockAutoregressiveNetwork(
-                key=ban_key,
+        def make_layer(key):  # bnaf layer + permutation
+            bij_key, perm_key = jr.split(key)
+            bijection = BlockAutoregressiveNetwork(
+                key=bij_key,
                 dim=dim,
                 cond_dim=cond_dim,
                 depth=nn_depth,
                 block_dim=nn_block_dim,
                 activation=activation,
             )
-            if permute_strategy == "flip":
-                return Chain([ban, Flip((dim,))])
-            if permute_strategy == "random":
-                perm = Permute(random.permutation(p_key, jnp.arange(dim)))
-                return Chain([ban, perm])
-            return ban
+            bijection = _add_default_permute(bijection, dim, perm_key)
+            return bijection
 
-        keys = random.split(key, flow_layers)
+        keys = jr.split(key, flow_layers)
         layers = eqx.filter_vmap(make_layer)(keys)
         bijection = Invert(Scan(layers)) if invert else Scan(layers)
 
         self.nn_block_dim = nn_block_dim
         self.nn_depth = nn_depth
         self.flow_layers = flow_layers
-        self.permute_strategy = permute_strategy
-
+        self.permute_strategy = _get_default_permute_name(dim)
         self.shape = (dim,)
         self.cond_shape = None if cond_dim is None else (cond_dim,)
         super().__init__(base_dist, bijection)
@@ -276,7 +258,7 @@ class TriangularSplineFlow(Transformed):
 
     def __init__(
         self,
-        key: KeyArray,
+        key: jr.KeyArray,
         base_dist: Distribution,
         cond_dim: int | None = None,
         flow_layers: int = 8,
@@ -287,7 +269,7 @@ class TriangularSplineFlow(Transformed):
     ):
         """
         Args:
-            key (KeyArray): Jax random seed.
+            key (jr.KeyArray): Jax random seed.
             base_dist (Distribution): Base distribution of the flow.
             cond_dim (int | None): The number of conditioning features.
                 Defaults to None.
@@ -306,10 +288,9 @@ class TriangularSplineFlow(Transformed):
             raise ValueError(f"Expected base_dist.ndim==1, got {base_dist.ndim}")
 
         dim = base_dist.shape[-1]
-        permute_strategy = _default_permute_strategy(dim)
 
         def make_layer(key):
-            lt_key, perm_key, cond_key = random.split(key, 3)
+            lt_key, perm_key, cond_key = jr.split(key, 3)
             weights = init(lt_key, (dim, dim))
             lt_weights = weights.at[jnp.diag_indices(dim)].set(1)
             lower_tri = TriangularAffine(
@@ -331,20 +312,16 @@ class TriangularSplineFlow(Transformed):
                 )
                 bijections.append(linear_condition)
 
-            if permute_strategy == "flip":
-                bijections.append(Flip((dim,)))
-            elif permute_strategy == "random":
-                bijections.append(
-                    Permute(random.permutation(perm_key, jnp.arange(dim)))
-                )
-            return Chain(bijections)
+            bijection = Chain(bijections)
+            bijection = _add_default_permute(bijection, dim, perm_key)
+            return bijection
 
-        keys = random.split(key, flow_layers)
+        keys = jr.split(key, flow_layers)
         layers = eqx.filter_vmap(make_layer)(keys)
         bijection = Invert(Scan(layers)) if invert else Scan(layers)
 
         self.flow_layers = flow_layers
-        self.permute_strategy = permute_strategy
+        self.permute_strategy = _get_default_permute_name(dim)
         self.knots = knots
         self.tanh_max_val = tanh_max_val
         self.shape = (dim,)
@@ -364,7 +341,7 @@ class PlanarFlow(Transformed):
 
     def __init__(
         self,
-        key: KeyArray,
+        key: jr.KeyArray,
         base_dist: Distribution,
         cond_dim: int | None = None,
         flow_layers: int = 8,
@@ -373,7 +350,7 @@ class PlanarFlow(Transformed):
     ):
         """
         Args:
-            key (KeyArray): Jax PRNGKey.
+            key (jr.KeyArray): Jax PRNGKey.
             base_dist (Distribution): Base distribution.
             cond_dim (int): Dimension of conditioning variables. Defaults to None.
             flow_layers (int): Number of flow layers. Defaults to 5.
@@ -388,31 +365,33 @@ class PlanarFlow(Transformed):
             raise ValueError(f"Expected base_dist.ndim==1, got {base_dist.ndim}")
 
         dim = base_dist.shape[0]
-        permute_strategy = _default_permute_strategy(dim)
 
         def make_layer(key):  # Planar layer + permutation
-            planar_key, perm_key = random.split(key)
-            planar = Planar(planar_key, dim, cond_dim, **mlp_kwargs)
+            bij_key, perm_key = jr.split(key)
+            bijection = Planar(bij_key, dim, cond_dim, **mlp_kwargs)
+            bijection = _add_default_permute(bijection, dim, perm_key)
+            return bijection
 
-            if permute_strategy == "flip":
-                return Chain([planar, Flip((dim,))])
-            if permute_strategy == "random":
-                perm = Permute(random.permutation(perm_key, jnp.arange(dim)))
-                return Chain([planar, perm])
-            return planar
-
-        keys = random.split(key, flow_layers)
+        keys = jr.split(key, flow_layers)
         layers = eqx.filter_vmap(make_layer)(keys)
         bijection = Invert(Scan(layers)) if invert else Scan(layers)
 
         self.flow_layers = flow_layers
-        self.permute_strategy = permute_strategy
+        self.permute_strategy = _get_default_permute_name(dim)
         self.shape = (dim,)
         self.cond_shape = None if cond_dim is None else (cond_dim,)
         super().__init__(base_dist, bijection)
 
 
-def _default_permute_strategy(dim):
-    if dim <= 2:
-        return {1: "none", 2: "flip"}[dim]
-    return "random"
+def _add_default_permute(bijection: Bijection, dim: int, key: jr.KeyArray):
+    if dim == 1:
+        return bijection
+    if dim == 2:
+        return Chain([bijection, Flip((dim,))]).merge_chains()
+    else:
+        perm = Permute(jr.permutation(key, jnp.arange(dim)))
+        return Chain([bijection, perm]).merge_chains()
+
+
+def _get_default_permute_name(dim):
+    return {1: "none", 2: "flip"}.get(dim, "random")

@@ -17,6 +17,20 @@ def test_chain_dunders():
     assert isinstance(bijection[:], Chain)
 
 
+def test_merge_chains():
+    scale = jnp.array([0.5, 2])
+    bijections = [
+        Chain([Affine(scale=scale), Chain([Flip((2,)), Affine(scale=scale)])]),
+        Flip((2,)),
+    ]
+
+    chain = Chain(bijections)
+
+    x = jnp.arange(2)
+    assert chain.transform(x) == pytest.approx(chain.merge_chains().transform(x))
+    assert not any(isinstance(b, Chain) for b in chain.merge_chains().bijections)
+
+
 DIM = 4
 COND_DIM = 5
 NUM_LAYERS = 3
