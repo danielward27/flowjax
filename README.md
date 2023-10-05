@@ -10,7 +10,7 @@ Available [here](https://danielward27.github.io/flowjax/index.html).
 ## Short example
 Training a flow can be done in a few lines of code:
 
-```
+```python
 from flowjax.flows import BlockNeuralAutoregressiveFlow
 from flowjax.train import fit_to_data
 from flowjax.distributions import Normal
