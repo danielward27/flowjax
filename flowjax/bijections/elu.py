@@ -5,8 +5,14 @@ from flowjax.bijections.bijection import Bijection
 
 
 class ELU(Bijection):
+    """Exponential linear unit (ELU) bijection: exp(x)-1 for x<0 and x for x>=0."""
 
-    def __init__(self, shape=()):
+    def __init__(self, shape: tuple[int, ...] = ()):
+        """
+        Args:
+            shape (tuple[int, ...] | None): Shape of the bijection.
+                Defaults to None.
+        """
         self.shape = shape
         self.cond_shape = None
 
@@ -29,6 +35,7 @@ class ELU(Bijection):
 
 
 class OnePlusELU(ELU):
+    """Strictly positive exponential linear unit (ELU) bijection: exp(x) for x<0 and x+1 for x>=0."""
 
     def transform(self, x, condition=None):
         return super().transform(x) + 1
