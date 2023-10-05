@@ -1,5 +1,5 @@
 """Exponential linear unit (ELU) bijection"""
-import jax.numpy as np
+import jax.numpy as jnp
 
 from flowjax.bijections.bijection import Bijection
 

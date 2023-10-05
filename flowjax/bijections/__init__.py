@@ -6,6 +6,7 @@ from .block_autoregressive_network import BlockAutoregressiveNetwork
 from .chain import Chain
 from .concatenate import Concatenate, Stack
 from .coupling import Coupling
+from .elu import ELU, OnePlusELU
 from .exp import Exp
 from .jax_transforms import Batch, Scan
 from .masked_autoregressive import MaskedAutoregressive
