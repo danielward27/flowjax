@@ -13,10 +13,12 @@ from flowjax.bijections import (
     Concatenate,
     Coupling,
     EmbedCondition,
+    ELU,
     Exp,
     Flip,
     LeakyTanh,
     MaskedAutoregressive,
+    OnePlusELU,
     Partial,
     Permute,
     Planar,
@@ -59,6 +61,8 @@ bijections = {
     "LeakyTanh (broadcast max_val)": LeakyTanh(1, (2, 3)),
     "Exp": Exp((DIM,)),
     "SoftPlus": SoftPlus((DIM,)),
+    "ELU": ELU((DIM,)),
+    "OnePlusELU": OnePlusELU((DIM,)),
     "TriangularAffine (lower)": TriangularAffine(jnp.arange(DIM), POS_DEF_TRAINGLES),
     "TriangularAffine (upper)": TriangularAffine(
         jnp.arange(DIM), POS_DEF_TRAINGLES, lower=False

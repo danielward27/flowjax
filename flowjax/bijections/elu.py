@@ -2,6 +2,8 @@
 import jax.numpy as jnp
 
 from flowjax.bijections.bijection import Bijection
+from flowjax.bijections.chain import Chain
+from flowjax.bijections.affine import Affine
 
 
 class ELU(Bijection):
@@ -31,14 +33,15 @@ class ELU(Bijection):
     def inverse_and_log_det(self, y, condition=None):
         y, _ = self._argcheck_and_cast(y)
         x = self.inverse(y)
-        return self.inverse(y), jnp.where(y < 0, -x, 0).sum()
+        return x, jnp.where(y < 0, -x, 0).sum()
 
 
-class OnePlusELU(ELU):
-    """Strictly positive exponential linear unit (ELU) bijection: exp(x) for x<0 and x+1 for x>=0."""
-
-    def transform(self, x, condition=None):
-        return super().transform(x) + 1
-
-    def inverse(self, y, condition=None):
-        return super().inverse(y - 1)
+def OnePlusELU(shape: tuple[int, ...] = ()):
+    """Strictly positive exponential linear unit (ELU) bijection: exp(x) for x<0 and x+1 for x>=0.
+    
+    Args:
+    shape (tuple[int, ...] | None): Shape of the bijection.
+        Defaults to None.
+    """
+    bijections = [ELU(shape), Affine(loc=jnp.ones(shape))]
+    return Chain(bijections)
