@@ -8,7 +8,7 @@ import optax
 from jax.typing import ArrayLike
 from tqdm import tqdm
 
-from flowjax.distributions import Distribution
+from flowjax.distributions import AbstractDistribution
 from flowjax.train.losses import MaximumLikelihoodLoss
 from flowjax.train.train_utils import (
     count_fruitless,
@@ -22,7 +22,7 @@ PyTree = Any
 
 def fit_to_data(
     key: jr.KeyArray,
-    dist: Distribution,
+    dist: AbstractDistribution,
     x: ArrayLike,
     condition: ArrayLike = None,
     loss_fn: Callable | None = None,

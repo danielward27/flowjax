@@ -1,19 +1,23 @@
 """Rational quadratic spline bijections (https://arxiv.org/abs/1906.04032)."""
 
 
+from typing import ClassVar
+
 import equinox as eqx
 import jax
 import jax.numpy as jnp
 from jax import Array
 
-from flowjax.bijections.bijection import Bijection
-from flowjax.bijections.jax_transforms import Batch
+from flowjax.bijections.bijection import AbstractBijection
+from flowjax.bijections.jax_transforms import AbstractBatch
 from flowjax.utils import real_to_increasing_on_interval
 
 
-class _ScalarRationalQuadraticSpline(Bijection):
+class _ScalarRationalQuadraticSpline(AbstractBijection, strict=True):
     """Scaler RationalQuadraticSpline transformation (https://arxiv.org/abs/1906.04032)."""
 
+    shape: ClassVar[tuple] = ()
+    cond_shape: ClassVar[None] = None
     knots: int
     interval: float
     softmax_adjust: float
@@ -33,8 +37,6 @@ class _ScalarRationalQuadraticSpline(Bijection):
         self.interval = interval
         self.softmax_adjust = softmax_adjust
         self.min_derivative = min_derivative
-        self.shape = ()
-        self.cond_shape = None
 
         # Inexact arrays
         self.unbounded_x_pos = jnp.zeros(knots)
@@ -127,10 +129,16 @@ class _ScalarRationalQuadraticSpline(Bijection):
         return jnp.where(in_bounds, derivative, 1.0)  # type: ignore
 
 
-class RationalQuadraticSpline(Batch):
+class RationalQuadraticSpline(AbstractBatch, strict=True):
     """Elementwise rational quadratic spline transform (https://arxiv.org/abs/1906.04032),
     initialised at the identity function.
     """
+
+    shape: tuple[int, ...]
+    cond_shape: ClassVar[None] = None
+    bijection: _ScalarRationalQuadraticSpline
+    in_axes: tuple
+    batch_shape: tuple[int, ...]
 
     def __init__(
         self,
@@ -161,5 +169,8 @@ class RationalQuadraticSpline(Batch):
         for dim in reversed(shape):
             constructor = eqx.filter_vmap(constructor, axis_size=dim)
 
-        spline = constructor()
-        super().__init__(spline, shape, vectorize_bijection=True)
+        self.bijection = constructor()
+        self.batch_shape = shape
+        self.in_axes = (eqx.if_array(0), eqx.if_array(0), None)
+        self.shape = shape
+        self.batch_shape = shape

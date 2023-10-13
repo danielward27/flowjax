@@ -3,16 +3,18 @@ arbitrary bijections, with compatible shapes.
 """
 from typing import Sequence
 
-from flowjax.bijections.bijection import Bijection
+from flowjax.bijections.bijection import AbstractBijection
 from flowjax.utils import check_shapes_match, merge_cond_shapes
 
 
-class Chain(Bijection):
+class Chain(AbstractBijection, strict=True):
     """Chain together arbitrary bijections to form another bijection."""
 
-    bijections: tuple[Bijection]
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
+    bijections: tuple[AbstractBijection]
 
-    def __init__(self, bijections: Sequence[Bijection]):
+    def __init__(self, bijections: Sequence[AbstractBijection]):
         """
         Args:
             bijections (Sequence[Bijection]): Sequence of bijections.
@@ -46,7 +48,7 @@ class Chain(Bijection):
             log_abs_det_jac += log_abs_det_jac_i.sum()
         return y, log_abs_det_jac
 
-    def __getitem__(self, i: int | slice) -> Bijection:
+    def __getitem__(self, i: int | slice) -> AbstractBijection:
         if isinstance(i, int):
             return self.bijections[i]
         if isinstance(i, slice):

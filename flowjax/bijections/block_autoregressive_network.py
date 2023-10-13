@@ -1,5 +1,5 @@
 """Block Neural Autoregressive bijection implementation."""
-from typing import Callable
+from typing import Callable, ClassVar
 
 import equinox as eqx
 import jax
@@ -7,25 +7,25 @@ import jax.numpy as jnp
 from jax import random
 from jax.random import KeyArray
 
-from flowjax.bijections.bijection import Bijection
+from flowjax.bijections.bijection import AbstractBijection
 from flowjax.bijections.tanh import LeakyTanh
 from flowjax.nn.block_autoregressive import BlockAutoregressiveLinear
 
 
-class _CallableToBijection(Bijection):
+class _CallableToBijection(AbstractBijection, strict=True):
     """Wrap a callable e.g. a function or a callable module, into a bijection object
     (inverse not implemented). We assume the callable acts on scalar values
     and log_det can be computed in a stable manner with jax.grad.
     """
 
     fn: Callable
+    shape: ClassVar[tuple] = ()
+    cond_shape: ClassVar[None] = None
 
     def __init__(self, fn: Callable):
         if not isinstance(fn, Callable):
             raise ValueError(f"Expected callable, got {type(fn)}.")
         self.fn = fn
-        self.shape = ()
-        self.cond_shape = None
 
     def transform(self, x, condition=None):
         return self.fn(x)
@@ -41,18 +41,19 @@ class _CallableToBijection(Bijection):
         raise NotImplementedError()
 
 
-class BlockAutoregressiveNetwork(Bijection):
+class BlockAutoregressiveNetwork(AbstractBijection, strict=True):
     r"""Block Autoregressive Network (https://arxiv.org/abs/1904.04676).Note that in
     contrast to the original paper which uses tanh activations, by default we use
     :py:class:`~flowjax.bijections.tanh.LeakyTanh`. This ensures the codomain of the
     activation is the set of real values, which will ensure properly normalised
     densities (see https://github.com/danielward27/flowjax/issues/102).
     """
-
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
     depth: int
     layers: list
     block_dim: int
-    activation: Bijection
+    activation: AbstractBijection
 
     def __init__(
         self,
@@ -61,7 +62,7 @@ class BlockAutoregressiveNetwork(Bijection):
         cond_dim: int | None,
         depth: int,
         block_dim: int,
-        activation: Bijection | Callable | None = None,
+        activation: AbstractBijection | Callable | None = None,
     ):
         """
         Args:
@@ -80,7 +81,7 @@ class BlockAutoregressiveNetwork(Bijection):
         """
         if activation is None:
             activation = LeakyTanh(3)
-        elif isinstance(activation, Bijection):
+        elif isinstance(activation, AbstractBijection):
             if activation.shape != () or activation.cond_shape is not None:
                 raise ValueError("Bijection must be unconditional with shape ().")
         else:

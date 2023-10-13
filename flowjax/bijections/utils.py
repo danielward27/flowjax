@@ -1,15 +1,15 @@
 """Utility bijections (embedding network, permutations, inversion etc.)"""
-from typing import Callable
+from typing import Callable, ClassVar
 
 import jax.numpy as jnp
 from jax import Array
 from jax.experimental import checkify
 from jax.typing import ArrayLike
 
-from flowjax.bijections.bijection import Bijection
+from flowjax.bijections.bijection import AbstractBijection
 
 
-class Invert(Bijection):
+class Invert(AbstractBijection, strict=True):
     """Invert a bijection, such that the transform methods become the inverse
     methods and vice versa. Note that in general, we define bijections such that
     the forward methods are preffered, i.e. faster/actually implemented. For
@@ -18,9 +18,11 @@ class Invert(Bijection):
     achieve this aim.
     """
 
-    bijection: Bijection
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
+    bijection: AbstractBijection
 
-    def __init__(self, bijection: Bijection):
+    def __init__(self, bijection: AbstractBijection):
         """
         Args:
             bijection (Bijection): Bijection to invert.
@@ -42,9 +44,11 @@ class Invert(Bijection):
         return self.bijection.transform_and_log_det(y, condition)
 
 
-class Permute(Bijection):
+class Permute(AbstractBijection, strict=True):
     """Permutation transformation."""
 
+    shape: tuple[int, ...]
+    cond_shape: ClassVar[None] = None
     permutation: tuple[Array, ...]
     inverse_permutation: tuple[Array, ...]
 
@@ -61,7 +65,6 @@ class Permute(Bijection):
             "Invalid permutation array provided.",
         )
         self.shape = permutation.shape
-        self.cond_shape = None
 
         indices = jnp.unravel_index(permutation.ravel(), permutation.shape)
         self.permutation = tuple(jnp.reshape(i, permutation.shape) for i in indices)
@@ -90,17 +93,16 @@ class Permute(Bijection):
         return y[self.inverse_permutation], jnp.array(0)
 
 
-class Flip(Bijection):
-    """Flip the input array. Condition argument is ignored."""
+class Flip(AbstractBijection, strict=True):
+    """Flip the input array. Condition argument is ignored.
 
-    def __init__(self, shape: tuple[int, ...]) -> None:
-        """
-        Args:
-            shape (tuple[int, ...] | None): The shape of the bijection.
-                Defaults to None.
-        """
-        self.shape = shape
-        self.cond_shape = None
+    Args:
+        shape (tuple[int, ...]): The shape of the bijection.
+            Defaults to None.
+    """
+
+    shape: tuple[int, ...] = ()
+    cond_shape: ClassVar[None] = None
 
     def transform(self, x, condition=None):
         x, _ = self._argcheck_and_cast(x)
@@ -119,13 +121,15 @@ class Flip(Bijection):
         return jnp.flip(y), jnp.array(0)
 
 
-class Partial(Bijection):
+class Partial(AbstractBijection, strict=True):
     """Applies bijection to specific indices of an input."""
 
-    bijection: Bijection
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
+    bijection: AbstractBijection
     idxs: int | slice | Array | tuple
 
-    def __init__(self, bijection: Bijection, idxs, shape: tuple[int, ...]):
+    def __init__(self, bijection: AbstractBijection, idxs, shape: tuple[int, ...]):
         """
         Args:
             bijection (Bijection): Bijection that is compatible with the subset of x
@@ -166,17 +170,19 @@ class Partial(Bijection):
         return y.at[self.idxs].set(x), log_det
 
 
-class EmbedCondition(Bijection):
+class EmbedCondition(AbstractBijection, strict=True):
     """Use an embedding network to reduce the dimensionality of the conditioning
     variable. The returned bijection has cond_dim equal to the raw condition size.
     """
 
-    bijection: Bijection
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...]
+    bijection: AbstractBijection
     embedding_net: Callable
 
     def __init__(
         self,
-        bijection: Bijection,
+        bijection: AbstractBijection,
         embedding_net: Callable,
         raw_cond_shape: tuple[int, ...],
     ) -> None:

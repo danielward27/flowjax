@@ -8,7 +8,7 @@ import jax.random as jr
 import optax
 from jax import Array, jit
 
-from flowjax.distributions import Distribution
+from flowjax.distributions import AbstractDistribution
 
 PyTree = Any
 
@@ -18,7 +18,7 @@ def step(
     optimizer: optax.GradientTransformation,
     opt_state: PyTree,
     loss_fn: Callable,
-    params: Distribution,
+    params: AbstractDistribution,
     *args,
     **kwargs,
 ):

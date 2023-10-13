@@ -5,20 +5,22 @@ from typing import Sequence
 import jax.numpy as jnp
 from jax import Array
 
-from flowjax.bijections.bijection import Bijection
+from flowjax.bijections.bijection import AbstractBijection
 from flowjax.utils import check_shapes_match, merge_cond_shapes
 
 
-class Concatenate(Bijection):
+class Concatenate(AbstractBijection, strict=True):
     """Concatenate bijections along an already existing axis. Analagous to
     ``jnp.concatenate``. See also :class:`Stack`.
     """
 
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
     split_idxs: Array
-    bijections: Sequence[Bijection]
+    bijections: Sequence[AbstractBijection]
     axis: int
 
-    def __init__(self, bijections: Sequence[Bijection], axis: int = 0):
+    def __init__(self, bijections: Sequence[AbstractBijection], axis: int = 0):
         """
         Args:
             bijections (Sequence[Bijection]): Bijections, to stack into a single
@@ -90,16 +92,18 @@ class Concatenate(Bijection):
                 )
 
 
-class Stack(Bijection):
+class Stack(AbstractBijection, strict=True):
     """
     Stack bijections along a new axis (analagous to ``jnp.stack``).
     See also :class:`Concatenate`.
     """
 
-    bijections: Sequence[Bijection]
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
+    bijections: Sequence[AbstractBijection]
     axis: int
 
-    def __init__(self, bijections: list[Bijection], axis: int = 0):
+    def __init__(self, bijections: list[AbstractBijection], axis: int = 0):
         """
         Args:
             bijections (list[Bijection]): Bijections.

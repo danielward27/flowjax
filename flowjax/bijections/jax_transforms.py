@@ -4,24 +4,80 @@ from typing import Any, Callable
 
 import equinox as eqx
 import jax.numpy as jnp
+from equinox import AbstractVar
 from jax.lax import scan
 
-from flowjax.bijections.bijection import Bijection
+from flowjax.bijections.bijection import AbstractBijection
 
 
-class Batch(Bijection):
-    """Add batch dimensions to a bijection, such that the new shape is
+class AbstractBatch(
+    AbstractBijection, strict=True
+):  # TODO this might needs rethinking - also potentially renaming due to the possbility of Batched distributions?
+    """Abstract class to facilitate adding batch dimensions to a bijection.
+    Add batch dimensions to a bijection, such that the new shape is
     batch_shape + bijection.shape. The batch dimensions are added using multiple
     applications of eqx.filter_vmap.
     """
 
-    bijection: Bijection
+    shape: AbstractVar[tuple[int, ...]]
+    cond_shape: AbstractVar[tuple[int, ...] | None]
+    bijection: AbstractVar[AbstractBijection]
+    in_axes: AbstractVar[tuple]
+    batch_shape: AbstractVar[tuple[int, ...]]
+
+    def transform(self, x, condition=None):
+        x, condition = self._argcheck_and_cast(x, condition)
+
+        def _transform(bijection, x, condition):
+            return bijection.transform(x, condition)
+
+        return self.multi_vmap(_transform)(self.bijection, x, condition)
+
+    def transform_and_log_det(self, x, condition=None):
+        x, condition = self._argcheck_and_cast(x, condition)
+
+        def _transform_and_log_det(bijection, x, condition):
+            return bijection.transform_and_log_det(x, condition)
+
+        y, log_det = self.multi_vmap(_transform_and_log_det)(
+            self.bijection, x, condition
+        )
+        return y, jnp.sum(log_det)
+
+    def inverse(self, y, condition=None):
+        y, condition = self._argcheck_and_cast(y, condition)
+
+        def _inverse(bijection, x, condition):
+            return bijection.inverse(x, condition)
+
+        return self.multi_vmap(_inverse)(self.bijection, y, condition)
+
+    def inverse_and_log_det(self, y, condition=None):
+        y, condition = self._argcheck_and_cast(y, condition)
+
+        def _inverse_and_log_det(bijection, x, condition):
+            return bijection.inverse_and_log_det(x, condition)
+
+        x, log_det = self.multi_vmap(_inverse_and_log_det)(self.bijection, y, condition)
+        return x, jnp.sum(log_det)
+
+    def multi_vmap(self, func: Callable) -> Callable:
+        """Compose vmap to add ndim batch dimensions."""
+        for _ in range(len(self.batch_shape)):
+            func = eqx.filter_vmap(func, in_axes=self.in_axes)
+        return func
+
+
+class Batch(AbstractBatch, strict=True):
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
+    bijection: AbstractBijection
     in_axes: tuple
     batch_shape: tuple[int, ...]
 
     def __init__(
         self,
-        bijection: Bijection,
+        bijection: AbstractBijection,
         batch_shape: tuple[int, ...],
         vectorize_bijection: bool,
         vectorize_condition: bool | None = None,
@@ -73,58 +129,18 @@ class Batch(Bijection):
         else:
             self.cond_shape = self.bijection.cond_shape
 
-    def transform(self, x, condition=None):
-        x, condition = self._argcheck_and_cast(x, condition)
 
-        def _transform(bijection, x, condition):
-            return bijection.transform(x, condition)
-
-        return self.multi_vmap(_transform)(self.bijection, x, condition)
-
-    def transform_and_log_det(self, x, condition=None):
-        x, condition = self._argcheck_and_cast(x, condition)
-
-        def _transform_and_log_det(bijection, x, condition):
-            return bijection.transform_and_log_det(x, condition)
-
-        y, log_det = self.multi_vmap(_transform_and_log_det)(
-            self.bijection, x, condition
-        )
-        return y, jnp.sum(log_det)
-
-    def inverse(self, y, condition=None):
-        y, condition = self._argcheck_and_cast(y, condition)
-
-        def _inverse(bijection, x, condition):
-            return bijection.inverse(x, condition)
-
-        return self.multi_vmap(_inverse)(self.bijection, y, condition)
-
-    def inverse_and_log_det(self, y, condition=None):
-        y, condition = self._argcheck_and_cast(y, condition)
-
-        def _inverse_and_log_det(bijection, x, condition):
-            return bijection.inverse_and_log_det(x, condition)
-
-        x, log_det = self.multi_vmap(_inverse_and_log_det)(self.bijection, y, condition)
-        return x, jnp.sum(log_det)
-
-    def multi_vmap(self, func: Callable) -> Callable:
-        """Compose vmap to add ndim batch dimensions."""
-        for _ in range(len(self.batch_shape)):
-            func = eqx.filter_vmap(func, in_axes=self.in_axes)
-        return func
-
-
-class Scan(Bijection):
+class Scan(AbstractBijection, strict=True):
     """Repeatedly apply the same bijection with different parameter values. Internally,
     uses `jax.lax.scan` to reduce compilation time.
     """
 
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
     static: Any
     params: Any
 
-    def __init__(self, bijection: Bijection):
+    def __init__(self, bijection: AbstractBijection):
         """
         The array leaves in `bijection` should have an additional leading axis to scan
         over. Often it is convenient to construct these using ``equinox.filter_vmap``.

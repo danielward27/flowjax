@@ -8,14 +8,16 @@ import jax.nn as jnn
 import jax.numpy as jnp
 from jax.random import KeyArray
 
-from flowjax.bijections.bijection import Bijection
+from flowjax.bijections.bijection import AbstractBijection
 from flowjax.bijections.jax_transforms import Batch
 from flowjax.utils import Array, get_ravelled_bijection_constructor
 
 
-class Coupling(Bijection):
+class Coupling(AbstractBijection, strict=True):
     """Coupling layer implementation (https://arxiv.org/abs/1605.08803)."""
 
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
     untransformed_dim: int
     dim: int
     transformer_constructor: Callable
@@ -24,7 +26,7 @@ class Coupling(Bijection):
     def __init__(
         self,
         key: KeyArray,
-        transformer: Bijection,
+        transformer: AbstractBijection,
         untransformed_dim: int,
         dim: int,
         cond_dim: int | None,

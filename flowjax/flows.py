@@ -13,8 +13,8 @@ from equinox.nn import Linear
 from jax.nn.initializers import glorot_uniform
 
 from flowjax.bijections import (
+    AbstractBijection,
     AdditiveCondition,
-    Bijection,
     BlockAutoregressiveNetwork,
     Chain,
     Coupling,
@@ -28,12 +28,16 @@ from flowjax.bijections import (
     Scan,
     TriangularAffine,
 )
-from flowjax.distributions import Distribution, Transformed
+from flowjax.distributions import AbstractDistribution, AbstractTransformed
 
 
-class CouplingFlow(Transformed):
+class CouplingFlow(AbstractTransformed, strict=True):
     """Coupling flow (https://arxiv.org/abs/1605.08803)."""
 
+    base_dist: AbstractDistribution
+    bijection: Scan | Invert
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
     flow_layers: int
     nn_width: int
     nn_depth: int
@@ -42,8 +46,8 @@ class CouplingFlow(Transformed):
     def __init__(
         self,
         key: jr.KeyArray,
-        base_dist: Distribution,
-        transformer: Bijection,
+        base_dist: AbstractDistribution,
+        transformer: AbstractBijection,
         cond_dim: int | None = None,
         flow_layers: int = 8,
         nn_width: int = 40,
@@ -96,15 +100,20 @@ class CouplingFlow(Transformed):
         self.permute_strategy = _get_default_permute_name(dim)
         self.shape = (dim,)
         self.cond_shape = None if cond_dim is None else (cond_dim,)
-        super().__init__(base_dist, bijection)
+        self.base_dist = base_dist
+        self.bijection = bijection
 
 
-class MaskedAutoregressiveFlow(Transformed):
+class MaskedAutoregressiveFlow(AbstractTransformed, strict=True):
     """Masked autoregressive flow (https://arxiv.org/abs/1606.04934,
     https://arxiv.org/abs/1705.07057v4). Parameterises a transformer with an
     autoregressive neural network.
     """
 
+    base_dist: AbstractDistribution
+    bijection: Scan | Invert
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
     flow_layers: int
     nn_width: int
     nn_depth: int
@@ -113,8 +122,8 @@ class MaskedAutoregressiveFlow(Transformed):
     def __init__(
         self,
         key: jr.KeyArray,
-        base_dist: Distribution,
-        transformer: Bijection,
+        base_dist: AbstractDistribution,
+        transformer: AbstractBijection,
         cond_dim: int | None = None,
         flow_layers: int = 8,
         nn_width: int = 40,
@@ -165,10 +174,11 @@ class MaskedAutoregressiveFlow(Transformed):
         self.permute_strategy = _get_default_permute_name(dim)
         self.shape = (dim,)
         self.cond_shape = None if cond_dim is None else (cond_dim,)
-        super().__init__(base_dist, bijection)
+        self.base_dist = base_dist
+        self.bijection = bijection
 
 
-class BlockNeuralAutoregressiveFlow(Transformed):
+class BlockNeuralAutoregressiveFlow(AbstractTransformed, strict=True):
     """Block neural autoregressive flow (BNAF) (https://arxiv.org/abs/1904.04676).
     Each flow layer contains a
     :py:class:`~flowjax.bijections.block_autoregressive_network.BlockAutoregressiveNetwork`
@@ -177,6 +187,10 @@ class BlockNeuralAutoregressiveFlow(Transformed):
     invert argument.
     """
 
+    base_dist: AbstractDistribution
+    bijection: Scan | Invert
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
     flow_layers: int
     nn_block_dim: int
     nn_depth: int
@@ -185,13 +199,13 @@ class BlockNeuralAutoregressiveFlow(Transformed):
     def __init__(
         self,
         key: jr.KeyArray,
-        base_dist: Distribution,
+        base_dist: AbstractDistribution,
         cond_dim: int | None = None,
         nn_depth: int = 1,
         nn_block_dim: int = 8,
         flow_layers: int = 1,
         invert: bool = True,
-        activation: Bijection | Callable | None = None,
+        activation: AbstractBijection | Callable | None = None,
     ):
         """
         Args:
@@ -241,16 +255,21 @@ class BlockNeuralAutoregressiveFlow(Transformed):
         self.permute_strategy = _get_default_permute_name(dim)
         self.shape = (dim,)
         self.cond_shape = None if cond_dim is None else (cond_dim,)
-        super().__init__(base_dist, bijection)
+        self.base_dist = base_dist
+        self.bijection = bijection
 
 
-class TriangularSplineFlow(Transformed):
+class TriangularSplineFlow(AbstractTransformed, strict=True):
     """A stack of layers, where each layer consists of a triangular affine
     transformation with weight normalisation, and an elementwise rational quadratic
     spline. Tanh is used to constrain to the input to [-1, 1] before spline
     transformations.
     """
 
+    base_dist: AbstractDistribution
+    bijection: Scan | Invert
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
     flow_layers: int
     permute_strategy: str
     knots: int
@@ -259,7 +278,7 @@ class TriangularSplineFlow(Transformed):
     def __init__(
         self,
         key: jr.KeyArray,
-        base_dist: Distribution,
+        base_dist: AbstractDistribution,
         cond_dim: int | None = None,
         flow_layers: int = 8,
         knots: int = 8,
@@ -326,23 +345,27 @@ class TriangularSplineFlow(Transformed):
         self.tanh_max_val = tanh_max_val
         self.shape = (dim,)
         self.cond_shape = None if cond_dim is None else (cond_dim,)
+        self.base_dist = base_dist
+        self.bijection = bijection
 
-        super().__init__(base_dist, bijection)
 
-
-class PlanarFlow(Transformed):
+class PlanarFlow(AbstractTransformed, strict=True):
     """Planar flow as introduced in https://arxiv.org/pdf/1505.05770.pdf, alternating
     between :py:class:`~flowjax.bijections.planar.Planar` and permutations. Note the
     definition here is inverted compared to the original paper.
     """
 
+    base_dist: AbstractDistribution
+    bijection: Scan | Invert
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
     flow_layers: int
     permute_strategy: str
 
     def __init__(
         self,
         key: jr.KeyArray,
-        base_dist: Distribution,
+        base_dist: AbstractDistribution,
         cond_dim: int | None = None,
         flow_layers: int = 8,
         invert: bool = True,
@@ -383,7 +406,7 @@ class PlanarFlow(Transformed):
         super().__init__(base_dist, bijection)
 
 
-def _add_default_permute(bijection: Bijection, dim: int, key: jr.KeyArray):
+def _add_default_permute(bijection: AbstractBijection, dim: int, key: jr.KeyArray):
     if dim == 1:
         return bijection
     if dim == 2:

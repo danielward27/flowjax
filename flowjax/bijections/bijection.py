@@ -8,18 +8,18 @@ fitting of flows).
 
 from abc import abstractmethod
 
-from equinox import Module
+from equinox import AbstractVar, Module
 from jax import Array
 from jax.typing import ArrayLike
 
 from flowjax.utils import arraylike_to_array
 
 
-class Bijection(Module):
-    """Bijection base class. Similar to :py:class:`~flowjax.distributions.Distribution`,
-    bijections have a ``shape`` and a ``cond_shape`` attribute. To allow easy composing
-    of bijections, all bijections support passing of conditioning variables (even if
-    ignored).
+class AbstractBijection(Module, strict=True):  # TODO update documentation
+    """Bijection abstract class. Similar to
+    :py:class:`~flowjax.distributions.Distribution`, bijections have a ``shape`` and a
+    ``cond_shape`` attribute. To allow easy composing of bijections, all bijections
+    support passing of conditioning variables (even if ignored).
 
     The methods of bijections do not generally support passing of additional batch
     dimensions, however, ``jax.vmap`` or ``eqx.filter_vmap`` can be used to vmap
@@ -31,7 +31,7 @@ class Bijection(Module):
 
     **Implementing a bijection**
 
-        (1) Inherit from ``Bijection``.
+        (1) Inherit from ``AbstractBijection``.
         (2) Define the attributes ``shape`` and ``cond_shape``. A ``cond_shape`` of
             ``None`` is used to represent unconditional bijections.
         (3) Implement the abstract methods ``transform``, ``transform_and_log_det``,
@@ -41,8 +41,8 @@ class Bijection(Module):
 
     """
 
-    shape: tuple[int, ...]
-    cond_shape: tuple[int, ...] | None
+    shape: AbstractVar[tuple[int, ...]]
+    cond_shape: AbstractVar[tuple[int, ...] | None]
 
     @abstractmethod
     def transform(self, x: ArrayLike, condition: ArrayLike | None = None) -> Array:

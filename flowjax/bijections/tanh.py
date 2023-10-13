@@ -1,28 +1,27 @@
 """Tanh bijection."""
 import math
 import warnings
+from typing import ClassVar
 
 import jax.numpy as jnp
 from jax.nn import softplus
 
-from flowjax.bijections.bijection import Bijection
+from flowjax.bijections.bijection import AbstractBijection
 
 
 def _tanh_log_grad(x):
-    """log gradient vector of tanh transformation."""
+    """log gradient vector of tanh transformation.
+    Args:
+        shape (tuple[int, ...] | None): Shape of the bijection. Defaults to None.
+    """
     return -2 * (x + softplus(-2 * x) - jnp.log(2.0))
 
 
-class Tanh(Bijection):
+class Tanh(AbstractBijection, strict=True):
     """Tanh bijection."""
 
-    def __init__(self, shape: tuple[int, ...] = ()) -> None:
-        """
-        Args:
-            shape (tuple[int, ...] | None): Shape of the bijection. Defaults to None.
-        """
-        self.shape = shape
-        self.cond_shape = None
+    shape: tuple[int, ...] = ()
+    cond_shape: ClassVar[None] = None
 
     def transform(self, x, condition=None):
         x, _ = self._argcheck_and_cast(x)
@@ -42,7 +41,7 @@ class Tanh(Bijection):
         return x, -jnp.sum(_tanh_log_grad(x))
 
 
-class LeakyTanh(Bijection):
+class LeakyTanh(AbstractBijection, strict=True):
     """
     Tanh bijection, with a linear transformation beyond +/- max_val. The value and
     gradient of the linear segments are set to match tanh at +/- max_val. This bijection
@@ -51,6 +50,8 @@ class LeakyTanh(Bijection):
     is not appropriate.
     """
 
+    shape: tuple[int, ...] = ()
+    cond_shape: ClassVar[None] = None
     max_val: float
     intercept: float
     linear_grad: float
@@ -65,7 +66,6 @@ class LeakyTanh(Bijection):
         self.linear_grad = math.exp(_tanh_log_grad(max_val))
         self.intercept = math.tanh(max_val) - self.linear_grad * max_val
         self.shape = shape
-        self.cond_shape = None
 
     def transform(self, x, condition=None):
         x, _ = self._argcheck_and_cast(x)

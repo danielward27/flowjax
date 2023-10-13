@@ -4,8 +4,8 @@ import numpy as np
 import pytest
 
 from flowjax.distributions import (
+    AbstractDistribution,
     Cauchy,
-    Distribution,
     Gumbel,
     Normal,
     StandardNormal,
@@ -100,10 +100,12 @@ def test_uniform_params():
 dist_shape, sample_shape, condition_shape = [[(), (2,), (3, 4)] for _ in range(3)]
 
 
-class _TestDist(Distribution):
+class _TestDist(AbstractDistribution):
     "Toy distribution object, for testing of distribution broadcasting."
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
 
-    def __init__(self, shape, cond_shape=None) -> None:
+    def __init__(self, shape, cond_shape=None):
         self.shape = shape
         self.cond_shape = cond_shape
 
@@ -112,6 +114,9 @@ class _TestDist(Distribution):
 
     def _sample(self, key, condition=None):
         return jnp.zeros(self.shape)
+
+    def _sample_and_log_prob(self, key, condition=None):
+        return jnp.zeros(self.shape), np.zeros(())
 
 
 @pytest.mark.parametrize("dist_shape", dist_shape)

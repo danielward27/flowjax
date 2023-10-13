@@ -11,7 +11,7 @@ from jax.lax import stop_gradient
 from jax.scipy.special import logsumexp
 from jax.typing import ArrayLike
 
-from flowjax.distributions import Distribution
+from flowjax.distributions import AbstractDistribution
 
 
 class MaximumLikelihoodLoss:
@@ -22,8 +22,8 @@ class MaximumLikelihoodLoss:
     @eqx.filter_jit
     def __call__(
         self,
-        static: Distribution,
-        params: Distribution,
+        static: AbstractDistribution,
+        params: AbstractDistribution,
         x: Array,
         condition: Array | None = None,
     ):
@@ -48,7 +48,7 @@ class ContrastiveLoss:
 
     """
 
-    def __init__(self, prior: Distribution, n_contrastive: int):
+    def __init__(self, prior: AbstractDistribution, n_contrastive: int):
         """
         Args:
             prior (Distribution): The prior distribution over x (the target variable).
@@ -61,8 +61,8 @@ class ContrastiveLoss:
     @eqx.filter_jit
     def __call__(
         self,
-        static: Distribution,
-        params: Distribution,
+        static: AbstractDistribution,
+        params: AbstractDistribution,
         x: Array,
         condition: Array | None = None,
     ):
@@ -120,7 +120,12 @@ class ElboLoss:
         self.stick_the_landing = stick_the_landing
 
     @eqx.filter_jit
-    def __call__(self, params: Distribution, static: Distribution, key: jr.KeyArray):
+    def __call__(
+        self,
+        params: AbstractDistribution,
+        static: AbstractDistribution,
+        key: jr.KeyArray,
+    ):
         dist = eqx.combine(params, static)
 
         if self.stick_the_landing:

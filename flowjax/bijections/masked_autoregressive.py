@@ -10,25 +10,27 @@ import jax.numpy as jnp
 from jax import Array
 from jax.random import KeyArray
 
-from flowjax.bijections.bijection import Bijection
+from flowjax.bijections.bijection import AbstractBijection
 from flowjax.bijections.jax_transforms import Batch
 from flowjax.nn import AutoregressiveMLP
 from flowjax.utils import get_ravelled_bijection_constructor
 
 
-class MaskedAutoregressive(Bijection):
+class MaskedAutoregressive(AbstractBijection, strict=True):
     """Masked autoregressive bijection implementation (https://arxiv.org/abs/1705.07057v4).
     The transformer is parameterised by a neural network, with weights masked to ensure
     an autoregressive structure.
     """
 
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
     transformer_constructor: Callable
     autoregressive_mlp: AutoregressiveMLP
 
     def __init__(
         self,
         key: KeyArray,
-        transformer: Bijection,
+        transformer: AbstractBijection,
         dim: int,
         cond_dim: int | None,
         nn_width: int,

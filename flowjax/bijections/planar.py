@@ -2,6 +2,8 @@
 https://arxiv.org/pdf/1505.05770.pdf.
 """
 
+from typing import ClassVar
+
 import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
@@ -9,17 +11,18 @@ from jax import Array
 from jax.nn import softplus
 from jax.numpy.linalg import norm
 
-from flowjax.bijections import Bijection
+from flowjax.bijections import AbstractBijection
 
 
-class Planar(Bijection):
+class Planar(AbstractBijection, strict=True):
     r"""Planar bijection as used by https://arxiv.org/pdf/1505.05770.pdf. Uses the
     transformation :math:`y + u \cdot \text{tanh}(w \cdot x + b)`, where
     :math:`u \in \mathbb{R}^D, \ w \in \mathbb{R}^D` and :math:`b \in \mathbb{R}`. In
     the unconditional case, :math:`w`, :math:`u`  and :math:`b` are learned directly.
     In the conditional case they are parameterised by an MLP.
     """
-
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
     conditioner: eqx.Module | None
     params: Array | None
 
@@ -75,9 +78,11 @@ class Planar(Bijection):
         return _UnconditionalPlanar(w, u, bias)
 
 
-class _UnconditionalPlanar(Bijection):
+class _UnconditionalPlanar(AbstractBijection, strict=True):
     """Unconditional planar bijection, used in Planar."""
 
+    shape: tuple[int, ...]
+    cond_shape: ClassVar[None] = None
     weight: Array
     _act_scale: Array
     bias: Array
@@ -90,7 +95,6 @@ class _UnconditionalPlanar(Bijection):
         self._act_scale = act_scale
         self.bias = bias
         self.shape = weight.shape
-        self.cond_shape = None
 
     def transform(self, x, condition=None):
         return x + self.get_act_scale() * jnp.tanh(self.weight @ x + self.bias)

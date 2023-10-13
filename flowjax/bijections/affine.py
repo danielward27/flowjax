@@ -1,6 +1,6 @@
 """Affine bijections."""
 
-from typing import Callable
+from typing import Callable, ClassVar
 
 import jax.numpy as jnp
 from jax import Array
@@ -8,25 +8,27 @@ from jax.experimental import checkify
 from jax.scipy.linalg import solve_triangular
 from jax.typing import ArrayLike
 
-from flowjax.bijections.bijection import Bijection
+from flowjax.bijections.bijection import AbstractBijection
 from flowjax.bijections.softplus import SoftPlus
 from flowjax.utils import arraylike_to_array
 
 
-class Affine(Bijection):
+class Affine(AbstractBijection, strict=True):
     """Elementwise affine transformation ``y = a*x + b``. loc and scale should broadcast
     to the desired shape of the bijection.
     """
 
+    shape: tuple[int, ...]
+    cond_shape: ClassVar[None] = None
     loc: Array
     _scale: Array
-    positivity_constraint: Bijection
+    positivity_constraint: AbstractBijection
 
     def __init__(
         self,
         loc: ArrayLike = 0,
         scale: ArrayLike = 1,
-        positivity_constraint: Bijection | None = None,
+        positivity_constraint: AbstractBijection | None = None,
     ):
         """
         Args:
@@ -38,8 +40,6 @@ class Affine(Bijection):
         """
         loc, scale = [arraylike_to_array(a, dtype=float) for a in (loc, scale)]
         self.shape = jnp.broadcast_shapes(loc.shape, scale.shape)
-        self.cond_shape = None
-
         self.loc = jnp.broadcast_to(loc, self.shape)
 
         if positivity_constraint is None:
@@ -72,15 +72,16 @@ class Affine(Bijection):
         return self.positivity_constraint.transform(self._scale)
 
 
-class TriangularAffine(Bijection):
+class TriangularAffine(AbstractBijection, strict=True):
     r"""Transformation of the form :math:`Ax + b`, where :math:`A` is a lower or upper
     triangular matrix."""
-
+    shape: tuple[int, ...]
+    cond_shape: ClassVar[None] = None
     loc: Array
     diag_idxs: Array
     tri_mask: Array
     lower: bool
-    positivity_constraint: Bijection
+    positivity_constraint: AbstractBijection
     _arr: Array
     _diag: Array
     _weight_scale: Array | None
@@ -91,7 +92,7 @@ class TriangularAffine(Bijection):
         arr: ArrayLike,
         lower: bool = True,
         weight_normalisation: bool = False,
-        positivity_constraint: Bijection | None = None,
+        positivity_constraint: AbstractBijection | None = None,
     ):
         """
         Args:
@@ -120,7 +121,6 @@ class TriangularAffine(Bijection):
         self.lower = lower
 
         self.shape = (dim,)
-        self.cond_shape = None
 
         if positivity_constraint is None:
             positivity_constraint = SoftPlus(self.shape)
@@ -172,7 +172,7 @@ class TriangularAffine(Bijection):
         return x, -jnp.log(jnp.diag(arr)).sum()
 
 
-class AdditiveCondition(Bijection):
+class AdditiveCondition(AbstractBijection, strict=True):
     """Given a callable ``f``, carries out ``y = x + f(condition)`` as the forward
     transformation and ``x = y - f(condition)`` as the inverse transformation. Note that
     the callable can be a callable module with trainable parameters if desired.
@@ -181,6 +181,8 @@ class AdditiveCondition(Bijection):
     function of the conditioning variables.
     """
 
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...]
     module: Callable[[ArrayLike], ArrayLike]
 
     def __init__(

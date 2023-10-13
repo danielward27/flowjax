@@ -6,7 +6,7 @@ import jax.random as jr
 import optax
 from tqdm import tqdm
 
-from flowjax.distributions import Distribution
+from flowjax.distributions import AbstractDistribution
 from flowjax.train.train_utils import step
 
 PyTree = Any
@@ -14,7 +14,7 @@ PyTree = Any
 
 def fit_to_variational_target(
     key: jr.KeyArray,
-    dist: Distribution,
+    dist: AbstractDistribution,
     loss_fn: Callable,
     steps: int = 100,
     learning_rate: float = 5e-4,
