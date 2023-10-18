@@ -171,7 +171,7 @@ class MaskedAutoregressiveFlow(Transformed):
 class BlockNeuralAutoregressiveFlow(Transformed):
     """Block neural autoregressive flow (BNAF) (https://arxiv.org/abs/1904.04676).
     Each flow layer contains a
-    :py:class:`~flowjax.bijections.block_autoregressive_network.BlockAutoregressiveNetwork`
+    :class:`~flowjax.bijections.block_autoregressive_network.BlockAutoregressiveNetwork`
     bijection. The bijection does not have an analytic inverse, so either ``log_prob``
     or ``sample`` and ``sample_and_log_prob`` will be unavailable, controlled using the
     invert argument.
@@ -211,7 +211,7 @@ class BlockNeuralAutoregressiveFlow(Transformed):
                 block neural autoregressive networks. Note this should be bijective and
                 in some use cases should map real -> real. For more information, see
                 :class:`~flowjax.bijections.block_autoregressive_network.BlockAutoregressiveNetwork`.
-                Defaults to :py:class:`~flowjax.bijections.tanh.LeakyTanh`.
+                Defaults to :class:`~flowjax.bijections.tanh.LeakyTanh`.
         """
         if len(base_dist.shape) != 1:
             raise ValueError(f"Expected base_dist.ndim==1, got {base_dist.ndim}")
@@ -332,7 +332,7 @@ class TriangularSplineFlow(Transformed):
 
 class PlanarFlow(Transformed):
     """Planar flow as introduced in https://arxiv.org/pdf/1505.05770.pdf, alternating
-    between :py:class:`~flowjax.bijections.planar.Planar` and permutations. Note the
+    between :class:`~flowjax.bijections.planar.Planar` and permutations. Note the
     definition here is inverted compared to the original paper.
     """
 
