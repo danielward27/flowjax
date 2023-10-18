@@ -46,25 +46,39 @@ class AbstractBijection(Module):  # TODO update documentation
 
     @abstractmethod
     def transform(self, x: ArrayLike, condition: ArrayLike | None = None) -> Array:
-        """Apply transformation."""
+        """Apply transformation to an input with shape matching bijection.shape."""
 
     @abstractmethod
     def transform_and_log_det(
         self, x: ArrayLike, condition: ArrayLike | None = None
     ) -> tuple[Array, Array]:
-        """Apply transformation and compute log absolute value of the Jacobian
-        determinant."""
+        """Apply transformation to an input with shape matching bijection.shape,
+        and compute log absolute value of the Jacobian determinant."""
 
     @abstractmethod
     def inverse(self, y: ArrayLike, condition: ArrayLike | None = None) -> Array:
-        """Invert the transformation."""
+        """Compute the inverse transformation.
+
+        Args:
+            y (ArrayLike): Input array with shape matching bijection.shape
+            condition (ArrayLike | None, optional): Condition array with shape matching
+                bijection.cond_shape. Required for conditional bijections. Defaults to
+                None.
+        """
 
     @abstractmethod
     def inverse_and_log_det(
         self, y: ArrayLike, condition: ArrayLike | None = None
     ) -> tuple[Array, Array]:
-        """Invert the transformation and compute log absolute value of the Jacobian
-        determinant."""
+        """Compute the inverse transformation, and return the log absolute value of
+        the jacobian determinant of the inverse transformation.
+
+        Args:
+            y (ArrayLike): Input array with shape matching bijection.shape.
+            condition (ArrayLike | None, optional): Condition array with shape matching
+                bijection.cond_shape. Required for conditional bijections. Defaults to
+                None.
+        """
 
     def _argcheck_and_cast(
         self, x: ArrayLike, condition: ArrayLike | None = None

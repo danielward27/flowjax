@@ -123,15 +123,18 @@ class Vmap(AbstractBijection):
             (10,)
 
         A more advanced use case is to create bijections with more fine grained control
-        over parameter broadcasting. For example, ``Affine`` broadcasts the location and
-        scale parameters. What if we want an ``Affine`` bijection, with a global scale
-        parameter, but an elementwise location parameter? We could achieve this as
-        follows
+        over parameter broadcasting. For example, the ``Affine`` constructor broadcasts
+        the location and scale parameters during initialization. What if we want an
+        ``Affine`` bijection, with a global scale parameter, but an elementwise location
+        parameter? We could achieve this as follows.
 
+            >>> from jax.tree_util import tree_map
             >>> bijection = Affine(jnp.zeros(()), jnp.ones(()))
             >>> bijection = eqx.tree_at(lambda bij: bij.loc, bijection, jnp.arange(3))
             >>> in_axis = tree_map(lambda _: None, bijection)
-            >>> in_axis = eqx.tree_at(lambda bij: bij.loc, in_axis, 0, is_leaf=lambda x: x is None)
+            >>> in_axis = eqx.tree_at(
+            ...     lambda bij: bij.loc, in_axis, 0, is_leaf=lambda x: x is None
+            ...     )
             >>> bijection = Vmap(bijection, in_axis=in_axis)
             >>> bijection.shape
             (3,)

@@ -22,7 +22,7 @@ except ImportError as e:
 from numpyro.distributions import constraints
 
 from flowjax.bijections import AbstractBijection
-from flowjax.distributions import Transformed
+from flowjax.distributions import AbstractTransformed
 from flowjax.utils import _get_ufunc_signature
 
 # TODO list:
@@ -79,7 +79,7 @@ class TransformedToNumpyro(numpyro.distributions.Distribution):
 
     def __init__(
         self,
-        dist: Transformed,
+        dist: AbstractTransformed,
         condition: ArrayLike | None = None,
         support: constraints.Constraint = constraints.real,
     ):
