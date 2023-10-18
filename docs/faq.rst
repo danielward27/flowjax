@@ -81,31 +81,3 @@ The methods of distributions and bijections are not jitted by default. For examp
     ...     x = eqx.filter_jit(flow.sample)(batch_key, (batch_size,))
     ...     results.append(x)
     
-MCMC or more complex variational inference approaches
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Supporting complex inference approaches or arbitrary probabilistic models is out of this
-package. However, we do provide an (experimental) wrapper class,
-:py:class:`~flowjax.experimental.numpyro.TransformedToNumpyro`, which will wrap a
-flowjax ``AbstractTransformed`` distribution, into `numpyro <https://github.com/pyro-ppl/numpyro>`_
-distribution. This can be used to for example embed normalising flows into arbitrary
-probabilistic models. Here is a simple example using the wrapper class
-
-.. doctest::
-
-    >>> from numpyro.infer import MCMC, NUTS
-    >>> from flowjax.experimental.numpyro import TransformedToNumpyro
-    >>> from numpyro import sample
-    >>> from flowjax.distributions import Normal
-    >>> import jax.random as jr
-    >>> import numpy as np
-
-    >>> def numpyro_model(X, y):
-    ...     "Example regression model defined in terms of flowjax distributions"
-    ...     beta = sample("beta", TransformedToNumpyro(Normal(np.zeros(2))))
-    ...     sample("y", TransformedToNumpyro(Normal(X @ beta)), obs=y)
-
-    >>> X = np.random.randn(100, 2)
-    >>> beta_true = np.array([-1, 1])
-    >>> y = X @ beta_true + np.random.randn(100)
-    >>> mcmc = MCMC(NUTS(numpyro_model), num_warmup=100, num_samples=1000)
-    >>> mcmc.run(jr.PRNGKey(0), X, y)  # doctest: +SKIP
