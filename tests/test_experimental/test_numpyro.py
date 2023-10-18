@@ -17,8 +17,7 @@ from flowjax.distributions import Normal, StandardNormal, Transformed
 from flowjax.experimental.numpyro import TransformedToNumpyro, register_params
 from flowjax.flows import BlockNeuralAutoregressiveFlow
 
-true_mean = jnp.ones(2)
-true_std = 2 * jnp.ones(2)
+true_mean, true_std = jnp.ones(2), 2 * jnp.ones(2)
 
 
 def numpyro_model():
@@ -88,15 +87,7 @@ def test_conditional_vi():
 
     key, subkey = jr.split(jr.PRNGKey(0))
 
-    true_dist, guide_dist = [
-        Transformed(
-            StandardNormal((dim,)),
-            AdditiveCondition(Linear(cond_dim, dim, key=k), (dim,), (cond_dim,)),
-        )
-        for k in jr.split(subkey)
-    ]
-
-    key, subkey = jr.split(key)
+    true_dist, guide_dist = get_conditional_true_guide(subkey, dim, cond_dim)
 
     def model():
         cond = sample("cond", ndist.Normal(jnp.zeros((3,))))
@@ -109,7 +100,9 @@ def test_conditional_vi():
 
     optimizer = Adam(step_size=0.01)
     svi = SVI(model, partial(guide, guide_dist), optimizer, loss=Trace_ELBO())
-    svi_result = svi.run(jr.PRNGKey(0), num_steps=1000)
+
+    key, subkey = jr.split(key)
+    svi_result = svi.run(subkey, num_steps=1000)
 
     trained_guide = eqx.combine(svi_result.params["guide"], guide_dist)
     true_params = ravel_pytree(true_dist)[0]
@@ -185,14 +178,7 @@ def test_batched_condition():
     assert wrapped.batch_shape == (10,)
 
     key, subkey = jr.split(key)
-
-    true_dist, guide_dist = [  # TODO use fixture
-        Transformed(
-            StandardNormal((dim,)),
-            AdditiveCondition(Linear(cond_dim, dim, key=k), (dim,), (cond_dim,)),
-        )
-        for k in jr.split(subkey)
-    ]
+    true_dist, guide_dist = get_conditional_true_guide(subkey, dim, cond_dim)
 
     def model():
         with numpyro.plate("N", 10, dim=-2):
@@ -207,7 +193,8 @@ def test_batched_condition():
 
     optimizer = Adam(step_size=0.01)
     svi = SVI(model, partial(guide, guide_dist), optimizer, loss=Trace_ELBO())
-    svi_result = svi.run(jr.PRNGKey(0), num_steps=1000)
+    key, subkey = jr.split(key)
+    svi_result = svi.run(subkey, num_steps=1000)
 
     trained_guide = eqx.combine(svi_result.params["guide"], guide_dist)
     true_params = ravel_pytree(true_dist)[0]
@@ -217,3 +204,14 @@ def test_batched_condition():
     # Arbitrarily, we check the l2 norm between the trained parameters and the truth
     # has more than halved over the course of training
     assert norm_from_true_final < 0.5 * norm_from_true_init
+
+
+def get_conditional_true_guide(key, dim, cond_dim):
+    true_dist, guide_dist = [
+        Transformed(
+            StandardNormal((dim,)),
+            AdditiveCondition(Linear(cond_dim, dim, key=k), (dim,), (cond_dim,)),
+        )
+        for k in jr.split(key)
+    ]
+    return true_dist, guide_dist
