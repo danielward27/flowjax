@@ -26,6 +26,7 @@ from flowjax.bijections import (
     Stack,
     Tanh,
     TriangularAffine,
+    Vmap,
 )
 
 DIM = 5
@@ -66,7 +67,7 @@ bijections = {
     "TriangularAffine (weight_norm)": TriangularAffine(
         jnp.arange(DIM), POS_DEF_TRAINGLES, weight_normalisation=True
     ),
-    "RationalQuadraticSpline": RationalQuadraticSpline(knots=4, interval=1, shape=(5,)),
+    "RationalQuadraticSpline": RationalQuadraticSpline(knots=4, interval=1),
     "Coupling (unconditional)": Coupling(
         KEY,
         Affine(),
@@ -130,6 +131,10 @@ bijections = {
     "Planar": Planar(
         KEY,
         DIM,
+    ),
+    "Vmap (broadcast params)": Vmap(Affine(1, 2), axis_size=10),
+    "Vmap (vectorize params)": Vmap(
+        eqx.filter_vmap(Affine)(jnp.ones(3)), eqx.if_array(0)
     ),
 }
 

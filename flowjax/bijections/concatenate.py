@@ -9,7 +9,7 @@ from flowjax.bijections.bijection import AbstractBijection
 from flowjax.utils import check_shapes_match, merge_cond_shapes
 
 
-class Concatenate(AbstractBijection, strict=True):
+class Concatenate(AbstractBijection):
     """Concatenate bijections along an already existing axis. Analagous to
     ``jnp.concatenate``. See also :class:`Stack`.
     """
@@ -92,7 +92,7 @@ class Concatenate(AbstractBijection, strict=True):
                 )
 
 
-class Stack(AbstractBijection, strict=True):
+class Stack(AbstractBijection):
     """
     Stack bijections along a new axis (analagous to ``jnp.stack``).
     See also :class:`Concatenate`.

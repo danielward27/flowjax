@@ -15,7 +15,7 @@ from jax.typing import ArrayLike
 from flowjax.utils import arraylike_to_array
 
 
-class AbstractBijection(Module, strict=True):  # TODO update documentation
+class AbstractBijection(Module):  # TODO update documentation
     """Bijection abstract class. Similar to
     :py:class:`~flowjax.distributions.Distribution`, bijections have a ``shape`` and a
     ``cond_shape`` attribute. To allow easy composing of bijections, all bijections
@@ -24,7 +24,7 @@ class AbstractBijection(Module, strict=True):  # TODO update documentation
     The methods of bijections do not generally support passing of additional batch
     dimensions, however, ``jax.vmap`` or ``eqx.filter_vmap`` can be used to vmap
     specific methods if desired, and a bijection can be explicitly vectorised using the
-    :py:class:`~flowjax.bijections.jax_transforms.Batch` bijection.
+    :py:class:`~flowjax.bijections.jax_transforms.Vmap` bijection.
 
     Bijections are registered as Jax PyTrees (as they are equinox modules), so are
     compatible with normal jax operations.

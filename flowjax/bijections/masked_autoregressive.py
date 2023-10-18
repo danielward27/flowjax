@@ -11,12 +11,12 @@ from jax import Array
 from jax.random import KeyArray
 
 from flowjax.bijections.bijection import AbstractBijection
-from flowjax.bijections.jax_transforms import Batch
+from flowjax.bijections.jax_transforms import Vmap
 from flowjax.nn import AutoregressiveMLP
 from flowjax.utils import get_ravelled_bijection_constructor
 
 
-class MaskedAutoregressive(AbstractBijection, strict=True):
+class MaskedAutoregressive(AbstractBijection):
     """Masked autoregressive bijection implementation (https://arxiv.org/abs/1705.07057v4).
     The transformer is parameterised by a neural network, with weights masked to ensure
     an autoregressive structure.
@@ -126,4 +126,4 @@ class MaskedAutoregressive(AbstractBijection, strict=True):
         dim = self.shape[-1]  # type: ignore
         transformer_params = jnp.reshape(params, (dim, -1))
         transformer = eqx.filter_vmap(self.transformer_constructor)(transformer_params)
-        return Batch(transformer, (dim,), vectorize_bijection=True)
+        return Vmap(transformer, in_axis=eqx.if_array(0))

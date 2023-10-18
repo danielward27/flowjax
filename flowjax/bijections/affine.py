@@ -13,7 +13,7 @@ from flowjax.bijections.softplus import SoftPlus
 from flowjax.utils import arraylike_to_array
 
 
-class Affine(AbstractBijection, strict=True):
+class Affine(AbstractBijection):
     """Elementwise affine transformation ``y = a*x + b``. loc and scale should broadcast
     to the desired shape of the bijection.
     """
@@ -72,7 +72,7 @@ class Affine(AbstractBijection, strict=True):
         return self.positivity_constraint.transform(self._scale)
 
 
-class TriangularAffine(AbstractBijection, strict=True):
+class TriangularAffine(AbstractBijection):
     r"""Transformation of the form :math:`Ax + b`, where :math:`A` is a lower or upper
     triangular matrix."""
     shape: tuple[int, ...]
@@ -172,7 +172,7 @@ class TriangularAffine(AbstractBijection, strict=True):
         return x, -jnp.log(jnp.diag(arr)).sum()
 
 
-class AdditiveCondition(AbstractBijection, strict=True):
+class AdditiveCondition(AbstractBijection):
     """Given a callable ``f``, carries out ``y = x + f(condition)`` as the forward
     transformation and ``x = y - f(condition)`` as the inverse transformation. Note that
     the callable can be a callable module with trainable parameters if desired.
@@ -220,7 +220,7 @@ class AdditiveCondition(AbstractBijection, strict=True):
 
     def transform(self, x, condition=None):
         x, condition = self._argcheck_and_cast(x, condition)
-        return x + self.module(condition)  # type: ignore - validated in argcheck
+        return x + self.module(condition)
 
     def transform_and_log_det(self, x, condition=None):
         x, condition = self._argcheck_and_cast(x, condition)
@@ -232,4 +232,4 @@ class AdditiveCondition(AbstractBijection, strict=True):
 
     def inverse_and_log_det(self, y, condition=None):
         y, condition = self._argcheck_and_cast(y, condition)
-        return self.inverse(y, condition), jnp.array(0)  # type: ignore
+        return self.inverse(y, condition), jnp.array(0)

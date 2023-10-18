@@ -7,7 +7,7 @@ from flowjax.bijections.bijection import AbstractBijection
 from flowjax.utils import check_shapes_match, merge_cond_shapes
 
 
-class Chain(AbstractBijection, strict=True):
+class Chain(AbstractBijection):
     """Chain together arbitrary bijections to form another bijection."""
 
     shape: tuple[int, ...]

@@ -19,7 +19,7 @@ from flowjax.bijections import AbstractBijection, Affine
 from flowjax.utils import _get_ufunc_signature, arraylike_to_array, merge_cond_shapes
 
 
-class AbstractDistribution(eqx.Module, strict=True):
+class AbstractDistribution(eqx.Module):
     """Abstract distribution class. Distributions all have an attribute ``shape``,
     denoting the shape of a single sample from the distribution. Similarly, the
     ``cond_shape`` attribute denotes the shape of the conditioning variable.
@@ -66,10 +66,7 @@ class AbstractDistribution(eqx.Module, strict=True):
     def _sample_and_log_prob(
         self, key: jr.KeyArray, condition: Array | None = None
     ) -> tuple[Array, Array]:
-        """Sample a point from the distribution, and return its log probability.
-        Subclasses can reimplement this method in cases where more efficient methods
-        exists (e.g. for :class:`Transformed` distributions).
-        """
+        """Sample a point from the distribution, and return its log probability."""
 
     def log_prob(self, x: ArrayLike, condition: ArrayLike | None = None) -> Array:
         """Evaluate the log probability. Uses numpy like broadcasting if additional
@@ -170,7 +167,7 @@ class AbstractDistribution(eqx.Module, strict=True):
         keys = self._get_sample_keys(key, sample_shape, condition)
         return jnp.vectorize(self._sample, excluded=excluded, signature=signature)(
             keys, condition
-        )  # type: ignore
+        )
 
     def sample_and_log_prob(
         self,
@@ -271,7 +268,7 @@ class AbstractDistribution(eqx.Module, strict=True):
         return None
 
 
-class AbstractTransformed(AbstractDistribution, strict=True):
+class AbstractTransformed(AbstractDistribution):
     """Abstract class representing a transformed distribution. Concete implementations
     should inherit from this class and define the base_dist and bijection attributes.
     We take the forward bijection for use in sampling, and the inverse for use in
@@ -291,7 +288,7 @@ class AbstractTransformed(AbstractDistribution, strict=True):
         return self.bijection.transform(base_sample, condition)
 
     def _sample_and_log_prob(self, key: jr.KeyArray, condition=None):
-        # We avoid computing the inverse bijection transformation.
+        # We override the default method to avoid computing the inverse transformation.
         base_sample, log_prob_base = self.base_dist._sample_and_log_prob(key, condition)
         sample, forward_log_dets = self.bijection.transform_and_log_det(
             base_sample, condition
@@ -312,7 +309,7 @@ class AbstractTransformed(AbstractDistribution, strict=True):
                 )
 
 
-class Transformed(AbstractTransformed, strict=True):
+class Transformed(AbstractTransformed):
     """Form a distribution like object using a base distribution and a
     bijection. We take the forward bijection for use in sampling, and the inverse
     bijection for use in density evaluation.
@@ -358,7 +355,7 @@ class Transformed(AbstractTransformed, strict=True):
         )
 
 
-class StandardNormal(AbstractDistribution, strict=True):
+class StandardNormal(AbstractDistribution):
     """Implements a standard normal distribution, condition is ignored. Unlike
     :class:`Normal`, this has no trainable parameters.
     """
@@ -385,7 +382,7 @@ class StandardNormal(AbstractDistribution, strict=True):
         return x, self._log_prob(x)
 
 
-class Normal(AbstractTransformed, strict=True):
+class Normal(AbstractTransformed):
     """Implements an independent Normal distribution with mean and std for
     each dimension. `loc` and `scale` should be broadcastable.
     """
@@ -416,7 +413,7 @@ class Normal(AbstractTransformed, strict=True):
         return self.bijection.scale
 
 
-class _StandardUniform(AbstractDistribution, strict=True):
+class _StandardUniform(AbstractDistribution):
     r"""Implements a standard independent Uniform distribution, ie
     :math:`X \sim Uniform([0, 1]^d)`."""
     shape: tuple[int, ...]
@@ -436,7 +433,7 @@ class _StandardUniform(AbstractDistribution, strict=True):
         return x, self._log_prob(x)
 
 
-class Uniform(AbstractTransformed, strict=True):
+class Uniform(AbstractTransformed):
     """Implements an independent uniform distribution between min and max for each
     dimension. `minval` and `maxval` should be broadcastable.
     """
@@ -472,7 +469,7 @@ class Uniform(AbstractTransformed, strict=True):
         return self.bijection.loc + self.bijection.scale
 
 
-class _StandardGumbel(AbstractDistribution, strict=True):
+class _StandardGumbel(AbstractDistribution):
     """Standard gumbel distribution (https://en.wikipedia.org/wiki/Gumbel_distribution)."""
 
     shape: tuple[int, ...]
@@ -492,7 +489,7 @@ class _StandardGumbel(AbstractDistribution, strict=True):
         return x, self._log_prob(x)
 
 
-class Gumbel(AbstractTransformed, strict=True):
+class Gumbel(AbstractTransformed):
     """Gumbel distribution (https://en.wikipedia.org/wiki/Gumbel_distribution)"""
 
     base_dist: _StandardGumbel
@@ -523,7 +520,7 @@ class Gumbel(AbstractTransformed, strict=True):
         return self.bijection.scale
 
 
-class _StandardCauchy(AbstractDistribution, strict=True):
+class _StandardCauchy(AbstractDistribution):
     """
     Implements standard cauchy distribution (loc=0, scale=1)
     Ref: https://en.wikipedia.org/wiki/Cauchy_distribution
@@ -546,7 +543,7 @@ class _StandardCauchy(AbstractDistribution, strict=True):
         return x, self._log_prob(x)
 
 
-class Cauchy(AbstractTransformed, strict=True):
+class Cauchy(AbstractTransformed):
     """Cauchy distribution (https://en.wikipedia.org/wiki/Cauchy_distribution)."""
 
     base_dist: _StandardCauchy
@@ -578,7 +575,7 @@ class Cauchy(AbstractTransformed, strict=True):
         return self.bijection.scale
 
 
-class _StandardStudentT(AbstractDistribution, strict=True):
+class _StandardStudentT(AbstractDistribution):
     """Implements student T distribution with specified degrees of freedom."""
 
     shape: tuple[int, ...]
@@ -605,7 +602,7 @@ class _StandardStudentT(AbstractDistribution, strict=True):
         return jnp.exp(self.log_df)
 
 
-class StudentT(AbstractTransformed, strict=True):
+class StudentT(AbstractTransformed):
     """Student T distribution (https://en.wikipedia.org/wiki/Student%27s_t-distribution)."""
 
     base_dist: _StandardStudentT
@@ -643,7 +640,7 @@ class StudentT(AbstractTransformed, strict=True):
         return self.base_dist.df
 
 
-class SpecializeCondition(AbstractDistribution, strict=True):  # TODO check tested
+class SpecializeCondition(AbstractDistribution):  # TODO check tested
     """Utility class to specialise a conditional distribution to a particular instance
     of the conditioning variable. This makes the distribution act like an unconditional
     distribution, i.e. the distribution methods implicitly will use the condition passed

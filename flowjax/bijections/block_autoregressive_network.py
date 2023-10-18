@@ -12,7 +12,7 @@ from flowjax.bijections.tanh import LeakyTanh
 from flowjax.nn.block_autoregressive import BlockAutoregressiveLinear
 
 
-class _CallableToBijection(AbstractBijection, strict=True):
+class _CallableToBijection(AbstractBijection):
     """Wrap a callable e.g. a function or a callable module, into a bijection object
     (inverse not implemented). We assume the callable acts on scalar values
     and log_det can be computed in a stable manner with jax.grad.
@@ -41,7 +41,7 @@ class _CallableToBijection(AbstractBijection, strict=True):
         raise NotImplementedError()
 
 
-class BlockAutoregressiveNetwork(AbstractBijection, strict=True):
+class BlockAutoregressiveNetwork(AbstractBijection):
     r"""Block Autoregressive Network (https://arxiv.org/abs/1904.04676).Note that in
     contrast to the original paper which uses tanh activations, by default we use
     :py:class:`~flowjax.bijections.tanh.LeakyTanh`. This ensures the codomain of the

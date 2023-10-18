@@ -7,7 +7,7 @@ from jax.nn import softplus
 from flowjax.bijections.bijection import AbstractBijection
 
 
-class SoftPlus(AbstractBijection, strict=True):
+class SoftPlus(AbstractBijection):
     r"""Transforms to positive domain using softplus :math:`y = \log(1 + \exp(x))`."""
     shape: tuple[int, ...] = ()
     cond_shape: ClassVar[None] = None

@@ -17,7 +17,7 @@ def _tanh_log_grad(x):
     return -2 * (x + softplus(-2 * x) - jnp.log(2.0))
 
 
-class Tanh(AbstractBijection, strict=True):
+class Tanh(AbstractBijection):
     """Tanh bijection."""
 
     shape: tuple[int, ...] = ()
@@ -41,7 +41,7 @@ class Tanh(AbstractBijection, strict=True):
         return x, -jnp.sum(_tanh_log_grad(x))
 
 
-class LeakyTanh(AbstractBijection, strict=True):
+class LeakyTanh(AbstractBijection):
     """
     Tanh bijection, with a linear transformation beyond +/- max_val. The value and
     gradient of the linear segments are set to match tanh at +/- max_val. This bijection

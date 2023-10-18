@@ -33,7 +33,7 @@ from flowjax.utils import _get_ufunc_signature
 # to apply constraints lead to problems with reparameterisation?
 
 
-class VectorizedBijection(eqx.Module, strict=True):
+class VectorizedBijection(eqx.Module):
     "Wrap a flowjax bijection to support vectorization."
 
     def __init__(self, bijection: AbstractBijection):

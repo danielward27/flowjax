@@ -14,7 +14,7 @@ from jax.numpy.linalg import norm
 from flowjax.bijections import AbstractBijection
 
 
-class Planar(AbstractBijection, strict=True):
+class Planar(AbstractBijection):
     r"""Planar bijection as used by https://arxiv.org/pdf/1505.05770.pdf. Uses the
     transformation :math:`y + u \cdot \text{tanh}(w \cdot x + b)`, where
     :math:`u \in \mathbb{R}^D, \ w \in \mathbb{R}^D` and :math:`b \in \mathbb{R}`. In
@@ -78,7 +78,7 @@ class Planar(AbstractBijection, strict=True):
         return _UnconditionalPlanar(w, u, bias)
 
 
-class _UnconditionalPlanar(AbstractBijection, strict=True):
+class _UnconditionalPlanar(AbstractBijection):
     """Unconditional planar bijection, used in Planar."""
 
     shape: tuple[int, ...]

@@ -7,7 +7,7 @@ from .chain import Chain
 from .concatenate import Concatenate, Stack
 from .coupling import Coupling
 from .exp import Exp
-from .jax_transforms import Batch, Scan
+from .jax_transforms import Scan, Vmap
 from .masked_autoregressive import MaskedAutoregressive
 from .planar import Planar
 from .rational_quadratic_spline import RationalQuadraticSpline
@@ -19,7 +19,7 @@ __all__ = [
     "AdditiveCondition",
     "Affine",
     "AbstractBijection",
-    "Batch",
+    "Vmap",
     "BlockAutoregressiveNetwork",
     "Chain",
     "Concatenate",

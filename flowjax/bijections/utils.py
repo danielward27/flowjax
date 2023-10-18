@@ -9,7 +9,7 @@ from jax.typing import ArrayLike
 from flowjax.bijections.bijection import AbstractBijection
 
 
-class Invert(AbstractBijection, strict=True):
+class Invert(AbstractBijection):
     """Invert a bijection, such that the transform methods become the inverse
     methods and vice versa. Note that in general, we define bijections such that
     the forward methods are preffered, i.e. faster/actually implemented. For
@@ -44,7 +44,7 @@ class Invert(AbstractBijection, strict=True):
         return self.bijection.transform_and_log_det(y, condition)
 
 
-class Permute(AbstractBijection, strict=True):
+class Permute(AbstractBijection):
     """Permutation transformation."""
 
     shape: tuple[int, ...]
@@ -93,7 +93,7 @@ class Permute(AbstractBijection, strict=True):
         return y[self.inverse_permutation], jnp.array(0)
 
 
-class Flip(AbstractBijection, strict=True):
+class Flip(AbstractBijection):
     """Flip the input array. Condition argument is ignored.
 
     Args:
@@ -121,7 +121,7 @@ class Flip(AbstractBijection, strict=True):
         return jnp.flip(y), jnp.array(0)
 
 
-class Partial(AbstractBijection, strict=True):
+class Partial(AbstractBijection):
     """Applies bijection to specific indices of an input."""
 
     shape: tuple[int, ...]
@@ -170,7 +170,7 @@ class Partial(AbstractBijection, strict=True):
         return y.at[self.idxs].set(x), log_det
 
 
-class EmbedCondition(AbstractBijection, strict=True):
+class EmbedCondition(AbstractBijection):
     """Use an embedding network to reduce the dimensionality of the conditioning
     variable. The returned bijection has cond_dim equal to the raw condition size.
     """

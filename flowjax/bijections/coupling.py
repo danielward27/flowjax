@@ -9,11 +9,11 @@ import jax.numpy as jnp
 from jax.random import KeyArray
 
 from flowjax.bijections.bijection import AbstractBijection
-from flowjax.bijections.jax_transforms import Batch
+from flowjax.bijections.jax_transforms import Vmap
 from flowjax.utils import Array, get_ravelled_bijection_constructor
 
 
-class Coupling(AbstractBijection, strict=True):
+class Coupling(AbstractBijection):
     """Coupling layer implementation (https://arxiv.org/abs/1605.08803)."""
 
     shape: tuple[int, ...]
@@ -126,4 +126,4 @@ class Coupling(AbstractBijection, strict=True):
         dim = self.dim - self.untransformed_dim
         transformer_params = jnp.reshape(params, (dim, -1))
         transformer = eqx.filter_vmap(self.transformer_constructor)(transformer_params)
-        return Batch(transformer, (dim,), vectorize_bijection=True)
+        return Vmap(transformer, in_axis=eqx.if_array(0))

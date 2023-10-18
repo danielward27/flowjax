@@ -8,6 +8,7 @@ from flowjax.bijections.bijection import AbstractBijection
 
 class Exp(AbstractBijection):
     """Elementwise exponential transform (forward) and log transform (inverse).
+
     Args:
         shape (tuple[int, ...] | None): Shape of the bijection.
             Defaults to None.

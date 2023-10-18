@@ -27,11 +27,12 @@ from flowjax.bijections import (
     RationalQuadraticSpline,
     Scan,
     TriangularAffine,
+    Vmap,
 )
 from flowjax.distributions import AbstractDistribution, AbstractTransformed
 
 
-class CouplingFlow(AbstractTransformed, strict=True):
+class CouplingFlow(AbstractTransformed):
     """Coupling flow (https://arxiv.org/abs/1605.08803)."""
 
     base_dist: AbstractDistribution
@@ -104,7 +105,7 @@ class CouplingFlow(AbstractTransformed, strict=True):
         self.bijection = bijection
 
 
-class MaskedAutoregressiveFlow(AbstractTransformed, strict=True):
+class MaskedAutoregressiveFlow(AbstractTransformed):
     """Masked autoregressive flow (https://arxiv.org/abs/1606.04934,
     https://arxiv.org/abs/1705.07057v4). Parameterises a transformer with an
     autoregressive neural network.
@@ -178,7 +179,7 @@ class MaskedAutoregressiveFlow(AbstractTransformed, strict=True):
         self.bijection = bijection
 
 
-class BlockNeuralAutoregressiveFlow(AbstractTransformed, strict=True):
+class BlockNeuralAutoregressiveFlow(AbstractTransformed):
     """Block neural autoregressive flow (BNAF) (https://arxiv.org/abs/1904.04676).
     Each flow layer contains a
     :py:class:`~flowjax.bijections.block_autoregressive_network.BlockAutoregressiveNetwork`
@@ -259,7 +260,7 @@ class BlockNeuralAutoregressiveFlow(AbstractTransformed, strict=True):
         self.bijection = bijection
 
 
-class TriangularSplineFlow(AbstractTransformed, strict=True):
+class TriangularSplineFlow(AbstractTransformed):
     """A stack of layers, where each layer consists of a triangular affine
     transformation with weight normalisation, and an elementwise rational quadratic
     spline. Tanh is used to constrain to the input to [-1, 1] before spline
@@ -318,7 +319,10 @@ class TriangularSplineFlow(AbstractTransformed, strict=True):
 
             bijections = [
                 LeakyTanh(tanh_max_val, (dim,)),
-                RationalQuadraticSpline(knots, interval=1, shape=(dim,)),
+                Vmap(
+                    eqx.filter_vmap(RationalQuadraticSpline, axis_size=dim)(knots, 1),
+                    eqx.if_array(0),
+                ),
                 Invert(LeakyTanh(tanh_max_val, (dim,))),
                 lower_tri,
             ]
@@ -349,7 +353,7 @@ class TriangularSplineFlow(AbstractTransformed, strict=True):
         self.bijection = bijection
 
 
-class PlanarFlow(AbstractTransformed, strict=True):
+class PlanarFlow(AbstractTransformed):
     """Planar flow as introduced in https://arxiv.org/pdf/1505.05770.pdf, alternating
     between :py:class:`~flowjax.bijections.planar.Planar` and permutations. Note the
     definition here is inverted compared to the original paper.
