@@ -3,6 +3,7 @@ import jax.random as jr
 import numpy as np
 import pytest
 
+from flowjax.bijections import Exp
 from flowjax.distributions import (
     Cauchy,
     Distribution,
@@ -10,6 +11,7 @@ from flowjax.distributions import (
     Normal,
     StandardNormal,
     StudentT,
+    Transformed,
     Uniform,
     _StandardCauchy,
     _StandardGumbel,
@@ -172,3 +174,18 @@ def test_sample_and_log_prob(dist):
     x, lp = dist._sample_and_log_prob(key)
     assert x == pytest.approx(x_naive)
     assert lp == pytest.approx(lp_naive)
+
+
+def test_transformed_merge_transforms():
+    shape = (3, 3)
+    nested = Transformed(Normal(jnp.ones(shape)), Exp(shape))
+    unnested = nested.merge_transforms()
+
+    assert isinstance(nested.base_dist, Transformed)
+    assert not isinstance(unnested.base_dist, Transformed)
+
+    key = jr.PRNGKey(0)
+    sample = unnested.sample(key)
+    assert pytest.approx(sample) == nested.sample(key)
+
+    assert pytest.approx(nested.log_prob(sample)) == unnested.log_prob(sample)

@@ -44,7 +44,7 @@ class _CallableToBijection(Bijection):
 class BlockAutoregressiveNetwork(Bijection):
     r"""Block Autoregressive Network (https://arxiv.org/abs/1904.04676).Note that in
     contrast to the original paper which uses tanh activations, by default we use
-    :py:class:`~flowjax.bijections.tanh.LeakyTanh`. This ensures the codomain of the
+    :class:`~flowjax.bijections.tanh.LeakyTanh`. This ensures the codomain of the
     activation is the set of real values, which will ensure properly normalised
     densities (see https://github.com/danielward27/flowjax/issues/102).
     """
