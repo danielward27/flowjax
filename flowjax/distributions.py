@@ -13,7 +13,7 @@ from jax.lax import stop_gradient
 from jax.scipy import stats as jstats
 from jax.typing import ArrayLike
 
-from flowjax.bijections import Affine, Bijection
+from flowjax.bijections import Affine, Bijection, Chain
 from flowjax.utils import _get_ufunc_signature, arraylike_to_array, merge_cond_shapes
 
 
@@ -277,20 +277,15 @@ class Distribution(eqx.Module):
 
 
 class Transformed(Distribution):
-    """Form a distribution like object using a base distribution and a
-    bijection. We take the forward bijection for use in sampling, and the inverse
-    bijection for use in density evaluation.
+    """Transform a base distribution using a a bijection. We take the forward bijection
+    for use in sampling, and the inverse bijection for use in density evaluation.
     """
 
     base_dist: Distribution
     bijection: Bijection
     cond_shape: tuple[int, ...] | None
 
-    def __init__(
-        self,
-        base_dist: Distribution,
-        bijection: Bijection,
-    ):
+    def __init__(self, base_dist: Distribution, bijection: Bijection):
         """
         Args:
             base_dist (Distribution): Base distribution.
@@ -337,6 +332,21 @@ class Transformed(Distribution):
             base_sample, condition
         )
         return sample, log_prob_base - forward_log_dets
+
+    def merge_transforms(self):
+        """Returns an equivilent distribution, but ravelling nested
+        transformed distributions such that the returned distribution
+        has a base distribution that is not a Transformed instance.
+        """
+        if not isinstance(self.base_dist, Transformed):
+            return self
+        base_dist = self.base_dist
+        bijections = [self.bijection]
+        while isinstance(base_dist, Transformed):
+            bijections.append(base_dist.bijection)
+            base_dist = base_dist.base_dist
+        bijection = Chain(list(reversed(bijections))).merge_chains()
+        return Transformed(base_dist, bijection)
 
 
 class StandardNormal(Distribution):
