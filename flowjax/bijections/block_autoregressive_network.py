@@ -120,7 +120,7 @@ class BlockAutoregressiveNetwork(AbstractBijection):
             x = layer(x, condition)[0]
             x = eqx.filter_vmap(self.activation.transform)(x)
             condition = None
-        return self.layers[-1](x)[0]
+        return self.layers[-1](x, condition)[0]
 
     def transform_and_log_det(self, x, condition=None):
         x, condition = self._argcheck_and_cast(x, condition)
@@ -133,7 +133,7 @@ class BlockAutoregressiveNetwork(AbstractBijection):
             log_jacobian_3ds.append(log_det_3d)
             condition = None  # only pass array condition to first layer
 
-        x, log_det_3d = self.layers[-1](x)
+        x, log_det_3d = self.layers[-1](x, condition)
         log_jacobian_3ds.append(log_det_3d)
 
         log_det = log_jacobian_3ds[-1]
