@@ -51,7 +51,7 @@ class ContrastiveLoss:
     def __init__(self, prior: AbstractDistribution, n_contrastive: int):
         """
         Args:
-            prior (Distribution): The prior distribution over x (the target variable).
+            prior (AbstractDistribution): The prior distribution over x (the target variable).
             n_contrastive (int): The number of contrastive samples/atoms to use when
                 computing the loss.
         """

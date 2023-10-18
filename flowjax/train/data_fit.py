@@ -40,7 +40,7 @@ def fit_to_data(
 
     Args:
         key (KeyArray): Jax random seed.
-        dist (Distribution): Distribution object.
+        dist (AbstractDistribution): Distribution object.
         x (ArrayLike): Samples from target distribution.
         condition (ArrayLike | None): Conditioning variables. Defaults to None.
         loss_fn (Callable | None): Loss function. Defaults to MaximumLikelihoodLoss.

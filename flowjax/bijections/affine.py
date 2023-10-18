@@ -34,7 +34,7 @@ class Affine(AbstractBijection):
         Args:
             loc (ArrayLike): Location parameter. Defaults to 0.
             scale (ArrayLike): Scale parameter. Defaults to 1.
-            postivity_constraint (Bijection): Bijection with shape matching the Affine
+            postivity_constraint (AbstractBijection): Bijection with shape matching the Affine
                 bijection, that maps the scale parameter from an unbounded domain to the
                 positive domain. Defaults to SoftPlus.
         """
@@ -101,7 +101,7 @@ class TriangularAffine(AbstractBijection):
             lower (bool): Whether the mask should select the lower or upper
                 triangular matrix (other elements ignored). Defaults to True (lower).
             weight_normalisation (bool): If true, carry out weight normalisation.
-            postivity_constraint (Bijection): Bijection with shape matching the
+            postivity_constraint (AbstractBijection): Bijection with shape matching the
                 dimension of the triangular affine bijection, that maps the diagonal
                 entries of the array from an unbounded domain to the positive domain.
                 Also used for weight normalisation parameters, if used. Defaults to

@@ -85,7 +85,7 @@ def get_ravelled_bijection_constructor(bijection, filter_spec=eqx.is_inexact_arr
     parameters.
 
     Args:
-        bijection (Bijection): Bijection.
+        bijection (AbstractBijection): Bijection.
         filter_spec: Filter function. Defaults to eqx.is_inexact_array.
     """
     params, static = eqx.partition(bijection, filter_spec)  # type: ignore

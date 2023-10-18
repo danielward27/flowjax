@@ -37,7 +37,7 @@ class Coupling(AbstractBijection):
         """
         Args:
             key (KeyArray): Jax PRNGKey
-            transformer (Bijection): Unconditional bijection with shape () to be
+            transformer (AbstractBijection): Unconditional bijection with shape () to be
                 parameterised by the conditioner neural netork.
             untransformed_dim (int): Number of untransformed conditioning variables (
                 e.g. dim // 2).

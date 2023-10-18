@@ -70,7 +70,7 @@ class _VectorizedBijection:
     def __init__(self, bijection: Bijection):
         """
         Args:
-            bijection (Bijection): flowjax bijection to be wrapped.
+            bijection (AbstractBijection): flowjax bijection to be wrapped.
             domain (constraints.Constraint, optional): Numpyro constraint.
                 Defaults to constraints.real.
         """

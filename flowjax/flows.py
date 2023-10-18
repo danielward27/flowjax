@@ -59,8 +59,8 @@ class CouplingFlow(AbstractTransformed):
         """
         Args:
             key (jr.KeyArray): Jax PRNGKey.
-            base_dist (Distribution): Base distribution.
-            transformer (Bijection): Bijection to be parameterised by conditioner.
+            base_dist (AbstractDistribution): Base distribution.
+            transformer (AbstractBijection): Bijection to be parameterised by conditioner.
             cond_dim (int): Dimension of conditioning variables. Defaults to None.
             flow_layers (int): Number of coupling layers. Defaults to 5.
             nn_width (int): Conditioner hidden layer size. Defaults to 40.
@@ -135,8 +135,8 @@ class MaskedAutoregressiveFlow(AbstractTransformed):
         """
         Args:
             key (jr.KeyArray): Random seed.
-            base_dist (Distribution): Base distribution.
-            transformer (Bijection): Bijection parameterised by autoregressive network.
+            base_dist (AbstractDistribution): Base distribution.
+            transformer (AbstractBijection): Bijection parameterised by autoregressive network.
             cond_dim (int): _description_. Defaults to 0.
             flow_layers (int): Number of flow layers. Defaults to 5.
             nn_width (int): Number of hidden layers in neural network. Defaults to 40.
@@ -211,7 +211,7 @@ class BlockNeuralAutoregressiveFlow(AbstractTransformed):
         """
         Args:
             key (jr.KeyArray): Jax PRNGKey.
-            base_dist (Distribution): Base distribution.
+            base_dist (AbstractDistribution): Base distribution.
             cond_dim (int | None): Dimension of conditional variables.
             nn_depth (int): Number of hidden layers within the networks.
                 Defaults to 1.
@@ -290,7 +290,7 @@ class TriangularSplineFlow(AbstractTransformed):
         """
         Args:
             key (jr.KeyArray): Jax random seed.
-            base_dist (Distribution): Base distribution of the flow.
+            base_dist (AbstractDistribution): Base distribution of the flow.
             cond_dim (int | None): The number of conditioning features.
                 Defaults to None.
             flow_layers (int): Number of flow layers. Defaults to 8.
@@ -378,7 +378,7 @@ class PlanarFlow(AbstractTransformed):
         """
         Args:
             key (jr.KeyArray): Jax PRNGKey.
-            base_dist (Distribution): Base distribution.
+            base_dist (AbstractDistribution): Base distribution.
             cond_dim (int): Dimension of conditioning variables. Defaults to None.
             flow_layers (int): Number of flow layers. Defaults to 5.
             invert: (bool): Whether to invert the bijection. Broadly, True will

@@ -27,7 +27,7 @@ def fit_to_variational_target(
 
     Args:
         key (jr.KeyArray): Jax PRNGKey.
-        dist (Distribution): Distribution object, trainable parameters are found
+        dist (AbstractDistribution): Distribution object, trainable parameters are found
             using equinox.is_inexact_array.
         loss_fn (Callable | None): The loss function to optimize (e.g. the ElboLoss).
         steps (int, optional): The number of training steps to run. Defaults to 100.

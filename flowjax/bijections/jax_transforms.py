@@ -25,7 +25,7 @@ class Scan(AbstractBijection):
         over. Often it is convenient to construct these using ``equinox.filter_vmap``.
 
         Args:
-            bijection (Bijection): A bijection, in which the arrays leaves have an
+            bijection (AbstractBijection): A bijection, in which the arrays leaves have an
                 additional leading axis to scan over. For complex bijections, it can be
                 convenient to create compatible bijections with ``equinox.filter_vmap``.
 

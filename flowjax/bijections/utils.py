@@ -25,7 +25,7 @@ class Invert(AbstractBijection):
     def __init__(self, bijection: AbstractBijection):
         """
         Args:
-            bijection (Bijection): Bijection to invert.
+            bijection (AbstractBijection): Bijection to invert.
         """
         self.bijection = bijection
         self.shape = bijection.shape
@@ -132,7 +132,7 @@ class Partial(AbstractBijection):
     def __init__(self, bijection: AbstractBijection, idxs, shape: tuple[int, ...]):
         """
         Args:
-            bijection (Bijection): Bijection that is compatible with the subset of x
+            bijection (AbstractBijection): Bijection that is compatible with the subset of x
                 indexed by idxs. idxs: Indices (Integer, a slice, or an ndarray with
                 integer/bool dtype) of the transformed portion.
             shape (tuple[int, ...] | None): Shape of the bijection. Defaults to None.
@@ -188,7 +188,7 @@ class EmbedCondition(AbstractBijection):
     ) -> None:
         """
         Args:
-            bijection (Bijection): Bijection with ``bijection.cond_dim`` equal to the
+            bijection (AbstractBijection): Bijection with ``bijection.cond_dim`` equal to the
                 embedded size.
             embedding_net (Callable): A callable (e.g. equinox module) that embeds a
                 conditioning variable to size ``bijection.cond_dim``.

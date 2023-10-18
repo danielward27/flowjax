@@ -40,7 +40,7 @@ class MaskedAutoregressive(AbstractBijection):
         """
         Args:
             key (KeyArray): Jax PRNGKey
-            transformer (Bijection): Bijection with shape () to be parameterised by the
+            transformer (AbstractBijection): Bijection with shape () to be parameterised by the
                 autoregressive network.
             dim (int): Dimension.
             cond_dim (int | None): Dimension of any conditioning variables.
