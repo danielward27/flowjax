@@ -288,7 +288,7 @@ class AbstractTransformed(AbstractDistribution):
         return self.bijection.transform(base_sample, condition)
 
     def _sample_and_log_prob(self, key: jr.KeyArray, condition=None):
-        # We override the default method to avoid computing the inverse transformation.
+        # We avoid computing the inverse transformation.
         base_sample, log_prob_base = self.base_dist._sample_and_log_prob(key, condition)
         sample, forward_log_dets = self.bijection.transform_and_log_det(
             base_sample, condition
@@ -307,6 +307,21 @@ class AbstractTransformed(AbstractDistribution):
                     f"{self.base_dist.cond_shape}, and the bijection has"
                     f"{self.bijection.cond_shape}."
                 )
+
+    def merge_transforms(self):
+        """Returns an equivilent distribution, but ravelling nested
+        transformed distributions such that the returned distribution
+        has a base distribution that is not a Transformed instance.
+        """
+        if not isinstance(self.base_dist, Transformed):
+            return self
+        base_dist = self.base_dist
+        bijections = [self.bijection]
+        while isinstance(base_dist, Transformed):
+            bijections.append(base_dist.bijection)
+            base_dist = base_dist.base_dist
+        bijection = Chain(list(reversed(bijections))).merge_chains()
+        return Transformed(base_dist, bijection)
 
 
 class Transformed(AbstractTransformed):
@@ -327,8 +342,8 @@ class Transformed(AbstractTransformed):
     ):
         """
         Args:
-            base_dist (Distribution): Base distribution.
-            bijection (Bijection): Bijection to transform distribution.
+            base_dist (AbstractDistribution): Base distribution.
+            bijection (AbstractBijection): Bijection to transform distribution.
 
         Example:
 
@@ -356,41 +371,6 @@ class Transformed(AbstractTransformed):
 
 
 class StandardNormal(AbstractDistribution):
-    def _log_prob(self, x, condition=None):
-        z, log_abs_det = self.bijection.inverse_and_log_det(x, condition)
-        p_z = self.base_dist._log_prob(z, condition)  # pylint: disable W0212
-        return p_z + log_abs_det
-
-    def _sample(self, key, condition=None):
-        base_sample = self.base_dist._sample(key, condition)
-        return self.bijection.transform(base_sample, condition)
-
-    def _sample_and_log_prob(self, key: jr.KeyArray, condition=None):
-        # We overwrite the naive implementation of calling both methods seperately to
-        # avoid computing the inverse transformation.
-        base_sample, log_prob_base = self.base_dist._sample_and_log_prob(key, condition)
-        sample, forward_log_dets = self.bijection.transform_and_log_det(
-            base_sample, condition
-        )
-        return sample, log_prob_base - forward_log_dets
-
-    def merge_transforms(self):
-        """Returns an equivilent distribution, but ravelling nested
-        transformed distributions such that the returned distribution
-        has a base distribution that is not a Transformed instance.
-        """
-        if not isinstance(self.base_dist, Transformed):
-            return self
-        base_dist = self.base_dist
-        bijections = [self.bijection]
-        while isinstance(base_dist, Transformed):
-            bijections.append(base_dist.bijection)
-            base_dist = base_dist.base_dist
-        bijection = Chain(list(reversed(bijections))).merge_chains()
-        return Transformed(base_dist, bijection)
-
-
-class StandardNormal(Distribution):
     """Implements a standard normal distribution, condition is ignored. Unlike
     :class:`Normal`, this has no trainable parameters.
     """
@@ -401,8 +381,7 @@ class StandardNormal(Distribution):
     def __init__(self, shape: tuple[int, ...] = ()):
         """
         Args:
-            shape (tuple[int, ...]): The shape of the normal distribution. Defaults to
-                ().
+            shape (tuple[int, ...]): The shape of the distribution. Defaults to ().
         """
         self.shape = shape
 
@@ -693,7 +672,7 @@ class SpecializeCondition(AbstractDistribution):  # TODO check tested
     ):
         """
         Args:
-            dist (Distribution): Conditional distribution to specialize.
+            dist (AbstractDistribution): Conditional distribution to specialize.
             condition (ArrayLike, optional): Instance of conditioning variable with
                 shape matching ``dist.cond_shape``. Defaults to None.
             stop_gradient (bool): Whether to use ``jax.lax.stop_gradient`` to prevent
