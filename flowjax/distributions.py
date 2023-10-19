@@ -1,6 +1,5 @@
-"""Distributions - including the base class Distribution, common distributions
-and a Transformed distribution class.
-"""
+"""Distributions, including the abstract and concrete classes."""
+import inspect
 from abc import abstractmethod
 from math import prod
 from typing import ClassVar
@@ -20,10 +19,12 @@ from flowjax.utils import _get_ufunc_signature, arraylike_to_array, merge_cond_s
 
 
 class AbstractDistribution(eqx.Module):
-    """Abstract distribution class. Distributions all have an attribute ``shape``,
-    denoting the shape of a single sample from the distribution. Similarly, the
-    ``cond_shape`` attribute denotes the shape of the conditioning variable.
-    This attribute is None for unconditional distributions. For example
+    """Abstract distribution class.
+
+    Distributions all have an attribute ``shape``, denoting the shape of a single sample
+    from the distribution. Similarly, the ``cond_shape`` attribute denotes the shape of
+    the conditioning variable. This attribute is None for unconditional distributions.
+    For example.
 
     .. doctest::
 
@@ -69,8 +70,9 @@ class AbstractDistribution(eqx.Module):
         """Sample a point from the distribution, and return its log probability."""
 
     def log_prob(self, x: ArrayLike, condition: ArrayLike | None = None) -> Array:
-        """Evaluate the log probability. Uses numpy like broadcasting if additional
-        leading dimensions are passed.
+        """Evaluate the log probability.
+
+        Uses numpy-like broadcasting if additional leading dimensions are passed.
 
         Args:
             x (ArrayLike): Points at which to evaluate density.
@@ -79,19 +81,10 @@ class AbstractDistribution(eqx.Module):
         Returns:
             Array: Jax array of log probabilities.
         """
-        x = self._argcheck_and_cast_x(x)
+        x = arraylike_to_array(x, "x")
         condition = self._argcheck_and_cast_condition(condition)
-        if condition is None:
-            sig = _get_ufunc_signature([self.shape], [()])
-            exclude = frozenset([1])
-        else:
-            sig = _get_ufunc_signature([self.shape, self.cond_shape], [()])
-            exclude = frozenset()
-
-        lps = jnp.vectorize(self._log_prob, signature=sig, excluded=exclude)(
-            x, condition
-        )
-        return jnp.where(jnp.isnan(lps), -jnp.inf, lps)  # type: ignore
+        lps = self._vectorize(self._log_prob)(x, condition)
+        return jnp.where(jnp.isnan(lps), -jnp.inf, lps)
 
     def sample(
         self,
@@ -99,11 +92,13 @@ class AbstractDistribution(eqx.Module):
         sample_shape: tuple[int, ...] = (),
         condition: ArrayLike | None = None,
     ) -> Array:
-        """Sample from the distribution. For unconditional distributions, the output
-        will be of shape ``sample_shape + dist.shape``. For conditional distributions,
-        a batch dimension in the condition is supported, and the output shape will be
-        ``sample_shape + condition_batch_shape + dist.shape``. See the example for more
-        information.
+        """Sample from the distribution.
+
+        For unconditional distributions, the output will be of shape
+        ``sample_shape + dist.shape``. For conditional distributions, a batch dimension
+        in the condition is supported, and the output shape will be
+        ``sample_shape + condition_batch_shape + dist.shape``.
+        See the example for more information.
 
         Args:
             key (jr.KeyArray): Jax random key.
@@ -163,11 +158,8 @@ class AbstractDistribution(eqx.Module):
 
         """
         condition = self._argcheck_and_cast_condition(condition)
-        excluded, signature = self._vectorize_sample_args()
         keys = self._get_sample_keys(key, sample_shape, condition)
-        return jnp.vectorize(self._sample, excluded=excluded, signature=signature)(
-            keys, condition
-        )
+        return self._vectorize(self._sample)(keys, condition)
 
     def sample_and_log_prob(
         self,
@@ -175,11 +167,12 @@ class AbstractDistribution(eqx.Module):
         sample_shape: tuple[int, ...] = (),
         condition: ArrayLike | None = None,
     ):
-        """Sample the distribution and return the samples and corresponding log
-        probabilities. For transformed distributions (especially flows), this will
-        generally be more efficient than calling the methods seperately. Refer to the
-        :py:meth:`~flowjax.distributions.Distribution.sample` documentation for more
-        information.
+        """Sample the distribution and return the samples with their log probabilities.
+
+        For transformed distributions (especially flows), this will generally be more
+        efficient than calling the methods seperately. Refer to the
+        :py:meth:`~flowjax.distributions.AbstractDistribution.sample` documentation for
+        more information.
 
         Args:
             key (jr.KeyArray): Jax random key.
@@ -187,92 +180,80 @@ class AbstractDistribution(eqx.Module):
             sample_shape (tuple[int, ...]): Sample shape. Defaults to ().
         """
         condition = self._argcheck_and_cast_condition(condition)
-
-        excluded, signature = self._vectorize_sample_args(sample_and_log_prob=True)
         keys = self._get_sample_keys(key, sample_shape, condition)
-
-        return jnp.vectorize(
-            self._sample_and_log_prob, excluded=excluded, signature=signature
-        )(keys, condition)
-
-    def _vectorize_sample_args(self, sample_and_log_prob=False):
-        """Get the excluded arguments and ufunc signature for sample or
-        sample_and_log_prob"""
-        out_shapes = [self.shape, ()] if sample_and_log_prob else [self.shape]
-        if self.cond_shape is None:
-            excluded = frozenset([1])
-            in_shapes = [(2,)]
-        else:
-            excluded = frozenset()
-            in_shapes = [(2,), self.cond_shape]
-        signature = _get_ufunc_signature(in_shapes, out_shapes)
-        return excluded, signature
+        return self._vectorize(self._sample_and_log_prob)(keys, condition)
 
     def _get_sample_keys(self, key, sample_shape, condition):
-        """Splits a key into an arrray of keys with shape
-        sample_shape + leading_cond_shape + (2,)."""
-        if self.cond_shape is None:
-            key_shape = sample_shape
+        if self.cond_shape is not None:
+            leading_cond_shape = condition.shape[: -self.cond_ndim or None]
         else:
-            leading_cond_shape = (
-                condition.shape[: -len(self.cond_shape)]
-                if len(self.cond_shape) > 0
-                else condition.shape
-            )
-            key_shape = sample_shape + leading_cond_shape
-
+            leading_cond_shape = ()
+        key_shape = sample_shape + leading_cond_shape
         key_size = max(1, prod(key_shape))  # Still need 1 key for scalar sample
-        keys = jnp.reshape(jr.split(key, key_size), key_shape + (2,))  # type: ignore
+        keys = jnp.reshape(jr.split(key, key_size), key_shape + (2,))
         return keys
-
-    def _argcheck_and_cast_x(self, x) -> Array:
-        x = arraylike_to_array(x, err_name="x")
-        x_trailing = x.shape[-self.ndim :] if self.ndim > 0 else ()
-        if x_trailing != self.shape:
-            raise ValueError(
-                "Expected trailing dimensions in x to match the distribution shape "
-                f"{self.shape}; got x shape {x.shape}."
-            )
-        return x
-
-    def _argcheck_and_cast_condition(self, condition) -> Array | None:
-        if self.cond_shape is None:
-            if condition is not None:
-                raise ValueError(
-                    "Expected condition to be None for unconditional distribution; "
-                    f"got {condition}."
-                )
-            return None
-        condition = arraylike_to_array(condition, err_name="condition")
-        condition_trailing = (
-            condition.shape[-len(self.cond_shape) :] if self.cond_ndim > 0 else ()
-        )
-        if condition_trailing != self.cond_shape:
-            raise ValueError(
-                "Expected trailing dimensions in condition to match cond_shape "
-                f"{self.cond_shape}, but got condition shape {condition.shape}."
-            )
-        return condition
 
     @property
     def ndim(self):
-        """The number of dimensions in the distribution (the length of the shape)."""
+        """Number of dimensions in the distribution (the length of the shape)."""
         return len(self.shape)
 
     @property
     def cond_ndim(self):
-        """The number of dimensions of the conditioning variable (length of
-        cond_shape)."""
-        if self.cond_shape is not None:
-            return len(self.cond_shape)
-        return None
+        """Number of dimensions of the conditioning variable (length of cond_shape)."""
+        return None if self.cond_shape is None else len(self.cond_shape)
+
+    def _argcheck_and_cast_condition(self, condition: ArrayLike | None):
+        if self.cond_shape is None:
+            if condition is not None:
+                raise TypeError(
+                    f"Expected condition to be None; got {type(condition)}."
+                )
+            return None
+        return arraylike_to_array(condition, err_name="condition")
+
+    def _vectorize(self, method: callable) -> callable:
+        """Returns a vectorized version of the distribution method."""
+        # Get shapes without broadcasting - note the (2, ) corresponds to key arrays.
+        maybe_cond = [] if self.cond_shape is None else [self.cond_shape]
+        in_shapes = {
+            "_sample_and_log_prob": [(2,)] + maybe_cond,
+            "_sample": [(2,)] + maybe_cond,
+            "_log_prob": [self.shape] + maybe_cond,
+        }
+        out_shapes = {
+            "_sample_and_log_prob": [self.shape, ()],
+            "_sample": [self.shape],
+            "_log_prob": [()],
+        }
+        in_shapes, out_shapes = in_shapes[method.__name__], out_shapes[method.__name__]
+
+        def _check_shapes(method):
+            # Wraps unvectorised method with shape checking
+            def _wrapper(*args):
+                argnames = list(inspect.signature(method).parameters)
+                assert len(args) == len(argnames)
+                for in_shape, arg, name in zip(in_shapes, args, argnames, strict=False):
+                    if arg.shape != in_shape:
+                        raise ValueError(
+                            f"Expected trailing dimensions matching {in_shape} for "
+                            f"{name}; got {arg.shape}."
+                        )
+                return method(*args)
+
+            return _wrapper
+
+        signature = _get_ufunc_signature(in_shapes, out_shapes)
+        ex = frozenset([1]) if self.cond_shape is None else frozenset()
+        return jnp.vectorize(_check_shapes(method), signature=signature, excluded=ex)
 
 
 class AbstractTransformed(AbstractDistribution):
-    """Abstract class representing a transformed distribution. Concete implementations
-    should inherit from this class and define the base_dist and bijection attributes.
-    We take the forward bijection for use in sampling, and the inverse for use in
-    density evaluation.
+    """Abstract transformed distribution class.
+
+    Concete implementations should inherit from this class and define the base_dist and
+    bijection attributes. We take the forward bijection for use in sampling, and the
+    inverse for use in density evaluation. See also :class:`Transformed`
     """
 
     base_dist: AbstractVar[AbstractDistribution]
@@ -296,6 +277,7 @@ class AbstractTransformed(AbstractDistribution):
         return sample, log_prob_base - forward_log_dets
 
     def __check_init__(self):  # TODO test errors
+        """Checks cond_shape is compatible in both bijection and distribution."""
         if (
             self.base_dist.cond_shape is not None
             and self.bijection.cond_shape is not None
@@ -309,15 +291,17 @@ class AbstractTransformed(AbstractDistribution):
                 )
 
     def merge_transforms(self):
-        """Returns an equivilent distribution, but ravelling nested
-        transformed distributions such that the returned distribution
-        has a base distribution that is not a Transformed instance.
+        """Unnests nested transformed distributions.
+
+        Returns an equivilent distribution, but ravelling nested
+        :class:`AbstractTransformed` distributions such that the returned distribution
+        has a base distribution that is not an :class:`AbstractTransformed` instance.
         """
-        if not isinstance(self.base_dist, Transformed):
+        if not isinstance(self.base_dist, AbstractTransformed):
             return self
         base_dist = self.base_dist
         bijections = [self.bijection]
-        while isinstance(base_dist, Transformed):
+        while isinstance(base_dist, AbstractTransformed):
             bijections.append(base_dist.bijection)
             base_dist = base_dist.base_dist
         bijection = Chain(list(reversed(bijections))).merge_chains()
@@ -325,8 +309,9 @@ class AbstractTransformed(AbstractDistribution):
 
 
 class Transformed(AbstractTransformed):
-    """Form a distribution like object using a base distribution and a
-    bijection. We take the forward bijection for use in sampling, and the inverse
+    """Form a distribution like object using a base distribution and a bijection.
+
+    We take the forward bijection for use in sampling, and the inverse
     bijection for use in density evaluation.
     """
 
@@ -340,13 +325,13 @@ class Transformed(AbstractTransformed):
         base_dist: AbstractDistribution,
         bijection: AbstractBijection,
     ):
-        """
+        """Initialize the transformed distribution.
+
         Args:
             base_dist (AbstractDistribution): Base distribution.
             bijection (AbstractBijection): Bijection to transform distribution.
 
         Example:
-
         .. doctest::
 
             >>> from flowjax.distributions import StandardNormal, Transformed
@@ -371,15 +356,17 @@ class Transformed(AbstractTransformed):
 
 
 class StandardNormal(AbstractDistribution):
-    """Implements a standard normal distribution, condition is ignored. Unlike
-    :class:`Normal`, this has no trainable parameters.
+    """Standard normal distribution.
+
+    Note unlike :class:`Normal`, this has no trainable parameters.
     """
 
     shape: tuple[int, ...]
     cond_shape: ClassVar[None] = None
 
     def __init__(self, shape: tuple[int, ...] = ()):
-        """
+        """Initialize the standard Normal distribution.
+
         Args:
             shape (tuple[int, ...]): The shape of the distribution. Defaults to ().
         """
@@ -397,9 +384,7 @@ class StandardNormal(AbstractDistribution):
 
 
 class Normal(AbstractTransformed):
-    """Implements an independent Normal distribution with mean and std for
-    each dimension. `loc` and `scale` should be broadcastable.
-    """
+    """An independent Normal distribution with mean and std for each dimension."""
 
     base_dist: StandardNormal
     bijection: Affine
@@ -407,7 +392,10 @@ class Normal(AbstractTransformed):
     cond_shape: ClassVar[None] = None
 
     def __init__(self, loc: ArrayLike = 0, scale: ArrayLike = 1):
-        """ra
+        """Initialize the normal distribution.
+
+        `loc` and `scale` should broadcast to the desired shape of the distribution.
+
         Args:
             loc (ArrayLike): Means. Defaults to 0.
             scale (ArrayLike): Standard deviations. Defaults to 1.
@@ -418,18 +406,17 @@ class Normal(AbstractTransformed):
 
     @property
     def loc(self):
-        """Location of the distribution"""
+        """Location of the distribution."""
         return self.bijection.loc
 
     @property
     def scale(self):
-        """scale of the distribution"""
+        """Scale of the distribution."""
         return self.bijection.scale
 
 
 class _StandardUniform(AbstractDistribution):
-    r"""Implements a standard independent Uniform distribution, ie
-    :math:`X \sim Uniform([0, 1]^d)`."""
+    r"""Implements a standard Uniform distribution."""
     shape: tuple[int, ...]
     cond_shape: ClassVar[None] = None
 
@@ -448,9 +435,7 @@ class _StandardUniform(AbstractDistribution):
 
 
 class Uniform(AbstractTransformed):
-    """Implements an independent uniform distribution between min and max for each
-    dimension. `minval` and `maxval` should be broadcastable.
-    """
+    """Independent uniform distribution."""
 
     base_dist: _StandardUniform
     bijection: Affine
@@ -458,7 +443,10 @@ class Uniform(AbstractTransformed):
     cond_shape: ClassVar[None] = None
 
     def __init__(self, minval: ArrayLike, maxval: ArrayLike):
-        """
+        """Initialize the uniform distribution.
+
+        ``minval`` and ``maxval`` should broadcast to the desired distribution shape.
+
         Args:
             minval (ArrayLike): Minimum values.
             maxval (ArrayLike): Maximum values.
@@ -504,7 +492,7 @@ class _StandardGumbel(AbstractDistribution):
 
 
 class Gumbel(AbstractTransformed):
-    """Gumbel distribution (https://en.wikipedia.org/wiki/Gumbel_distribution)"""
+    """Gumbel distribution (https://en.wikipedia.org/wiki/Gumbel_distribution)."""
 
     base_dist: _StandardGumbel
     bijection: Affine
@@ -512,8 +500,7 @@ class Gumbel(AbstractTransformed):
     cond_shape: ClassVar[None] = None
 
     def __init__(self, loc: ArrayLike = 0, scale: ArrayLike = 1):
-        """
-        `loc` and `scale` should broadcast to the dimension of the distribution.
+        """`loc` and `scale` should broadcast to the dimension of the distribution.
 
         Args:
             loc (ArrayLike): Location paramter.
@@ -525,7 +512,7 @@ class Gumbel(AbstractTransformed):
 
     @property
     def loc(self):
-        """Location of the distribution"""
+        """Location of the distribution."""
         return self.bijection.loc
 
     @property
@@ -535,9 +522,8 @@ class Gumbel(AbstractTransformed):
 
 
 class _StandardCauchy(AbstractDistribution):
-    """
-    Implements standard cauchy distribution (loc=0, scale=1)
-    Ref: https://en.wikipedia.org/wiki/Cauchy_distribution
+    """Implements standard cauchy distribution (loc=0, scale=1)
+    Ref: https://en.wikipedia.org/wiki/Cauchy_distribution.
     """
 
     shape: tuple[int, ...]
@@ -566,8 +552,7 @@ class Cauchy(AbstractTransformed):
     cond_shape: ClassVar[None] = None
 
     def __init__(self, loc: ArrayLike = 0, scale: ArrayLike = 1):
-        """
-        `loc` and `scale` should broadcast to the dimension of the distribution.
+        """`loc` and `scale` should broadcast to the dimension of the distribution.
 
         Args:
             loc (ArrayLike): Location paramter.
@@ -580,12 +565,12 @@ class Cauchy(AbstractTransformed):
 
     @property
     def loc(self):
-        """Location of the distribution"""
+        """Location of the distribution."""
         return self.bijection.loc
 
     @property
     def scale(self):
-        """scale of the distribution"""
+        """Scale of the distribution."""
         return self.bijection.scale
 
 
@@ -625,8 +610,7 @@ class StudentT(AbstractTransformed):
     cond_shape: ClassVar[None] = None
 
     def __init__(self, df: ArrayLike, loc: ArrayLike = 0, scale: ArrayLike = 1):
-        """
-        `df`, `loc` and `scale` broadcast to the dimension of the distribution.
+        """`df`, `loc` and `scale` broadcast to the dimension of the distribution.
 
         Args:
             df (ArrayLike): The degrees of freedom.
@@ -640,12 +624,12 @@ class StudentT(AbstractTransformed):
 
     @property
     def loc(self):
-        """Location of the distribution"""
+        """Location of the distribution."""
         return self.bijection.loc
 
     @property
     def scale(self):
-        """scale of the distribution"""
+        """Scale of the distribution."""
         return self.bijection.scale
 
     @property
