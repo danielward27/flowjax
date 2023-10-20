@@ -17,7 +17,7 @@ test_cases = {
 
 @pytest.mark.parametrize("idx,expected", test_cases.values(), ids=test_cases.keys())
 def test_partial(idx, expected):
-    "Check values only change where we expect"
+    "Check values only change where we expect."
     x = jnp.zeros(4)
     shape = x[idx].shape
     bijection = Partial(Affine(jnp.ones(shape)), idx, x.shape)

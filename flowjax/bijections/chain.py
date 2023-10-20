@@ -1,6 +1,4 @@
-"""Module contains the Chain bijection, that allows sequentially application of
-arbitrary bijections, with compatible shapes.
-"""
+"""Chain bijection which allows sequential application of arbitrary bijections."""
 from typing import Sequence
 
 from flowjax.bijections.bijection import AbstractBijection
@@ -15,9 +13,12 @@ class Chain(AbstractBijection):
     bijections: tuple[AbstractBijection]
 
     def __init__(self, bijections: Sequence[AbstractBijection]):
-        """
+        """Initialize the chain bijection.
+
         Args:
-            bijections (Sequence[Bijection]): Sequence of bijections.
+            bijections (Sequence[Bijection]): Sequence of bijections. The bijection
+            shapes must match, and any none None condition shapes must match.
+
         """
         check_shapes_match([b.shape for b in bijections])
         self.shape = bijections[0].shape
@@ -62,8 +63,7 @@ class Chain(AbstractBijection):
         return len(self.bijections)
 
     def merge_chains(self):
-        """Returns an equivilent Chain object, in which nested chains are flattened into
-        a sigle chain."""
+        """Returns an equivilent Chain object, in which nested chains are flattened."""
         bijections = self.bijections
         while any(isinstance(b, Chain) for b in bijections):
             bij = []

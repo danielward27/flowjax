@@ -31,6 +31,17 @@ class RationalQuadraticSpline(AbstractBijection):
         min_derivative: float = 1e-3,
         softmax_adjust: float = 1e-2,
     ):
+        """Initialize the RationalQuadraticSpline bijection.
+
+        Args:
+            knots (int): Number of knots.
+            interval (float): interval to transform, [-interval, interval].
+            min_derivative (float): Minimum dervivative. Defaults to 1e-3.
+            softmax_adjust (float): Controls minimum bin width and height by
+                rescaling softmax output, e.g. 0=no adjustment, 1=average softmax output
+                with evenly spaced widths, >1 promotes more evenly spaced widths.
+                See ``real_to_increasing_on_interval``. Defaults to 1e-2.
+        """
         self.knots = knots
         self.interval = interval
         self.softmax_adjust = softmax_adjust

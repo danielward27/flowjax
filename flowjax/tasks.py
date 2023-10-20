@@ -1,4 +1,4 @@
-"""Example tasks"""
+"""Example tasks."""
 
 import equinox as eqx
 import jax
@@ -21,9 +21,10 @@ def two_moons(key, n_samples, noise_std=0.2):
 
 
 class GaussianMixtureSimulator:
-    r"""Toy simulation based inference task, where the aim is to infer the mean of a
-    mixture of two Gaussian distributions, with different variances. Specifically,
-    (by default) we have
+    r"""Toy mixture of Gaussians simulation based inference task.
+
+    The aim is to infer the mean of a mixture of two Gaussian distributions, with
+    different variances. Specifically, (by default) we have.
 
     .. math::
         \theta_i \sim \text{Uniform}(-10,\ 10), \quad i=1,2
@@ -31,16 +32,18 @@ class GaussianMixtureSimulator:
     """
 
     def __init__(self, dim: int = 2, prior_bound: float = 10.0) -> None:
+        """Initialize the task."""
         self.dim = dim
         self.prior_bound = prior_bound
         self.prior = Uniform(-jnp.full(dim, prior_bound), jnp.full(dim, prior_bound))
 
     @eqx.filter_jit
     def simulator(self, key: jr.KeyArray, theta: ArrayLike):
+        """Carry out simulations."""
         theta = jnp.atleast_2d(jnp.asarray(theta))
         key, subkey = jr.split(key)
         component = jr.bernoulli(subkey, shape=(theta.shape[0],))
-        scales = self._get_scales(component)
+        scales = jnp.where(component, 0.1, 1)
 
         key, subkey = jr.split(key)
         return (jr.normal(subkey, theta.shape) * scales[:, None] + theta).squeeze()
@@ -51,8 +54,10 @@ class GaussianMixtureSimulator:
         observation: ArrayLike,
         num_samples: int,
     ):
-        """Sample the reference posterior given an observation. Uses the closed form
-        solution with rejection sampling for samples outside prior bound.
+        """Sample the reference posterior given an observation.
+
+        Uses the closed form solution with rejection sampling for samples outside prior
+            bound.
         """
         observation = jnp.asarray(observation)
         if observation.shape != (self.dim,):
@@ -72,6 +77,3 @@ class GaussianMixtureSimulator:
             samples.append(candidates[in_prior_support])
 
         return jnp.concatenate(samples)[:num_samples]
-
-    def _get_scales(self, component):
-        return jnp.where(component, 0.1, 1)

@@ -10,10 +10,7 @@ from flowjax.bijections.bijection import AbstractBijection
 
 
 def _tanh_log_grad(x):
-    """log gradient vector of tanh transformation.
-    Args:
-        shape (tuple[int, ...] | None): Shape of the bijection. Defaults to None.
-    """
+    # Log gradient vector of tanh transformation.
     return -2 * (x + softplus(-2 * x) - jnp.log(2.0))
 
 
@@ -42,12 +39,12 @@ class Tanh(AbstractBijection):
 
 
 class LeakyTanh(AbstractBijection):
-    """
-    Tanh bijection, with a linear transformation beyond +/- max_val. The value and
-    gradient of the linear segments are set to match tanh at +/- max_val. This bijection
-    can be useful to encourage values to be within an interval, whilst avoiding
-    numerical precision issues, or in cases we require a real -> real mapping so Tanh
-    is not appropriate.
+    """Tanh bijection, with a linear transformation beyond +/- max_val.
+
+    The value and gradient of the linear segments are set to match tanh at +/- max_val.
+    This bijection can be useful to encourage values to be within an interval, whilst
+    avoiding numerical precision issues, or in cases we require a real -> real mapping
+    so Tanh is not appropriate.
     """
 
     shape: tuple[int, ...] = ()
@@ -57,7 +54,8 @@ class LeakyTanh(AbstractBijection):
     linear_grad: float
 
     def __init__(self, max_val: float, shape: tuple[int, ...] = ()):
-        """
+        """Initialize the leaky tanh bijection.
+
         Args:
             max_val (float): Value above or below which the function becomes linear.
             shape (tuple[int, ...] | None): The shape of the bijection. Defaults to ().
@@ -101,6 +99,7 @@ class LeakyTanh(AbstractBijection):
 
 
 def TanhLinearTails(*args, **kwargs):
+    """Deprecated version of LeakyTanh."""
     warnings.warn(
         "This class has been renamed to LeakyTanh and TanhLinearTails will be removed. "
         "please update to the new name.",

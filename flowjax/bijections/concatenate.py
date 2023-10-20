@@ -10,8 +10,9 @@ from flowjax.utils import check_shapes_match, merge_cond_shapes
 
 
 class Concatenate(AbstractBijection):
-    """Concatenate bijections along an already existing axis. Analagous to
-    ``jnp.concatenate``. See also :class:`Stack`.
+    """Concatenate bijections along an existing axis, similar to ``jnp.concatenate``.
+
+    See also :class:`Stack`.
     """
 
     shape: tuple[int, ...]
@@ -21,7 +22,8 @@ class Concatenate(AbstractBijection):
     axis: int
 
     def __init__(self, bijections: Sequence[AbstractBijection], axis: int = 0):
-        """
+        """Initialize the bijection.
+
         Args:
             bijections (Sequence[Bijection]): Bijections, to stack into a single
                 bijection.
@@ -93,8 +95,8 @@ class Concatenate(AbstractBijection):
 
 
 class Stack(AbstractBijection):
-    """
-    Stack bijections along a new axis (analagous to ``jnp.stack``).
+    """Stack bijections along a new axis (analagous to ``jnp.stack``).
+
     See also :class:`Concatenate`.
     """
 
@@ -104,7 +106,8 @@ class Stack(AbstractBijection):
     axis: int
 
     def __init__(self, bijections: list[AbstractBijection], axis: int = 0):
-        """
+        """Initialize the bijection.
+
         Args:
             bijections (list[Bijection]): Bijections.
             axis (int): Axis along which to stack. Defaults to 0.

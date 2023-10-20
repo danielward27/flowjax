@@ -22,8 +22,7 @@ def fit_to_variational_target(
     filter_spec: Callable | PyTree = eqx.is_inexact_array,
     show_progress: bool = True,
 ):
-    """Train a distribution (e.g. a flow) by variational inference to a target
-    (e.g. an unnormalized density).
+    """Train a distribution (e.g. a flow) by variational inference.
 
     Args:
         key (jr.KeyArray): Jax PRNGKey.

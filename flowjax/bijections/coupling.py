@@ -1,5 +1,6 @@
 """Implemenetation of Coupling flow layer with arbitrary transformer.
-See https://arxiv.org/abs/1605.08803 for more information.
+
+Ref: https://arxiv.org/abs/1605.08803.
 """
 from typing import Callable
 
@@ -34,13 +35,14 @@ class Coupling(AbstractBijection):
         nn_depth: int,
         nn_activation: Callable = jnn.relu,
     ):
-        """
+        """Initialize the coupling bijection.
+
         Args:
             key (KeyArray): Jax PRNGKey
-            transformer (AbstractBijection): Unconditional bijection with shape () to be
-                parameterised by the conditioner neural netork.
-            untransformed_dim (int): Number of untransformed conditioning variables (
-                e.g. dim // 2).
+            transformer (AbstractBijection): Unconditional bijection with shape ()
+                to be parameterised by the conditioner neural netork.
+            untransformed_dim (int): Number of untransformed conditioning variables
+                (e.g. dim // 2).
             dim (int): Total dimension.
             cond_dim (int | None): Dimension of additional conditioning variables.
             nn_width (int): Neural network hidden layer width.

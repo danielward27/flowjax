@@ -35,8 +35,11 @@ def fit_to_data(
     filter_spec: Callable | PyTree = eqx.is_inexact_array,
     show_progress: bool = True,
 ):
-    """Train a distribution (e.g. a flow) to samples from the target distribution p(x)
-    or p(x|condition). Note that the last batch in each epoch is dropped if truncated.
+    r"""Train a distribution (e.g. a flow) to samples from the target distribution.
+
+    The distribution can be unconditional :math:`p(x)` or conditional
+    :math:`p(x|\text{condition})`. Note that the last batch in each epoch is dropped
+    if truncated.
 
     Args:
         key (KeyArray): Jax random seed.
@@ -88,7 +91,6 @@ def fit_to_data(
         # Train epoch
         batch_losses = []
         for batch in zip(*get_batches(train_data, batch_size), strict=True):
-            key, subkey = jr.split(key)
             params, opt_state, loss_i = step(
                 optimizer, opt_state, loss_fn, params, static, *batch
             )

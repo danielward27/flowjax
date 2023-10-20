@@ -1,4 +1,4 @@
-"""Utility bijections (embedding network, permutations, inversion etc.)"""
+"""Utility bijections (embedding network, permutations, inversion etc.)."""
 from typing import Callable, ClassVar
 
 import jax.numpy as jnp
@@ -10,7 +10,9 @@ from flowjax.bijections.bijection import AbstractBijection
 
 
 class Invert(AbstractBijection):
-    """Invert a bijection, such that the transform methods become the inverse
+    """Invert a bijection.
+
+    This wraps a bijection, such that the transform methods become the inverse
     methods and vice versa. Note that in general, we define bijections such that
     the forward methods are preffered, i.e. faster/actually implemented. For
     training flows, we generally want the inverse method (used in density
@@ -23,7 +25,8 @@ class Invert(AbstractBijection):
     bijection: AbstractBijection
 
     def __init__(self, bijection: AbstractBijection):
-        """
+        """Initialize the bijection.
+
         Args:
             bijection (AbstractBijection): Bijection to invert.
         """
@@ -53,7 +56,8 @@ class Permute(AbstractBijection):
     inverse_permutation: tuple[Array, ...]
 
     def __init__(self, permutation: ArrayLike):
-        """
+        """Initialize the permutation bijection.
+
         Args:
             permutation (ArrayLike): An array with shape matching the array to
                 transform, with elements 0-(array.size-1) representing the new order
@@ -129,12 +133,19 @@ class Partial(AbstractBijection):
     bijection: AbstractBijection
     idxs: int | slice | Array | tuple
 
-    def __init__(self, bijection: AbstractBijection, idxs, shape: tuple[int, ...]):
-        """
+    def __init__(
+        self,
+        bijection: AbstractBijection,
+        idxs: int | slice | Array | tuple,
+        shape: tuple[int, ...],
+    ):
+        """Initialize the bijection.
+
         Args:
-            bijection (AbstractBijection): Bijection that is compatible with the subset of x
-                indexed by idxs. idxs: Indices (Integer, a slice, or an ndarray with
-                integer/bool dtype) of the transformed portion.
+            bijection (AbstractBijection): Bijection that is compatible with the subset
+                of x indexed by idxs. idxs: Indices (Integer, a slice, or an ndarray
+                with integer/bool dtype) of the transformed portion.
+            idxs (int | slice | Array | tuple): The indexes to transform.
             shape (tuple[int, ...] | None): Shape of the bijection. Defaults to None.
         """
         self.bijection = bijection
@@ -171,7 +182,9 @@ class Partial(AbstractBijection):
 
 
 class EmbedCondition(AbstractBijection):
-    """Use an embedding network to reduce the dimensionality of the conditioning
+    """Wrap a bijection to include an embedding network.
+
+    Generally this is used to reduce the dimensionality of the conditioning
     variable. The returned bijection has cond_dim equal to the raw condition size.
     """
 
@@ -186,14 +199,15 @@ class EmbedCondition(AbstractBijection):
         embedding_net: Callable,
         raw_cond_shape: tuple[int, ...],
     ) -> None:
-        """
+        """Intialize the bijection.
+
         Args:
-            bijection (AbstractBijection): Bijection with ``bijection.cond_dim`` equal to the
-                embedded size.
+            bijection (AbstractBijection): Bijection with ``bijection.cond_dim`` equal
+            to the embedded size.
             embedding_net (Callable): A callable (e.g. equinox module) that embeds a
-                conditioning variable to size ``bijection.cond_dim``.
+            conditioning variable to size ``bijection.cond_dim``.
             raw_cond_shape (tuple[int, ...] | None): The dimension of the raw
-                conditioning variable.
+            conditioning variable.
         """
         self.bijection = bijection
         self.embedding_net = embedding_net

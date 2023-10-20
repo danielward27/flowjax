@@ -12,6 +12,7 @@ from flowjax.masks import block_diag_mask, block_tril_mask
 
 class BlockAutoregressiveLinear(eqx.Module):
     """Block autoregressive neural network layer (https://arxiv.org/abs/1904.04676).
+
     Conditioning variables are incorporated by appending columns (one for each
     conditioning variable) to the right of the block diagonal weight matrix.
     """
@@ -36,9 +37,10 @@ class BlockAutoregressiveLinear(eqx.Module):
         cond_dim: int | None = None,
         init: Callable | None = None,
     ):
-        """
+        """Initialize the block autoregressive linear layer.
+
         Args:
-            key KeyArray: Random key
+            key (KeyArray): Random key
             n_blocks (int): Number of diagonal blocks (dimension of original input).
             block_shape (tuple): The shape of the (unconstrained) blocks.
             cond_dim (int | None): Number of additional conditioning variables.
@@ -96,8 +98,10 @@ class BlockAutoregressiveLinear(eqx.Module):
         return jnp.exp(self.weight_log_scale) * weights / weight_norms
 
     def __call__(self, x, condition=None):
-        """returns output y, and components of weight matrix needed log_det component
-        (n_blocks, block_shape[0], block_shape[1]).
+        """Returns output y, and components of weight matrix needed log_det component.
+
+        The components of the weight matrix have shape
+        ``(n_blocks, block_shape[0], block_shape[1])``.
         """
         weights = self.get_normalised_weights()
         if condition is not None:

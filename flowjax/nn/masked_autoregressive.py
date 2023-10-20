@@ -23,7 +23,7 @@ class MaskedLinear(Module):
     mask: Array
 
     def __init__(self, mask: ArrayLike, use_bias: bool = True, *, key: KeyArray):
-        """
+        """Initialize the masked linear layer.
 
         Args:
             mask (ArrayLike): Mask with shape (out_features, in_features).
@@ -35,7 +35,7 @@ class MaskedLinear(Module):
         self.mask = mask
 
     def __call__(self, x: ArrayLike):
-        """Run the masked linear layer
+        """Run the masked linear layer.
 
         Args:
             x (ArrayLike): Array with shape ``(mask.shape[1], )``
@@ -48,8 +48,10 @@ class MaskedLinear(Module):
 
 
 class AutoregressiveMLP(Module):
-    """An autoregressive multilayer perceptron, similar to ``equinox.nn.composed.MLP``.
-    Connections will only exist where in_ranks < out_ranks.
+    """An autoregressive multilayer perceptron.
+
+    Similar to ``equinox.nn.composed.MLP``, however, connections will only exist between
+    nodes where in_ranks < out_ranks.
     """
 
     in_size: int
@@ -74,7 +76,8 @@ class AutoregressiveMLP(Module):
         *,
         key,
     ) -> None:
-        """
+        """Initialize the autoregressive multilayer perceptron.
+
         Args:
             in_ranks (ArrayLike): Ranks of the inputs.
             hidden_ranks (ArrayLike): Ranks of the hidden layer(s).
@@ -115,6 +118,7 @@ class AutoregressiveMLP(Module):
 
     def __call__(self, x: Array):
         """Forward pass.
+
         Args:
             x: A JAX array with shape (in_size,).
         """

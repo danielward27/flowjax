@@ -1,4 +1,4 @@
-"Tests for bijection.chain module"
+"Tests for bijection.chain module."
 from functools import partial
 
 import equinox as eqx

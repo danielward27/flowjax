@@ -1,5 +1,6 @@
-"""Planar transform, i.e. a layer in a planar flow introduced in
-https://arxiv.org/pdf/1505.05770.pdf.
+"""Planar transform.
+
+A layer in a planar flow introduced in https://arxiv.org/pdf/1505.05770.pdf.
 """
 
 from typing import ClassVar
@@ -15,8 +16,9 @@ from flowjax.bijections import AbstractBijection
 
 
 class Planar(AbstractBijection):
-    r"""Planar bijection as used by https://arxiv.org/pdf/1505.05770.pdf. Uses the
-    transformation :math:`y + u \cdot \text{tanh}(w \cdot x + b)`, where
+    r"""Planar bijection as used by https://arxiv.org/pdf/1505.05770.pdf.
+
+    Uses the transformation :math:`y + u \cdot \text{tanh}(w \cdot x + b)`, where
     :math:`u \in \mathbb{R}^D, \ w \in \mathbb{R}^D` and :math:`b \in \mathbb{R}`. In
     the unconditional case, :math:`w`, :math:`u`  and :math:`b` are learned directly.
     In the conditional case they are parameterised by an MLP.
@@ -33,14 +35,15 @@ class Planar(AbstractBijection):
         cond_dim: int | None = None,
         **mlp_kwargs,
     ):
-        """
+        """Initialize the bijection.
+
         Args:
             key (jr.KeyArray): Jax random seed.
             dim (int): Dimension of the bijection.
             cond_dim (int | None, optional): Dimension of extra conditioning variables.
                 Defaults to None.
-            **mlp_kwargs: Key word arguments passed to the MLP conditioner. Ignored
-                when cond_dim is None.
+            **mlp_kwargs: Key word arguments (excluding in_size and out_size) passed to
+                the MLP (equinox.nn.MLP). Ignored when cond_dim is None.
         """
         self.shape = (dim,)
 
@@ -68,7 +71,7 @@ class Planar(AbstractBijection):
         return self.get_planar(condition).inverse_and_log_det(y)
 
     def get_planar(self, condition=None):
-        "Get the planar bijection with the conditioning applied if conditional."
+        """Get the planar bijection with the conditioning applied if conditional."""
         if self.cond_shape is not None:
             params = self.conditioner(condition)
         else:
@@ -88,9 +91,11 @@ class _UnconditionalPlanar(AbstractBijection):
     bias: Array
 
     def __init__(self, weight, act_scale, bias):
-        """Construct an unconditional planar bijection. Note act_scale (u in the paper)
-        is unconstrained and the constraint to ensure invertiblitiy is applied in the
-        ``get_act_scale``."""
+        """Construct an unconditional planar bijection.
+
+        Note act_scale (u in the paper) is unconstrained and the constraint to ensure
+        invertiblitiy is applied in the ``get_act_scale``.
+        """
         self.weight = weight
         self._act_scale = act_scale
         self.bias = bias
@@ -108,8 +113,10 @@ class _UnconditionalPlanar(AbstractBijection):
         return y, log_det
 
     def get_act_scale(self):
-        """Apply constraint to u to ensure invertibility. See appendix A1 in
-        https://arxiv.org/pdf/1505.05770.pdf."""
+        """Apply constraint to u to ensure invertibility.
+
+        See appendix A1 in https://arxiv.org/pdf/1505.05770.pdf.
+        """
         wtu = self._act_scale @ self.weight
         m_wtu = -1 + jnp.log(1 + softplus(wtu))
         u = self._act_scale + (m_wtu - wtu) * self.weight / norm(self.weight) ** 2

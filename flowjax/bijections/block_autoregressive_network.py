@@ -13,10 +13,8 @@ from flowjax.nn.block_autoregressive import BlockAutoregressiveLinear
 
 
 class _CallableToBijection(AbstractBijection):
-    """Wrap a callable e.g. a function or a callable module, into a bijection object
-    (inverse not implemented). We assume the callable acts on scalar values
-    and log_det can be computed in a stable manner with jax.grad.
-    """
+    # Wrap a callable e.g. a function or a callable module. We assume the callable acts
+    # on scalar values and log_det can be computed in a stable manner with jax.grad.
 
     fn: Callable
     shape: ClassVar[tuple] = ()
@@ -42,9 +40,10 @@ class _CallableToBijection(AbstractBijection):
 
 
 class BlockAutoregressiveNetwork(AbstractBijection):
-    r"""Block Autoregressive Network (https://arxiv.org/abs/1904.04676).Note that in
-    contrast to the original paper which uses tanh activations, by default we use
-    :class:`~flowjax.bijections.tanh.LeakyTanh`. This ensures the codomain of the
+    r"""Block Autoregressive Network (https://arxiv.org/abs/1904.04676).
+
+    Note that in contrast to the original paper which uses tanh activations, by default
+    we use :class:`~flowjax.bijections.tanh.LeakyTanh`. This ensures the codomain of the
     activation is the set of real values, which will ensure properly normalised
     densities (see https://github.com/danielward27/flowjax/issues/102).
     """
@@ -64,7 +63,8 @@ class BlockAutoregressiveNetwork(AbstractBijection):
         block_dim: int,
         activation: AbstractBijection | Callable | None = None,
     ):
-        """
+        """Initialize the bijection.
+
         Args:
             key (KeyArray): Jax PRNGKey
             dim (int): Dimension of the distribution.
@@ -152,8 +152,7 @@ class BlockAutoregressiveNetwork(AbstractBijection):
         )
 
     def _activation_and_log_det_3d(self, x):
-        """Compute the activation and the log determinant with shape
-        (num_blocks, block_dim, block_dim)"""
+        """Compute activation and the log determinant (blocks, block_dim, block_dim)."""
         x, log_abs_grads = eqx.filter_vmap(self.activation.transform_and_log_det)(x)
         log_det_3d = jnp.full((self.shape[0], self.block_dim, self.block_dim), -jnp.inf)
         log_det_3d = log_det_3d.at[
@@ -163,10 +162,10 @@ class BlockAutoregressiveNetwork(AbstractBijection):
 
 
 def logmatmulexp(x, y):
-    """
-    Numerically stable version of ``(x.log() @ y.log()).exp()``.
+    """Numerically stable version of ``(x.log() @ y.log()).exp()``.
+
     From numpyro https://github.com/pyro-ppl/numpyro/blob/
-    f2ff89a3a7147617e185eb51148eb15d56d44661/numpyro/distributions/util.py#L387
+    f2ff89a3a7147617e185eb51148eb15d56d44661/numpyro/distributions/util.py#L387.
     """
     x_shift = jax.lax.stop_gradient(jnp.amax(x, -1, keepdims=True))
     y_shift = jax.lax.stop_gradient(jnp.amax(y, -2, keepdims=True))

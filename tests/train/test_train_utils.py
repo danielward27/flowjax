@@ -1,4 +1,4 @@
-"Tests for train_utils.py"
+"Tests for train_utils.py."
 import jax.numpy as jnp
 import jax.random as jr
 import pytest

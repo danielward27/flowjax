@@ -52,7 +52,7 @@ def test_mcmc():
 
 
 def test_vi():
-    "Check that flowjax distributions can be used as guide/variational distributions"
+    "Check that flowjax distributions can be used as guide/variational distributions."
 
     def guide(dist):
         dist = register_params("guide", dist)

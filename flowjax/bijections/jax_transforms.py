@@ -11,8 +11,9 @@ from flowjax.bijections.bijection import AbstractBijection
 
 
 class Scan(AbstractBijection):
-    """Repeatedly apply the same bijection with different parameter values. Internally,
-    uses `jax.lax.scan` to reduce compilation time.
+    """Repeatedly apply the same bijection with different parameter values.
+
+    Internally, uses `jax.lax.scan` to reduce compilation time.
     """
 
     shape: tuple[int, ...]
@@ -20,14 +21,16 @@ class Scan(AbstractBijection):
     bijection: AbstractBijection
 
     def __init__(self, bijection: AbstractBijection):
-        """
+        """Initialize the scan bijection.
+
         The array leaves in `bijection` should have an additional leading axis to scan
         over. Often it is convenient to construct these using ``equinox.filter_vmap``.
 
         Args:
-            bijection (AbstractBijection): A bijection, in which the arrays leaves have an
-                additional leading axis to scan over. For complex bijections, it can be
-                convenient to create compatible bijections with ``equinox.filter_vmap``.
+            bijection (AbstractBijection): A bijection, in which the arrays leaves have
+                an additional leading axis to scan over. For complex bijections, it can
+                be convenient to create compatible bijections with
+                ``equinox.filter_vmap``.
 
         Example:
             Below is equivilent to ``Chain([Affine(p) for p in params])``.
@@ -101,7 +104,6 @@ class Vmap(AbstractBijection):
     """Applies vmap to bijection methods to add a batch dimension to the bijection.
 
     Example:
-
         The two most common use cases, are shown below:
 
         .. doctest::
@@ -160,7 +162,8 @@ class Vmap(AbstractBijection):
         axis_size: int | None = None,
         in_axis_condition: int | None = None,
     ):
-        """
+        """Initialize the bijection.
+
         Args:
             bijection (AbstractBijection): The bijection to vectorize.
             in_axis (int | None | Callable): Specify which axes of the bijection
@@ -259,7 +262,7 @@ def _infer_axis_size_from_params(tree, in_axis):
 
 
 def _resolve_vmapped_axes(pytree, in_axes):
-    "Returns pytree with ints denoting vmapped dimensions."
+    """Returns pytree with ints denoting vmapped dimensions."""
 
     # Adapted from equinox filter_vmap
     def _resolve_axis(in_axes, elem):

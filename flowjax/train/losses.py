@@ -1,6 +1,8 @@
-"""Common loss functions for training normalizing flows. The loss functions are
-callables, with the first two arguments being the partitioned distribution (see
-equinox.partition)."""
+"""Common loss functions for training normalizing flows.
+
+The loss functions are callables, with the first two arguments being the partitioned
+distribution (see equinox.partition).
+"""
 from typing import Callable
 
 import equinox as eqx
@@ -15,8 +17,9 @@ from flowjax.distributions import AbstractDistribution
 
 
 class MaximumLikelihoodLoss:
-    """Loss for fitting a flow with maximum likelihood (negative log likelihood). Can
-    be used to learn either conditional or unconditional distributions.
+    """Loss for fitting a flow with maximum likelihood (negative log likelihood).
+
+    This loss can be used to learn either conditional or unconditional distributions.
     """
 
     @eqx.filter_jit
@@ -27,12 +30,14 @@ class MaximumLikelihoodLoss:
         x: Array,
         condition: Array | None = None,
     ):
+        """Compute the loss."""
         dist = eqx.combine(static, params)
         return -dist.log_prob(x, condition).mean()
 
 
 class ContrastiveLoss:
     r"""Loss function for use in a sequential neural posterior estimation algorithm.
+
     Learns a posterior ``p(x|condition)``. Contrastive samples for each ``x`` are
     generated from other x samples in the batch.
 
@@ -49,9 +54,11 @@ class ContrastiveLoss:
     """
 
     def __init__(self, prior: AbstractDistribution, n_contrastive: int):
-        """
+        """Initialize the loss function.
+
         Args:
-            prior (AbstractDistribution): The prior distribution over x (the target variable).
+            prior (AbstractDistribution): The prior distribution over x (the target
+                variable).
             n_contrastive (int): The number of contrastive samples/atoms to use when
                 computing the loss.
         """
@@ -66,6 +73,7 @@ class ContrastiveLoss:
         x: Array,
         condition: Array | None = None,
     ):
+        """Compute the loss."""
         dist = eqx.combine(params, static)
         contrastive = self._get_contrastive(x)
         joint_log_odds = dist.log_prob(x, condition) - self.prior.log_prob(x)
@@ -101,7 +109,8 @@ class ElboLoss:
         num_samples: int,
         stick_the_landing: bool = False,
     ):
-        """
+        """Initialize the ELBO loss.
+
         Args:
             num_samples (int): Number of samples to use in the ELBO approximation.
             target (Callable[[ArrayLike], Array]): The target, i.e. log posterior
@@ -126,6 +135,13 @@ class ElboLoss:
         static: AbstractDistribution,
         key: jr.KeyArray,
     ):
+        """Compute the ELBO loss.
+
+        Args:
+            params (AbstractDistribution): The trainable parameters of the model.
+            static (AbstractDistribution): The static components of the model.
+            key (jr.KeyArray): Jax random seed.
+        """
         dist = eqx.combine(params, static)
 
         if self.stick_the_landing:

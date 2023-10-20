@@ -12,8 +12,7 @@ from jax.typing import ArrayLike
 def real_to_increasing_on_interval(
     arr: Array, B: float = 1, softmax_adjust: float = 1e-2
 ):
-    """Transform unconstrained parameter vector to monotonically increasing positions on
-    [-B, B].
+    """Transform unconstrained vector to monotonically increasing positions on [-B, B].
 
     Args:
         arr (Array): Parameter vector.
@@ -38,8 +37,9 @@ def inv_cum_sum(x):
 
 def merge_cond_shapes(shapes: Sequence):
     """Merges shapes (tuples of ints or None) used in bijections and distributions.
-    Returns None if all shapes are None, otherwise checks the shapes match, and returns
-    the shape.
+
+    Returns None if all shapes are None, otherwise checks none None shapes match, and
+    returns the shape.
     """
     if len(shapes) == 0:
         raise ValueError("No shapes have been provided.")
@@ -53,7 +53,6 @@ def merge_cond_shapes(shapes: Sequence):
 
 def check_shapes_match(shapes: list[tuple[int, ...]]):
     """Check shapes match and produce a useful error message."""
-
     for i, shape in enumerate(shapes):
         if shape != shapes[0]:
             raise ValueError(
@@ -62,7 +61,7 @@ def check_shapes_match(shapes: list[tuple[int, ...]]):
             )
 
 
-def _get_ufunc_signature(in_shapes, out_shapes):
+def _get_ufunc_signature(in_shapes: tuple[int], out_shapes: tuple[int]):
     """Convert a sequence of in_shapes and out_shapes to a universal function signature.
 
     Example:
@@ -79,14 +78,23 @@ def _get_ufunc_signature(in_shapes, out_shapes):
     return f"{in_shapes_str}->{out_shapes_str}"
 
 
-def get_ravelled_bijection_constructor(bijection, filter_spec=eqx.is_inexact_array):
-    """Given a bijection, returns a tuple containing
-    1) a constructor for the bijection from a flattened array; 2) the current flattened
-    parameters.
+def get_ravelled_bijection_constructor(
+    bijection, filter_spec=eqx.is_inexact_array
+) -> tuple:
+    """Get a constructor taking ravelled parameters and the current ravelled parameters.
+
+    The constructor takes a single argument as input, which is all the bijection
+    parameters flattened into a single contiguous vector. This is useful when we wish to
+    parameterize a bijection with a neural neural network, as it allows convenient
+    construction of the bijection directly from the neural network output.
 
     Args:
-        bijection (AbstractBijection): Bijection.
-        filter_spec: Filter function. Defaults to eqx.is_inexact_array.
+        bijection (AbstractBijection): Bijection to form constructor for.
+        filter_spec: Filter function to specify parameters. Defaults to
+            eqx.is_inexact_array.
+
+    Returns:
+        tuple: The constructor, and the current parameter vector.
     """
     params, static = eqx.partition(bijection, filter_spec)  # type: ignore
     current, unravel = ravel_pytree(params)
@@ -99,8 +107,10 @@ def get_ravelled_bijection_constructor(bijection, filter_spec=eqx.is_inexact_arr
 
 
 def arraylike_to_array(arr, err_name: str = "input", **kwargs) -> Array:
-    """Combines jnp.asarray, with an isinstance(arr, ArrayLike) check. This
-    allows inputs to be jax.numpy arrays, numpy arrays, python built in numeric types
+    """Check the input is arraylike and convert to a jax Array with ``jnp.asarray``.
+
+    Combines ``jnp.asarray``, with an isinstance(arr, ArrayLike) check. This
+    allows inputs to be jax arrays, numpy arrays, python built in numeric types
     (float, int) etc, but does not allow list or tuple inputs (which are not arraylike
     and can introduce overhead and confusing behaviour in certain cases).
 
@@ -111,7 +121,7 @@ def arraylike_to_array(arr, err_name: str = "input", **kwargs) -> Array:
         **kwargs: Key word arguments passed to jnp.asarray.
     """
     if not isinstance(arr, ArrayLike):
-        raise ValueError(
+        raise TypeError(
             f"Expected {err_name} to be arraylike; got {type(arr).__name__}."
         )
     return jnp.asarray(arr, **kwargs)

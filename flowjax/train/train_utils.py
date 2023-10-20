@@ -34,7 +34,7 @@ def train_val_split(key: jr.KeyArray, arrays: Sequence[Array], val_prop: float =
 
     Args:
         key (KeyArray): Jax random key.
-        arrays Sequence[Array]: Sequence of arrays, with matching size on axis 0.
+        arrays (Sequence[Array]): Sequence of arrays, with matching size on axis 0.
         val_prop (float): Proportion of data to use for validation. Defaults to 0.1.
 
     Returns:
@@ -56,9 +56,10 @@ def train_val_split(key: jr.KeyArray, arrays: Sequence[Array], val_prop: float =
 
 @partial(jit, static_argnums=1)
 def get_batches(arrays: Sequence[Array], batch_size: int):
-    """Reshape a sequence of arrays to have an additional dimension for the batches,
-    i.e. transforming shape ``(data_len, *rest)`` to ``(num_batches, batch_size,
-    *rest)``.
+    """Reshape a sequence of arrays to have an additional dimension for the batches.
+
+    Specifically, this will transform an array with shape ``(data_len, *rest)`` to
+    ``(num_batches, batch_size, *rest)``.
 
     Considerations:
         - The values in the last batch are dropped if truncated, i.e. if
@@ -78,7 +79,7 @@ def get_batches(arrays: Sequence[Array], batch_size: int):
 
 
 def _add_batch(arr, batch_size):
-    "Adds a leading dimension for batches, dropping the last batch if truncated."
+    """Adds a leading dimension for batches, dropping the last batch if truncated."""
     batch_size = min(batch_size, arr.shape[0])
     n_batches = arr.shape[0] // batch_size
     arr = arr[: n_batches * batch_size].reshape(n_batches, batch_size, *arr.shape[1:])
@@ -86,8 +87,7 @@ def _add_batch(arr, batch_size):
 
 
 def count_fruitless(losses: list[float]) -> int:
-    """Given a list of losses from each epoch, count the number of epochs since
-    the minimum loss.
+    """Count the number of epochs since the minimum loss in a list of losses.
 
     Args:
         losses (list[float]): List of losses.

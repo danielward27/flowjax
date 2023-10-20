@@ -1,10 +1,6 @@
-# Configuration file for the Sphinx documentation builder.
+"""Configuration file for the Sphinx documentation builder."""
 import os
 import sys
-
-import jax  # noqa Avoid circular import
-
-# Avoid unused module linting
 
 sys.path.insert(0, os.path.abspath(".."))
 

@@ -17,9 +17,14 @@ from flowjax.utils import get_ravelled_bijection_constructor
 
 
 class MaskedAutoregressive(AbstractBijection):
-    """Masked autoregressive bijection implementation (https://arxiv.org/abs/1705.07057v4).
+    """Masked autoregressive bijection.
+
     The transformer is parameterised by a neural network, with weights masked to ensure
     an autoregressive structure.
+
+    Ref:
+        - https://arxiv.org/abs/1705.07057v4
+        - https://arxiv.org/abs/1705.07057v4
     """
 
     shape: tuple[int, ...]
@@ -37,11 +42,12 @@ class MaskedAutoregressive(AbstractBijection):
         nn_depth: int,
         nn_activation: Callable = jnn.relu,
     ) -> None:
-        """
+        """Initialize the masked autoregressive bijection.
+
         Args:
             key (KeyArray): Jax PRNGKey
-            transformer (AbstractBijection): Bijection with shape () to be parameterised by the
-                autoregressive network.
+            transformer (AbstractBijection): Bijection with shape () to be parameterised
+            by the autoregressive network.
             dim (int): Dimension.
             cond_dim (int | None): Dimension of any conditioning variables.
             nn_width (int): Neural network width.

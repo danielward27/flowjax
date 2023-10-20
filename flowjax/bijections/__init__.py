@@ -1,4 +1,4 @@
-"""Bijections from ``flowjax.bijections``"""
+"""Bijections from ``flowjax.bijections``."""
 
 from .affine import AdditiveCondition, Affine, TriangularAffine
 from .bijection import AbstractBijection

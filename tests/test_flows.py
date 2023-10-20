@@ -7,6 +7,7 @@ from flowjax.flows import (
     BlockNeuralAutoregressiveFlow,
     CouplingFlow,
     MaskedAutoregressiveFlow,
+    PlanarFlow,
     TriangularSplineFlow,
 )
 
@@ -28,6 +29,7 @@ testcases = {
     "Affine_MaskedAutoregessive": MaskedAutoregressiveFlow(
         transformer=Affine(), **KWARGS
     ),
+    "Planar": PlanarFlow(**KWARGS),
 }
 
 

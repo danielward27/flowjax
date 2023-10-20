@@ -160,7 +160,8 @@ def test_transform_inverse(bijection):
 def test_transform_inverse_and_log_dets(bijection):
     """Tests the transform_and_log_det and inverse_and_log_det methods,
     by 1) checking invertibility and 2) comparing log dets to those obtained with
-    automatic differentiation."""
+    automatic differentiation.
+    """
     shape = bijection.shape if bijection.shape is not None else (DIM,)
     x = jr.normal(jr.PRNGKey(0), shape)
 

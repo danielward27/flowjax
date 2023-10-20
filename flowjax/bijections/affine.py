@@ -14,9 +14,7 @@ from flowjax.utils import arraylike_to_array
 
 
 class Affine(AbstractBijection):
-    """Elementwise affine transformation ``y = a*x + b``. loc and scale should broadcast
-    to the desired shape of the bijection.
-    """
+    """Elementwise affine transformation ``y = a*x + b``."""
 
     shape: tuple[int, ...]
     cond_shape: ClassVar[None] = None
@@ -30,13 +28,16 @@ class Affine(AbstractBijection):
         scale: ArrayLike = 1,
         positivity_constraint: AbstractBijection | None = None,
     ):
-        """
+        """Initilaizes an affine transformation.
+
+        ``loc`` and ``scale`` should broadcast to the desired shape of the bijection.
+
         Args:
             loc (ArrayLike): Location parameter. Defaults to 0.
             scale (ArrayLike): Scale parameter. Defaults to 1.
-            postivity_constraint (AbstractBijection): Bijection with shape matching the Affine
-                bijection, that maps the scale parameter from an unbounded domain to the
-                positive domain. Defaults to SoftPlus.
+            positivity_constraint (AbstractBijection | None): Bijection with shape
+                matching the Affine bijection, that maps the scale parameter from an
+                unbounded domain to the positive domain. Defaults to SoftPlus.
         """
         loc, scale = [arraylike_to_array(a, dtype=float) for a in (loc, scale)]
         self.shape = jnp.broadcast_shapes(loc.shape, scale.shape)
@@ -73,8 +74,11 @@ class Affine(AbstractBijection):
 
 
 class TriangularAffine(AbstractBijection):
-    r"""Transformation of the form :math:`Ax + b`, where :math:`A` is a lower or upper
-    triangular matrix."""
+    r"""A triangular affine transformation.
+
+    Transformation has the form :math:`Ax + b`, where :math:`A` is a lower or upper
+    triangular matrix, and :math:`b` is the bias vector.
+    """
     shape: tuple[int, ...]
     cond_shape: ClassVar[None] = None
     loc: Array
@@ -94,14 +98,15 @@ class TriangularAffine(AbstractBijection):
         weight_normalisation: bool = False,
         positivity_constraint: AbstractBijection | None = None,
     ):
-        """
+        """Initialize the triangular affine transformation.
+
         Args:
             loc (ArrayLike): Location parameter.
             arr (ArrayLike): Triangular matrix.
             lower (bool): Whether the mask should select the lower or upper
-                triangular matrix (other elements ignored). Defaults to True (lower).
+            triangular matrix (other elements ignored). Defaults to True (lower).
             weight_normalisation (bool): If true, carry out weight normalisation.
-            postivity_constraint (AbstractBijection): Bijection with shape matching the
+            positivity_constraint (AbstractBijection): Bijection with shape matching the
                 dimension of the triangular affine bijection, that maps the diagonal
                 entries of the array from an unbounded domain to the positive domain.
                 Also used for weight normalisation parameters, if used. Defaults to
@@ -139,8 +144,11 @@ class TriangularAffine(AbstractBijection):
 
     @property
     def arr(self):
-        """Get triangular array, (applies masking, constrains diagonal and weight
-        normalisation)."""
+        """Get the triangular array.
+
+        Applies masking, constrains the diagonal to be positive and (possibly)
+        applies weight normalisation.
+        """
         diag = self.positivity_constraint.transform(self._diag)
         off_diag = self.tri_mask * self._arr
         arr = off_diag.at[self.diag_idxs].set(diag)
@@ -173,9 +181,7 @@ class TriangularAffine(AbstractBijection):
 
 
 class AdditiveCondition(AbstractBijection):
-    """Given a callable ``f``, carries out ``y = x + f(condition)`` as the forward
-    transformation and ``x = y - f(condition)`` as the inverse transformation. Note that
-    the callable can be a callable module with trainable parameters if desired.
+    """Given a callable ``f``, carries out the transformation ``y = x + f(condition)``.
 
     If used to transform a distribution, this allows the "location" to be changed as a
     function of the conditioning variables.
@@ -191,13 +197,15 @@ class AdditiveCondition(AbstractBijection):
         shape: tuple[int, ...],
         cond_shape: tuple[int, ...],
     ):
-        """
+        """Note that the callable can be a callable module with trainable parameters.
+
         Args:
             module (Callable[[ArrayLike], ArrayLike]): A callable (e.g. a function or
                 callable module) that maps array with shape cond_shape, to a shape
                 that is broadcastable with the shape of the bijection.
             shape (tuple[int, ...]): The shape of the bijection.
             cond_shape (tuple[int, ...]): The condition shape of the bijection.
+
 
         Example:
             Conditioning using a linear transformation

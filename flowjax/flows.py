@@ -56,11 +56,13 @@ class CouplingFlow(AbstractTransformed):
         nn_activation: Callable = jnn.relu,
         invert: bool = True,
     ):
-        """
+        """Initialize the coupling flow.
+
         Args:
             key (jr.KeyArray): Jax PRNGKey.
             base_dist (AbstractDistribution): Base distribution.
-            transformer (AbstractBijection): Bijection to be parameterised by conditioner.
+            transformer (AbstractBijection): Bijection to be parameterised by
+            conditioner.
             cond_dim (int): Dimension of conditioning variables. Defaults to None.
             flow_layers (int): Number of coupling layers. Defaults to 5.
             nn_width (int): Conditioner hidden layer size. Defaults to 40.
@@ -69,7 +71,7 @@ class CouplingFlow(AbstractTransformed):
             invert: (bool): Whether to invert the bijection. Broadly, True will
                 prioritise a faster `inverse` methods, leading to faster `log_prob`,
                 False will prioritise faster `transform` methods, leading to faster
-                `sample`. Defaults to True
+                `sample`. Defaults to True.
         """
         if base_dist.ndim != 1:
             raise ValueError(f"Expected base_dist.ndim==1, got {base_dist.ndim}")
@@ -106,9 +108,10 @@ class CouplingFlow(AbstractTransformed):
 
 
 class MaskedAutoregressiveFlow(AbstractTransformed):
-    """Masked autoregressive flow (https://arxiv.org/abs/1606.04934,
-    https://arxiv.org/abs/1705.07057v4). Parameterises a transformer with an
-    autoregressive neural network.
+    """Masked autoregressive flow.
+
+    Parameterises a transformer bijection with an autoregressive neural network.
+    Refs: https://arxiv.org/abs/1606.04934; https://arxiv.org/abs/1705.07057v4.
     """
 
     base_dist: AbstractDistribution
@@ -132,11 +135,13 @@ class MaskedAutoregressiveFlow(AbstractTransformed):
         nn_activation: Callable = jnn.relu,
         invert: bool = True,
     ):
-        """
+        """Initialize the masked autoregressive flow.
+
         Args:
             key (jr.KeyArray): Random seed.
             base_dist (AbstractDistribution): Base distribution.
-            transformer (AbstractBijection): Bijection parameterised by autoregressive network.
+            transformer (AbstractBijection): Bijection parameterised by autoregressive
+                network.
             cond_dim (int): _description_. Defaults to 0.
             flow_layers (int): Number of flow layers. Defaults to 5.
             nn_width (int): Number of hidden layers in neural network. Defaults to 40.
@@ -181,6 +186,7 @@ class MaskedAutoregressiveFlow(AbstractTransformed):
 
 class BlockNeuralAutoregressiveFlow(AbstractTransformed):
     """Block neural autoregressive flow (BNAF) (https://arxiv.org/abs/1904.04676).
+
     Each flow layer contains a
     :class:`~flowjax.bijections.block_autoregressive_network.BlockAutoregressiveNetwork`
     bijection. The bijection does not have an analytic inverse, so either ``log_prob``
@@ -208,15 +214,16 @@ class BlockNeuralAutoregressiveFlow(AbstractTransformed):
         invert: bool = True,
         activation: AbstractBijection | Callable | None = None,
     ):
-        """
+        """Initialize the block neural autoregressive flow.
+
         Args:
             key (jr.KeyArray): Jax PRNGKey.
             base_dist (AbstractDistribution): Base distribution.
             cond_dim (int | None): Dimension of conditional variables.
             nn_depth (int): Number of hidden layers within the networks.
-                Defaults to 1.
+            Defaults to 1.
             nn_block_dim (int): Block size. Hidden layer width is
-                dim*nn_block_dim. Defaults to 8.
+            dim*nn_block_dim. Defaults to 8.
             flow_layers (int): Number of BNAF layers. Defaults to 1.
             invert: (bool): Use `True` for access of ``log_prob`` only (e.g.
                 fitting by maximum likelihood), `False` for the forward direction
@@ -261,7 +268,9 @@ class BlockNeuralAutoregressiveFlow(AbstractTransformed):
 
 
 class TriangularSplineFlow(AbstractTransformed):
-    """A stack of layers, where each layer consists of a triangular affine
+    """A triangular spline flow.
+
+    A single layer consists where each layer consists of a triangular affine
     transformation with weight normalisation, and an elementwise rational quadratic
     spline. Tanh is used to constrain to the input to [-1, 1] before spline
     transformations.
@@ -287,7 +296,8 @@ class TriangularSplineFlow(AbstractTransformed):
         invert: bool = True,
         init: Callable | None = None,
     ):
-        """
+        """Initialize the triangular spline flow.
+
         Args:
             key (jr.KeyArray): Jax random seed.
             base_dist (AbstractDistribution): Base distribution of the flow.
@@ -354,9 +364,10 @@ class TriangularSplineFlow(AbstractTransformed):
 
 
 class PlanarFlow(AbstractTransformed):
-    """Planar flow as introduced in https://arxiv.org/pdf/1505.05770.pdf, alternating
-    between :class:`~flowjax.bijections.planar.Planar` and permutations. Note the
-    definition here is inverted compared to the original paper.
+    """Planar flow as introduced in https://arxiv.org/pdf/1505.05770.pdf.
+
+    This alternates between :class:`~flowjax.bijections.planar.Planar` layers and
+    permutations. Note the definition here is inverted compared to the original paper.
     """
 
     base_dist: AbstractDistribution
@@ -375,7 +386,8 @@ class PlanarFlow(AbstractTransformed):
         invert: bool = True,
         **mlp_kwargs,
     ):
-        """
+        """Initialize the planar flow.
+
         Args:
             key (jr.KeyArray): Jax PRNGKey.
             base_dist (AbstractDistribution): Base distribution.
@@ -385,8 +397,8 @@ class PlanarFlow(AbstractTransformed):
                 prioritise a faster `inverse` methods, leading to faster `log_prob`,
                 False will prioritise faster `transform` methods, leading to faster
                 `sample`. Defaults to True
-            **mlp_kwargs: Key word arguments to construct the MLP conditioner. Ignored
-                if cond_dim is None.
+            **mlp_kwargs: Key word arguments (excluding in_size and out_size) passed to
+                the MLP (equinox.nn.MLP). Ignored when cond_dim is None.
         """
         if base_dist.ndim != 1:
             raise ValueError(f"Expected base_dist.ndim==1, got {base_dist.ndim}")
@@ -407,7 +419,8 @@ class PlanarFlow(AbstractTransformed):
         self.permute_strategy = _get_default_permute_name(dim)
         self.shape = (dim,)
         self.cond_shape = None if cond_dim is None else (cond_dim,)
-        super().__init__(base_dist, bijection)
+        self.base_dist = base_dist
+        self.bijection = bijection
 
 
 def _add_default_permute(bijection: AbstractBijection, dim: int, key: jr.KeyArray):

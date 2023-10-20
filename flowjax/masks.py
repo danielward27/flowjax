@@ -1,6 +1,8 @@
-"""
-Various masks, generally used in flows to enforce e.g. a dependency structure
-that leads to invertibility and efficient Jacobian determinant calculations.
+"""Masks used in flows.
+
+Masks are generally used in flows to mask out some weights, in order to enforce a
+dependency structure that ensures invertibility and efficient Jacobian determinant
+calculations.
 """
 
 import jax.numpy as jnp
