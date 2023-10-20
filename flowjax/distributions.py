@@ -40,16 +40,20 @@ class AbstractDistribution(eqx.Module):
     such they are compatible with normal jax operations.
 
     **Implementing a distribution**
+    For creating standard distributions (by standard, we mean here that they are not
+    transformed distributions):
 
-        (1) Inherit from ``AbstractDistribution``.
+        (1) Inherit from ``AbstractStandardDistribution``.
         (2) Define the abstract attributes ``shape`` and ``cond_shape``.
             ``cond_shape`` should be ``None`` for unconditional distributions.
-        (3) Define the abstract methods ``_sample``, ``_log_prob``, and
-            ``_sample_and_log_prob``. These methods should be defined for a single point
-            with shape matching the distribution shape. The class will use these to
-            define more convenient log_prob and sample methods that support broadcasting
-            and perform argument checks.
+        (3) Define the abstract methods ``_sample``, ``_log_prob``. These methods
+            should be defined for a single point with shape matching the distribution
+            shape. The class will use these to define more convenient log_prob and
+            sample methods that support broadcasting and perform argument checks.
 
+    For creating transformed distributions, see either :class:`AbstractTransformed`
+    if new class is desired, or :class:`Transformed` if we wish to transform
+    a base distribution with a bijection and do not need a seperate class.
     """
 
     shape: AbstractVar[tuple[int, ...]]
@@ -248,6 +252,18 @@ class AbstractDistribution(eqx.Module):
         return jnp.vectorize(_check_shapes(method), signature=signature, excluded=ex)
 
 
+class AbstractStandardDistribution(AbstractDistribution):
+    """Abstract distribution type, representing a distribution that is not transformed.
+
+    The class implements the ``_sample_and_log_prob`` method by calling ``_sample`` and
+    ``_log_prob`` methods seperately.
+    """
+
+    def _sample_and_log_prob(self, key, condition=None):
+        x = self._sample(key, condition)
+        return x, self._log_prob(x, condition)
+
+
 class AbstractTransformed(AbstractDistribution):
     """Abstract transformed distribution class.
 
@@ -276,7 +292,7 @@ class AbstractTransformed(AbstractDistribution):
         )
         return sample, log_prob_base - forward_log_dets
 
-    def __check_init__(self):  # TODO test errors
+    def __check_init__(self):  # TODO test errors and test conditional base distribution
         """Checks cond_shape is compatible in both bijection and distribution."""
         if (
             self.base_dist.cond_shape is not None
@@ -355,7 +371,7 @@ class Transformed(AbstractTransformed):
         )
 
 
-class StandardNormal(AbstractDistribution):
+class StandardNormal(AbstractStandardDistribution):
     """Standard normal distribution.
 
     Note unlike :class:`Normal`, this has no trainable parameters.
@@ -378,10 +394,6 @@ class StandardNormal(AbstractDistribution):
     def _sample(self, key, condition=None):
         return jr.normal(key, self.shape)
 
-    def _sample_and_log_prob(self, key, condition=None):
-        x = self._sample(key)
-        return x, self._log_prob(x)
-
 
 class Normal(AbstractTransformed):
     """An independent Normal distribution with mean and std for each dimension."""
@@ -394,7 +406,7 @@ class Normal(AbstractTransformed):
     def __init__(self, loc: ArrayLike = 0, scale: ArrayLike = 1):
         """Initialize the normal distribution.
 
-        `loc` and `scale` should broadcast to the desired shape of the distribution.
+        ``loc`` and ``scale`` should broadcast to the desired shape of the distribution.
 
         Args:
             loc (ArrayLike): Means. Defaults to 0.
@@ -415,7 +427,7 @@ class Normal(AbstractTransformed):
         return self.bijection.scale
 
 
-class _StandardUniform(AbstractDistribution):
+class _StandardUniform(AbstractStandardDistribution):
     r"""Implements a standard Uniform distribution."""
     shape: tuple[int, ...]
     cond_shape: ClassVar[None] = None
@@ -428,10 +440,6 @@ class _StandardUniform(AbstractDistribution):
 
     def _sample(self, key, condition=None):
         return jr.uniform(key, shape=self.shape)
-
-    def _sample_and_log_prob(self, key, condition=None):
-        x = self._sample(key)
-        return x, self._log_prob(x)
 
 
 class Uniform(AbstractTransformed):
@@ -471,7 +479,7 @@ class Uniform(AbstractTransformed):
         return self.bijection.loc + self.bijection.scale
 
 
-class _StandardGumbel(AbstractDistribution):
+class _StandardGumbel(AbstractStandardDistribution):
     """Standard gumbel distribution (https://en.wikipedia.org/wiki/Gumbel_distribution)."""
 
     shape: tuple[int, ...]
@@ -486,10 +494,6 @@ class _StandardGumbel(AbstractDistribution):
     def _sample(self, key, condition=None):
         return jr.gumbel(key, shape=self.shape)
 
-    def _sample_and_log_prob(self, key, condition=None):
-        x = self._sample(key)
-        return x, self._log_prob(x)
-
 
 class Gumbel(AbstractTransformed):
     """Gumbel distribution (https://en.wikipedia.org/wiki/Gumbel_distribution)."""
@@ -500,7 +504,7 @@ class Gumbel(AbstractTransformed):
     cond_shape: ClassVar[None] = None
 
     def __init__(self, loc: ArrayLike = 0, scale: ArrayLike = 1):
-        """`loc` and `scale` should broadcast to the dimension of the distribution.
+        """``loc`` and ``scale`` should broadcast to the dimension of the distribution.
 
         Args:
             loc (ArrayLike): Location paramter.
@@ -521,8 +525,9 @@ class Gumbel(AbstractTransformed):
         return self.bijection.scale
 
 
-class _StandardCauchy(AbstractDistribution):
-    """Implements standard cauchy distribution (loc=0, scale=1)
+class _StandardCauchy(AbstractStandardDistribution):
+    """Implements standard cauchy distribution (loc=0, scale=1).
+
     Ref: https://en.wikipedia.org/wiki/Cauchy_distribution.
     """
 
@@ -538,10 +543,6 @@ class _StandardCauchy(AbstractDistribution):
     def _sample(self, key, condition=None):
         return jr.cauchy(key, shape=self.shape)
 
-    def _sample_and_log_prob(self, key, condition=None):
-        x = self._sample(key)
-        return x, self._log_prob(x)
-
 
 class Cauchy(AbstractTransformed):
     """Cauchy distribution (https://en.wikipedia.org/wiki/Cauchy_distribution)."""
@@ -552,7 +553,7 @@ class Cauchy(AbstractTransformed):
     cond_shape: ClassVar[None] = None
 
     def __init__(self, loc: ArrayLike = 0, scale: ArrayLike = 1):
-        """`loc` and `scale` should broadcast to the dimension of the distribution.
+        """``loc`` and ``scale`` should broadcast to the dimension of the distribution.
 
         Args:
             loc (ArrayLike): Location paramter.
@@ -574,7 +575,7 @@ class Cauchy(AbstractTransformed):
         return self.bijection.scale
 
 
-class _StandardStudentT(AbstractDistribution):
+class _StandardStudentT(AbstractStandardDistribution):
     """Implements student T distribution with specified degrees of freedom."""
 
     shape: tuple[int, ...]
@@ -591,10 +592,6 @@ class _StandardStudentT(AbstractDistribution):
     def _sample(self, key, condition=None):
         return jr.t(key, df=self.df, shape=self.shape)
 
-    def _sample_and_log_prob(self, key, condition=None):
-        x = self._sample(key)
-        return x, self._log_prob(x)
-
     @property
     def df(self):
         """The degrees of freedom of the distibution."""
@@ -610,7 +607,7 @@ class StudentT(AbstractTransformed):
     cond_shape: ClassVar[None] = None
 
     def __init__(self, df: ArrayLike, loc: ArrayLike = 0, scale: ArrayLike = 1):
-        """`df`, `loc` and `scale` broadcast to the dimension of the distribution.
+        """``df``, ``loc`` and ``scale`` broadcast to the dimension of the distribution.
 
         Args:
             df (ArrayLike): The degrees of freedom.
@@ -639,10 +636,11 @@ class StudentT(AbstractTransformed):
 
 
 class SpecializeCondition(AbstractDistribution):  # TODO check tested
-    """Utility class to specialise a conditional distribution to a particular instance
-    of the conditioning variable. This makes the distribution act like an unconditional
-    distribution, i.e. the distribution methods implicitly will use the condition passed
-    on instantiation of the class.
+    """Specialise a distribution to a particular conditioning variable instance.
+
+    This makes the distribution act like an unconditional distribution, i.e. the
+    distribution methods implicitly will use the condition passed on instantiation
+    of the class.
     """
 
     shape: tuple[int, ...]
@@ -654,7 +652,8 @@ class SpecializeCondition(AbstractDistribution):  # TODO check tested
         condition: ArrayLike,
         stop_gradient: bool = True,
     ):
-        """
+        """Initialize the distribution.
+
         Args:
             dist (AbstractDistribution): Conditional distribution to specialize.
             condition (ArrayLike, optional): Instance of conditioning variable with
@@ -684,4 +683,5 @@ class SpecializeCondition(AbstractDistribution):  # TODO check tested
 
     @property
     def condition(self):
+        """The conditioning variable, possibly with stop_gradient applied."""
         return stop_gradient(self._condition) if self.stop_gradient else self._condition
