@@ -3,7 +3,7 @@
 The loss functions are callables, with the first two arguments being the partitioned
 distribution (see equinox.partition).
 """
-from typing import Callable
+from collections.abc import Callable
 
 import equinox as eqx
 import jax.numpy as jnp
@@ -92,8 +92,7 @@ class ContrastiveLoss:
         # Rolling window over theta batch to create contrastive samples.
         idx = jnp.arange(len(theta))[:, None] + jnp.arange(self.n_contrastive)[None, :]
         contrastive = jnp.roll(theta[idx], -1, axis=0)  # Ensure mismatch with condition
-        contrastive = jnp.swapaxes(contrastive, 0, 1)  # (contrastive, batch_size, dim)
-        return contrastive
+        return jnp.swapaxes(contrastive, 0, 1)  # (contrastive, batch_size, dim)
 
 
 class ElboLoss:

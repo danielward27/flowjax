@@ -1,6 +1,7 @@
 """Utility functions for training."""
+from collections.abc import Callable, Sequence
 from functools import partial
-from typing import Any, Callable, Sequence
+from typing import Any
 
 import equinox as eqx
 import jax.numpy as jnp
@@ -82,8 +83,7 @@ def _add_batch(arr, batch_size):
     """Adds a leading dimension for batches, dropping the last batch if truncated."""
     batch_size = min(batch_size, arr.shape[0])
     n_batches = arr.shape[0] // batch_size
-    arr = arr[: n_batches * batch_size].reshape(n_batches, batch_size, *arr.shape[1:])
-    return arr
+    return arr[: n_batches * batch_size].reshape(n_batches, batch_size, *arr.shape[1:])
 
 
 def count_fruitless(losses: list[float]) -> int:

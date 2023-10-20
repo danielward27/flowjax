@@ -1,5 +1,5 @@
 """Block autoregressive neural network components."""
-from typing import Callable
+from collections.abc import Callable
 
 import equinox as eqx
 import jax.numpy as jnp
@@ -66,7 +66,7 @@ class BlockAutoregressiveLinear(eqx.Module):
 
         self.b_diag_mask_idxs = jnp.where(
             self.b_diag_mask, size=block_shape[0] * block_shape[1] * n_blocks,
-        )  # type: ignore
+        )
 
         in_features, out_features = (
             block_shape[1] * n_blocks + cond_dim,

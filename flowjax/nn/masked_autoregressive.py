@@ -1,5 +1,5 @@
 """Autoregressive linear layers and multilayer perceptron."""
-from typing import Callable
+from collections.abc import Callable
 
 import jax.nn as jnn
 import jax.numpy as jnp
@@ -89,21 +89,23 @@ class AutoregressiveMLP(Module):
             key (KeyArray): Jax PRNGKey.
         """
         in_ranks, hidden_ranks, out_ranks = (
-            jnp.asarray(a) for a in [in_ranks, hidden_ranks, out_ranks]
+            jnp.asarray(a) for a in (in_ranks, hidden_ranks, out_ranks)
         )
         masks = []
         if depth == 0:
             masks.append(rank_based_mask(in_ranks, out_ranks, eq=False))
         else:
             masks.append(rank_based_mask(in_ranks, hidden_ranks, eq=True))
-            for _ in range(depth - 1):
-                masks.append(rank_based_mask(hidden_ranks, hidden_ranks, eq=True))
+            masks.extend(
+                rank_based_mask(hidden_ranks, hidden_ranks, eq=True)
+                for _ in range(depth - 1)
+                )
             masks.append(rank_based_mask(hidden_ranks, out_ranks, eq=False))
 
         keys = random.split(key, len(masks))
-        layers = [
+        layers = tuple(
             MaskedLinear(mask, key=key) for mask, key in zip(masks, keys, strict=True)
-        ]
+        )
 
         self.layers = layers
         self.in_size = len(in_ranks)
@@ -126,5 +128,4 @@ class AutoregressiveMLP(Module):
             x = layer(x)
             x = self.activation(x)
         x = self.layers[-1](x)
-        x = self.final_activation(x)
-        return x
+        return  self.final_activation(x)

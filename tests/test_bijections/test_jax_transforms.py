@@ -29,8 +29,10 @@ def test_vmap_condition_only():
         jr.PRNGKey(0), Affine(), dim=3, cond_dim=4, nn_width=10, nn_depth=1,
     )
 
-    with pytest.raises(ValueError):
-        bijection = Vmap(bijection, in_axis_condition=0)  # Need to pass axis size
+    with pytest.raises(
+        ValueError, match="Either axis_size or in_axis must be provided.",
+        ):
+        bijection = Vmap(bijection, in_axis_condition=0)
 
     bijection = Vmap(bijection, in_axis_condition=1, axis_size=10)
     assert bijection.shape == (10, 3)

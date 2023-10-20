@@ -19,7 +19,7 @@ def test_RationalQuadraticSpline_tails():
 
     y = vmap(spline.transform)(x)
     expected_changed = jnp.array([True, False, False, True])  # identity padding
-    assert ((jnp.abs((y - x)) <= 1e-5) == expected_changed).all()
+    assert ((jnp.abs(y - x) <= 1e-5) == expected_changed).all()
 
 
 def test_RationalQuadraticSpline_init():

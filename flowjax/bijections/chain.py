@@ -1,5 +1,5 @@
 """Chain bijection which allows sequential application of arbitrary bijections."""
-from typing import Sequence
+from collections.abc import Sequence
 
 from flowjax.bijections.bijection import AbstractBijection
 from flowjax.utils import check_shapes_match, merge_cond_shapes

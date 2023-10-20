@@ -42,9 +42,9 @@ build-backend = "setuptools.build_meta"
 pythonpath = ["."]
 
 [tool.ruff]
-select = ["E", "F", "B", "D"]
+select = ["E", "F", "B", "D", "COM", "I", "UP", "TRY004", "RET", "PT", "RUF"]
 include = ["*.py", "*.pyi", "**/pyproject.toml", "*.ipynb"]
-ignore = ["D102", "D105"]                                   # Ignore due to trigerring on inherited docstrings
+ignore = ["D102", "D105"]                                                     # Ignore due to trigerring on inherited docstrings
 
 [tool.ruff.pydocstyle]
 convention = "google"

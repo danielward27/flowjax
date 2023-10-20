@@ -1,6 +1,6 @@
 """Bijections that wrap jax function transforms (scan and vmap)."""
 
-from typing import Callable
+from collections.abc import Callable
 
 import equinox as eqx
 import jax.numpy as jnp
@@ -190,7 +190,7 @@ class Vmap(AbstractBijection):
 
     @property
     def shape(self):
-        return (self.axis_size,) + self.bijection.shape
+        return (self.axis_size, *self.bijection.shape)
 
     @property
     def cond_shape(self):
@@ -268,9 +268,8 @@ def _resolve_vmapped_axes(pytree, in_axes):
     def _resolve_axis(in_axes, elem):
         if in_axes is None or isinstance(in_axes, int):
             return tree_map(lambda _: in_axes, elem)
-        elif callable(in_axes):
+        if callable(in_axes):
             return tree_map(in_axes, elem)
-        else:
-            raise ValueError("`in_axes` must consist of None, ints, and callables.")
+        raise TypeError("`in_axes` must consist of None, ints, and callables.")
 
     return tree_map(_resolve_axis, in_axes, pytree, is_leaf=lambda x: x is None)

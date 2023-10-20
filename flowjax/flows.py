@@ -3,7 +3,7 @@
 # we generally opt to use `Scan`, which avoids excessive compilation
 # when the flow layers share the same structure.
 
-from typing import Callable
+from collections.abc import Callable
 
 import equinox as eqx
 import jax.nn as jnn
@@ -90,8 +90,7 @@ class CouplingFlow(AbstractTransformed):
                 nn_depth=nn_depth,
                 nn_activation=nn_activation,
             )
-            bijection = _add_default_permute(bijection, dim, perm_key)
-            return bijection
+            return _add_default_permute(bijection, dim, perm_key)
 
         keys = jr.split(key, flow_layers)
         layers = eqx.filter_vmap(make_layer)(keys)
@@ -167,8 +166,7 @@ class MaskedAutoregressiveFlow(AbstractTransformed):
                 nn_depth=nn_depth,
                 nn_activation=nn_activation,
             )
-            bijection = _add_default_permute(bijection, dim, perm_key)
-            return bijection
+            return _add_default_permute(bijection, dim, perm_key)
 
         keys = jr.split(key, flow_layers)
         layers = eqx.filter_vmap(make_layer)(keys)
@@ -250,8 +248,7 @@ class BlockNeuralAutoregressiveFlow(AbstractTransformed):
                 block_dim=nn_block_dim,
                 activation=activation,
             )
-            bijection = _add_default_permute(bijection, dim, perm_key)
-            return bijection
+            return _add_default_permute(bijection, dim, perm_key)
 
         keys = jr.split(key, flow_layers)
         layers = eqx.filter_vmap(make_layer)(keys)
@@ -346,8 +343,7 @@ class TriangularSplineFlow(AbstractTransformed):
                 bijections.append(linear_condition)
 
             bijection = Chain(bijections)
-            bijection = _add_default_permute(bijection, dim, perm_key)
-            return bijection
+            return _add_default_permute(bijection, dim, perm_key)
 
         keys = jr.split(key, flow_layers)
         layers = eqx.filter_vmap(make_layer)(keys)
@@ -408,8 +404,7 @@ class PlanarFlow(AbstractTransformed):
         def make_layer(key):  # Planar layer + permutation
             bij_key, perm_key = jr.split(key)
             bijection = Planar(bij_key, dim, cond_dim, **mlp_kwargs)
-            bijection = _add_default_permute(bijection, dim, perm_key)
-            return bijection
+            return _add_default_permute(bijection, dim, perm_key)
 
         keys = jr.split(key, flow_layers)
         layers = eqx.filter_vmap(make_layer)(keys)
@@ -428,9 +423,9 @@ def _add_default_permute(bijection: AbstractBijection, dim: int, key: jr.KeyArra
         return bijection
     if dim == 2:
         return Chain([bijection, Flip((dim,))]).merge_chains()
-    else:
-        perm = Permute(jr.permutation(key, jnp.arange(dim)))
-        return Chain([bijection, perm]).merge_chains()
+
+    perm = Permute(jr.permutation(key, jnp.arange(dim)))
+    return Chain([bijection, perm]).merge_chains()
 
 
 def _get_default_permute_name(dim):

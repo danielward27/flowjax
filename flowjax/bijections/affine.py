@@ -1,6 +1,7 @@
 """Affine bijections."""
 
-from typing import Callable, ClassVar
+from collections.abc import Callable
+from typing import ClassVar
 
 import jax.numpy as jnp
 from jax import Array
@@ -39,7 +40,7 @@ class Affine(AbstractBijection):
                 matching the Affine bijection, that maps the scale parameter from an
                 unbounded domain to the positive domain. Defaults to SoftPlus.
         """
-        loc, scale = [arraylike_to_array(a, dtype=float) for a in (loc, scale)]
+        loc, scale = (arraylike_to_array(a, dtype=float) for a in (loc, scale))
         self.shape = jnp.broadcast_shapes(loc.shape, scale.shape)
         self.loc = jnp.broadcast_to(loc, self.shape)
 
@@ -112,7 +113,7 @@ class TriangularAffine(AbstractBijection):
                 Also used for weight normalisation parameters, if used. Defaults to
                 SoftPlus.
         """
-        loc, arr = [arraylike_to_array(a, dtype=float) for a in (loc, arr)]
+        loc, arr = (arraylike_to_array(a, dtype=float) for a in (loc, arr))
         if (arr.ndim != 2) or (arr.shape[0] != arr.shape[1]):
             raise ValueError("arr must be a square, 2-dimensional matrix.")
         checkify.check(
@@ -236,7 +237,7 @@ class AdditiveCondition(AbstractBijection):
 
     def inverse(self, y, condition=None):
         y, condition = self._argcheck_and_cast(y, condition)
-        return y - self.module(condition)  # type: ignore
+        return y - self.module(condition)
 
     def inverse_and_log_det(self, y, condition=None):
         y, condition = self._argcheck_and_cast(y, condition)

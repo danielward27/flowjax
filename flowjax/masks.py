@@ -5,6 +5,8 @@ dependency structure that ensures invertibility and efficient Jacobian determina
 calculations.
 """
 
+import operator
+
 import jax.numpy as jnp
 from jax import Array
 from jax.scipy.linalg import block_diag
@@ -21,13 +23,11 @@ def rank_based_mask(in_ranks: Array, out_ranks: Array, eq: bool = False):
     Returns:
         Array: Mask with shape `(len(out_ranks), len(in_ranks))`
     """
-    assert (in_ranks.ndim) == 1 and (out_ranks.ndim == 1)
-    if eq:
-        mask = out_ranks[:, None] >= in_ranks
-    else:
-        mask = out_ranks[:, None] > in_ranks
-    return mask.astype(jnp.int32)
-
+    for ranks in (in_ranks, out_ranks):
+        if ranks.ndim != 1:
+            raise ValueError(f"Expected ranks.ndim==1, got {ranks.ndim}")
+    op = operator.ge if eq else operator.gt
+    return op(out_ranks[:, None], in_ranks).astype(jnp.int32)
 
 def block_diag_mask(block_shape: tuple, n_blocks: int):
     """Block diagonal mask."""

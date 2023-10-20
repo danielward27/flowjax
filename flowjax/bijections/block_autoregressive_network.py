@@ -1,5 +1,6 @@
 """Block Neural Autoregressive bijection implementation."""
-from typing import Callable, ClassVar
+from collections.abc import Callable
+from typing import ClassVar
 
 import equinox as eqx
 import jax
@@ -21,8 +22,8 @@ class _CallableToBijection(AbstractBijection):
     cond_shape: ClassVar[None] = None
 
     def __init__(self, fn: Callable):
-        if not isinstance(fn, Callable):
-            raise ValueError(f"Expected callable, got {type(fn)}.")
+        if not callable(fn):
+            raise TypeError(f"Expected callable, got {type(fn)}.")
         self.fn = fn
 
     def transform(self, x, condition=None):
@@ -33,10 +34,10 @@ class _CallableToBijection(AbstractBijection):
         return y, jnp.log(jnp.abs(grad))
 
     def inverse(self, y, condition=None):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def inverse_and_log_det(self, y, condition=None):
-        raise NotImplementedError()
+        raise NotImplementedError
 
 
 class BlockAutoregressiveNetwork(AbstractBijection):

@@ -194,8 +194,7 @@ class AbstractDistribution(eqx.Module):
             leading_cond_shape = ()
         key_shape = sample_shape + leading_cond_shape
         key_size = max(1, prod(key_shape))  # Still need 1 key for scalar sample
-        keys = jnp.reshape(jr.split(key, key_size), key_shape + (2,))
-        return keys
+        return jnp.reshape(jr.split(key, key_size), (*key_shape, 2))
 
     @property
     def ndim(self):
@@ -294,17 +293,16 @@ class AbstractTransformed(AbstractDistribution):
 
     def __check_init__(self):  # TODO test errors and test conditional base distribution
         """Checks cond_shape is compatible in both bijection and distribution."""
-        if (
-            self.base_dist.cond_shape is not None
-            and self.bijection.cond_shape is not None
-        ):
-            if self.base_dist.cond_shape != self.bijection.cond_shape:
-                raise ValueError(
-                    "The base distribution and bijection are both conditional "
-                    "but have mismatched cond_shape attributes. Base distribution has"
-                    f"{self.base_dist.cond_shape}, and the bijection has"
-                    f"{self.bijection.cond_shape}.",
-                )
+        if (self.base_dist.cond_shape is not None and
+            self.bijection.cond_shape is not None and
+            self.base_dist.cond_shape != self.bijection.cond_shape):
+
+            raise ValueError(
+                "The base distribution and bijection are both conditional "
+                "but have mismatched cond_shape attributes. Base distribution has"
+                f"{self.base_dist.cond_shape}, and the bijection has"
+                f"{self.bijection.cond_shape}.",
+            )
 
     def merge_transforms(self):
         """Unnests nested transformed distributions.

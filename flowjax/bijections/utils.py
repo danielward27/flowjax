@@ -1,5 +1,6 @@
 """Utility bijections (embedding network, permutations, inversion etc.)."""
-from typing import Callable, ClassVar
+from collections.abc import Callable
+from typing import ClassVar
 
 import jax.numpy as jnp
 from jax import Array

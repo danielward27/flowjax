@@ -1,5 +1,5 @@
 """Utility functions."""
-from typing import Sequence
+from collections.abc import Sequence
 
 import equinox as eqx
 import jax
@@ -24,7 +24,7 @@ def real_to_increasing_on_interval(
     """
     if softmax_adjust < 0:
         raise ValueError("softmax_adjust should be >= 0.")
-    widths = jax.nn.softmax(arr)  # type: ignore
+    widths = jax.nn.softmax(arr)
     widths = (widths + softmax_adjust / widths.size) / (1 + softmax_adjust)
     widths = widths.at[0].set(widths[0] / 2)
     return 2 * B * jnp.cumsum(widths) - B
@@ -35,7 +35,7 @@ def inv_cum_sum(x):
     return x - jnp.pad(x[:-1], (1, 0))
 
 
-def merge_cond_shapes(shapes: Sequence):
+def merge_cond_shapes(shapes: Sequence[tuple[int, ...] | None]):
     """Merges shapes (tuples of ints or None) used in bijections and distributions.
 
     Returns None if all shapes are None, otherwise checks none None shapes match, and
@@ -51,7 +51,7 @@ def merge_cond_shapes(shapes: Sequence):
     raise ValueError("The shapes do not match.")
 
 
-def check_shapes_match(shapes: list[tuple[int, ...]]):
+def check_shapes_match(shapes: Sequence[tuple[int, ...]]):
     """Check shapes match and produce a useful error message."""
     for i, shape in enumerate(shapes):
         if shape != shapes[0]:
@@ -70,7 +70,7 @@ def _get_ufunc_signature(in_shapes: tuple[int], out_shapes: tuple[int]):
     """
 
     def _shapes_to_str(shapes):
-        result = [str(s) if len(s) != 1 else str(s).replace(",", "") for s in shapes]
+        result = (str(s) if len(s) != 1 else str(s).replace(",", "") for s in shapes)
         return ",".join(result).replace(" ", "")
 
     in_shapes_str = _shapes_to_str(in_shapes)
@@ -96,7 +96,7 @@ def get_ravelled_bijection_constructor(
     Returns:
         tuple: The constructor, and the current parameter vector.
     """
-    params, static = eqx.partition(bijection, filter_spec)  # type: ignore
+    params, static = eqx.partition(bijection, filter_spec)
     current, unravel = ravel_pytree(params)
 
     def constructor(ravelled_params: Array):

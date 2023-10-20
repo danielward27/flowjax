@@ -144,7 +144,7 @@ key = jr.PRNGKey(0)
 test_cases = [[(), ()], [(2,), ()], [(), (2,)], [(3, 2, 4), (1, 2)]]
 
 
-@pytest.mark.parametrize("shape,sample_shape", test_cases)
+@pytest.mark.parametrize(("shape", "sample_shape"), test_cases)
 def test_TransformedToNumpyro(shape, sample_shape):
     key, subkey = jr.split(jr.PRNGKey(0))
     means = jr.normal(subkey, shape)
@@ -207,11 +207,11 @@ def test_batched_condition():
 
 
 def get_conditional_true_guide(key, dim, cond_dim):
-    true_dist, guide_dist = [
+    true_dist, guide_dist = (
         Transformed(
             StandardNormal((dim,)),
             AdditiveCondition(Linear(cond_dim, dim, key=k), (dim,), (cond_dim,)),
         )
         for k in jr.split(key)
-    ]
+    )
     return true_dist, guide_dist

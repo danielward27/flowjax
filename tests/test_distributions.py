@@ -1,4 +1,6 @@
-from collections import namedtuple
+import re
+from collections.abc import Callable
+from typing import NamedTuple
 
 import jax.numpy as jnp
 import jax.random as jr
@@ -90,7 +92,7 @@ def test_uniform_params():
 # Since the broadcasting behaviour is shared by all distributions
 # we test it for a single unconditional and conditional distribution only.
 
-dist_shape, sample_shape, condition_shape = [[(), (3, 4)] for _ in range(3)]
+dist_shape, sample_shape, condition_shape = ([(), (3, 4)] for _ in range(3))
 
 
 class _TestDist(AbstractDistribution):
@@ -181,7 +183,10 @@ def test_transformed_merge_transforms():
     assert pytest.approx(nested.log_prob(sample)) == unnested.log_prob(sample)
 
 
-_TestCase = namedtuple("TestCase", "method args error")
+class _TestCase(NamedTuple):
+    method: Callable
+    args: tuple
+    error: Exception
 
 unexpected_condition_error = TypeError(
     "Expected condition to be None; got <class 'int'>.",
@@ -221,7 +226,6 @@ test_cases = [
 
 @pytest.mark.parametrize("test_case", test_cases)
 def test_method_errors(test_case):
-    with pytest.raises(type(test_case.error)) as e_info:
+    with pytest.raises(type(test_case.error), match=re.escape(test_case.error.args[0])):
         test_case.method(*test_case.args)
 
-    assert e_info.value.args[0] == test_case.error.args[0]

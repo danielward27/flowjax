@@ -134,4 +134,4 @@ class RationalQuadraticSpline(AbstractBijection):
         num = sk**2 * (dk1 * xi**2 + 2 * sk * xi * (1 - xi) + dk * (1 - xi) ** 2)
         den = (sk + (dk1 + dk - 2 * sk) * xi * (1 - xi)) ** 2
         derivative = num / den
-        return jnp.where(in_bounds, derivative, 1.0)  # type: ignore
+        return jnp.where(in_bounds, derivative, 1.0)

@@ -2,7 +2,7 @@
 
 Ref: https://arxiv.org/abs/1605.08803.
 """
-from typing import Callable
+from collections.abc import Callable
 
 import equinox as eqx
 import jax.nn as jnn
@@ -78,11 +78,11 @@ class Coupling(AbstractBijection):
             depth=nn_depth,
             activation=nn_activation,
             key=key,
-        )  # type: eqx.nn.MLP
+        )
 
         # Initialise last bias terms to match the provided transformer parameters
         self.conditioner = eqx.tree_at(
-            where=lambda mlp: mlp.layers[-1].bias,  # type: ignore
+            where=lambda mlp: mlp.layers[-1].bias,
             pytree=conditioner,
             replace=jnp.tile(transformer_init_params, dim - untransformed_dim),
         )
@@ -93,8 +93,7 @@ class Coupling(AbstractBijection):
         transformer_params = self.conditioner(nn_input)
         transformer = self._flat_params_to_transformer(transformer_params)
         y_trans = transformer.transform(x_trans)
-        y = jnp.hstack((x_cond, y_trans))
-        return y
+        return jnp.hstack((x_cond, y_trans))
 
     def transform_and_log_det(self, x, condition=None):
         x_cond, x_trans = x[: self.untransformed_dim], x[self.untransformed_dim :]
@@ -111,8 +110,7 @@ class Coupling(AbstractBijection):
         transformer_params = self.conditioner(nn_input)
         transformer = self._flat_params_to_transformer(transformer_params)
         x_trans = transformer.inverse(y_trans)
-        x = jnp.hstack((x_cond, x_trans))
-        return x
+        return jnp.hstack((x_cond, x_trans))
 
     def inverse_and_log_det(self, y, condition=None):
         x_cond, y_trans = y[: self.untransformed_dim], y[self.untransformed_dim :]

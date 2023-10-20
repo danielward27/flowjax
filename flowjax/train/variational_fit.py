@@ -1,5 +1,6 @@
 """Basic training script for fitting a flow using variational inference."""
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import equinox as eqx
 import jax.random as jr

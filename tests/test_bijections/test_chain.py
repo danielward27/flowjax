@@ -60,7 +60,7 @@ test_cases = {
 }
 
 
-@pytest.mark.parametrize("scan,chain", test_cases.values(), ids=test_cases.keys())
+@pytest.mark.parametrize(("scan", "chain"), test_cases.values(), ids=test_cases.keys())
 def test_scan(scan, chain):
     "Check Chain and Scan give consistent results."
     x = jnp.ones(DIM)

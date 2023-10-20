@@ -4,7 +4,8 @@ Note these utilities require `numpyro <https://github.com/pyro-ppl/numpyro>`_ to
 installed.
 """
 
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import equinox as eqx
 import jax
@@ -123,12 +124,12 @@ class TransformedToNumpyro(numpyro.distributions.Distribution):
         """Compute the log probabilities."""
         if intermediates is None:
             return self.dist.log_prob(value, self.condition)
-        else:
-            z = intermediates[0]
-            _, log_det = _VectorizedBijection(
-                self.dist.bijection,
-            ).transform_and_log_det(z, self.condition)
-            return self.dist.base_dist.log_prob(z, self._base_condition) - log_det
+
+        z = intermediates[0]
+        _, log_det = _VectorizedBijection(
+            self.dist.bijection,
+        ).transform_and_log_det(z, self.condition)
+        return self.dist.base_dist.log_prob(z, self._base_condition) - log_det
 
     @property
     def condition(self):
@@ -161,5 +162,4 @@ def register_params(
     """
     params, static = eqx.partition(model, filter_spec)
     params = numpyro.param(name, params)
-    model = eqx.combine(params, static)
-    return model
+    return eqx.combine(params, static)

@@ -1,7 +1,7 @@
 """Masked autoregressive network and bijection."""
 
+from collections.abc import Callable
 from functools import partial
-from typing import Callable
 
 import equinox as eqx
 import jax
@@ -129,7 +129,7 @@ class MaskedAutoregressive(AbstractBijection):
 
     def _flat_params_to_transformer(self, params: Array):
         """Reshape to dim X params_per_dim, then vmap."""
-        dim = self.shape[-1]  # type: ignore
+        dim = self.shape[-1]
         transformer_params = jnp.reshape(params, (dim, -1))
         transformer = eqx.filter_vmap(self.transformer_constructor)(transformer_params)
         return Vmap(transformer, in_axis=eqx.if_array(0))
