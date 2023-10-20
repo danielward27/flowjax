@@ -74,7 +74,7 @@ class Permute(AbstractBijection):
         self.permutation = tuple(jnp.reshape(i, permutation.shape) for i in indices)
 
         inv_indices = jnp.unravel_index(
-            jnp.argsort(permutation.ravel()), permutation.shape
+            jnp.argsort(permutation.ravel()), permutation.shape,
         )
         self.inverse_permutation = tuple(
             jnp.reshape(i, permutation.shape) for i in inv_indices
@@ -157,7 +157,7 @@ class Partial(AbstractBijection):
             raise ValueError(
                 f"The bijection shape is incompatible with the subset of the input "
                 f"indexed by 'idxs'. The bijection has a shape of {bijection.shape}, "
-                f"while the subset has a shape of {jnp.zeros(shape)[idxs].shape}."
+                f"while the subset has a shape of {jnp.zeros(shape)[idxs].shape}.",
             )
 
     def transform(self, x, condition=None):

@@ -76,6 +76,6 @@ def test_scan(scan, chain):
     realised = scan.transform_and_log_det(x, condition)
     assert jnp.all(
         jnp.array(
-            [pytest.approx(a) == b for (a, b) in zip(expected, realised, strict=True)]
-        )
+            [pytest.approx(a) == b for (a, b) in zip(expected, realised, strict=True)],
+        ),
     )

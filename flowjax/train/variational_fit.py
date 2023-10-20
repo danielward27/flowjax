@@ -61,7 +61,7 @@ def fit_to_variational_target(
 
     for key in keys:
         params, opt_state, loss = step(
-            optimizer, opt_state, loss_fn, params, static, key
+            optimizer, opt_state, loss_fn, params, static, key,
         )
         losses.append(loss.item())
         keys.set_postfix({"loss": loss.item()})

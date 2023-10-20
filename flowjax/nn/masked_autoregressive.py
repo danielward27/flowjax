@@ -88,9 +88,9 @@ class AutoregressiveMLP(Module):
                 _identity.
             key (KeyArray): Jax PRNGKey.
         """
-        in_ranks, hidden_ranks, out_ranks = [
+        in_ranks, hidden_ranks, out_ranks = (
             jnp.asarray(a) for a in [in_ranks, hidden_ranks, out_ranks]
-        ]
+        )
         masks = []
         if depth == 0:
             masks.append(rank_based_mask(in_ranks, out_ranks, eq=False))

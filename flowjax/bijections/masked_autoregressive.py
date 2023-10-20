@@ -56,11 +56,11 @@ class MaskedAutoregressive(AbstractBijection):
         """
         if transformer.shape != () or transformer.cond_shape is not None:
             raise ValueError(
-                "Only unconditional transformers with shape () are supported."
+                "Only unconditional transformers with shape () are supported.",
             )
 
         constructor, transformer_init_params = get_ravelled_bijection_constructor(
-            transformer
+            transformer,
         )
 
         if cond_dim is None:
@@ -85,7 +85,7 @@ class MaskedAutoregressive(AbstractBijection):
 
         # Initialise bias terms to match the provided transformer parameters
         self.autoregressive_mlp = eqx.tree_at(
-            where=lambda t: t.layers[-1].linear.bias,  # type: ignore
+            where=lambda t: t.layers[-1].linear.bias,
             pytree=autoregressive_mlp,
             replace=jnp.tile(transformer_init_params, dim),
         )

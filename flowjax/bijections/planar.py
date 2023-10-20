@@ -119,15 +119,14 @@ class _UnconditionalPlanar(AbstractBijection):
         """
         wtu = self._act_scale @ self.weight
         m_wtu = -1 + jnp.log(1 + softplus(wtu))
-        u = self._act_scale + (m_wtu - wtu) * self.weight / norm(self.weight) ** 2
-        return u
+        return self._act_scale + (m_wtu - wtu) * self.weight / norm(self.weight) ** 2
 
     def inverse(self, y, condition=None):
         raise NotImplementedError(
-            "The inverse planar transformation is not implemented."
+            "The inverse planar transformation is not implemented.",
         )
 
     def inverse_and_log_det(self, y, condition=None):
         raise NotImplementedError(
-            "The inverse planar transformation is not implemented."
+            "The inverse planar transformation is not implemented.",
         )

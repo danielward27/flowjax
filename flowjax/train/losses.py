@@ -78,7 +78,7 @@ class ContrastiveLoss:
         contrastive = self._get_contrastive(x)
         joint_log_odds = dist.log_prob(x, condition) - self.prior.log_prob(x)
         contrastive_log_odds = dist.log_prob(
-            contrastive, condition
+            contrastive, condition,
         ) - self.prior.log_prob(contrastive)
         contrastive_log_odds = jnp.clip(contrastive_log_odds, -5)  # Clip for stability
         return -(joint_log_odds - logsumexp(contrastive_log_odds, axis=0)).mean()
@@ -87,7 +87,7 @@ class ContrastiveLoss:
         if theta.shape[0] <= self.n_contrastive:
             raise ValueError(
                 f"Number of contrastive samples {self.n_contrastive} must be less than "
-                f"the size of theta {theta.shape}."
+                f"the size of theta {theta.shape}.",
             )
         # Rolling window over theta batch to create contrastive samples.
         idx = jnp.arange(len(theta))[:, None] + jnp.arange(self.n_contrastive)[None, :]

@@ -69,7 +69,7 @@ class AbstractDistribution(eqx.Module):
 
     @abstractmethod
     def _sample_and_log_prob(
-        self, key: jr.KeyArray, condition: Array | None = None
+        self, key: jr.KeyArray, condition: Array | None = None,
     ) -> tuple[Array, Array]:
         """Sample a point from the distribution, and return its log probability."""
 
@@ -211,7 +211,7 @@ class AbstractDistribution(eqx.Module):
         if self.cond_shape is None:
             if condition is not None:
                 raise TypeError(
-                    f"Expected condition to be None; got {type(condition)}."
+                    f"Expected condition to be None; got {type(condition)}.",
                 )
             return None
         return arraylike_to_array(condition, err_name="condition")
@@ -241,7 +241,7 @@ class AbstractDistribution(eqx.Module):
                     if arg.shape != in_shape:
                         raise ValueError(
                             f"Expected trailing dimensions matching {in_shape} for "
-                            f"{name}; got {arg.shape}."
+                            f"{name}; got {arg.shape}.",
                         )
                 return method(*args)
 
@@ -288,7 +288,7 @@ class AbstractTransformed(AbstractDistribution):
         # We avoid computing the inverse transformation.
         base_sample, log_prob_base = self.base_dist._sample_and_log_prob(key, condition)
         sample, forward_log_dets = self.bijection.transform_and_log_det(
-            base_sample, condition
+            base_sample, condition,
         )
         return sample, log_prob_base - forward_log_dets
 
@@ -303,7 +303,7 @@ class AbstractTransformed(AbstractDistribution):
                     "The base distribution and bijection are both conditional "
                     "but have mismatched cond_shape attributes. Base distribution has"
                     f"{self.base_dist.cond_shape}, and the bijection has"
-                    f"{self.bijection.cond_shape}."
+                    f"{self.bijection.cond_shape}.",
                 )
 
     def merge_transforms(self):
@@ -367,7 +367,7 @@ class Transformed(AbstractTransformed):
         self.bijection = bijection
         self.shape = self.base_dist.shape
         self.cond_shape = merge_cond_shapes(
-            (self.bijection.cond_shape, self.base_dist.cond_shape)
+            (self.bijection.cond_shape, self.base_dist.cond_shape),
         )
 
 
@@ -665,7 +665,7 @@ class SpecializeCondition(AbstractDistribution):  # TODO check tested
         if self.dist.cond_shape != condition.shape:
             raise ValueError(
                 f"Expected condition shape {self.dist.cond_shape}, got "
-                f"{condition.shape}"
+                f"{condition.shape}",
             )
         self.dist = dist
         self._condition = condition

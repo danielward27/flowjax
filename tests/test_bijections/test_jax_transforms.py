@@ -26,7 +26,7 @@ def test_vmap_uneven_init():
 
 def test_vmap_condition_only():
     bijection = MaskedAutoregressive(
-        jr.PRNGKey(0), Affine(), dim=3, cond_dim=4, nn_width=10, nn_depth=1
+        jr.PRNGKey(0), Affine(), dim=3, cond_dim=4, nn_width=10, nn_depth=1,
     )
 
     with pytest.raises(ValueError):

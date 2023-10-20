@@ -74,7 +74,7 @@ def test_vi():
     # Test intermediates are used - note BNAF has no inverse so intermediates
     # are required to compute the log_prob in VI.
     guide_dist = BlockNeuralAutoregressiveFlow(
-        key, Normal(jnp.zeros(2), 1), invert=False, nn_block_dim=1
+        key, Normal(jnp.zeros(2), 1), invert=False, nn_block_dim=1,
     )
     svi = SVI(numpyro_model, partial(guide, guide_dist), optimizer, loss=Trace_ELBO())
     svi_result = svi.run(jr.PRNGKey(0), num_steps=2)  # Check runs

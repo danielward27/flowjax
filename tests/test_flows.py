@@ -24,10 +24,10 @@ testcases = {
     "TriangularSplineFlow": TriangularSplineFlow(**KWARGS),
     "Affine_Coupling": CouplingFlow(transformer=Affine(), **KWARGS),
     "Spline_Coupling": CouplingFlow(
-        transformer=RationalQuadraticSpline(3, 2), **KWARGS
+        transformer=RationalQuadraticSpline(3, 2), **KWARGS,
     ),
     "Affine_MaskedAutoregessive": MaskedAutoregressiveFlow(
-        transformer=Affine(), **KWARGS
+        transformer=Affine(), **KWARGS,
     ),
     "Planar": PlanarFlow(**KWARGS),
 }
@@ -52,16 +52,16 @@ conditional_testcases = {
     "TriangularSplineFlow": TriangularSplineFlow(**KWARGS, cond_dim=2),
     "Affine_Coupling": CouplingFlow(transformer=Affine(), **KWARGS, cond_dim=2),
     "Spline_Coupling": CouplingFlow(
-        transformer=RationalQuadraticSpline(3, 2), **KWARGS, cond_dim=2
+        transformer=RationalQuadraticSpline(3, 2), **KWARGS, cond_dim=2,
     ),
     "Affine_MaskedAutoregessive": MaskedAutoregressiveFlow(
-        transformer=Affine(), **KWARGS, cond_dim=2
+        transformer=Affine(), **KWARGS, cond_dim=2,
     ),
 }
 
 
 @pytest.mark.parametrize(
-    "flow", conditional_testcases.values(), ids=conditional_testcases.keys()
+    "flow", conditional_testcases.values(), ids=conditional_testcases.keys(),
 )
 def test_conditional_flow_sample(flow):
     cond = jr.normal(KEY, flow.cond_shape)
@@ -72,7 +72,7 @@ def test_conditional_flow_sample(flow):
 
 
 @pytest.mark.parametrize(
-    "flow", conditional_testcases.values(), ids=conditional_testcases.keys()
+    "flow", conditional_testcases.values(), ids=conditional_testcases.keys(),
 )
 def test_conditional_flow_log_prob(flow):
     x = jr.normal(KEY, flow.shape)

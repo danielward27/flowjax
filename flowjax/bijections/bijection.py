@@ -58,7 +58,7 @@ class AbstractBijection(Module):
 
     @abstractmethod
     def transform_and_log_det(
-        self, x: ArrayLike, condition: ArrayLike | None = None
+        self, x: ArrayLike, condition: ArrayLike | None = None,
     ) -> tuple[Array, Array]:
         """Apply transformation and compute the log absolute Jacobian determinant.
 
@@ -87,7 +87,7 @@ class AbstractBijection(Module):
 
     @abstractmethod
     def inverse_and_log_det(
-        self, y: ArrayLike, condition: ArrayLike | None = None
+        self, y: ArrayLike, condition: ArrayLike | None = None,
     ) -> tuple[Array, Array]:
         """Inverse transformation and corresponding log absolute jacobian determinant.
 
@@ -99,7 +99,7 @@ class AbstractBijection(Module):
         """
 
     def _argcheck_and_cast(
-        self, x: ArrayLike, condition: ArrayLike | None = None
+        self, x: ArrayLike, condition: ArrayLike | None = None,
     ) -> tuple[Array, Array | None]:
         """Utility method to check input shapes and cast inputs to arrays if required.
 
@@ -115,7 +115,8 @@ class AbstractBijection(Module):
 
             if self.cond_shape is not None and condition.shape != self.cond_shape:
                 raise ValueError(
-                    f"Expected condition.shape {self.cond_shape}; got {condition.shape}"
+                    f"Expected condition.shape {self.cond_shape}; got "
+                    f"{condition.shape}",
                 )
 
         return x, condition

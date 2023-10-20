@@ -101,10 +101,10 @@ class BlockAutoregressiveNetwork(AbstractBijection):
             cond_dims = [cond_dim] + [None] * depth
 
             for layer_key, block_shape, cond_d in zip(
-                keys, block_shapes, cond_dims, strict=True
+                keys, block_shapes, cond_dims, strict=True,
             ):
                 layers.append(
-                    BlockAutoregressiveLinear(layer_key, dim, block_shape, cond_d)
+                    BlockAutoregressiveLinear(layer_key, dim, block_shape, cond_d),
                 )
 
         self.depth = depth
@@ -143,12 +143,12 @@ class BlockAutoregressiveNetwork(AbstractBijection):
 
     def inverse(self, *args, **kwargs):
         raise NotImplementedError(
-            "This transform would require numerical methods for inversion."
+            "This transform would require numerical methods for inversion.",
         )
 
     def inverse_and_log_det(self, *args, **kwargs):
         raise NotImplementedError(
-            "This transform would require numerical methods for inversion."
+            "This transform would require numerical methods for inversion.",
         )
 
     def _activation_and_log_det_3d(self, x):
@@ -156,7 +156,7 @@ class BlockAutoregressiveNetwork(AbstractBijection):
         x, log_abs_grads = eqx.filter_vmap(self.activation.transform_and_log_det)(x)
         log_det_3d = jnp.full((self.shape[0], self.block_dim, self.block_dim), -jnp.inf)
         log_det_3d = log_det_3d.at[
-            :, jnp.arange(self.block_dim), jnp.arange(self.block_dim)
+            :, jnp.arange(self.block_dim), jnp.arange(self.block_dim),
         ].set(log_abs_grads.reshape(self.shape[0], self.block_dim))
         return x, log_det_3d
 

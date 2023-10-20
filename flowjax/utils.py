@@ -10,7 +10,7 @@ from jax.typing import ArrayLike
 
 
 def real_to_increasing_on_interval(
-    arr: Array, B: float = 1, softmax_adjust: float = 1e-2
+    arr: Array, B: float = 1, softmax_adjust: float = 1e-2,
 ):
     """Transform unconstrained vector to monotonically increasing positions on [-B, B].
 
@@ -57,7 +57,7 @@ def check_shapes_match(shapes: list[tuple[int, ...]]):
         if shape != shapes[0]:
             raise ValueError(
                 f"Expected shapes to match, but index 0 had shape {shapes[0]}, and "
-                f"index {i} had shape {shape}."
+                f"index {i} had shape {shape}.",
             )
 
 
@@ -79,7 +79,7 @@ def _get_ufunc_signature(in_shapes: tuple[int], out_shapes: tuple[int]):
 
 
 def get_ravelled_bijection_constructor(
-    bijection, filter_spec=eqx.is_inexact_array
+    bijection, filter_spec=eqx.is_inexact_array,
 ) -> tuple:
     """Get a constructor taking ravelled parameters and the current ravelled parameters.
 
@@ -122,6 +122,6 @@ def arraylike_to_array(arr, err_name: str = "input", **kwargs) -> Array:
     """
     if not isinstance(arr, ArrayLike):
         raise TypeError(
-            f"Expected {err_name} to be arraylike; got {type(arr).__name__}."
+            f"Expected {err_name} to be arraylike; got {type(arr).__name__}.",
         )
     return jnp.asarray(arr, **kwargs)

@@ -211,7 +211,7 @@ class Vmap(AbstractBijection):
             return bijection.transform(x, condition)
 
         return eqx.filter_vmap(_transform, in_axes=self.in_axes)(
-            self.bijection, x, condition
+            self.bijection, x, condition,
         )
 
     def transform_and_log_det(self, x, condition=None):
@@ -221,7 +221,7 @@ class Vmap(AbstractBijection):
             return bijection.transform_and_log_det(x, condition)
 
         y, log_det = eqx.filter_vmap(_transform_and_log_det, in_axes=self.in_axes)(
-            self.bijection, x, condition
+            self.bijection, x, condition,
         )
         return y, jnp.sum(log_det)
 
@@ -232,7 +232,7 @@ class Vmap(AbstractBijection):
             return bijection.inverse(x, condition)
 
         return eqx.filter_vmap(_inverse, in_axes=self.in_axes)(
-            self.bijection, y, condition
+            self.bijection, y, condition,
         )
 
     def inverse_and_log_det(self, y, condition=None):
@@ -242,7 +242,7 @@ class Vmap(AbstractBijection):
             return bijection.inverse_and_log_det(x, condition)
 
         x, log_det = eqx.filter_vmap(_inverse_and_log_det, in_axes=self.in_axes)(
-            self.bijection, y, condition
+            self.bijection, y, condition,
         )
         return x, jnp.sum(log_det)
 
@@ -254,7 +254,7 @@ def _infer_axis_size_from_params(tree, in_axis):
             lambda leaf, ax: leaf.shape[ax] if ax is not None else None,
             tree,
             axes,
-        )
+        ),
     )
     if len(axis_sizes) == 0:
         raise ValueError("in_axis did not map to any leaves to vectorize.")

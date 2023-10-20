@@ -127,10 +127,10 @@ def test_broadcasting_unconditional(dist_shape, sample_shape):
 @pytest.mark.parametrize("sample_shape", sample_shape)
 @pytest.mark.parametrize("condition_shape", condition_shape)
 @pytest.mark.parametrize(
-    "leading_cond_shape", [(), (3, 4)]
+    "leading_cond_shape", [(), (3, 4)],
 )  # Additional leading dimensions in condition
 def test_broadcasting_conditional(
-    dist_shape, sample_shape, condition_shape, leading_cond_shape
+    dist_shape, sample_shape, condition_shape, leading_cond_shape,
 ):
     key = jr.PRNGKey(0)
     d = _TestDist(dist_shape, condition_shape)
@@ -148,7 +148,7 @@ def test_broadcasting_conditional(
 
 test_cases = [
     StandardNormal(
-        (2, 2)
+        (2, 2),
     ),  # Won't have custom sample_and_log_prob implementation as not Transformed
     Normal(jnp.ones((2, 2))),  # Will have custom implementation as is Transformed
 ]
@@ -184,7 +184,7 @@ def test_transformed_merge_transforms():
 _TestCase = namedtuple("TestCase", "method args error")
 
 unexpected_condition_error = TypeError(
-    "Expected condition to be None; got <class 'int'>."
+    "Expected condition to be None; got <class 'int'>.",
 )
 
 test_cases = [
@@ -213,7 +213,7 @@ test_cases = [
         method=_TestDist((), (2, 3)).log_prob,
         args=(0, jnp.ones((3, 3))),
         error=ValueError(
-            "Expected trailing dimensions matching (2, 3) for condition; got (3, 3)."
+            "Expected trailing dimensions matching (2, 3) for condition; got (3, 3).",
         ),
     ),
 ]

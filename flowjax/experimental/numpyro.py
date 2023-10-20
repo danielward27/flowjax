@@ -18,7 +18,7 @@ try:
 except ImportError as e:
     e.add_note(
         "Note, in order to interface with numpyro, it must be installed. Please see "
-        "https://num.pyro.ai/en/latest/getting_started.html#installation"
+        "https://num.pyro.ai/en/latest/getting_started.html#installation",
     )
     raise
 
@@ -60,7 +60,7 @@ class _VectorizedBijection:
 
     def transform_and_log_det(self, x, condition=None):
         transform_and_log_det = self.vectorize(
-            self.bijection.transform_and_log_det, log_det=True
+            self.bijection.transform_and_log_det, log_det=True,
         )
         return transform_and_log_det(x, condition)
 
@@ -126,7 +126,7 @@ class TransformedToNumpyro(numpyro.distributions.Distribution):
         else:
             z = intermediates[0]
             _, log_det = _VectorizedBijection(
-                self.dist.bijection
+                self.dist.bijection,
             ).transform_and_log_det(z, self.condition)
             return self.dist.base_dist.log_prob(z, self._base_condition) - log_det
 
@@ -141,7 +141,7 @@ class TransformedToNumpyro(numpyro.distributions.Distribution):
 
 
 def register_params(
-    name: str, model: PyTree, filter_spec: Callable | PyTree = eqx.is_inexact_array
+    name: str, model: PyTree, filter_spec: Callable | PyTree = eqx.is_inexact_array,
 ):
     """Register numpyro params for an arbitrary pytree.
 

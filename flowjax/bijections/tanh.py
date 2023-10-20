@@ -76,7 +76,7 @@ class LeakyTanh(AbstractBijection):
         x, _ = self._argcheck_and_cast(x)
         y = self.transform(x)
         log_grads = jnp.where(
-            jnp.abs(x) >= self.max_val, jnp.log(self.linear_grad), _tanh_log_grad(x)
+            jnp.abs(x) >= self.max_val, jnp.log(self.linear_grad), _tanh_log_grad(x),
         )
         return y, jnp.sum(log_grads)
 

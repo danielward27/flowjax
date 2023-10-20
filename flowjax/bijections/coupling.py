@@ -52,11 +52,11 @@ class Coupling(AbstractBijection):
         """
         if transformer.shape != () or transformer.cond_shape is not None:
             raise ValueError(
-                "Only unconditional transformers with shape () are supported."
+                "Only unconditional transformers with shape () are supported.",
             )
 
         constructor, transformer_init_params = get_ravelled_bijection_constructor(
-            transformer
+            transformer,
         )
 
         self.transformer_constructor = constructor

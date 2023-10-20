@@ -90,7 +90,7 @@ class Concatenate(AbstractBijection):
             if shp[:axis] + shp[axis + 1 :] != shapes[0][:axis] + shapes[0][axis + 1 :]:
                 raise ValueError(
                     f"Expected bijection shapes to match except along axis {axis}, but "
-                    f"index 0 had shape {shapes[0]}, and index {i} had shape {shp}."
+                    f"index 0 had shape {shapes[0]}, and index {i} had shape {shp}.",
                 )
 
 

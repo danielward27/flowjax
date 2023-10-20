@@ -324,7 +324,7 @@ class TriangularSplineFlow(AbstractTransformed):
             weights = init(lt_key, (dim, dim))
             lt_weights = weights.at[jnp.diag_indices(dim)].set(1)
             lower_tri = TriangularAffine(
-                jnp.zeros(dim), lt_weights, weight_normalisation=True
+                jnp.zeros(dim), lt_weights, weight_normalisation=True,
             )
 
             bijections = [

@@ -9,7 +9,7 @@ from jax.typing import ArrayLike
 from flowjax.distributions import Uniform
 
 
-def two_moons(key, n_samples, noise_std=0.2):
+def two_moons(key: jr.KeyArray, n_samples, noise_std=0.2):
     """Two moon distribution."""
     angle_key, noise_key = jr.split(key)
     angle = jr.uniform(angle_key, (n_samples,)) * 2 * jnp.pi
@@ -70,7 +70,7 @@ class GaussianMixtureSimulator:
             key, subkey = jr.split(key)
 
             candidates = jax.jit(jax.vmap(self.simulator, in_axes=[0, None]))(
-                jr.split(subkey, num_samples), observation
+                jr.split(subkey, num_samples), observation,
             )
             in_prior_support = self.prior.log_prob(candidates) != -jnp.inf
             sample_counter += in_prior_support.sum()

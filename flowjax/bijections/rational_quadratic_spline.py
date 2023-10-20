@@ -51,14 +51,14 @@ class RationalQuadraticSpline(AbstractBijection):
         self.unbounded_x_pos = jnp.zeros(knots)
         self.unbounded_y_pos = jnp.zeros(knots)
         self.unbounded_derivatives = jnp.full(
-            knots + 2, jnp.log(jnp.exp(1 - min_derivative) - 1)
+            knots + 2, jnp.log(jnp.exp(1 - min_derivative) - 1),
         )
 
     @property
     def x_pos(self):
         """Get the knot x positions."""
         x_pos = real_to_increasing_on_interval(
-            self.unbounded_x_pos, self.interval, self.softmax_adjust
+            self.unbounded_x_pos, self.interval, self.softmax_adjust,
         )
         return jnp.pad(x_pos, 1, constant_values=(-self.interval, self.interval))
 
@@ -66,7 +66,7 @@ class RationalQuadraticSpline(AbstractBijection):
     def y_pos(self):
         """Get the knot y positions."""
         y_pos = real_to_increasing_on_interval(
-            self.unbounded_y_pos, self.interval, self.softmax_adjust
+            self.unbounded_y_pos, self.interval, self.softmax_adjust,
         )
         return jnp.pad(y_pos, 1, constant_values=(-self.interval, self.interval))
 
