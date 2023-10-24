@@ -6,6 +6,7 @@ import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
 import optax
+from jax import Array
 from jax.typing import ArrayLike
 from tqdm import tqdm
 
@@ -22,7 +23,7 @@ PyTree = Any
 
 
 def fit_to_data(
-    key: jr.KeyArray,
+    key: Array,
     dist: AbstractDistribution,
     x: ArrayLike,
     condition: ArrayLike = None,

@@ -7,7 +7,6 @@ from collections.abc import Callable
 
 import equinox as eqx
 import jax.numpy as jnp
-import jax.random as jr
 from jax import Array, vmap
 from jax.lax import stop_gradient
 from jax.scipy.special import logsumexp
@@ -133,14 +132,14 @@ class ElboLoss:
         self,
         params: AbstractDistribution,
         static: AbstractDistribution,
-        key: jr.KeyArray,
+        key: Array,
     ):
         """Compute the ELBO loss.
 
         Args:
             params (AbstractDistribution): The trainable parameters of the model.
             static (AbstractDistribution): The static components of the model.
-            key (jr.KeyArray): Jax random seed.
+            key (Array): Jax random seed.
         """
         dist = eqx.combine(params, static)
 

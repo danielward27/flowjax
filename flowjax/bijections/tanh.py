@@ -1,6 +1,5 @@
 """Tanh bijection."""
 import math
-import warnings
 from typing import ClassVar
 
 import jax.numpy as jnp

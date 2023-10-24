@@ -30,7 +30,7 @@ def step(
     return params, opt_state, loss_val
 
 
-def train_val_split(key: jr.KeyArray, arrays: Sequence[Array], val_prop: float = 0.1):
+def train_val_split(key: Array, arrays: Sequence[Array], val_prop: float = 0.1):
     """Random train validation split for a sequence of arrays.
 
     Args:

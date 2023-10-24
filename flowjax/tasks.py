@@ -4,12 +4,13 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 import jax.random as jr
+from jax import Array
 from jax.typing import ArrayLike
 
 from flowjax.distributions import Uniform
 
 
-def two_moons(key: jr.KeyArray, n_samples, noise_std=0.2):
+def two_moons(key: Array, n_samples, noise_std=0.2):
     """Two moon distribution."""
     angle_key, noise_key = jr.split(key)
     angle = jr.uniform(angle_key, (n_samples,)) * 2 * jnp.pi
@@ -38,7 +39,7 @@ class GaussianMixtureSimulator:
         self.prior = Uniform(-jnp.full(dim, prior_bound), jnp.full(dim, prior_bound))
 
     @eqx.filter_jit
-    def simulator(self, key: jr.KeyArray, theta: ArrayLike):
+    def simulator(self, key: Array, theta: ArrayLike):
         """Carry out simulations."""
         theta = jnp.atleast_2d(jnp.asarray(theta))
         key, subkey = jr.split(key)
@@ -50,7 +51,7 @@ class GaussianMixtureSimulator:
 
     def sample_reference_posterior(
         self,
-        key: jr.KeyArray,
+        key: Array,
         observation: ArrayLike,
         num_samples: int,
     ):

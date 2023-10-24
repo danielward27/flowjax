@@ -5,6 +5,7 @@ from typing import Any
 import equinox as eqx
 import jax.random as jr
 import optax
+from jax import Array
 from tqdm import tqdm
 
 from flowjax.distributions import AbstractDistribution
@@ -14,7 +15,7 @@ PyTree = Any
 
 
 def fit_to_variational_target(
-    key: jr.KeyArray,
+    key: Array,
     dist: AbstractDistribution,
     loss_fn: Callable,
     steps: int = 100,
@@ -26,7 +27,7 @@ def fit_to_variational_target(
     """Train a distribution (e.g. a flow) by variational inference.
 
     Args:
-        key (jr.KeyArray): Jax PRNGKey.
+        key (Array): Jax PRNGKey.
         dist (AbstractDistribution): Distribution object, trainable parameters are found
             using equinox.is_inexact_array.
         loss_fn (Callable | None): The loss function to optimize (e.g. the ElboLoss).

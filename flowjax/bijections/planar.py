@@ -30,7 +30,7 @@ class Planar(AbstractBijection):
 
     def __init__(
         self,
-        key: jr.KeyArray,
+        key: Array,
         dim: int,
         cond_dim: int | None = None,
         **mlp_kwargs,
@@ -38,7 +38,7 @@ class Planar(AbstractBijection):
         """Initialize the bijection.
 
         Args:
-            key (jr.KeyArray): Jax random seed.
+            key (Array): Jax random seed.
             dim (int): Dimension of the bijection.
             cond_dim (int | None, optional): Dimension of extra conditioning variables.
                 Defaults to None.

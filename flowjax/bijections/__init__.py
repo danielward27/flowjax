@@ -12,7 +12,7 @@ from .masked_autoregressive import MaskedAutoregressive
 from .planar import Planar
 from .rational_quadratic_spline import RationalQuadraticSpline
 from .softplus import SoftPlus
-from .tanh import LeakyTanh, Tanh, TanhLinearTails
+from .tanh import LeakyTanh, Tanh
 from .utils import EmbedCondition, Flip, Invert, Partial, Permute
 
 __all__ = [
@@ -38,6 +38,5 @@ __all__ = [
     "Stack",
     "Tanh",
     "LeakyTanh",
-    "TanhLinearTails",
     "TriangularAffine",
 ]

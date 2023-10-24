@@ -45,7 +45,7 @@ class AbstractDistribution(eqx.Module):
         """
 
     @abstractmethod
-    def _sample(self, key: jr.KeyArray, condition: Array | None = None) -> Array:
+    def _sample(self, key: Array, condition: Array | None = None) -> Array:
         """Sample a point from the distribution.
 
         This method should return a single sample with shape matching
@@ -55,7 +55,7 @@ class AbstractDistribution(eqx.Module):
     @abstractmethod
     def _sample_and_log_prob(
         self,
-        key: jr.KeyArray,
+        key: Array,
         condition: Array | None = None,
     ) -> tuple[Array, Array]:
         """Sample a point from the distribution, and return its log probability."""
@@ -79,7 +79,7 @@ class AbstractDistribution(eqx.Module):
 
     def sample(
         self,
-        key: jr.KeyArray,
+        key: Array,
         sample_shape: tuple[int, ...] = (),
         condition: ArrayLike | None = None,
     ) -> Array:
@@ -92,7 +92,7 @@ class AbstractDistribution(eqx.Module):
         See the example for more information.
 
         Args:
-            key (jr.KeyArray): Jax random key.
+            key (Array): Jax random key.
             condition (ArrayLike | None): Conditioning variables. Defaults to None.
             sample_shape (tuple[int, ...]): Sample shape. Defaults to ().
 
@@ -154,7 +154,7 @@ class AbstractDistribution(eqx.Module):
 
     def sample_and_log_prob(
         self,
-        key: jr.KeyArray,
+        key: Array,
         sample_shape: tuple[int, ...] = (),
         condition: ArrayLike | None = None,
     ):
@@ -166,7 +166,7 @@ class AbstractDistribution(eqx.Module):
         more information.
 
         Args:
-            key (jr.KeyArray): Jax random key.
+            key (Array): Jax random key.
             condition (ArrayLike | None): Conditioning variables. Defaults to None.
             sample_shape (tuple[int, ...]): Sample shape. Defaults to ().
         """
@@ -283,7 +283,7 @@ class AbstractTransformed(AbstractDistribution):
         base_sample = self.base_dist._sample(key, condition)
         return self.bijection.transform(base_sample, condition)
 
-    def _sample_and_log_prob(self, key: jr.KeyArray, condition=None):
+    def _sample_and_log_prob(self, key: Array, condition=None):
         # We avoid computing the inverse transformation.
         base_sample, log_prob_base = self.base_dist._sample_and_log_prob(key, condition)
         sample, forward_log_dets = self.bijection.transform_and_log_det(

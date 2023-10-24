@@ -10,6 +10,7 @@ import jax.nn as jnn
 import jax.numpy as jnp
 import jax.random as jr
 from equinox.nn import Linear
+from jax import Array
 from jax.nn.initializers import glorot_uniform
 
 from flowjax.bijections import (
@@ -43,7 +44,7 @@ class CouplingFlow(AbstractTransformed):
 
     def __init__(
         self,
-        key: jr.KeyArray,
+        key: Array,
         base_dist: AbstractDistribution,
         transformer: AbstractBijection,
         cond_dim: int | None = None,
@@ -56,7 +57,7 @@ class CouplingFlow(AbstractTransformed):
         """Initialize the coupling flow.
 
         Args:
-            key (jr.KeyArray): Jax PRNGKey.
+            key (Array): Jax PRNGKey.
             base_dist (AbstractDistribution): Base distribution.
             transformer (AbstractBijection): Bijection to be parameterised by
             conditioner.
@@ -115,7 +116,7 @@ class MaskedAutoregressiveFlow(AbstractTransformed):
 
     def __init__(
         self,
-        key: jr.KeyArray,
+        key: Array,
         base_dist: AbstractDistribution,
         transformer: AbstractBijection,
         cond_dim: int | None = None,
@@ -128,7 +129,7 @@ class MaskedAutoregressiveFlow(AbstractTransformed):
         """Initialize the masked autoregressive flow.
 
         Args:
-            key (jr.KeyArray): Random seed.
+            key (Array): Random seed.
             base_dist (AbstractDistribution): Base distribution.
             transformer (AbstractBijection): Bijection parameterised by autoregressive
                 network.
@@ -188,7 +189,7 @@ class BlockNeuralAutoregressiveFlow(AbstractTransformed):
 
     def __init__(
         self,
-        key: jr.KeyArray,
+        key: Array,
         base_dist: AbstractDistribution,
         cond_dim: int | None = None,
         nn_depth: int = 1,
@@ -200,7 +201,7 @@ class BlockNeuralAutoregressiveFlow(AbstractTransformed):
         """Initialize the block neural autoregressive flow.
 
         Args:
-            key (jr.KeyArray): Jax PRNGKey.
+            key (Array): Jax PRNGKey.
             base_dist (AbstractDistribution): Base distribution.
             cond_dim (int | None): Dimension of conditional variables.
             nn_depth (int): Number of hidden layers within the networks.
@@ -259,7 +260,7 @@ class PlanarFlow(AbstractTransformed):
 
     def __init__(
         self,
-        key: jr.KeyArray,
+        key: Array,
         base_dist: AbstractDistribution,
         cond_dim: int | None = None,
         flow_layers: int = 8,
@@ -269,7 +270,7 @@ class PlanarFlow(AbstractTransformed):
         """Initialize the planar flow.
 
         Args:
-            key (jr.KeyArray): Jax PRNGKey.
+            key (Array): Jax PRNGKey.
             base_dist (AbstractDistribution): Base distribution.
             cond_dim (int): Dimension of conditioning variables. Defaults to None.
             flow_layers (int): Number of flow layers. Defaults to 5.
@@ -316,7 +317,7 @@ class TriangularSplineFlow(AbstractTransformed):
 
     def __init__(
         self,
-        key: jr.KeyArray,
+        key: Array,
         base_dist: AbstractDistribution,
         cond_dim: int | None = None,
         flow_layers: int = 8,
@@ -328,7 +329,7 @@ class TriangularSplineFlow(AbstractTransformed):
         """Initialize the triangular spline flow.
 
         Args:
-            key (jr.KeyArray): Jax random seed.
+            key (Array): Jax random seed.
             base_dist (AbstractDistribution): Base distribution of the flow.
             cond_dim (int | None): The number of conditioning features.
                 Defaults to None.
@@ -390,7 +391,7 @@ class TriangularSplineFlow(AbstractTransformed):
         self.bijection = bijection
 
 
-def _add_default_permute(bijection: AbstractBijection, dim: int, key: jr.KeyArray):
+def _add_default_permute(bijection: AbstractBijection, dim: int, key: Array):
     if dim == 1:
         return bijection
     if dim == 2:
