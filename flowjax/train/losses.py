@@ -78,7 +78,8 @@ class ContrastiveLoss:
         contrastive = self._get_contrastive(x)
         joint_log_odds = dist.log_prob(x, condition) - self.prior.log_prob(x)
         contrastive_log_odds = dist.log_prob(
-            contrastive, condition,
+            contrastive,
+            condition,
         ) - self.prior.log_prob(contrastive)
         contrastive_log_odds = jnp.clip(contrastive_log_odds, -5)  # Clip for stability
         return -(joint_log_odds - logsumexp(contrastive_log_odds, axis=0)).mean()

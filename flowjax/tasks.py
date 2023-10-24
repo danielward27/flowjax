@@ -70,7 +70,8 @@ class GaussianMixtureSimulator:
             key, subkey = jr.split(key)
 
             candidates = jax.jit(jax.vmap(self.simulator, in_axes=[0, None]))(
-                jr.split(subkey, num_samples), observation,
+                jr.split(subkey, num_samples),
+                observation,
             )
             in_prior_support = self.prior.log_prob(candidates) != -jnp.inf
             sample_counter += in_prior_support.sum()

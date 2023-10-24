@@ -6,8 +6,9 @@ Interfacing with numpyro
 
 Supporting complex inference approaches such as MCMC or variational inference
 with arbitrary probabilistic models is out of the scope of this package. However, we do
-provide an (experimental) wrapper class, :class:`TransformedToNumpyro`, which will wrap
-a flowjax :class:`~flowjax.distributions.Transformed` distribution, into a 
+provide an (experimental) wrapper class,
+:class:`~flowjax.experimental.numpyro.TransformedToNumpyro`, which will wrap
+a flowjax :class:`~flowjax.distributions.AbstractTransformed` distribution, into a 
 `numpyro <https://github.com/pyro-ppl/numpyro>`_ distribution.
 This can be used for example to embed normalising flows into arbitrary
 probabilistic models. Here is a simple example

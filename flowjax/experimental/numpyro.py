@@ -61,7 +61,8 @@ class _VectorizedBijection:
 
     def transform_and_log_det(self, x, condition=None):
         transform_and_log_det = self.vectorize(
-            self.bijection.transform_and_log_det, log_det=True,
+            self.bijection.transform_and_log_det,
+            log_det=True,
         )
         return transform_and_log_det(x, condition)
 
@@ -142,7 +143,9 @@ class TransformedToNumpyro(numpyro.distributions.Distribution):
 
 
 def register_params(
-    name: str, model: PyTree, filter_spec: Callable | PyTree = eqx.is_inexact_array,
+    name: str,
+    model: PyTree,
+    filter_spec: Callable | PyTree = eqx.is_inexact_array,
 ):
     """Register numpyro params for an arbitrary pytree.
 

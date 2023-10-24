@@ -26,7 +26,7 @@ class AbstractBijection(Module):
     The methods of bijections do not generally support passing of additional batch
     dimensions, however, ``jax.vmap`` or ``eqx.filter_vmap`` can be used to vmap
     specific methods if desired, and a bijection can be explicitly vectorised using the
-    :class:`~flowjax.bijections.jax_transforms.Batch` bijection.
+    :class:`~flowjax.bijections.jax_transforms.Vmap` bijection.
 
     Bijections are registered as Jax PyTrees (as they are equinox modules), so are
     compatible with normal jax operations.
@@ -58,7 +58,9 @@ class AbstractBijection(Module):
 
     @abstractmethod
     def transform_and_log_det(
-        self, x: ArrayLike, condition: ArrayLike | None = None,
+        self,
+        x: ArrayLike,
+        condition: ArrayLike | None = None,
     ) -> tuple[Array, Array]:
         """Apply transformation and compute the log absolute Jacobian determinant.
 
@@ -87,7 +89,9 @@ class AbstractBijection(Module):
 
     @abstractmethod
     def inverse_and_log_det(
-        self, y: ArrayLike, condition: ArrayLike | None = None,
+        self,
+        y: ArrayLike,
+        condition: ArrayLike | None = None,
     ) -> tuple[Array, Array]:
         """Inverse transformation and corresponding log absolute jacobian determinant.
 
@@ -99,7 +103,9 @@ class AbstractBijection(Module):
         """
 
     def _argcheck_and_cast(
-        self, x: ArrayLike, condition: ArrayLike | None = None,
+        self,
+        x: ArrayLike,
+        condition: ArrayLike | None = None,
     ) -> tuple[Array, Array | None]:
         """Utility method to check input shapes and cast inputs to arrays if required.
 

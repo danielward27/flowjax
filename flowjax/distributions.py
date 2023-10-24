@@ -21,39 +21,15 @@ from flowjax.utils import _get_ufunc_signature, arraylike_to_array, merge_cond_s
 class AbstractDistribution(eqx.Module):
     """Abstract distribution class.
 
-    Distributions all have an attribute ``shape``, denoting the shape of a single sample
-    from the distribution. Similarly, the ``cond_shape`` attribute denotes the shape of
-    the conditioning variable. This attribute is None for unconditional distributions.
-    For example.
-
-    .. doctest::
-
-        >>> import jax.numpy as jnp
-        >>> from flowjax.distributions import Normal
-        >>> dist = Normal(jnp.zeros(2))
-        >>> dist.shape
-        (2,)
-        >>> dist.cond_shape is None
-        True
-
     Distributions are registered as jax PyTrees (as they are equinox modules), and as
     such they are compatible with normal jax operations.
 
-    **Implementing a distribution**
-    For creating standard distributions (by standard, we mean here that they are not
-    transformed distributions):
-
-        (1) Inherit from ``AbstractStandardDistribution``.
-        (2) Define the abstract attributes ``shape`` and ``cond_shape``.
-            ``cond_shape`` should be ``None`` for unconditional distributions.
-        (3) Define the abstract methods ``_sample``, ``_log_prob``. These methods
-            should be defined for a single point with shape matching the distribution
-            shape. The class will use these to define more convenient log_prob and
-            sample methods that support broadcasting and perform argument checks.
-
-    For creating transformed distributions, see either :class:`AbstractTransformed`
-    if new class is desired, or :class:`Transformed` if we wish to transform
-    a base distribution with a bijection and do not need a seperate class.
+    Attributes:
+        shape (AbstractVar[tuple[int, ...]]): Denotes the shape of a single sample from
+            the distribution.
+        cond_shape (AbstractVar[tuple[int, ...] | None]): The shape of an instance of
+            the conditioning variable. This should be None for unconditional
+            distributions.
     """
 
     shape: AbstractVar[tuple[int, ...]]
@@ -61,15 +37,26 @@ class AbstractDistribution(eqx.Module):
 
     @abstractmethod
     def _log_prob(self, x: Array, condition: Array | None = None) -> Array:
-        """Evaluate the log probability of point x."""
+        """Evaluate the log probability of point x.
+
+        This method should be be valid for inputs with shapes matching
+        ``distribution.shape`` and ``distribution.cond_shape`` for conditional
+        distributions (i.e. the method defined for unbatched inputs).
+        """
 
     @abstractmethod
     def _sample(self, key: jr.KeyArray, condition: Array | None = None) -> Array:
-        """Sample a point from the distribution."""
+        """Sample a point from the distribution.
+
+        This method should return a single sample with shape matching
+        ``distribution.shape``.
+        """
 
     @abstractmethod
     def _sample_and_log_prob(
-        self, key: jr.KeyArray, condition: Array | None = None,
+        self,
+        key: jr.KeyArray,
+        condition: Array | None = None,
     ) -> tuple[Array, Array]:
         """Sample a point from the distribution, and return its log probability."""
 
@@ -187,15 +174,6 @@ class AbstractDistribution(eqx.Module):
         keys = self._get_sample_keys(key, sample_shape, condition)
         return self._vectorize(self._sample_and_log_prob)(keys, condition)
 
-    def _get_sample_keys(self, key, sample_shape, condition):
-        if self.cond_shape is not None:
-            leading_cond_shape = condition.shape[: -self.cond_ndim or None]
-        else:
-            leading_cond_shape = ()
-        key_shape = sample_shape + leading_cond_shape
-        key_size = max(1, prod(key_shape))  # Still need 1 key for scalar sample
-        return jnp.reshape(jr.split(key, key_size), (*key_shape, 2))
-
     @property
     def ndim(self):
         """Number of dimensions in the distribution (the length of the shape)."""
@@ -250,12 +228,29 @@ class AbstractDistribution(eqx.Module):
         ex = frozenset([1]) if self.cond_shape is None else frozenset()
         return jnp.vectorize(_check_shapes(method), signature=signature, excluded=ex)
 
+    def _get_sample_keys(self, key, sample_shape, condition):
+        if self.cond_shape is not None:
+            leading_cond_shape = condition.shape[: -self.cond_ndim or None]
+        else:
+            leading_cond_shape = ()
+        key_shape = sample_shape + leading_cond_shape
+        key_size = max(1, prod(key_shape))  # Still need 1 key for scalar sample
+        return jnp.reshape(jr.split(key, key_size), (*key_shape, 2))
+
 
 class AbstractStandardDistribution(AbstractDistribution):
     """Abstract distribution type, representing a distribution that is not transformed.
 
-    The class implements the ``_sample_and_log_prob`` method by calling ``_sample`` and
-    ``_log_prob`` methods seperately.
+    The class implements a default ``_sample_and_log_prob`` method by calling
+    ``_sample`` and ``_log_prob`` methods seperately. Concrete subclasses can be
+    implemented as follows:
+
+        (1) Inherit from :class:`AbstractStandardDistribution`.
+        (2) Define the abstract attributes ``shape`` and ``cond_shape``.
+            ``cond_shape`` should be ``None`` for unconditional distributions.
+        (3) Define the abstract methods :meth:`_sample` and :meth:`_log_prob`.
+
+    See the source code for :class:`StandardNormal` for a simple example implementation.
     """
 
     def _sample_and_log_prob(self, key, condition=None):
@@ -264,11 +259,16 @@ class AbstractStandardDistribution(AbstractDistribution):
 
 
 class AbstractTransformed(AbstractDistribution):
-    """Abstract transformed distribution class.
+    """Abstract class respresenting transformed distributions.
 
-    Concete implementations should inherit from this class and define the base_dist and
+    Concete implementations can be implemnted as follows:
+
+        (1) Inherit from :class:`AbstractTransformed`.
+        (2) Define the abstract attributes `base_dist`, `bijection`.
+
     bijection attributes. We take the forward bijection for use in sampling, and the
     inverse for use in density evaluation. See also :class:`Transformed`
+
     """
 
     base_dist: AbstractVar[AbstractDistribution]
@@ -287,16 +287,18 @@ class AbstractTransformed(AbstractDistribution):
         # We avoid computing the inverse transformation.
         base_sample, log_prob_base = self.base_dist._sample_and_log_prob(key, condition)
         sample, forward_log_dets = self.bijection.transform_and_log_det(
-            base_sample, condition,
+            base_sample,
+            condition,
         )
         return sample, log_prob_base - forward_log_dets
 
     def __check_init__(self):  # TODO test errors and test conditional base distribution
         """Checks cond_shape is compatible in both bijection and distribution."""
-        if (self.base_dist.cond_shape is not None and
-            self.bijection.cond_shape is not None and
-            self.base_dist.cond_shape != self.bijection.cond_shape):
-
+        if (
+            self.base_dist.cond_shape is not None
+            and self.bijection.cond_shape is not None
+            and self.base_dist.cond_shape != self.bijection.cond_shape
+        ):
             raise ValueError(
                 "The base distribution and bijection are both conditional "
                 "but have mismatched cond_shape attributes. Base distribution has"
@@ -321,16 +323,27 @@ class AbstractTransformed(AbstractDistribution):
         bijection = Chain(list(reversed(bijections))).merge_chains()
         return Transformed(base_dist, bijection)
 
+    @property
+    def shape(self):
+        return self.base_dist.shape
+
+    @property
+    def cond_shape(self):
+        return merge_cond_shapes((self.bijection.cond_shape, self.base_dist.cond_shape))
+
 
 class Transformed(AbstractTransformed):
     """Form a distribution like object using a base distribution and a bijection.
 
     We take the forward bijection for use in sampling, and the inverse
     bijection for use in density evaluation.
+
+    .. warning::
+            It is the currently the users responsibility to ensure the bijection is
+            valid across the entire support of the distribution. Failure to do so may
+            lead to to unexpected results.
     """
 
-    shape: tuple[int, ...]
-    cond_shape: tuple[int, ...] | None
     base_dist: AbstractDistribution
     bijection: AbstractBijection
 
@@ -346,27 +359,16 @@ class Transformed(AbstractTransformed):
             bijection (AbstractBijection): Bijection to transform distribution.
 
         Example:
-        .. doctest::
+            .. doctest::
 
-            >>> from flowjax.distributions import StandardNormal, Transformed
-            >>> from flowjax.bijections import Affine
-            >>> normal = StandardNormal()
-            >>> bijection = Affine(1)
-            >>> transformed = Transformed(normal, bijection)
-
-
-        .. warning::
-            It is the currently the users responsibility to ensure the bijection is
-            valid across the entire support of the distribution. Failure to do so may
-            lead to to unexpected results. In future versions explicit constraints may
-            be introduced.
+                >>> from flowjax.distributions import StandardNormal, Transformed
+                >>> from flowjax.bijections import Affine
+                >>> normal = StandardNormal()
+                >>> bijection = Affine(1)
+                >>> transformed = Transformed(normal, bijection)
         """
         self.base_dist = base_dist
         self.bijection = bijection
-        self.shape = self.base_dist.shape
-        self.cond_shape = merge_cond_shapes(
-            (self.bijection.cond_shape, self.base_dist.cond_shape),
-        )
 
 
 class StandardNormal(AbstractStandardDistribution):
@@ -398,7 +400,6 @@ class Normal(AbstractTransformed):
 
     base_dist: StandardNormal
     bijection: Affine
-    shape: tuple[int, ...]
     cond_shape: ClassVar[None] = None
 
     def __init__(self, loc: ArrayLike = 0, scale: ArrayLike = 1):
@@ -410,8 +411,9 @@ class Normal(AbstractTransformed):
             loc (ArrayLike): Means. Defaults to 0.
             scale (ArrayLike): Standard deviations. Defaults to 1.
         """
-        self.shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
-        self.base_dist = StandardNormal(self.shape)
+        self.base_dist = StandardNormal(
+            jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale)),
+        )
         self.bijection = Affine(loc=loc, scale=scale)
 
     @property
@@ -445,8 +447,6 @@ class Uniform(AbstractTransformed):
 
     base_dist: _StandardUniform
     bijection: Affine
-    shape: tuple[int, ...]
-    cond_shape: ClassVar[None] = None
 
     def __init__(self, minval: ArrayLike, maxval: ArrayLike):
         """Initialize the uniform distribution.
@@ -462,8 +462,9 @@ class Uniform(AbstractTransformed):
             jnp.all(maxval >= minval),
             "Minimums must be less than the maximums.",
         )
-        self.shape = jnp.broadcast_shapes(minval.shape, maxval.shape)
-        self.base_dist = _StandardUniform(self.shape)
+        self.base_dist = _StandardUniform(
+            jnp.broadcast_shapes(minval.shape, maxval.shape),
+        )
         self.bijection = Affine(loc=minval, scale=maxval - minval)
 
     @property
@@ -498,8 +499,6 @@ class Gumbel(AbstractTransformed):
 
     base_dist: _StandardGumbel
     bijection: Affine
-    shape: tuple[int, ...]
-    cond_shape: ClassVar[None] = None
 
     def __init__(self, loc: ArrayLike = 0, scale: ArrayLike = 1):
         """``loc`` and ``scale`` should broadcast to the dimension of the distribution.
@@ -508,8 +507,9 @@ class Gumbel(AbstractTransformed):
             loc (ArrayLike): Location paramter.
             scale (ArrayLike): Scale parameter. Defaults to 1.0.
         """
-        self.shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
-        self.base_dist = _StandardGumbel(self.shape)
+        self.base_dist = _StandardGumbel(
+            jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale)),
+        )
         self.bijection = Affine(loc, scale)
 
     @property
@@ -547,8 +547,6 @@ class Cauchy(AbstractTransformed):
 
     base_dist: _StandardCauchy
     bijection: Affine
-    shape: tuple[int, ...]
-    cond_shape: ClassVar[None] = None
 
     def __init__(self, loc: ArrayLike = 0, scale: ArrayLike = 1):
         """``loc`` and ``scale`` should broadcast to the dimension of the distribution.
@@ -557,10 +555,10 @@ class Cauchy(AbstractTransformed):
             loc (ArrayLike): Location paramter.
             scale (ArrayLike): Scale parameter. Defaults to 1.0.
         """
-        shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
-        self.base_dist = _StandardCauchy(shape)
+        self.base_dist = _StandardCauchy(
+            jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale)),
+        )
         self.bijection = Affine(loc, scale)
-        self.shape = shape
 
     @property
     def loc(self):
@@ -601,8 +599,6 @@ class StudentT(AbstractTransformed):
 
     base_dist: _StandardStudentT
     bijection: Affine
-    shape: tuple[int, ...]
-    cond_shape: ClassVar[None] = None
 
     def __init__(self, df: ArrayLike, loc: ArrayLike = 0, scale: ArrayLike = 1):
         """``df``, ``loc`` and ``scale`` broadcast to the dimension of the distribution.
@@ -615,7 +611,6 @@ class StudentT(AbstractTransformed):
         df, loc, scale = jnp.broadcast_arrays(df, loc, scale)
         self.base_dist = _StandardStudentT(df)
         self.bijection = Affine(loc, scale)
-        self.shape = self.base_dist.shape
 
     @property
     def loc(self):

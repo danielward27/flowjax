@@ -129,10 +129,14 @@ def test_broadcasting_unconditional(dist_shape, sample_shape):
 @pytest.mark.parametrize("sample_shape", sample_shape)
 @pytest.mark.parametrize("condition_shape", condition_shape)
 @pytest.mark.parametrize(
-    "leading_cond_shape", [(), (3, 4)],
+    "leading_cond_shape",
+    [(), (3, 4)],
 )  # Additional leading dimensions in condition
 def test_broadcasting_conditional(
-    dist_shape, sample_shape, condition_shape, leading_cond_shape,
+    dist_shape,
+    sample_shape,
+    condition_shape,
+    leading_cond_shape,
 ):
     key = jr.PRNGKey(0)
     d = _TestDist(dist_shape, condition_shape)
@@ -188,6 +192,7 @@ class _TestCase(NamedTuple):
     args: tuple
     error: Exception
 
+
 unexpected_condition_error = TypeError(
     "Expected condition to be None; got <class 'int'>.",
 )
@@ -228,4 +233,3 @@ test_cases = [
 def test_method_errors(test_case):
     with pytest.raises(type(test_case.error), match=re.escape(test_case.error.args[0])):
         test_case.method(*test_case.args)
-

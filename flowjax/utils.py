@@ -10,7 +10,9 @@ from jax.typing import ArrayLike
 
 
 def real_to_increasing_on_interval(
-    arr: Array, B: float = 1, softmax_adjust: float = 1e-2,
+    arr: Array,
+    B: float = 1,
+    softmax_adjust: float = 1e-2,
 ):
     """Transform unconstrained vector to monotonically increasing positions on [-B, B].
 
@@ -79,7 +81,8 @@ def _get_ufunc_signature(in_shapes: tuple[int], out_shapes: tuple[int]):
 
 
 def get_ravelled_bijection_constructor(
-    bijection, filter_spec=eqx.is_inexact_array,
+    bijection,
+    filter_spec=eqx.is_inexact_array,
 ) -> tuple:
     """Get a constructor taking ravelled parameters and the current ravelled parameters.
 

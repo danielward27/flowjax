@@ -2,7 +2,9 @@
 import sys
 from pathlib import Path
 
-sys.path.insert(0, Path.resolve(".."))
+import jax  # noqa Required to avoid circular import
+
+sys.path.insert(0, Path("..").resolve())
 
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html

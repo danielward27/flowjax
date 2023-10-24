@@ -14,7 +14,8 @@ def test_RationalQuadraticSpline_tails():
 
     # Change to random initialisation, rather than identity.
     spline = tree_map(
-        lambda x: jr.normal(key, x.shape) if eqx.is_inexact_array(x) else x, spline,
+        lambda x: jr.normal(key, x.shape) if eqx.is_inexact_array(x) else x,
+        spline,
     )
 
     y = vmap(spline.transform)(x)
@@ -32,7 +33,9 @@ def test_RationalQuadraticSpline_init():
 
     shape = spline.unbounded_derivatives.shape
     spline = eqx.tree_at(
-        lambda b: b.unbounded_derivatives, spline, jr.normal(key, shape),
+        lambda b: b.unbounded_derivatives,
+        spline,
+        jr.normal(key, shape),
     )
     y = spline.transform(x)
     assert pytest.approx(x, abs=1e-6) != y

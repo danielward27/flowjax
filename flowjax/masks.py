@@ -29,6 +29,7 @@ def rank_based_mask(in_ranks: Array, out_ranks: Array, eq: bool = False):
     op = operator.ge if eq else operator.gt
     return op(out_ranks[:, None], in_ranks).astype(jnp.int32)
 
+
 def block_diag_mask(block_shape: tuple, n_blocks: int):
     """Block diagonal mask."""
     return block_diag(*jnp.ones((n_blocks, *block_shape), jnp.int32))
@@ -39,6 +40,7 @@ def block_tril_mask(block_shape: tuple, n_blocks: int):
     mask = jnp.zeros((block_shape[0] * n_blocks, block_shape[1] * n_blocks), jnp.int32)
     for i in range(n_blocks):
         mask = mask.at[
-            (i + 1) * block_shape[0] :, i * block_shape[1] : (i + 1) * block_shape[1],
+            (i + 1) * block_shape[0] :,
+            i * block_shape[1] : (i + 1) * block_shape[1],
         ].set(1)
     return mask

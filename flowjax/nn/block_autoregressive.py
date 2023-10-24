@@ -65,7 +65,8 @@ class BlockAutoregressiveLinear(eqx.Module):
         )
 
         self.b_diag_mask_idxs = jnp.where(
-            self.b_diag_mask, size=block_shape[0] * block_shape[1] * n_blocks,
+            self.b_diag_mask,
+            size=block_shape[0] * block_shape[1] * n_blocks,
         )
 
         in_features, out_features = (
@@ -108,6 +109,7 @@ class BlockAutoregressiveLinear(eqx.Module):
             x = jnp.concatenate((x, condition))
         y = weights @ x + self.bias
         jac_3d = weights[self.b_diag_mask_idxs].reshape(
-            self.n_blocks, *self.block_shape,
+            self.n_blocks,
+            *self.block_shape,
         )
         return y, jnp.log(jac_3d)

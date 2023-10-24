@@ -53,7 +53,7 @@ class Planar(AbstractBijection):
             self.cond_shape = None
         else:
             self.params = None
-            self.conditioner = eqx.nn.MLP(dim, 2 * dim + 1, **mlp_kwargs, key=key)
+            self.conditioner = eqx.nn.MLP(cond_dim, 2 * dim + 1, **mlp_kwargs, key=key)
             self.cond_shape = (cond_dim,)
 
     def transform(self, x, condition=None):

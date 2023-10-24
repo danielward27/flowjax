@@ -75,7 +75,8 @@ class Permute(AbstractBijection):
         self.permutation = tuple(jnp.reshape(i, permutation.shape) for i in indices)
 
         inv_indices = jnp.unravel_index(
-            jnp.argsort(permutation.ravel()), permutation.shape,
+            jnp.argsort(permutation.ravel()),
+            permutation.shape,
         )
         self.inverse_permutation = tuple(
             jnp.reshape(i, permutation.shape) for i in inv_indices

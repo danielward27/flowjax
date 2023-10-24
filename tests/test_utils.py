@@ -44,6 +44,7 @@ def test_merge_shapes_errors(input_):
     with pytest.raises(ValueError, match="The shapes do not match."):
         merge_cond_shapes(input_)
 
+
 test_cases = [
     [([(1, 2)], [(3, 4)]), "(1,2)->(3,4)"],
     [([(1, 2), (3, 4)], [(5, 6)]), "(1,2),(3,4)->(5,6)"],

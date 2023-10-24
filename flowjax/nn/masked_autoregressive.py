@@ -99,7 +99,7 @@ class AutoregressiveMLP(Module):
             masks.extend(
                 rank_based_mask(hidden_ranks, hidden_ranks, eq=True)
                 for _ in range(depth - 1)
-                )
+            )
             masks.append(rank_based_mask(hidden_ranks, out_ranks, eq=False))
 
         keys = random.split(key, len(masks))
@@ -128,4 +128,4 @@ class AutoregressiveMLP(Module):
             x = layer(x)
             x = self.activation(x)
         x = self.layers[-1](x)
-        return  self.final_activation(x)
+        return self.final_activation(x)

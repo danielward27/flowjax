@@ -84,7 +84,7 @@ class Concatenate(AbstractBijection):
         return jnp.concatenate(x_parts, self.axis), sum(log_dets)
 
     def _argcheck_shapes(self, shapes: Sequence[tuple[int, ...]]):
-        axis = range(len(shapes[0]))[self.axis]   # Avoid negative index
+        axis = range(len(shapes[0]))[self.axis]  # Avoid negative index
         expected_matching = shapes[0][:axis] + shapes[0][axis + 1 :]
         for i, shape in enumerate(shapes):
             if shape[:axis] + shape[axis + 1 :] != expected_matching:

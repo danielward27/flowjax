@@ -36,13 +36,10 @@ class CouplingFlow(AbstractTransformed):
     """Coupling flow (https://arxiv.org/abs/1605.08803)."""
 
     base_dist: AbstractDistribution
-    bijection: Scan | Invert
-    shape: tuple[int, ...]
-    cond_shape: tuple[int, ...] | None
+    bijection: AbstractBijection
     flow_layers: int
     nn_width: int
     nn_depth: int
-    permute_strategy: str
 
     def __init__(
         self,
@@ -99,9 +96,6 @@ class CouplingFlow(AbstractTransformed):
         self.nn_width = nn_width
         self.nn_depth = nn_depth
         self.flow_layers = flow_layers
-        self.permute_strategy = _get_default_permute_name(dim)
-        self.shape = (dim,)
-        self.cond_shape = None if cond_dim is None else (cond_dim,)
         self.base_dist = base_dist
         self.bijection = bijection
 
@@ -114,13 +108,10 @@ class MaskedAutoregressiveFlow(AbstractTransformed):
     """
 
     base_dist: AbstractDistribution
-    bijection: Scan | Invert
-    shape: tuple[int, ...]
-    cond_shape: tuple[int, ...] | None
+    bijection: AbstractBijection
     flow_layers: int
     nn_width: int
     nn_depth: int
-    permute_strategy: str
 
     def __init__(
         self,
@@ -175,9 +166,6 @@ class MaskedAutoregressiveFlow(AbstractTransformed):
         self.nn_width = nn_width
         self.nn_depth = nn_depth
         self.flow_layers = flow_layers
-        self.permute_strategy = _get_default_permute_name(dim)
-        self.shape = (dim,)
-        self.cond_shape = None if cond_dim is None else (cond_dim,)
         self.base_dist = base_dist
         self.bijection = bijection
 
@@ -193,13 +181,10 @@ class BlockNeuralAutoregressiveFlow(AbstractTransformed):
     """
 
     base_dist: AbstractDistribution
-    bijection: Scan | Invert
-    shape: tuple[int, ...]
-    cond_shape: tuple[int, ...] | None
+    bijection: AbstractBijection
     flow_layers: int
     nn_block_dim: int
     nn_depth: int
-    permute_strategy: str
 
     def __init__(
         self,
@@ -257,9 +242,59 @@ class BlockNeuralAutoregressiveFlow(AbstractTransformed):
         self.nn_block_dim = nn_block_dim
         self.nn_depth = nn_depth
         self.flow_layers = flow_layers
-        self.permute_strategy = _get_default_permute_name(dim)
-        self.shape = (dim,)
-        self.cond_shape = None if cond_dim is None else (cond_dim,)
+        self.base_dist = base_dist
+        self.bijection = bijection
+
+
+class PlanarFlow(AbstractTransformed):
+    """Planar flow as introduced in https://arxiv.org/pdf/1505.05770.pdf.
+
+    This alternates between :class:`~flowjax.bijections.planar.Planar` layers and
+    permutations. Note the definition here is inverted compared to the original paper.
+    """
+
+    base_dist: AbstractDistribution
+    bijection: AbstractBijection
+    flow_layers: int
+
+    def __init__(
+        self,
+        key: jr.KeyArray,
+        base_dist: AbstractDistribution,
+        cond_dim: int | None = None,
+        flow_layers: int = 8,
+        invert: bool = True,
+        **mlp_kwargs,
+    ):
+        """Initialize the planar flow.
+
+        Args:
+            key (jr.KeyArray): Jax PRNGKey.
+            base_dist (AbstractDistribution): Base distribution.
+            cond_dim (int): Dimension of conditioning variables. Defaults to None.
+            flow_layers (int): Number of flow layers. Defaults to 5.
+            invert: (bool): Whether to invert the bijection. Broadly, True will
+                prioritise a faster `inverse` methods, leading to faster `log_prob`,
+                False will prioritise faster `transform` methods, leading to faster
+                `sample`. Defaults to True
+            **mlp_kwargs: Key word arguments (excluding in_size and out_size) passed to
+                the MLP (equinox.nn.MLP). Ignored when cond_dim is None.
+        """
+        if base_dist.ndim != 1:
+            raise ValueError(f"Expected base_dist.ndim==1, got {base_dist.ndim}")
+
+        dim = base_dist.shape[0]
+
+        def make_layer(key):  # Planar layer + permutation
+            bij_key, perm_key = jr.split(key)
+            bijection = Planar(bij_key, dim, cond_dim, **mlp_kwargs)
+            return _add_default_permute(bijection, dim, perm_key)
+
+        keys = jr.split(key, flow_layers)
+        layers = eqx.filter_vmap(make_layer)(keys)
+        bijection = Invert(Scan(layers)) if invert else Scan(layers)
+
+        self.flow_layers = flow_layers
         self.base_dist = base_dist
         self.bijection = bijection
 
@@ -274,11 +309,8 @@ class TriangularSplineFlow(AbstractTransformed):
     """
 
     base_dist: AbstractDistribution
-    bijection: Scan | Invert
-    shape: tuple[int, ...]
-    cond_shape: tuple[int, ...] | None
+    bijection: AbstractBijection
     flow_layers: int
-    permute_strategy: str
     knots: int
     tanh_max_val: float
 
@@ -321,7 +353,9 @@ class TriangularSplineFlow(AbstractTransformed):
             weights = init(lt_key, (dim, dim))
             lt_weights = weights.at[jnp.diag_indices(dim)].set(1)
             lower_tri = TriangularAffine(
-                jnp.zeros(dim), lt_weights, weight_normalisation=True,
+                jnp.zeros(dim),
+                lt_weights,
+                weight_normalisation=True,
             )
 
             bijections = [
@@ -350,70 +384,8 @@ class TriangularSplineFlow(AbstractTransformed):
         bijection = Invert(Scan(layers)) if invert else Scan(layers)
 
         self.flow_layers = flow_layers
-        self.permute_strategy = _get_default_permute_name(dim)
         self.knots = knots
         self.tanh_max_val = tanh_max_val
-        self.shape = (dim,)
-        self.cond_shape = None if cond_dim is None else (cond_dim,)
-        self.base_dist = base_dist
-        self.bijection = bijection
-
-
-class PlanarFlow(AbstractTransformed):
-    """Planar flow as introduced in https://arxiv.org/pdf/1505.05770.pdf.
-
-    This alternates between :class:`~flowjax.bijections.planar.Planar` layers and
-    permutations. Note the definition here is inverted compared to the original paper.
-    """
-
-    base_dist: AbstractDistribution
-    bijection: Scan | Invert
-    shape: tuple[int, ...]
-    cond_shape: tuple[int, ...] | None
-    flow_layers: int
-    permute_strategy: str
-
-    def __init__(
-        self,
-        key: jr.KeyArray,
-        base_dist: AbstractDistribution,
-        cond_dim: int | None = None,
-        flow_layers: int = 8,
-        invert: bool = True,
-        **mlp_kwargs,
-    ):
-        """Initialize the planar flow.
-
-        Args:
-            key (jr.KeyArray): Jax PRNGKey.
-            base_dist (AbstractDistribution): Base distribution.
-            cond_dim (int): Dimension of conditioning variables. Defaults to None.
-            flow_layers (int): Number of flow layers. Defaults to 5.
-            invert: (bool): Whether to invert the bijection. Broadly, True will
-                prioritise a faster `inverse` methods, leading to faster `log_prob`,
-                False will prioritise faster `transform` methods, leading to faster
-                `sample`. Defaults to True
-            **mlp_kwargs: Key word arguments (excluding in_size and out_size) passed to
-                the MLP (equinox.nn.MLP). Ignored when cond_dim is None.
-        """
-        if base_dist.ndim != 1:
-            raise ValueError(f"Expected base_dist.ndim==1, got {base_dist.ndim}")
-
-        dim = base_dist.shape[0]
-
-        def make_layer(key):  # Planar layer + permutation
-            bij_key, perm_key = jr.split(key)
-            bijection = Planar(bij_key, dim, cond_dim, **mlp_kwargs)
-            return _add_default_permute(bijection, dim, perm_key)
-
-        keys = jr.split(key, flow_layers)
-        layers = eqx.filter_vmap(make_layer)(keys)
-        bijection = Invert(Scan(layers)) if invert else Scan(layers)
-
-        self.flow_layers = flow_layers
-        self.permute_strategy = _get_default_permute_name(dim)
-        self.shape = (dim,)
-        self.cond_shape = None if cond_dim is None else (cond_dim,)
         self.base_dist = base_dist
         self.bijection = bijection
 
@@ -426,7 +398,3 @@ def _add_default_permute(bijection: AbstractBijection, dim: int, key: jr.KeyArra
 
     perm = Permute(jr.permutation(key, jnp.arange(dim)))
     return Chain([bijection, perm]).merge_chains()
-
-
-def _get_default_permute_name(dim):
-    return {1: "none", 2: "flip"}.get(dim, "random")

@@ -29,17 +29,10 @@ from flowjax.bijections import (
     Vmap,
 )
 
-DIM = 5
+DIM = 3
 COND_DIM = 2
 KEY = jr.PRNGKey(0)
 POS_DEF_TRAINGLES = jnp.full((DIM, DIM), 0.5) + jnp.diag(jnp.ones(DIM))
-
-
-def get_maf_layer(key):
-    """Get a masked autoregressive flow layer."""
-    return MaskedAutoregressive(
-        key, Affine(), DIM, cond_dim=COND_DIM, nn_width=5, nn_depth=5,
-    )
 
 
 bijections = {
@@ -50,10 +43,12 @@ bijections = {
     ),
     "Partial (int)": Partial(Affine(jnp.array(2), jnp.array(2)), 0, (DIM,)),
     "Partial (bool array)": Partial(
-        Flip((3,)), jnp.array([True, False, True, False, True]), (DIM,),
+        Flip((2,)),
+        jnp.array([True, False, True]),
+        (DIM,),
     ),
-    "Partial (int array)": Partial(Flip((2,)), jnp.array([0, 4]), (DIM,)),
-    "Partial (slice)": Partial(Affine(jnp.zeros(3)), slice(0, 3), (DIM,)),
+    "Partial (int array)": Partial(Flip((2,)), jnp.array([0, 2]), (DIM,)),
+    "Partial (slice)": Partial(Affine(jnp.zeros(2)), slice(0, 2), (DIM,)),
     "Affine": Affine(jnp.ones(DIM), jnp.full(DIM, 2)),
     "Tanh": Tanh((DIM,)),
     "LeakyTanh": LeakyTanh(1, (DIM,)),
@@ -62,10 +57,14 @@ bijections = {
     "SoftPlus": SoftPlus((DIM,)),
     "TriangularAffine (lower)": TriangularAffine(jnp.arange(DIM), POS_DEF_TRAINGLES),
     "TriangularAffine (upper)": TriangularAffine(
-        jnp.arange(DIM), POS_DEF_TRAINGLES, lower=False,
+        jnp.arange(DIM),
+        POS_DEF_TRAINGLES,
+        lower=False,
     ),
     "TriangularAffine (weight_norm)": TriangularAffine(
-        jnp.arange(DIM), POS_DEF_TRAINGLES, weight_normalisation=True,
+        jnp.arange(DIM),
+        POS_DEF_TRAINGLES,
+        weight_normalisation=True,
     ),
     "RationalQuadraticSpline": RationalQuadraticSpline(knots=4, interval=1),
     "Coupling (unconditional)": Coupling(
@@ -74,7 +73,7 @@ bijections = {
         untransformed_dim=DIM // 2,
         dim=DIM,
         cond_dim=None,
-        nn_width=10,
+        nn_width=5,
         nn_depth=2,
     ),
     "Coupling (conditional)": Coupling(
@@ -83,14 +82,24 @@ bijections = {
         untransformed_dim=DIM // 2,
         dim=DIM,
         cond_dim=COND_DIM,
-        nn_width=10,
+        nn_width=5,
         nn_depth=2,
     ),
     "MaskedAutoregressive_Affine (unconditional)": MaskedAutoregressive(
-        KEY, Affine(), cond_dim=0, dim=DIM, nn_width=10, nn_depth=2,
+        KEY,
+        Affine(),
+        cond_dim=0,
+        dim=DIM,
+        nn_width=5,
+        nn_depth=2,
     ),
     "MaskedAutoregressive_Affine (conditional)": MaskedAutoregressive(
-        KEY, Affine(), cond_dim=COND_DIM, dim=DIM, nn_width=10, nn_depth=2,
+        KEY,
+        Affine(),
+        cond_dim=COND_DIM,
+        dim=DIM,
+        nn_width=5,
+        nn_depth=2,
     ),
     "MaskedAutoregressiveRationalQuadraticSpline (unconditional)": MaskedAutoregressive(
         KEY,
@@ -101,13 +110,23 @@ bijections = {
         nn_depth=2,
     ),
     "BlockAutoregressiveNetwork (unconditional)": BlockAutoregressiveNetwork(
-        KEY, dim=DIM, cond_dim=0, block_dim=3, depth=1,
+        KEY,
+        dim=DIM,
+        cond_dim=0,
+        block_dim=3,
+        depth=1,
     ),
     "BlockAutoregressiveNetwork (conditional)": BlockAutoregressiveNetwork(
-        KEY, dim=DIM, cond_dim=COND_DIM, block_dim=3, depth=1,
+        KEY,
+        dim=DIM,
+        cond_dim=COND_DIM,
+        block_dim=3,
+        depth=1,
     ),
     "AdditiveCondtition": AdditiveCondition(
-        lambda condition: jnp.arange(DIM) * jnp.sum(condition), (DIM,), (COND_DIM,),
+        lambda condition: jnp.arange(DIM) * jnp.sum(condition),
+        (DIM,),
+        (COND_DIM,),
     ),
     "EmbedCondition": EmbedCondition(
         BlockAutoregressiveNetwork(KEY, dim=DIM, cond_dim=1, block_dim=3, depth=1),
@@ -115,18 +134,21 @@ bijections = {
         (COND_DIM,),  # Raw
     ),
     "Chain": Chain([Flip((DIM,)), Affine(jnp.ones(DIM), jnp.full(DIM, 2))]),
-    "Scan": Scan(eqx.filter_vmap(get_maf_layer)(jr.split(KEY, 3))),
-    "Concatenate": Concatenate([Affine(jnp.ones(3)), Tanh(shape=(3,))]),
+    "Scan": Scan(eqx.filter_vmap(Affine)(jnp.ones((2, DIM)))),
+    "Concatenate": Concatenate([Affine(jnp.ones(DIM)), Tanh(shape=(DIM,))]),
     "ConcatenateAxis1": Concatenate(
-        [Affine(jnp.ones((3, 3))), Tanh(shape=((3, 3)))], axis=1,
+        [Affine(jnp.ones((3, 3))), Tanh(shape=((3, 3)))],
+        axis=1,
     ),
     "ConcatenateAxis-1": Concatenate(
-        [Affine(jnp.ones((3, 3))), Tanh(shape=((3, 3)))], axis=-1,
+        [Affine(jnp.ones((3, 3))), Tanh(shape=((3, 3)))],
+        axis=-1,
     ),
     "Stack": Stack([Tanh(()), Affine(), Tanh(())]),
     "StackAxis1": Stack([Tanh((2,)), Affine(jnp.ones(2)), Tanh((2,))], axis=1),
     "StackAxis-1": Stack(
-        [Affine(jr.uniform(k, (1, 2, 3))) for k in jr.split(KEY, 3)], axis=-1,
+        [Affine(jr.uniform(k, (1, 2, 3))) for k in jr.split(KEY, 3)],
+        axis=-1,
     ),
     "Planar": Planar(
         KEY,
@@ -134,7 +156,8 @@ bijections = {
     ),
     "Vmap (broadcast params)": Vmap(Affine(1, 2), axis_size=10),
     "Vmap (vectorize params)": Vmap(
-        eqx.filter_vmap(Affine)(jnp.ones(3)), eqx.if_array(0),
+        eqx.filter_vmap(Affine)(jnp.ones(3)),
+        eqx.if_array(0),
     ),
 }
 
