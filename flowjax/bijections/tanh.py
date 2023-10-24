@@ -98,13 +98,3 @@ class LeakyTanh(AbstractBijection):
             _tanh_log_grad(x),
         )
         return x, -jnp.sum(log_grads)
-
-
-def TanhLinearTails(*args, **kwargs):
-    """Deprecated version of LeakyTanh."""
-    warnings.warn(
-        "This class has been renamed to LeakyTanh and TanhLinearTails will be removed. "
-        "please update to the new name.",
-        stacklevel=2,
-    )
-    return LeakyTanh(*args, **kwargs)
