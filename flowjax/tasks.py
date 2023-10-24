@@ -1,15 +1,16 @@
-"""Example tasks"""
+"""Example tasks."""
 
 import equinox as eqx
 import jax
 import jax.numpy as jnp
 import jax.random as jr
+from jax import Array
 from jax.typing import ArrayLike
 
 from flowjax.distributions import Uniform
 
 
-def two_moons(key, n_samples, noise_std=0.2):
+def two_moons(key: Array, n_samples, noise_std=0.2):
     """Two moon distribution."""
     angle_key, noise_key = jr.split(key)
     angle = jr.uniform(angle_key, (n_samples,)) * 2 * jnp.pi
@@ -21,9 +22,10 @@ def two_moons(key, n_samples, noise_std=0.2):
 
 
 class GaussianMixtureSimulator:
-    r"""Toy simulation based inference task, where the aim is to infer the mean of a
-    mixture of two Gaussian distributions, with different variances. Specifically,
-    (by default) we have
+    r"""Toy mixture of Gaussians simulation based inference task.
+
+    The aim is to infer the mean of a mixture of two Gaussian distributions, with
+    different variances. Specifically, (by default) we have.
 
     .. math::
         \theta_i \sim \text{Uniform}(-10,\ 10), \quad i=1,2
@@ -31,28 +33,32 @@ class GaussianMixtureSimulator:
     """
 
     def __init__(self, dim: int = 2, prior_bound: float = 10.0) -> None:
+        """Initialize the task."""
         self.dim = dim
         self.prior_bound = prior_bound
         self.prior = Uniform(-jnp.full(dim, prior_bound), jnp.full(dim, prior_bound))
 
     @eqx.filter_jit
-    def simulator(self, key: jr.KeyArray, theta: ArrayLike):
+    def simulator(self, key: Array, theta: ArrayLike):
+        """Carry out simulations."""
         theta = jnp.atleast_2d(jnp.asarray(theta))
         key, subkey = jr.split(key)
         component = jr.bernoulli(subkey, shape=(theta.shape[0],))
-        scales = self._get_scales(component)
+        scales = jnp.where(component, 0.1, 1)
 
         key, subkey = jr.split(key)
         return (jr.normal(subkey, theta.shape) * scales[:, None] + theta).squeeze()
 
     def sample_reference_posterior(
         self,
-        key: jr.KeyArray,
+        key: Array,
         observation: ArrayLike,
         num_samples: int,
     ):
-        """Sample the reference posterior given an observation. Uses the closed form
-        solution with rejection sampling for samples outside prior bound.
+        """Sample the reference posterior given an observation.
+
+        Uses the closed form solution with rejection sampling for samples outside prior
+            bound.
         """
         observation = jnp.asarray(observation)
         if observation.shape != (self.dim,):
@@ -65,13 +71,11 @@ class GaussianMixtureSimulator:
             key, subkey = jr.split(key)
 
             candidates = jax.jit(jax.vmap(self.simulator, in_axes=[0, None]))(
-                jr.split(subkey, num_samples), observation
+                jr.split(subkey, num_samples),
+                observation,
             )
             in_prior_support = self.prior.log_prob(candidates) != -jnp.inf
             sample_counter += in_prior_support.sum()
             samples.append(candidates[in_prior_support])
 
         return jnp.concatenate(samples)[:num_samples]
-
-    def _get_scales(self, component):
-        return jnp.where(component, 0.1, 1)

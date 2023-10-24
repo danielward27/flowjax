@@ -1,21 +1,24 @@
-"""Module contains the Chain bijection, that allows sequentially application of
-arbitrary bijections, with compatible shapes.
-"""
-from typing import Sequence
+"""Chain bijection which allows sequential application of arbitrary bijections."""
+from collections.abc import Sequence
 
-from flowjax.bijections.bijection import Bijection
+from flowjax.bijections.bijection import AbstractBijection
 from flowjax.utils import check_shapes_match, merge_cond_shapes
 
 
-class Chain(Bijection):
+class Chain(AbstractBijection):
     """Chain together arbitrary bijections to form another bijection."""
 
-    bijections: tuple[Bijection]
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
+    bijections: tuple[AbstractBijection]
 
-    def __init__(self, bijections: Sequence[Bijection]):
-        """
+    def __init__(self, bijections: Sequence[AbstractBijection]):
+        """Initialize the chain bijection.
+
         Args:
-            bijections (Sequence[Bijection]): Sequence of bijections.
+            bijections (Sequence[Bijection]): Sequence of bijections. The bijection
+            shapes must match, and any none None condition shapes must match.
+
         """
         check_shapes_match([b.shape for b in bijections])
         self.shape = bijections[0].shape
@@ -46,7 +49,7 @@ class Chain(Bijection):
             log_abs_det_jac += log_abs_det_jac_i.sum()
         return y, log_abs_det_jac
 
-    def __getitem__(self, i: int | slice) -> Bijection:
+    def __getitem__(self, i: int | slice) -> AbstractBijection:
         if isinstance(i, int):
             return self.bijections[i]
         if isinstance(i, slice):
@@ -60,8 +63,7 @@ class Chain(Bijection):
         return len(self.bijections)
 
     def merge_chains(self):
-        """Returns an equivilent Chain object, in which nested chains are flattened into
-        a sigle chain."""
+        """Returns an equivilent Chain object, in which nested chains are flattened."""
         bijections = self.bijections
         while any(isinstance(b, Chain) for b in bijections):
             bij = []

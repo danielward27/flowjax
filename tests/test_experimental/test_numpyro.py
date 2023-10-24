@@ -52,7 +52,7 @@ def test_mcmc():
 
 
 def test_vi():
-    "Check that flowjax distributions can be used as guide/variational distributions"
+    "Check that flowjax distributions can be used as guide/variational distributions."
 
     def guide(dist):
         dist = register_params("guide", dist)
@@ -74,7 +74,10 @@ def test_vi():
     # Test intermediates are used - note BNAF has no inverse so intermediates
     # are required to compute the log_prob in VI.
     guide_dist = BlockNeuralAutoregressiveFlow(
-        key, Normal(jnp.zeros(2), 1), invert=False, nn_block_dim=1
+        key,
+        Normal(jnp.zeros(2), 1),
+        invert=False,
+        nn_block_dim=1,
     )
     svi = SVI(numpyro_model, partial(guide, guide_dist), optimizer, loss=Trace_ELBO())
     svi_result = svi.run(jr.PRNGKey(0), num_steps=2)  # Check runs
@@ -144,7 +147,7 @@ key = jr.PRNGKey(0)
 test_cases = [[(), ()], [(2,), ()], [(), (2,)], [(3, 2, 4), (1, 2)]]
 
 
-@pytest.mark.parametrize("shape,sample_shape", test_cases)
+@pytest.mark.parametrize(("shape", "sample_shape"), test_cases)
 def test_TransformedToNumpyro(shape, sample_shape):
     key, subkey = jr.split(jr.PRNGKey(0))
     means = jr.normal(subkey, shape)
@@ -207,11 +210,11 @@ def test_batched_condition():
 
 
 def get_conditional_true_guide(key, dim, cond_dim):
-    true_dist, guide_dist = [
+    true_dist, guide_dist = (
         Transformed(
             StandardNormal((dim,)),
             AdditiveCondition(Linear(cond_dim, dim, key=k), (dim,), (cond_dim,)),
         )
         for k in jr.split(key)
-    ]
+    )
     return true_dist, guide_dist

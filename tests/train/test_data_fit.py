@@ -28,7 +28,12 @@ def test_data_fit_filter_spec():
     filter_spec = jtu.tree_map(eqx.is_inexact_array, flow)
     filter_spec = eqx.tree_at(lambda tree: tree.base_dist, filter_spec, replace=False)
     flow, _ = fit_to_data(
-        random.PRNGKey(0), flow, x, max_epochs=1, batch_size=50, filter_spec=filter_spec
+        key=random.PRNGKey(0),
+        dist=flow,
+        x=x,
+        max_epochs=1,
+        batch_size=50,
+        filter_spec=filter_spec,
     )
     after = eqx.filter(flow, eqx.is_inexact_array)
 

@@ -1,6 +1,4 @@
-"""The train sub-package contains basic functions for training flows, to
-samples from a target distribution, or by using variational inference.
-"""
+"""Utilities for training flows, fitting to samples or ysing variational inference."""
 
 from .data_fit import fit_to_data
 from .variational_fit import fit_to_variational_target

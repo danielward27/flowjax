@@ -1,20 +1,21 @@
-"""Exponential bijection"""
+"""Exponential bijection."""
+from typing import ClassVar
+
 import jax.numpy as jnp
 
-from flowjax.bijections.bijection import Bijection
+from flowjax.bijections.bijection import AbstractBijection
 
 
-class Exp(Bijection):
-    """Elementwise exponential transform (forward) and log transform (inverse)."""
+class Exp(AbstractBijection):
+    """Elementwise exponential transform (forward) and log transform (inverse).
 
-    def __init__(self, shape: tuple[int, ...] = ()):
-        """
-        Args:
-            shape (tuple[int, ...] | None): Shape of the bijection.
-                Defaults to None.
-        """
-        self.shape = shape
-        self.cond_shape = None
+    Args:
+        shape (tuple[int, ...] | None): Shape of the bijection.
+            Defaults to None.
+    """
+
+    shape: tuple[int, ...] = ()
+    cond_shape: ClassVar[None] = None
 
     def transform(self, x, condition=None):
         x, _ = self._argcheck_and_cast(x)

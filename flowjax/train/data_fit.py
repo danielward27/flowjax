@@ -1,14 +1,16 @@
 """Function to fit flows to samples from a distribution."""
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
 import optax
+from jax import Array
 from jax.typing import ArrayLike
 from tqdm import tqdm
 
-from flowjax.distributions import Distribution
+from flowjax.distributions import AbstractDistribution
 from flowjax.train.losses import MaximumLikelihoodLoss
 from flowjax.train.train_utils import (
     count_fruitless,
@@ -21,8 +23,8 @@ PyTree = Any
 
 
 def fit_to_data(
-    key: jr.KeyArray,
-    dist: Distribution,
+    key: Array,
+    dist: AbstractDistribution,
     x: ArrayLike,
     condition: ArrayLike = None,
     loss_fn: Callable | None = None,
@@ -35,12 +37,15 @@ def fit_to_data(
     filter_spec: Callable | PyTree = eqx.is_inexact_array,
     show_progress: bool = True,
 ):
-    """Train a distribution (e.g. a flow) to samples from the target distribution p(x)
-    or p(x|condition). Note that the last batch in each epoch is dropped if truncated.
+    r"""Train a distribution (e.g. a flow) to samples from the target distribution.
+
+    The distribution can be unconditional :math:`p(x)` or conditional
+    :math:`p(x|\text{condition})`. Note that the last batch in each epoch is dropped
+    if truncated.
 
     Args:
         key (KeyArray): Jax random seed.
-        dist (Distribution): Distribution object.
+        dist (AbstractDistribution): Distribution object.
         x (ArrayLike): Samples from target distribution.
         condition (ArrayLike | None): Conditioning variables. Defaults to None.
         loss_fn (Callable | None): Loss function. Defaults to MaximumLikelihoodLoss.
@@ -88,9 +93,13 @@ def fit_to_data(
         # Train epoch
         batch_losses = []
         for batch in zip(*get_batches(train_data, batch_size), strict=True):
-            key, subkey = jr.split(key)
             params, opt_state, loss_i = step(
-                optimizer, opt_state, loss_fn, params, static, *batch
+                optimizer,
+                opt_state,
+                loss_fn,
+                params,
+                static,
+                *batch,
             )
             batch_losses.append(loss_i)
         losses["train"].append(sum(batch_losses) / len(batch_losses))

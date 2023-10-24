@@ -1,16 +1,16 @@
-"""SoftPlus bijection"""
+"""SoftPlus bijection."""
+from typing import ClassVar
+
 import jax.numpy as jnp
 from jax.nn import softplus
 
-from flowjax.bijections.bijection import Bijection
+from flowjax.bijections.bijection import AbstractBijection
 
 
-class SoftPlus(Bijection):
+class SoftPlus(AbstractBijection):
     r"""Transforms to positive domain using softplus :math:`y = \log(1 + \exp(x))`."""
-
-    def __init__(self, shape: tuple[int] = ()):
-        self.shape = shape
-        self.cond_shape = None
+    shape: tuple[int, ...] = ()
+    cond_shape: ClassVar[None] = None
 
     def transform(self, x, condition=None):
         x, _ = self._argcheck_and_cast(x)

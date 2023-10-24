@@ -1,12 +1,10 @@
-# Configuration file for the Sphinx documentation builder.
-import os
+"""Configuration file for the Sphinx documentation builder."""
 import sys
+from pathlib import Path
 
-import jax  # noqa Avoid circular import
+import jax  # noqa Required to avoid circular import
 
-# Avoid unused module linting
-
-sys.path.insert(0, os.path.abspath(".."))
+sys.path.insert(0, Path("..").resolve())
 
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html

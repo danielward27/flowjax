@@ -1,84 +1,69 @@
-"""Distributions - including the base class Distribution, common distributions
-and a Transformed distribution class.
-"""
+"""Distributions, including the abstract and concrete classes."""
+import inspect
 from abc import abstractmethod
 from math import prod
+from typing import ClassVar
 
 import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
+from equinox import AbstractVar
 from jax import Array
 from jax.experimental import checkify
 from jax.lax import stop_gradient
 from jax.scipy import stats as jstats
 from jax.typing import ArrayLike
 
-from flowjax.bijections import Affine, Bijection, Chain
+from flowjax.bijections import AbstractBijection, Affine, Chain
 from flowjax.utils import _get_ufunc_signature, arraylike_to_array, merge_cond_shapes
 
 
-class Distribution(eqx.Module):
-    """Distribution base class. Distributions all have an attribute ``shape``,
-    denoting the shape of a single sample from the distribution. This corresponds to the
-    ``batch_shape + event_shape`` in torch/numpyro distributions. Similarly, the
-    ``cond_shape`` attribute denotes the shape of the conditioning variable.
-    This attribute is None for unconditional distributions. For example
-
-    .. doctest::
-
-        >>> import jax.numpy as jnp
-        >>> from flowjax.distributions import Normal
-        >>> dist = Normal(jnp.zeros(2))
-        >>> dist.shape
-        (2,)
-        >>> dist.cond_shape is None
-        True
+class AbstractDistribution(eqx.Module):
+    """Abstract distribution class.
 
     Distributions are registered as jax PyTrees (as they are equinox modules), and as
     such they are compatible with normal jax operations.
 
-    **Implementing a distribution**
-
-        (1) Inherit from ``Distribution``.
-        (2) Define attributes ``shape`` and ``cond_shape``. ``cond_shape`` should be
-            ``None`` for unconditional distributions.
-        (3) Define the ``_sample`` method, which samples a point with a shape of
-            ``shape``, (given a conditioning variable with shape ``cond_shape`` for
-            conditional distributions).
-        (4) Define the ``_log_prob`` method, which evaluates the log probability,
-            given an input of shape ``shape`` (and a conditioning variable with shape
-            ``cond_shape`` for conditional distributions).
-
-        The base class will handle defining more convenient log_prob and sample methods
-        that support broadcasting and perform argument checks.
-
+    Attributes:
+        shape (AbstractVar[tuple[int, ...]]): Denotes the shape of a single sample from
+            the distribution.
+        cond_shape (AbstractVar[tuple[int, ...] | None]): The shape of an instance of
+            the conditioning variable. This should be None for unconditional
+            distributions.
     """
 
-    shape: tuple[int, ...]
-    cond_shape: tuple[int, ...] | None
+    shape: AbstractVar[tuple[int, ...]]
+    cond_shape: AbstractVar[tuple[int, ...] | None]
 
     @abstractmethod
     def _log_prob(self, x: Array, condition: Array | None = None) -> Array:
-        """Evaluate the log probability of point x."""
+        """Evaluate the log probability of point x.
+
+        This method should be be valid for inputs with shapes matching
+        ``distribution.shape`` and ``distribution.cond_shape`` for conditional
+        distributions (i.e. the method defined for unbatched inputs).
+        """
 
     @abstractmethod
-    def _sample(self, key: jr.KeyArray, condition: Array | None = None) -> Array:
-        """Sample a point from the distribution."""
+    def _sample(self, key: Array, condition: Array | None = None) -> Array:
+        """Sample a point from the distribution.
 
-    def _sample_and_log_prob(
-        self, key: jr.KeyArray, condition: Array | None = None
-    ) -> tuple[Array, Array]:
-        """Sample a point from the distribution, and return its log probability.
-        Subclasses can reimplement this method in cases where more efficient methods
-        exists (e.g. for :class:`Transformed` distributions).
+        This method should return a single sample with shape matching
+        ``distribution.shape``.
         """
-        x = self._sample(key, condition)
-        log_prob = self._log_prob(x, condition)
-        return x, log_prob
+
+    @abstractmethod
+    def _sample_and_log_prob(
+        self,
+        key: Array,
+        condition: Array | None = None,
+    ) -> tuple[Array, Array]:
+        """Sample a point from the distribution, and return its log probability."""
 
     def log_prob(self, x: ArrayLike, condition: ArrayLike | None = None) -> Array:
-        """Evaluate the log probability. Uses numpy like broadcasting if additional
-        leading dimensions are passed.
+        """Evaluate the log probability.
+
+        Uses numpy-like broadcasting if additional leading dimensions are passed.
 
         Args:
             x (ArrayLike): Points at which to evaluate density.
@@ -87,34 +72,27 @@ class Distribution(eqx.Module):
         Returns:
             Array: Jax array of log probabilities.
         """
-        x = self._argcheck_and_cast_x(x)
+        x = arraylike_to_array(x, "x")
         condition = self._argcheck_and_cast_condition(condition)
-        if condition is None:
-            sig = _get_ufunc_signature([self.shape], [()])
-            exclude = frozenset([1])
-        else:
-            sig = _get_ufunc_signature([self.shape, self.cond_shape], [()])
-            exclude = frozenset()
-
-        lps = jnp.vectorize(self._log_prob, signature=sig, excluded=exclude)(
-            x, condition
-        )
-        return jnp.where(jnp.isnan(lps), -jnp.inf, lps)  # type: ignore
+        lps = self._vectorize(self._log_prob)(x, condition)
+        return jnp.where(jnp.isnan(lps), -jnp.inf, lps)
 
     def sample(
         self,
-        key: jr.KeyArray,
+        key: Array,
         sample_shape: tuple[int, ...] = (),
         condition: ArrayLike | None = None,
     ) -> Array:
-        """Sample from the distribution. For unconditional distributions, the output
-        will be of shape ``sample_shape + dist.shape``. For conditional distributions,
-        a batch dimension in the condition is supported, and the output shape will be
-        ``sample_shape + condition_batch_shape + dist.shape``. See the example for more
-        information.
+        """Sample from the distribution.
+
+        For unconditional distributions, the output will be of shape
+        ``sample_shape + dist.shape``. For conditional distributions, a batch dimension
+        in the condition is supported, and the output shape will be
+        ``sample_shape + condition_batch_shape + dist.shape``.
+        See the example for more information.
 
         Args:
-            key (jr.KeyArray): Jax random key.
+            key (Array): Jax random key.
             condition (ArrayLike | None): Conditioning variables. Defaults to None.
             sample_shape (tuple[int, ...]): Sample shape. Defaults to ().
 
@@ -171,197 +149,244 @@ class Distribution(eqx.Module):
 
         """
         condition = self._argcheck_and_cast_condition(condition)
-        excluded, signature = self._vectorize_sample_args()
         keys = self._get_sample_keys(key, sample_shape, condition)
-        return jnp.vectorize(self._sample, excluded=excluded, signature=signature)(
-            keys, condition
-        )  # type: ignore
+        return self._vectorize(self._sample)(keys, condition)
 
     def sample_and_log_prob(
         self,
-        key: jr.KeyArray,
+        key: Array,
         sample_shape: tuple[int, ...] = (),
         condition: ArrayLike | None = None,
     ):
-        """Sample the distribution and return the samples and corresponding log
-        probabilities. For transformed distributions (especially flows), this will
-        generally be more efficient than calling the methods seperately. Refer to the
-        :py:meth:`~flowjax.distributions.Distribution.sample` documentation for more
-        information.
+        """Sample the distribution and return the samples with their log probabilities.
+
+        For transformed distributions (especially flows), this will generally be more
+        efficient than calling the methods seperately. Refer to the
+        :py:meth:`~flowjax.distributions.AbstractDistribution.sample` documentation for
+        more information.
 
         Args:
-            key (jr.KeyArray): Jax random key.
+            key (Array): Jax random key.
             condition (ArrayLike | None): Conditioning variables. Defaults to None.
             sample_shape (tuple[int, ...]): Sample shape. Defaults to ().
         """
         condition = self._argcheck_and_cast_condition(condition)
-
-        excluded, signature = self._vectorize_sample_args(sample_and_log_prob=True)
         keys = self._get_sample_keys(key, sample_shape, condition)
-
-        return jnp.vectorize(
-            self._sample_and_log_prob, excluded=excluded, signature=signature
-        )(keys, condition)
-
-    def _vectorize_sample_args(self, sample_and_log_prob=False):
-        """Get the excluded arguments and ufunc signature for sample or
-        sample_and_log_prob"""
-        out_shapes = [self.shape, ()] if sample_and_log_prob else [self.shape]
-        if self.cond_shape is None:
-            excluded = frozenset([1])
-            in_shapes = [(2,)]
-        else:
-            excluded = frozenset()
-            in_shapes = [(2,), self.cond_shape]
-        signature = _get_ufunc_signature(in_shapes, out_shapes)
-        return excluded, signature
-
-    def _get_sample_keys(self, key, sample_shape, condition):
-        """Splits a key into an arrray of keys with shape
-        sample_shape + leading_cond_shape + (2,)."""
-        if self.cond_shape is None:
-            key_shape = sample_shape
-        else:
-            leading_cond_shape = (
-                condition.shape[: -len(self.cond_shape)]
-                if len(self.cond_shape) > 0
-                else condition.shape
-            )
-            key_shape = sample_shape + leading_cond_shape
-
-        key_size = max(1, prod(key_shape))  # Still need 1 key for scalar sample
-        keys = jnp.reshape(jr.split(key, key_size), key_shape + (2,))  # type: ignore
-        return keys
-
-    def _argcheck_and_cast_x(self, x) -> Array:
-        x = arraylike_to_array(x, err_name="x")
-        x_trailing = x.shape[-self.ndim :] if self.ndim > 0 else ()
-        if x_trailing != self.shape:
-            raise ValueError(
-                "Expected trailing dimensions in x to match the distribution shape "
-                f"{self.shape}; got x shape {x.shape}."
-            )
-        return x
-
-    def _argcheck_and_cast_condition(self, condition) -> Array | None:
-        if self.cond_shape is None:
-            if condition is not None:
-                raise ValueError(
-                    "Expected condition to be None for unconditional distribution; "
-                    f"got {condition}."
-                )
-            return None
-        condition = arraylike_to_array(condition, err_name="condition")
-        condition_trailing = (
-            condition.shape[-len(self.cond_shape) :] if self.cond_ndim > 0 else ()
-        )
-        if condition_trailing != self.cond_shape:
-            raise ValueError(
-                "Expected trailing dimensions in condition to match cond_shape "
-                f"{self.cond_shape}, but got condition shape {condition.shape}."
-            )
-        return condition
+        return self._vectorize(self._sample_and_log_prob)(keys, condition)
 
     @property
     def ndim(self):
-        """The number of dimensions in the distribution (the length of the shape)."""
+        """Number of dimensions in the distribution (the length of the shape)."""
         return len(self.shape)
 
     @property
     def cond_ndim(self):
-        """The number of dimensions of the conditioning variable (length of
-        cond_shape)."""
+        """Number of dimensions of the conditioning variable (length of cond_shape)."""
+        return None if self.cond_shape is None else len(self.cond_shape)
+
+    def _argcheck_and_cast_condition(self, condition: ArrayLike | None):
+        if self.cond_shape is None:
+            if condition is not None:
+                raise TypeError(
+                    f"Expected condition to be None; got {type(condition)}.",
+                )
+            return None
+        return arraylike_to_array(condition, err_name="condition")
+
+    def _vectorize(self, method: callable) -> callable:
+        """Returns a vectorized version of the distribution method."""
+        # Get shapes without broadcasting - note the (2, ) corresponds to key arrays.
+        maybe_cond = [] if self.cond_shape is None else [self.cond_shape]
+        in_shapes = {
+            "_sample_and_log_prob": [(2,)] + maybe_cond,
+            "_sample": [(2,)] + maybe_cond,
+            "_log_prob": [self.shape] + maybe_cond,
+        }
+        out_shapes = {
+            "_sample_and_log_prob": [self.shape, ()],
+            "_sample": [self.shape],
+            "_log_prob": [()],
+        }
+        in_shapes, out_shapes = in_shapes[method.__name__], out_shapes[method.__name__]
+
+        def _check_shapes(method):
+            # Wraps unvectorised method with shape checking
+            def _wrapper(*args):
+                argnames = list(inspect.signature(method).parameters)
+                assert len(args) == len(argnames)
+                for in_shape, arg, name in zip(in_shapes, args, argnames, strict=False):
+                    if arg.shape != in_shape:
+                        raise ValueError(
+                            f"Expected trailing dimensions matching {in_shape} for "
+                            f"{name}; got {arg.shape}.",
+                        )
+                return method(*args)
+
+            return _wrapper
+
+        signature = _get_ufunc_signature(in_shapes, out_shapes)
+        ex = frozenset([1]) if self.cond_shape is None else frozenset()
+        return jnp.vectorize(_check_shapes(method), signature=signature, excluded=ex)
+
+    def _get_sample_keys(self, key, sample_shape, condition):
         if self.cond_shape is not None:
-            return len(self.cond_shape)
-        return None
+            leading_cond_shape = condition.shape[: -self.cond_ndim or None]
+        else:
+            leading_cond_shape = ()
+        key_shape = sample_shape + leading_cond_shape
+        key_size = max(1, prod(key_shape))  # Still need 1 key for scalar sample
+        return jnp.reshape(jr.split(key, key_size), (*key_shape, 2))
 
 
-class Transformed(Distribution):
-    """Transform a base distribution using a a bijection. We take the forward bijection
-    for use in sampling, and the inverse bijection for use in density evaluation.
+class AbstractStandardDistribution(AbstractDistribution):
+    """Abstract distribution type, representing a distribution that is not transformed.
+
+    The class implements a default ``_sample_and_log_prob`` method by calling
+    ``_sample`` and ``_log_prob`` methods seperately. Concrete subclasses can be
+    implemented as follows:
+
+        (1) Inherit from :class:`AbstractStandardDistribution`.
+        (2) Define the abstract attributes ``shape`` and ``cond_shape``.
+            ``cond_shape`` should be ``None`` for unconditional distributions.
+        (3) Define the abstract methods :meth:`_sample` and :meth:`_log_prob`.
+
+    See the source code for :class:`StandardNormal` for a simple example implementation.
     """
 
-    base_dist: Distribution
-    bijection: Bijection
-    cond_shape: tuple[int, ...] | None
-
-    def __init__(self, base_dist: Distribution, bijection: Bijection):
-        """
-        Args:
-            base_dist (Distribution): Base distribution.
-            bijection (Bijection): Bijection to transform distribution.
-
-        Example:
-
-        .. doctest::
-
-            >>> from flowjax.distributions import StandardNormal, Transformed
-            >>> from flowjax.bijections import Affine
-            >>> normal = StandardNormal()
-            >>> bijection = Affine(1)
-            >>> transformed = Transformed(normal, bijection)
+    def _sample_and_log_prob(self, key, condition=None):
+        x = self._sample(key, condition)
+        return x, self._log_prob(x, condition)
 
 
-        .. warning::
-            It is the currently the users responsibility to ensure the bijection is
-            valid across the entire support of the distribution. Failure to do so may
-            lead to to unexpected results. In future versions explicit constraints may
-            be introduced.
-        """
-        self.base_dist = base_dist
-        self.bijection = bijection
-        self.shape = self.base_dist.shape
-        self.cond_shape = merge_cond_shapes(
-            (self.bijection.cond_shape, self.base_dist.cond_shape)
-        )
+class AbstractTransformed(AbstractDistribution):
+    """Abstract class respresenting transformed distributions.
+
+    Concete implementations can be implemnted as follows:
+
+        (1) Inherit from :class:`AbstractTransformed`.
+        (2) Define the abstract attributes `base_dist`, `bijection`.
+
+    bijection attributes. We take the forward bijection for use in sampling, and the
+    inverse for use in density evaluation. See also :class:`Transformed`
+
+    """
+
+    base_dist: AbstractVar[AbstractDistribution]
+    bijection: AbstractVar[AbstractBijection]
 
     def _log_prob(self, x, condition=None):
         z, log_abs_det = self.bijection.inverse_and_log_det(x, condition)
-        p_z = self.base_dist._log_prob(z, condition)  # pylint: disable W0212
+        p_z = self.base_dist._log_prob(z, condition)
         return p_z + log_abs_det
 
     def _sample(self, key, condition=None):
         base_sample = self.base_dist._sample(key, condition)
         return self.bijection.transform(base_sample, condition)
 
-    def _sample_and_log_prob(self, key: jr.KeyArray, condition=None):
-        # We overwrite the naive implementation of calling both methods seperately to
-        # avoid computing the inverse transformation.
+    def _sample_and_log_prob(self, key: Array, condition=None):
+        # We avoid computing the inverse transformation.
         base_sample, log_prob_base = self.base_dist._sample_and_log_prob(key, condition)
         sample, forward_log_dets = self.bijection.transform_and_log_det(
-            base_sample, condition
+            base_sample,
+            condition,
         )
         return sample, log_prob_base - forward_log_dets
 
+    def __check_init__(self):  # TODO test errors and test conditional base distribution
+        """Checks cond_shape is compatible in both bijection and distribution."""
+        if (
+            self.base_dist.cond_shape is not None
+            and self.bijection.cond_shape is not None
+            and self.base_dist.cond_shape != self.bijection.cond_shape
+        ):
+            raise ValueError(
+                "The base distribution and bijection are both conditional "
+                "but have mismatched cond_shape attributes. Base distribution has"
+                f"{self.base_dist.cond_shape}, and the bijection has"
+                f"{self.bijection.cond_shape}.",
+            )
+
     def merge_transforms(self):
-        """Returns an equivilent distribution, but ravelling nested
-        transformed distributions such that the returned distribution
-        has a base distribution that is not a Transformed instance.
+        """Unnests nested transformed distributions.
+
+        Returns an equivilent distribution, but ravelling nested
+        :class:`AbstractTransformed` distributions such that the returned distribution
+        has a base distribution that is not an :class:`AbstractTransformed` instance.
         """
-        if not isinstance(self.base_dist, Transformed):
+        if not isinstance(self.base_dist, AbstractTransformed):
             return self
         base_dist = self.base_dist
         bijections = [self.bijection]
-        while isinstance(base_dist, Transformed):
+        while isinstance(base_dist, AbstractTransformed):
             bijections.append(base_dist.bijection)
             base_dist = base_dist.base_dist
         bijection = Chain(list(reversed(bijections))).merge_chains()
         return Transformed(base_dist, bijection)
 
+    @property
+    def shape(self):
+        return self.base_dist.shape
 
-class StandardNormal(Distribution):
-    """Implements a standard normal distribution, condition is ignored. Unlike
-    :class:`Normal`, this has no trainable parameters.
+    @property
+    def cond_shape(self):
+        return merge_cond_shapes((self.bijection.cond_shape, self.base_dist.cond_shape))
+
+
+class Transformed(AbstractTransformed):
+    """Form a distribution like object using a base distribution and a bijection.
+
+    We take the forward bijection for use in sampling, and the inverse
+    bijection for use in density evaluation.
+
+    .. warning::
+            It is the currently the users responsibility to ensure the bijection is
+            valid across the entire support of the distribution. Failure to do so may
+            lead to to unexpected results.
     """
 
-    def __init__(self, shape: tuple[int, ...] = ()):
-        """
+    base_dist: AbstractDistribution
+    bijection: AbstractBijection
+
+    def __init__(
+        self,
+        base_dist: AbstractDistribution,
+        bijection: AbstractBijection,
+    ):
+        """Initialize the transformed distribution.
+
         Args:
-            shape (tuple[int, ...]): The shape of the normal distribution. Defaults to
-                ().
+            base_dist (AbstractDistribution): Base distribution.
+            bijection (AbstractBijection): Bijection to transform distribution.
+
+        Example:
+            .. doctest::
+
+                >>> from flowjax.distributions import StandardNormal, Transformed
+                >>> from flowjax.bijections import Affine
+                >>> normal = StandardNormal()
+                >>> bijection = Affine(1)
+                >>> transformed = Transformed(normal, bijection)
+        """
+        self.base_dist = base_dist
+        self.bijection = bijection
+
+
+class StandardNormal(AbstractStandardDistribution):
+    """Standard normal distribution.
+
+    Note unlike :class:`Normal`, this has no trainable parameters.
+    """
+
+    shape: tuple[int, ...]
+    cond_shape: ClassVar[None] = None
+
+    def __init__(self, shape: tuple[int, ...] = ()):
+        """Initialize the standard Normal distribution.
+
+        Args:
+            shape (tuple[int, ...]): The shape of the distribution. Defaults to ().
         """
         self.shape = shape
-        self.cond_shape = None
 
     def _log_prob(self, x, condition=None):
         return jstats.norm.logpdf(x).sum()
@@ -370,42 +395,45 @@ class StandardNormal(Distribution):
         return jr.normal(key, self.shape)
 
 
-class Normal(Transformed):
-    """Implements an independent Normal distribution with mean and std for
-    each dimension. `loc` and `scale` should be broadcastable.
-    """
+class Normal(AbstractTransformed):
+    """An independent Normal distribution with mean and std for each dimension."""
 
+    base_dist: StandardNormal
     bijection: Affine
+    cond_shape: ClassVar[None] = None
 
     def __init__(self, loc: ArrayLike = 0, scale: ArrayLike = 1):
-        """
+        """Initialize the normal distribution.
+
+        ``loc`` and ``scale`` should broadcast to the desired shape of the distribution.
+
         Args:
             loc (ArrayLike): Means. Defaults to 0.
             scale (ArrayLike): Standard deviations. Defaults to 1.
         """
-        shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
-        base_dist = StandardNormal(shape)
-        bijection = Affine(loc=loc, scale=scale)
-        super().__init__(base_dist, bijection)
+        self.base_dist = StandardNormal(
+            jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale)),
+        )
+        self.bijection = Affine(loc=loc, scale=scale)
 
     @property
     def loc(self):
-        """Location of the distribution"""
+        """Location of the distribution."""
         return self.bijection.loc
 
     @property
     def scale(self):
-        """scale of the distribution"""
+        """Scale of the distribution."""
         return self.bijection.scale
 
 
-class _StandardUniform(Distribution):
-    r"""Implements a standard independent Uniform distribution, ie
-    :math:`X \sim Uniform([0, 1]^d)`."""
+class _StandardUniform(AbstractStandardDistribution):
+    r"""Implements a standard Uniform distribution."""
+    shape: tuple[int, ...]
+    cond_shape: ClassVar[None] = None
 
     def __init__(self, shape: tuple[int, ...] = ()):
         self.shape = shape
-        self.cond_shape = None
 
     def _log_prob(self, x, condition=None):
         return jstats.uniform.logpdf(x).sum()
@@ -414,29 +442,30 @@ class _StandardUniform(Distribution):
         return jr.uniform(key, shape=self.shape)
 
 
-class Uniform(Transformed):
-    """Implements an independent uniform distribution between min and max for each
-    dimension. `minval` and `maxval` should be broadcastable.
-    """
+class Uniform(AbstractTransformed):
+    """Independent uniform distribution."""
 
+    base_dist: _StandardUniform
     bijection: Affine
 
     def __init__(self, minval: ArrayLike, maxval: ArrayLike):
-        """
+        """Initialize the uniform distribution.
+
+        ``minval`` and ``maxval`` should broadcast to the desired distribution shape.
+
         Args:
             minval (ArrayLike): Minimum values.
             maxval (ArrayLike): Maximum values.
         """
         minval, maxval = arraylike_to_array(minval), arraylike_to_array(maxval)
-        shape = jnp.broadcast_shapes(minval.shape, maxval.shape)
         checkify.check(
             jnp.all(maxval >= minval),
             "Minimums must be less than the maximums.",
         )
-
-        base_dist = _StandardUniform(shape)
-        bijection = Affine(loc=minval, scale=maxval - minval)
-        super().__init__(base_dist, bijection)
+        self.base_dist = _StandardUniform(
+            jnp.broadcast_shapes(minval.shape, maxval.shape),
+        )
+        self.bijection = Affine(loc=minval, scale=maxval - minval)
 
     @property
     def minval(self):
@@ -449,12 +478,14 @@ class Uniform(Transformed):
         return self.bijection.loc + self.bijection.scale
 
 
-class _StandardGumbel(Distribution):
+class _StandardGumbel(AbstractStandardDistribution):
     """Standard gumbel distribution (https://en.wikipedia.org/wiki/Gumbel_distribution)."""
+
+    shape: tuple[int, ...]
+    cond_shape: ClassVar[None] = None
 
     def __init__(self, shape: tuple[int, ...] = ()):
         self.shape = shape
-        self.cond_shape = None
 
     def _log_prob(self, x, condition=None):
         return -(x + jnp.exp(-x)).sum()
@@ -463,28 +494,27 @@ class _StandardGumbel(Distribution):
         return jr.gumbel(key, shape=self.shape)
 
 
-class Gumbel(Transformed):
-    """Gumbel distribution (https://en.wikipedia.org/wiki/Gumbel_distribution)"""
+class Gumbel(AbstractTransformed):
+    """Gumbel distribution (https://en.wikipedia.org/wiki/Gumbel_distribution)."""
 
+    base_dist: _StandardGumbel
     bijection: Affine
 
     def __init__(self, loc: ArrayLike = 0, scale: ArrayLike = 1):
-        """
-        `loc` and `scale` should broadcast to the dimension of the distribution.
+        """``loc`` and ``scale`` should broadcast to the dimension of the distribution.
 
         Args:
             loc (ArrayLike): Location paramter.
             scale (ArrayLike): Scale parameter. Defaults to 1.0.
         """
-        shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
-        base_dist = _StandardGumbel(shape)
-        bijection = Affine(loc, scale)
-
-        super().__init__(base_dist, bijection)
+        self.base_dist = _StandardGumbel(
+            jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale)),
+        )
+        self.bijection = Affine(loc, scale)
 
     @property
     def loc(self):
-        """Location of the distribution"""
+        """Location of the distribution."""
         return self.bijection.loc
 
     @property
@@ -493,15 +523,17 @@ class Gumbel(Transformed):
         return self.bijection.scale
 
 
-class _StandardCauchy(Distribution):
+class _StandardCauchy(AbstractStandardDistribution):
+    """Implements standard cauchy distribution (loc=0, scale=1).
+
+    Ref: https://en.wikipedia.org/wiki/Cauchy_distribution.
     """
-    Implements standard cauchy distribution (loc=0, scale=1)
-    Ref: https://en.wikipedia.org/wiki/Cauchy_distribution
-    """
+
+    shape: tuple[int, ...]
+    cond_shape: ClassVar[None] = None
 
     def __init__(self, shape: tuple[int, ...] = ()):
         self.shape = shape
-        self.cond_shape = None
 
     def _log_prob(self, x, condition=None):
         return jstats.cauchy.logpdf(x).sum()
@@ -510,44 +542,45 @@ class _StandardCauchy(Distribution):
         return jr.cauchy(key, shape=self.shape)
 
 
-class Cauchy(Transformed):
+class Cauchy(AbstractTransformed):
     """Cauchy distribution (https://en.wikipedia.org/wiki/Cauchy_distribution)."""
 
+    base_dist: _StandardCauchy
     bijection: Affine
 
     def __init__(self, loc: ArrayLike = 0, scale: ArrayLike = 1):
-        """
-        `loc` and `scale` should broadcast to the dimension of the distribution.
+        """``loc`` and ``scale`` should broadcast to the dimension of the distribution.
 
         Args:
             loc (ArrayLike): Location paramter.
             scale (ArrayLike): Scale parameter. Defaults to 1.0.
         """
-        shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
-        base_dist = _StandardCauchy(shape)
-        bijection = Affine(loc, scale)
-        super().__init__(base_dist, bijection)
+        self.base_dist = _StandardCauchy(
+            jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale)),
+        )
+        self.bijection = Affine(loc, scale)
 
     @property
     def loc(self):
-        """Location of the distribution"""
+        """Location of the distribution."""
         return self.bijection.loc
 
     @property
     def scale(self):
-        """scale of the distribution"""
+        """Scale of the distribution."""
         return self.bijection.scale
 
 
-class _StandardStudentT(Distribution):
+class _StandardStudentT(AbstractStandardDistribution):
     """Implements student T distribution with specified degrees of freedom."""
 
+    shape: tuple[int, ...]
+    cond_shape: ClassVar[None] = None
     log_df: Array
 
     def __init__(self, df: ArrayLike):
         self.shape = jnp.shape(df)
-        self.cond_shape = None
-        self.log_df = jnp.log(df)
+        self.log_df = jnp.log(df)  # TODO post init check of not nans?
 
     def _log_prob(self, x, condition=None):
         return jstats.t.logpdf(x, df=self.df).sum()
@@ -561,15 +594,14 @@ class _StandardStudentT(Distribution):
         return jnp.exp(self.log_df)
 
 
-class StudentT(Transformed):
+class StudentT(AbstractTransformed):
     """Student T distribution (https://en.wikipedia.org/wiki/Student%27s_t-distribution)."""
 
-    bijection: Affine
     base_dist: _StandardStudentT
+    bijection: Affine
 
     def __init__(self, df: ArrayLike, loc: ArrayLike = 0, scale: ArrayLike = 1):
-        """
-        `df`, `loc` and `scale` broadcast to the dimension of the distribution.
+        """``df``, ``loc`` and ``scale`` broadcast to the dimension of the distribution.
 
         Args:
             df (ArrayLike): The degrees of freedom.
@@ -577,18 +609,17 @@ class StudentT(Transformed):
             scale (ArrayLike): Scale parameter. Defaults to 1.0.
         """
         df, loc, scale = jnp.broadcast_arrays(df, loc, scale)
-        base_dist = _StandardStudentT(df)
-        bijection = Affine(loc, scale)
-        super().__init__(base_dist, bijection)
+        self.base_dist = _StandardStudentT(df)
+        self.bijection = Affine(loc, scale)
 
     @property
     def loc(self):
-        """Location of the distribution"""
+        """Location of the distribution."""
         return self.bijection.loc
 
     @property
     def scale(self):
-        """scale of the distribution"""
+        """Scale of the distribution."""
         return self.bijection.scale
 
     @property
@@ -597,22 +628,27 @@ class StudentT(Transformed):
         return self.base_dist.df
 
 
-class SpecializeCondition(Distribution):
-    """Utility class to specialise a conditional distribution to a particular instance
-    of the conditioning variable. This makes the distribution act like an unconditional
-    distribution, i.e. the distribution methods implicitly will use the condition passed
-    on instantiation of the class.
+class SpecializeCondition(AbstractDistribution):  # TODO check tested
+    """Specialise a distribution to a particular conditioning variable instance.
+
+    This makes the distribution act like an unconditional distribution, i.e. the
+    distribution methods implicitly will use the condition passed on instantiation
+    of the class.
     """
+
+    shape: tuple[int, ...]
+    cond_shape: ClassVar[None] = None
 
     def __init__(
         self,
-        dist: Distribution,
+        dist: AbstractDistribution,
         condition: ArrayLike,
         stop_gradient: bool = True,
     ):
-        """
+        """Initialize the distribution.
+
         Args:
-            dist (Distribution): Conditional distribution to specialize.
+            dist (AbstractDistribution): Conditional distribution to specialize.
             condition (ArrayLike, optional): Instance of conditioning variable with
                 shape matching ``dist.cond_shape``. Defaults to None.
             stop_gradient (bool): Whether to use ``jax.lax.stop_gradient`` to prevent
@@ -622,12 +658,11 @@ class SpecializeCondition(Distribution):
         if self.dist.cond_shape != condition.shape:
             raise ValueError(
                 f"Expected condition shape {self.dist.cond_shape}, got "
-                f"{condition.shape}"
+                f"{condition.shape}",
             )
         self.dist = dist
         self._condition = condition
         self.shape = dist.shape
-        self.cond_shape = None
         self.stop_gradient = stop_gradient
 
     def _log_prob(self, x, condition=None):
@@ -636,6 +671,10 @@ class SpecializeCondition(Distribution):
     def _sample(self, key, condition=None):
         return self.dist._sample(key, self.condition)
 
+    def _sample_and_log_prob(self, key, condition=None):
+        return self.dist._sample_and_log_prob(key, self.condition)
+
     @property
     def condition(self):
+        """The conditioning variable, possibly with stop_gradient applied."""
         return stop_gradient(self._condition) if self.stop_gradient else self._condition

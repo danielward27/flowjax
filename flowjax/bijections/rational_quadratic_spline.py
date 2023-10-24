@@ -1,19 +1,21 @@
 """Rational quadratic spline bijections (https://arxiv.org/abs/1906.04032)."""
 
 
-import equinox as eqx
+from typing import ClassVar
+
 import jax
 import jax.numpy as jnp
 from jax import Array
 
-from flowjax.bijections.bijection import Bijection
-from flowjax.bijections.jax_transforms import Batch
+from flowjax.bijections.bijection import AbstractBijection
 from flowjax.utils import real_to_increasing_on_interval
 
 
-class _ScalarRationalQuadraticSpline(Bijection):
-    """Scaler RationalQuadraticSpline transformation (https://arxiv.org/abs/1906.04032)."""
+class RationalQuadraticSpline(AbstractBijection):
+    """Scalar RationalQuadraticSpline transformation (https://arxiv.org/abs/1906.04032)."""
 
+    shape: ClassVar[tuple] = ()
+    cond_shape: ClassVar[None] = None
     knots: int
     interval: float
     softmax_adjust: float
@@ -29,25 +31,37 @@ class _ScalarRationalQuadraticSpline(Bijection):
         min_derivative: float = 1e-3,
         softmax_adjust: float = 1e-2,
     ):
+        """Initialize the RationalQuadraticSpline bijection.
+
+        Args:
+            knots (int): Number of knots.
+            interval (float): interval to transform, [-interval, interval].
+            min_derivative (float): Minimum dervivative. Defaults to 1e-3.
+            softmax_adjust (float): Controls minimum bin width and height by
+                rescaling softmax output, e.g. 0=no adjustment, 1=average softmax output
+                with evenly spaced widths, >1 promotes more evenly spaced widths.
+                See ``real_to_increasing_on_interval``. Defaults to 1e-2.
+        """
         self.knots = knots
         self.interval = interval
         self.softmax_adjust = softmax_adjust
         self.min_derivative = min_derivative
-        self.shape = ()
-        self.cond_shape = None
 
         # Inexact arrays
         self.unbounded_x_pos = jnp.zeros(knots)
         self.unbounded_y_pos = jnp.zeros(knots)
         self.unbounded_derivatives = jnp.full(
-            knots + 2, jnp.log(jnp.exp(1 - min_derivative) - 1)
+            knots + 2,
+            jnp.log(jnp.exp(1 - min_derivative) - 1),
         )
 
     @property
     def x_pos(self):
         """Get the knot x positions."""
         x_pos = real_to_increasing_on_interval(
-            self.unbounded_x_pos, self.interval, self.softmax_adjust
+            self.unbounded_x_pos,
+            self.interval,
+            self.softmax_adjust,
         )
         return jnp.pad(x_pos, 1, constant_values=(-self.interval, self.interval))
 
@@ -55,7 +69,9 @@ class _ScalarRationalQuadraticSpline(Bijection):
     def y_pos(self):
         """Get the knot y positions."""
         y_pos = real_to_increasing_on_interval(
-            self.unbounded_y_pos, self.interval, self.softmax_adjust
+            self.unbounded_y_pos,
+            self.interval,
+            self.softmax_adjust,
         )
         return jnp.pad(y_pos, 1, constant_values=(-self.interval, self.interval))
 
@@ -66,7 +82,6 @@ class _ScalarRationalQuadraticSpline(Bijection):
 
     def transform(self, x, condition=None):
         # Following notation from the paper
-        # pylint: disable=C0103
         x_pos, y_pos, derivatives = self.x_pos, self.y_pos, self.derivatives
         in_bounds = jnp.logical_and(x > -self.interval, x < self.interval)
         x_robust = jnp.where(in_bounds, x, 0)  # To avoid nans
@@ -124,42 +139,4 @@ class _ScalarRationalQuadraticSpline(Bijection):
         num = sk**2 * (dk1 * xi**2 + 2 * sk * xi * (1 - xi) + dk * (1 - xi) ** 2)
         den = (sk + (dk1 + dk - 2 * sk) * xi * (1 - xi)) ** 2
         derivative = num / den
-        return jnp.where(in_bounds, derivative, 1.0)  # type: ignore
-
-
-class RationalQuadraticSpline(Batch):
-    """Elementwise rational quadratic spline transform (https://arxiv.org/abs/1906.04032),
-    initialised at the identity function.
-    """
-
-    def __init__(
-        self,
-        knots: int,
-        interval: float,
-        shape: tuple[int, ...] = (),
-        min_derivative: float = 1e-3,
-        softmax_adjust: float = 1e-2,
-    ) -> None:
-        """
-        Args:
-            knots (int): Number of knots.
-            interval (float): interval to transform, [-interval, interval].
-            shape (tuple[int, ...]): Shape of transformation. Defaults to ().
-            min_derivative (float): Minimum dervivative. Defaults to 1e-3.
-            softmax_adjust (float): Controls minimum bin width and height by
-                rescaling softmax output, e.g. 0=no adjustment, 1=average softmax output
-                with evenly spaced widths, >1 promotes more evenly spaced widths.
-                See ``real_to_increasing_on_interval``.. Defaults to 1e-2.
-        """
-
-        def constructor():
-            return _ScalarRationalQuadraticSpline(
-                knots, interval, min_derivative, softmax_adjust
-            )
-
-        # Create constructor with appropriate number of batch dimensions
-        for dim in reversed(shape):
-            constructor = eqx.filter_vmap(constructor, axis_size=dim)
-
-        spline = constructor()
-        super().__init__(spline, shape, vectorize_bijection=True)
+        return jnp.where(in_bounds, derivative, 1.0)

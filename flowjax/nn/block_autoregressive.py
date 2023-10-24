@@ -1,5 +1,5 @@
 """Block autoregressive neural network components."""
-from typing import Callable
+from collections.abc import Callable
 
 import equinox as eqx
 import jax.numpy as jnp
@@ -12,6 +12,7 @@ from flowjax.masks import block_diag_mask, block_tril_mask
 
 class BlockAutoregressiveLinear(eqx.Module):
     """Block autoregressive neural network layer (https://arxiv.org/abs/1904.04676).
+
     Conditioning variables are incorporated by appending columns (one for each
     conditioning variable) to the right of the block diagonal weight matrix.
     """
@@ -36,9 +37,10 @@ class BlockAutoregressiveLinear(eqx.Module):
         cond_dim: int | None = None,
         init: Callable | None = None,
     ):
-        """
+        """Initialize the block autoregressive linear layer.
+
         Args:
-            key KeyArray: Random key
+            key (KeyArray): Random key
             n_blocks (int): Number of diagonal blocks (dimension of original input).
             block_shape (tuple): The shape of the (unconstrained) blocks.
             cond_dim (int | None): Number of additional conditioning variables.
@@ -55,16 +57,17 @@ class BlockAutoregressiveLinear(eqx.Module):
         cond_size = (block_shape[0] * n_blocks, cond_dim)
 
         self.b_diag_mask = jnp.column_stack(
-            (block_diag_mask(block_shape, n_blocks), jnp.zeros(cond_size, jnp.int32))
+            (block_diag_mask(block_shape, n_blocks), jnp.zeros(cond_size, jnp.int32)),
         )
 
         self.b_tril_mask = jnp.column_stack(
-            (block_tril_mask(block_shape, n_blocks), jnp.ones(cond_size, jnp.int32))
+            (block_tril_mask(block_shape, n_blocks), jnp.ones(cond_size, jnp.int32)),
         )
 
         self.b_diag_mask_idxs = jnp.where(
-            self.b_diag_mask, size=block_shape[0] * block_shape[1] * n_blocks
-        )  # type: ignore
+            self.b_diag_mask,
+            size=block_shape[0] * block_shape[1] * n_blocks,
+        )
 
         in_features, out_features = (
             block_shape[1] * n_blocks + cond_dim,
@@ -96,14 +99,17 @@ class BlockAutoregressiveLinear(eqx.Module):
         return jnp.exp(self.weight_log_scale) * weights / weight_norms
 
     def __call__(self, x, condition=None):
-        """returns output y, and components of weight matrix needed log_det component
-        (n_blocks, block_shape[0], block_shape[1]).
+        """Returns output y, and components of weight matrix needed log_det component.
+
+        The components of the weight matrix have shape
+        ``(n_blocks, block_shape[0], block_shape[1])``.
         """
         weights = self.get_normalised_weights()
         if condition is not None:
             x = jnp.concatenate((x, condition))
         y = weights @ x + self.bias
         jac_3d = weights[self.b_diag_mask_idxs].reshape(
-            self.n_blocks, *self.block_shape
+            self.n_blocks,
+            *self.block_shape,
         )
         return y, jnp.log(jac_3d)

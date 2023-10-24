@@ -1,4 +1,4 @@
-"Tests for train_utils.py"
+"Tests for train_utils.py."
 import jax.numpy as jnp
 import jax.random as jr
 import pytest
@@ -19,7 +19,7 @@ def test_train_val_split():
     arrays = [jnp.ones((5, 2)), jnp.ones((3, 5))]
 
     # Axis mismatch
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="Array dimensions must match along axis 0"):
         train_val_split(key, arrays, val_prop=0.2)
 
 

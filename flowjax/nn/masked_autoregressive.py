@@ -1,5 +1,5 @@
 """Autoregressive linear layers and multilayer perceptron."""
-from typing import Callable
+from collections.abc import Callable
 
 import jax.nn as jnn
 import jax.numpy as jnp
@@ -23,7 +23,7 @@ class MaskedLinear(Module):
     mask: Array
 
     def __init__(self, mask: ArrayLike, use_bias: bool = True, *, key: KeyArray):
-        """
+        """Initialize the masked linear layer.
 
         Args:
             mask (ArrayLike): Mask with shape (out_features, in_features).
@@ -35,7 +35,7 @@ class MaskedLinear(Module):
         self.mask = mask
 
     def __call__(self, x: ArrayLike):
-        """Run the masked linear layer
+        """Run the masked linear layer.
 
         Args:
             x (ArrayLike): Array with shape ``(mask.shape[1], )``
@@ -48,8 +48,10 @@ class MaskedLinear(Module):
 
 
 class AutoregressiveMLP(Module):
-    """An autoregressive multilayer perceptron, similar to ``equinox.nn.composed.MLP``.
-    Connections will only exist where in_ranks < out_ranks.
+    """An autoregressive multilayer perceptron.
+
+    Similar to ``equinox.nn.composed.MLP``, however, connections will only exist between
+    nodes where in_ranks < out_ranks.
     """
 
     in_size: int
@@ -74,7 +76,8 @@ class AutoregressiveMLP(Module):
         *,
         key,
     ) -> None:
-        """
+        """Initialize the autoregressive multilayer perceptron.
+
         Args:
             in_ranks (ArrayLike): Ranks of the inputs.
             hidden_ranks (ArrayLike): Ranks of the hidden layer(s).
@@ -85,22 +88,24 @@ class AutoregressiveMLP(Module):
                 _identity.
             key (KeyArray): Jax PRNGKey.
         """
-        in_ranks, hidden_ranks, out_ranks = [
-            jnp.asarray(a) for a in [in_ranks, hidden_ranks, out_ranks]
-        ]
+        in_ranks, hidden_ranks, out_ranks = (
+            jnp.asarray(a) for a in (in_ranks, hidden_ranks, out_ranks)
+        )
         masks = []
         if depth == 0:
             masks.append(rank_based_mask(in_ranks, out_ranks, eq=False))
         else:
             masks.append(rank_based_mask(in_ranks, hidden_ranks, eq=True))
-            for _ in range(depth - 1):
-                masks.append(rank_based_mask(hidden_ranks, hidden_ranks, eq=True))
+            masks.extend(
+                rank_based_mask(hidden_ranks, hidden_ranks, eq=True)
+                for _ in range(depth - 1)
+            )
             masks.append(rank_based_mask(hidden_ranks, out_ranks, eq=False))
 
         keys = random.split(key, len(masks))
-        layers = [
+        layers = tuple(
             MaskedLinear(mask, key=key) for mask, key in zip(masks, keys, strict=True)
-        ]
+        )
 
         self.layers = layers
         self.in_size = len(in_ranks)
@@ -115,6 +120,7 @@ class AutoregressiveMLP(Module):
 
     def __call__(self, x: Array):
         """Forward pass.
+
         Args:
             x: A JAX array with shape (in_size,).
         """
@@ -122,5 +128,4 @@ class AutoregressiveMLP(Module):
             x = layer(x)
             x = self.activation(x)
         x = self.layers[-1](x)
-        x = self.final_activation(x)
-        return x
+        return self.final_activation(x)

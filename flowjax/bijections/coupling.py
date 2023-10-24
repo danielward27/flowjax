@@ -1,21 +1,24 @@
 """Implemenetation of Coupling flow layer with arbitrary transformer.
-See https://arxiv.org/abs/1605.08803 for more information.
+
+Ref: https://arxiv.org/abs/1605.08803.
 """
-from typing import Callable
+from collections.abc import Callable
 
 import equinox as eqx
 import jax.nn as jnn
 import jax.numpy as jnp
 from jax.random import KeyArray
 
-from flowjax.bijections.bijection import Bijection
-from flowjax.bijections.jax_transforms import Batch
+from flowjax.bijections.bijection import AbstractBijection
+from flowjax.bijections.jax_transforms import Vmap
 from flowjax.utils import Array, get_ravelled_bijection_constructor
 
 
-class Coupling(Bijection):
+class Coupling(AbstractBijection):
     """Coupling layer implementation (https://arxiv.org/abs/1605.08803)."""
 
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
     untransformed_dim: int
     dim: int
     transformer_constructor: Callable
@@ -24,7 +27,7 @@ class Coupling(Bijection):
     def __init__(
         self,
         key: KeyArray,
-        transformer: Bijection,
+        transformer: AbstractBijection,
         untransformed_dim: int,
         dim: int,
         cond_dim: int | None,
@@ -32,13 +35,14 @@ class Coupling(Bijection):
         nn_depth: int,
         nn_activation: Callable = jnn.relu,
     ):
-        """
+        """Initialize the coupling bijection.
+
         Args:
             key (KeyArray): Jax PRNGKey
-            transformer (Bijection): Unconditional bijection with shape () to be
-                parameterised by the conditioner neural netork.
-            untransformed_dim (int): Number of untransformed conditioning variables (
-                e.g. dim // 2).
+            transformer (AbstractBijection): Unconditional bijection with shape ()
+                to be parameterised by the conditioner neural netork.
+            untransformed_dim (int): Number of untransformed conditioning variables
+                (e.g. dim // 2).
             dim (int): Total dimension.
             cond_dim (int | None): Dimension of additional conditioning variables.
             nn_width (int): Neural network hidden layer width.
@@ -48,11 +52,11 @@ class Coupling(Bijection):
         """
         if transformer.shape != () or transformer.cond_shape is not None:
             raise ValueError(
-                "Only unconditional transformers with shape () are supported."
+                "Only unconditional transformers with shape () are supported.",
             )
 
         constructor, transformer_init_params = get_ravelled_bijection_constructor(
-            transformer
+            transformer,
         )
 
         self.transformer_constructor = constructor
@@ -74,11 +78,11 @@ class Coupling(Bijection):
             depth=nn_depth,
             activation=nn_activation,
             key=key,
-        )  # type: eqx.nn.MLP
+        )
 
         # Initialise last bias terms to match the provided transformer parameters
         self.conditioner = eqx.tree_at(
-            where=lambda mlp: mlp.layers[-1].bias,  # type: ignore
+            where=lambda mlp: mlp.layers[-1].bias,
             pytree=conditioner,
             replace=jnp.tile(transformer_init_params, dim - untransformed_dim),
         )
@@ -89,8 +93,7 @@ class Coupling(Bijection):
         transformer_params = self.conditioner(nn_input)
         transformer = self._flat_params_to_transformer(transformer_params)
         y_trans = transformer.transform(x_trans)
-        y = jnp.hstack((x_cond, y_trans))
-        return y
+        return jnp.hstack((x_cond, y_trans))
 
     def transform_and_log_det(self, x, condition=None):
         x_cond, x_trans = x[: self.untransformed_dim], x[self.untransformed_dim :]
@@ -107,8 +110,7 @@ class Coupling(Bijection):
         transformer_params = self.conditioner(nn_input)
         transformer = self._flat_params_to_transformer(transformer_params)
         x_trans = transformer.inverse(y_trans)
-        x = jnp.hstack((x_cond, x_trans))
-        return x
+        return jnp.hstack((x_cond, x_trans))
 
     def inverse_and_log_det(self, y, condition=None):
         x_cond, y_trans = y[: self.untransformed_dim], y[self.untransformed_dim :]
@@ -124,4 +126,4 @@ class Coupling(Bijection):
         dim = self.dim - self.untransformed_dim
         transformer_params = jnp.reshape(params, (dim, -1))
         transformer = eqx.filter_vmap(self.transformer_constructor)(transformer_params)
-        return Batch(transformer, (dim,), vectorize_bijection=True)
+        return Vmap(transformer, in_axis=eqx.if_array(0))

@@ -1,3 +1,7 @@
+import re
+from collections.abc import Callable
+from typing import NamedTuple
+
 import jax.numpy as jnp
 import jax.random as jr
 import numpy as np
@@ -5,8 +9,9 @@ import pytest
 
 from flowjax.bijections import Exp
 from flowjax.distributions import (
+    AbstractDistribution,
+    AbstractTransformed,
     Cauchy,
-    Distribution,
     Gumbel,
     Normal,
     StandardNormal,
@@ -74,18 +79,6 @@ def test_log_prob(distribution, shape):
         assert d.log_prob(jnp.array(0)) == d.log_prob(0)
 
 
-@pytest.mark.parametrize("distribution", _test_distributions)
-def test_log_prob_shape_mismatch(distribution):
-    d = distribution(shape=(3,))
-
-    with pytest.raises(ValueError):
-        d.log_prob(jnp.ones((3, 2)))
-
-    d = distribution(shape=(3, 2))
-    with pytest.raises(ValueError):
-        d.log_prob(jnp.ones((2,)))
-
-
 def test_uniform_params():
     dist = Uniform(
         jnp.array([1.0, 2.0]),
@@ -99,13 +92,15 @@ def test_uniform_params():
 # Since the broadcasting behaviour is shared by all distributions
 # we test it for a single unconditional and conditional distribution only.
 
-dist_shape, sample_shape, condition_shape = [[(), (2,), (3, 4)] for _ in range(3)]
+dist_shape, sample_shape, condition_shape = ([(), (3, 4)] for _ in range(3))
 
 
-class _TestDist(Distribution):
+class _TestDist(AbstractDistribution):
     "Toy distribution object, for testing of distribution broadcasting."
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
 
-    def __init__(self, shape, cond_shape=None) -> None:
+    def __init__(self, shape, cond_shape=None):
         self.shape = shape
         self.cond_shape = cond_shape
 
@@ -114,6 +109,9 @@ class _TestDist(Distribution):
 
     def _sample(self, key, condition=None):
         return jnp.zeros(self.shape)
+
+    def _sample_and_log_prob(self, key, condition=None):
+        return jnp.zeros(self.shape), np.zeros(())
 
 
 @pytest.mark.parametrize("dist_shape", dist_shape)
@@ -126,21 +124,19 @@ def test_broadcasting_unconditional(dist_shape, sample_shape):
     log_probs = d.log_prob(samples)
     assert log_probs.shape == sample_shape
 
-    with pytest.raises(ValueError):
-        d.sample(jr.PRNGKey(0), sample_shape, condition=jnp.ones(3))
-
-    with pytest.raises(ValueError):
-        d.log_prob(samples, condition=jnp.ones(3))
-
 
 @pytest.mark.parametrize("dist_shape", dist_shape)
 @pytest.mark.parametrize("sample_shape", sample_shape)
 @pytest.mark.parametrize("condition_shape", condition_shape)
 @pytest.mark.parametrize(
-    "leading_cond_shape", [(), (3, 4)]
+    "leading_cond_shape",
+    [(), (3, 4)],
 )  # Additional leading dimensions in condition
 def test_broadcasting_conditional(
-    dist_shape, sample_shape, condition_shape, leading_cond_shape
+    dist_shape,
+    sample_shape,
+    condition_shape,
+    leading_cond_shape,
 ):
     key = jr.PRNGKey(0)
     d = _TestDist(dist_shape, condition_shape)
@@ -158,7 +154,7 @@ def test_broadcasting_conditional(
 
 test_cases = [
     StandardNormal(
-        (2, 2)
+        (2, 2),
     ),  # Won't have custom sample_and_log_prob implementation as not Transformed
     Normal(jnp.ones((2, 2))),  # Will have custom implementation as is Transformed
 ]
@@ -181,11 +177,59 @@ def test_transformed_merge_transforms():
     nested = Transformed(Normal(jnp.ones(shape)), Exp(shape))
     unnested = nested.merge_transforms()
 
-    assert isinstance(nested.base_dist, Transformed)
-    assert not isinstance(unnested.base_dist, Transformed)
+    assert isinstance(nested.base_dist, AbstractTransformed)
+    assert not isinstance(unnested.base_dist, AbstractTransformed)
 
     key = jr.PRNGKey(0)
     sample = unnested.sample(key)
     assert pytest.approx(sample) == nested.sample(key)
 
     assert pytest.approx(nested.log_prob(sample)) == unnested.log_prob(sample)
+
+
+class _TestCase(NamedTuple):
+    method: Callable
+    args: tuple
+    error: Exception
+
+
+unexpected_condition_error = TypeError(
+    "Expected condition to be None; got <class 'int'>.",
+)
+
+test_cases = [
+    # method, args, expected error
+    _TestCase(
+        method=_TestDist((), None).log_prob,
+        args=(0, 1),
+        error=unexpected_condition_error,
+    ),
+    _TestCase(
+        method=_TestDist((), None).sample,
+        args=(jr.PRNGKey(0), (0,), 1),
+        error=unexpected_condition_error,
+    ),
+    _TestCase(
+        method=_TestDist((), None).sample_and_log_prob,
+        args=(jr.PRNGKey(0), (), 1),
+        error=unexpected_condition_error,
+    ),
+    _TestCase(
+        method=_TestDist((2,), None).log_prob,
+        args=(jnp.ones((3, 3)), None),
+        error=ValueError("Expected trailing dimensions matching (2,) for x; got (3,)."),
+    ),
+    _TestCase(
+        method=_TestDist((), (2, 3)).log_prob,
+        args=(0, jnp.ones((3, 3))),
+        error=ValueError(
+            "Expected trailing dimensions matching (2, 3) for condition; got (3, 3).",
+        ),
+    ),
+]
+
+
+@pytest.mark.parametrize("test_case", test_cases)
+def test_method_errors(test_case):
+    with pytest.raises(type(test_case.error), match=re.escape(test_case.error.args[0])):
+        test_case.method(*test_case.args)

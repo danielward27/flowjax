@@ -1,16 +1,19 @@
-"""Utility bijections (embedding network, permutations, inversion etc.)"""
-from typing import Callable
+"""Utility bijections (embedding network, permutations, inversion etc.)."""
+from collections.abc import Callable
+from typing import ClassVar
 
 import jax.numpy as jnp
 from jax import Array
 from jax.experimental import checkify
 from jax.typing import ArrayLike
 
-from flowjax.bijections.bijection import Bijection
+from flowjax.bijections.bijection import AbstractBijection
 
 
-class Invert(Bijection):
-    """Invert a bijection, such that the transform methods become the inverse
+class Invert(AbstractBijection):
+    """Invert a bijection.
+
+    This wraps a bijection, such that the transform methods become the inverse
     methods and vice versa. Note that in general, we define bijections such that
     the forward methods are preffered, i.e. faster/actually implemented. For
     training flows, we generally want the inverse method (used in density
@@ -18,12 +21,15 @@ class Invert(Bijection):
     achieve this aim.
     """
 
-    bijection: Bijection
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
+    bijection: AbstractBijection
 
-    def __init__(self, bijection: Bijection):
-        """
+    def __init__(self, bijection: AbstractBijection):
+        """Initialize the bijection.
+
         Args:
-            bijection (Bijection): Bijection to invert.
+            bijection (AbstractBijection): Bijection to invert.
         """
         self.bijection = bijection
         self.shape = bijection.shape
@@ -42,14 +48,17 @@ class Invert(Bijection):
         return self.bijection.transform_and_log_det(y, condition)
 
 
-class Permute(Bijection):
+class Permute(AbstractBijection):
     """Permutation transformation."""
 
+    shape: tuple[int, ...]
+    cond_shape: ClassVar[None] = None
     permutation: tuple[Array, ...]
     inverse_permutation: tuple[Array, ...]
 
     def __init__(self, permutation: ArrayLike):
-        """
+        """Initialize the permutation bijection.
+
         Args:
             permutation (ArrayLike): An array with shape matching the array to
                 transform, with elements 0-(array.size-1) representing the new order
@@ -61,13 +70,13 @@ class Permute(Bijection):
             "Invalid permutation array provided.",
         )
         self.shape = permutation.shape
-        self.cond_shape = None
 
         indices = jnp.unravel_index(permutation.ravel(), permutation.shape)
         self.permutation = tuple(jnp.reshape(i, permutation.shape) for i in indices)
 
         inv_indices = jnp.unravel_index(
-            jnp.argsort(permutation.ravel()), permutation.shape
+            jnp.argsort(permutation.ravel()),
+            permutation.shape,
         )
         self.inverse_permutation = tuple(
             jnp.reshape(i, permutation.shape) for i in inv_indices
@@ -90,17 +99,16 @@ class Permute(Bijection):
         return y[self.inverse_permutation], jnp.array(0)
 
 
-class Flip(Bijection):
-    """Flip the input array. Condition argument is ignored."""
+class Flip(AbstractBijection):
+    """Flip the input array. Condition argument is ignored.
 
-    def __init__(self, shape: tuple[int, ...]) -> None:
-        """
-        Args:
-            shape (tuple[int, ...] | None): The shape of the bijection.
-                Defaults to None.
-        """
-        self.shape = shape
-        self.cond_shape = None
+    Args:
+        shape (tuple[int, ...]): The shape of the bijection.
+            Defaults to None.
+    """
+
+    shape: tuple[int, ...] = ()
+    cond_shape: ClassVar[None] = None
 
     def transform(self, x, condition=None):
         x, _ = self._argcheck_and_cast(x)
@@ -119,18 +127,27 @@ class Flip(Bijection):
         return jnp.flip(y), jnp.array(0)
 
 
-class Partial(Bijection):
+class Partial(AbstractBijection):
     """Applies bijection to specific indices of an input."""
 
-    bijection: Bijection
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
+    bijection: AbstractBijection
     idxs: int | slice | Array | tuple
 
-    def __init__(self, bijection: Bijection, idxs, shape: tuple[int, ...]):
-        """
+    def __init__(
+        self,
+        bijection: AbstractBijection,
+        idxs: int | slice | Array | tuple,
+        shape: tuple[int, ...],
+    ):
+        """Initialize the bijection.
+
         Args:
-            bijection (Bijection): Bijection that is compatible with the subset of x
-                indexed by idxs. idxs: Indices (Integer, a slice, or an ndarray with
-                integer/bool dtype) of the transformed portion.
+            bijection (AbstractBijection): Bijection that is compatible with the subset
+                of x indexed by idxs. idxs: Indices (Integer, a slice, or an ndarray
+                with integer/bool dtype) of the transformed portion.
+            idxs (int | slice | Array | tuple): The indexes to transform.
             shape (tuple[int, ...] | None): Shape of the bijection. Defaults to None.
         """
         self.bijection = bijection
@@ -142,7 +159,7 @@ class Partial(Bijection):
             raise ValueError(
                 f"The bijection shape is incompatible with the subset of the input "
                 f"indexed by 'idxs'. The bijection has a shape of {bijection.shape}, "
-                f"while the subset has a shape of {jnp.zeros(shape)[idxs].shape}."
+                f"while the subset has a shape of {jnp.zeros(shape)[idxs].shape}.",
             )
 
     def transform(self, x, condition=None):
@@ -166,28 +183,33 @@ class Partial(Bijection):
         return y.at[self.idxs].set(x), log_det
 
 
-class EmbedCondition(Bijection):
-    """Use an embedding network to reduce the dimensionality of the conditioning
+class EmbedCondition(AbstractBijection):
+    """Wrap a bijection to include an embedding network.
+
+    Generally this is used to reduce the dimensionality of the conditioning
     variable. The returned bijection has cond_dim equal to the raw condition size.
     """
 
-    bijection: Bijection
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...]
+    bijection: AbstractBijection
     embedding_net: Callable
 
     def __init__(
         self,
-        bijection: Bijection,
+        bijection: AbstractBijection,
         embedding_net: Callable,
         raw_cond_shape: tuple[int, ...],
     ) -> None:
-        """
+        """Intialize the bijection.
+
         Args:
-            bijection (Bijection): Bijection with ``bijection.cond_dim`` equal to the
-                embedded size.
+            bijection (AbstractBijection): Bijection with ``bijection.cond_dim`` equal
+            to the embedded size.
             embedding_net (Callable): A callable (e.g. equinox module) that embeds a
-                conditioning variable to size ``bijection.cond_dim``.
+            conditioning variable to size ``bijection.cond_dim``.
             raw_cond_shape (tuple[int, ...] | None): The dimension of the raw
-                conditioning variable.
+            conditioning variable.
         """
         self.bijection = bijection
         self.embedding_net = embedding_net

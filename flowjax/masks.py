@@ -1,7 +1,11 @@
+"""Masks used in flows.
+
+Masks are generally used in flows to mask out some weights, in order to enforce a
+dependency structure that ensures invertibility and efficient Jacobian determinant
+calculations.
 """
-Various masks, generally used in flows to enforce e.g. a dependency structure
-that leads to invertibility and efficient Jacobian determinant calculations.
-"""
+
+import operator
 
 import jax.numpy as jnp
 from jax import Array
@@ -19,12 +23,11 @@ def rank_based_mask(in_ranks: Array, out_ranks: Array, eq: bool = False):
     Returns:
         Array: Mask with shape `(len(out_ranks), len(in_ranks))`
     """
-    assert (in_ranks.ndim) == 1 and (out_ranks.ndim == 1)
-    if eq:
-        mask = out_ranks[:, None] >= in_ranks
-    else:
-        mask = out_ranks[:, None] > in_ranks
-    return mask.astype(jnp.int32)
+    for ranks in (in_ranks, out_ranks):
+        if ranks.ndim != 1:
+            raise ValueError(f"Expected ranks.ndim==1, got {ranks.ndim}")
+    op = operator.ge if eq else operator.gt
+    return op(out_ranks[:, None], in_ranks).astype(jnp.int32)
 
 
 def block_diag_mask(block_shape: tuple, n_blocks: int):
@@ -37,6 +40,7 @@ def block_tril_mask(block_shape: tuple, n_blocks: int):
     mask = jnp.zeros((block_shape[0] * n_blocks, block_shape[1] * n_blocks), jnp.int32)
     for i in range(n_blocks):
         mask = mask.at[
-            (i + 1) * block_shape[0] :, i * block_shape[1] : (i + 1) * block_shape[1]
+            (i + 1) * block_shape[0] :,
+            i * block_shape[1] : (i + 1) * block_shape[1],
         ].set(1)
     return mask

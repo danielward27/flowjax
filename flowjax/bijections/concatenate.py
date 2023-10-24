@@ -1,25 +1,29 @@
 """Module contains bijections formed by "stacking/concatenating" other bijections."""
 
-from typing import Sequence
+from collections.abc import Sequence
 
 import jax.numpy as jnp
 from jax import Array
 
-from flowjax.bijections.bijection import Bijection
+from flowjax.bijections.bijection import AbstractBijection
 from flowjax.utils import check_shapes_match, merge_cond_shapes
 
 
-class Concatenate(Bijection):
-    """Concatenate bijections along an already existing axis. Analagous to
-    ``jnp.concatenate``. See also :class:`Stack`.
+class Concatenate(AbstractBijection):
+    """Concatenate bijections along an existing axis, similar to ``jnp.concatenate``.
+
+    See also :class:`Stack`.
     """
 
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
     split_idxs: Array
-    bijections: Sequence[Bijection]
+    bijections: Sequence[AbstractBijection]
     axis: int
 
-    def __init__(self, bijections: Sequence[Bijection], axis: int = 0):
-        """
+    def __init__(self, bijections: Sequence[AbstractBijection], axis: int = 0):
+        """Initialize the bijection.
+
         Args:
             bijections (Sequence[Bijection]): Bijections, to stack into a single
                 bijection.
@@ -79,28 +83,31 @@ class Concatenate(Bijection):
         x_parts, log_dets = zip(*xs_log_dets, strict=True)
         return jnp.concatenate(x_parts, self.axis), sum(log_dets)
 
-    def _argcheck_shapes(self, shapes: list[tuple[int, ...]]):
-        axis = range(len(shapes[0]))[self.axis]
-
-        for i, shp in enumerate(shapes):
-            if shp[:axis] + shp[axis + 1 :] != shapes[0][:axis] + shapes[0][axis + 1 :]:
+    def _argcheck_shapes(self, shapes: Sequence[tuple[int, ...]]):
+        axis = range(len(shapes[0]))[self.axis]  # Avoid negative index
+        expected_matching = shapes[0][:axis] + shapes[0][axis + 1 :]
+        for i, shape in enumerate(shapes):
+            if shape[:axis] + shape[axis + 1 :] != expected_matching:
                 raise ValueError(
                     f"Expected bijection shapes to match except along axis {axis}, but "
-                    f"index 0 had shape {shapes[0]}, and index {i} had shape {shp}."
+                    f"index 0 had shape {shapes[0]}, and index {i} had shape {shape}.",
                 )
 
 
-class Stack(Bijection):
-    """
-    Stack bijections along a new axis (analagous to ``jnp.stack``).
+class Stack(AbstractBijection):
+    """Stack bijections along a new axis (analagous to ``jnp.stack``).
+
     See also :class:`Concatenate`.
     """
 
-    bijections: Sequence[Bijection]
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
+    bijections: Sequence[AbstractBijection]
     axis: int
 
-    def __init__(self, bijections: list[Bijection], axis: int = 0):
-        """
+    def __init__(self, bijections: list[AbstractBijection], axis: int = 0):
+        """Initialize the bijection.
+
         Args:
             bijections (list[Bijection]): Bijections.
             axis (int): Axis along which to stack. Defaults to 0.
@@ -155,4 +162,4 @@ class Stack(Bijection):
 
     def _split_and_squeeze(self, array: Array):
         arrays = jnp.split(array, len(self.bijections), axis=self.axis)
-        return [a.squeeze(axis=self.axis) for a in arrays]
+        return (a.squeeze(axis=self.axis) for a in arrays)

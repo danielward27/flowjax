@@ -1,4 +1,4 @@
-"Tests for bijection.chain module"
+"Tests for bijection.chain module."
 from functools import partial
 
 import equinox as eqx
@@ -60,7 +60,7 @@ test_cases = {
 }
 
 
-@pytest.mark.parametrize("scan,chain", test_cases.values(), ids=test_cases.keys())
+@pytest.mark.parametrize(("scan", "chain"), test_cases.values(), ids=test_cases.keys())
 def test_scan(scan, chain):
     "Check Chain and Scan give consistent results."
     x = jnp.ones(DIM)
@@ -76,6 +76,6 @@ def test_scan(scan, chain):
     realised = scan.transform_and_log_det(x, condition)
     assert jnp.all(
         jnp.array(
-            [pytest.approx(a) == b for (a, b) in zip(expected, realised, strict=True)]
-        )
+            [pytest.approx(a) == b for (a, b) in zip(expected, realised, strict=True)],
+        ),
     )

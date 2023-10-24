@@ -52,14 +52,11 @@ sudo apt-get install pandoc  # Required for building documentation
 ```
 
 ## Warning
-This package is new and may have substantial breaking changes between major releases.
-The API for distributions and bijections will be stable, but breaking changes to the
-losses and training procedures will be more common. 
+This package is in its early stages of development and may undergo significant changes, including breaking changes, between major releases. Whilst ideally we should be on version 0.y.z to indicate its state, we have already progressed beyond that stage.
 
 ## TODO
 A few limitations / things that could be worth including in the future:
 - Add ability to "reshape" bijections.
-- Add amortized variational inference.
 
 ## Related
 We make use of the [Equinox](https://arxiv.org/abs/2111.00254) package, which facilitates object-oriented programming with Jax. 

@@ -1,20 +1,22 @@
 """Basic training script for fitting a flow using variational inference."""
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import equinox as eqx
 import jax.random as jr
 import optax
+from jax import Array
 from tqdm import tqdm
 
-from flowjax.distributions import Distribution
+from flowjax.distributions import AbstractDistribution
 from flowjax.train.train_utils import step
 
 PyTree = Any
 
 
 def fit_to_variational_target(
-    key: jr.KeyArray,
-    dist: Distribution,
+    key: Array,
+    dist: AbstractDistribution,
     loss_fn: Callable,
     steps: int = 100,
     learning_rate: float = 5e-4,
@@ -22,12 +24,11 @@ def fit_to_variational_target(
     filter_spec: Callable | PyTree = eqx.is_inexact_array,
     show_progress: bool = True,
 ):
-    """Train a distribution (e.g. a flow) by variational inference to a target
-    (e.g. an unnormalized density).
+    """Train a distribution (e.g. a flow) by variational inference.
 
     Args:
-        key (jr.KeyArray): Jax PRNGKey.
-        dist (Distribution): Distribution object, trainable parameters are found
+        key (Array): Jax PRNGKey.
+        dist (AbstractDistribution): Distribution object, trainable parameters are found
             using equinox.is_inexact_array.
         loss_fn (Callable | None): The loss function to optimize (e.g. the ElboLoss).
         steps (int, optional): The number of training steps to run. Defaults to 100.
@@ -62,7 +63,12 @@ def fit_to_variational_target(
 
     for key in keys:
         params, opt_state, loss = step(
-            optimizer, opt_state, loss_fn, params, static, key
+            optimizer,
+            opt_state,
+            loss_fn,
+            params,
+            static,
+            key,
         )
         losses.append(loss.item())
         keys.set_postfix({"loss": loss.item()})
