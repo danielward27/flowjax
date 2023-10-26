@@ -20,19 +20,15 @@ class Tanh(AbstractBijection):
     cond_shape: ClassVar[None] = None
 
     def transform(self, x, condition=None):
-        x, _ = self._argcheck_and_cast(x)
         return jnp.tanh(x)
 
     def transform_and_log_det(self, x, condition=None):
-        x, _ = self._argcheck_and_cast(x)
         return jnp.tanh(x), jnp.sum(_tanh_log_grad(x))
 
     def inverse(self, y, condition=None):
-        y, _ = self._argcheck_and_cast(y)
         return jnp.arctanh(y)
 
     def inverse_and_log_det(self, y, condition=None):
-        y, _ = self._argcheck_and_cast(y)
         x = jnp.arctanh(y)
         return x, -jnp.sum(_tanh_log_grad(x))
 
@@ -65,14 +61,12 @@ class LeakyTanh(AbstractBijection):
         self.shape = shape
 
     def transform(self, x, condition=None):
-        x, _ = self._argcheck_and_cast(x)
         is_linear = jnp.abs(x) >= self.max_val
         linear_y = self.linear_grad * x + jnp.sign(x) * self.intercept
         tanh_y = jnp.tanh(x)
         return jnp.where(is_linear, linear_y, tanh_y)
 
     def transform_and_log_det(self, x, condition=None):
-        x, _ = self._argcheck_and_cast(x)
         y = self.transform(x)
         log_grads = jnp.where(
             jnp.abs(x) >= self.max_val,
@@ -82,14 +76,12 @@ class LeakyTanh(AbstractBijection):
         return y, jnp.sum(log_grads)
 
     def inverse(self, y, condition=None):
-        y, _ = self._argcheck_and_cast(y)
         is_linear = jnp.abs(y) >= jnp.tanh(self.max_val)
         x_linear = (y - jnp.sign(y) * self.intercept) / self.linear_grad
         x_arctan = jnp.arctanh(y)
         return jnp.where(is_linear, x_linear, x_arctan)
 
     def inverse_and_log_det(self, y, condition=None):
-        y, _ = self._argcheck_and_cast(y)
         x = self.inverse(y)
         log_grads = jnp.where(
             jnp.abs(y) >= jnp.tanh(self.max_val),

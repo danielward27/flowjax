@@ -87,19 +87,15 @@ class Permute(AbstractBijection):
         )
 
     def transform(self, x, condition=None):
-        x, _ = self._argcheck_and_cast(x)
         return x[self.permutation]
 
     def transform_and_log_det(self, x, condition=None):
-        x, _ = self._argcheck_and_cast(x)
         return x[self.permutation], jnp.array(0)
 
     def inverse(self, y, condition=None):
-        y, _ = self._argcheck_and_cast(y)
         return y[self.inverse_permutation]
 
     def inverse_and_log_det(self, y, condition=None):
-        x, _ = self._argcheck_and_cast(y)
         return y[self.inverse_permutation], jnp.array(0)
 
 
@@ -115,19 +111,15 @@ class Flip(AbstractBijection):
     cond_shape: ClassVar[None] = None
 
     def transform(self, x, condition=None):
-        x, _ = self._argcheck_and_cast(x)
         return jnp.flip(x)
 
     def transform_and_log_det(self, x, condition=None):
-        x, _ = self._argcheck_and_cast(x)
         return jnp.flip(x), jnp.array(0)
 
     def inverse(self, y, condition=None):
-        y, _ = self._argcheck_and_cast(y)
         return jnp.flip(y)
 
     def inverse_and_log_det(self, y, condition=None):
-        y, _ = self._argcheck_and_cast(y)
         return jnp.flip(y), jnp.array(0)
 
 
@@ -165,22 +157,18 @@ class Partial(AbstractBijection):
             )
 
     def transform(self, x, condition=None):
-        x, condition = self._argcheck_and_cast(x, condition)
         y = self.bijection.transform(x[self.idxs], condition)
         return x.at[self.idxs].set(y)
 
     def transform_and_log_det(self, x, condition=None):
-        x, condition = self._argcheck_and_cast(x, condition)
         y, log_det = self.bijection.transform_and_log_det(x[self.idxs], condition)
         return x.at[self.idxs].set(y), log_det
 
     def inverse(self, y, condition=None):
-        y, condition = self._argcheck_and_cast(y, condition)
         x = self.bijection.inverse(y[self.idxs], condition)
         return y.at[self.idxs].set(x)
 
     def inverse_and_log_det(self, y, condition=None):
-        y, condition = self._argcheck_and_cast(y, condition)
         x, log_det = self.bijection.inverse_and_log_det(y[self.idxs], condition)
         return y.at[self.idxs].set(x), log_det
 
@@ -248,22 +236,18 @@ class EmbedCondition(AbstractBijection):
         self.cond_shape = raw_cond_shape
 
     def transform(self, x, condition=None):
-        x, condition = self._argcheck_and_cast(x, condition)
         condition = self.embedding_net(condition)
         return self.bijection.transform(x, condition)
 
     def transform_and_log_det(self, x, condition=None):
-        x, condition = self._argcheck_and_cast(x, condition)
         condition = self.embedding_net(condition)
         return self.bijection.transform_and_log_det(x, condition)
 
     def inverse(self, y, condition=None):
-        y, condition = self._argcheck_and_cast(y, condition)
         condition = self.embedding_net(condition)
         return self.bijection.inverse(y, condition)
 
     def inverse_and_log_det(self, y, condition=None):
-        y, condition = self._argcheck_and_cast(y, condition)
         condition = self.embedding_net(condition)
         return self.bijection.inverse_and_log_det(y, condition)
 

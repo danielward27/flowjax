@@ -15,7 +15,18 @@ from flowjax.utils import arraylike_to_array
 
 
 class Affine(AbstractBijection):
-    """Elementwise affine transformation ``y = a*x + b``."""
+    """Elementwise affine transformation ``y = a*x + b``.
+
+    ``loc`` and ``scale`` should broadcast to the desired shape of the bijection.
+
+    Args:
+        loc (ArrayLike): Location parameter. Defaults to 0.
+        scale (ArrayLike): Scale parameter. Defaults to 1.
+        positivity_constraint (AbstractBijection | None): Bijection with shape
+            matching the Affine bijection, that maps the scale parameter from an
+            unbounded domain to the positive domain. Defaults to
+            :class:`~flowjax.bijections.SoftPlus`.
+    """
 
     shape: tuple[int, ...]
     cond_shape: ClassVar[None] = None
@@ -29,17 +40,6 @@ class Affine(AbstractBijection):
         scale: ArrayLike = 1,
         positivity_constraint: AbstractBijection | None = None,
     ):
-        """Initilaizes an affine transformation.
-
-        ``loc`` and ``scale`` should broadcast to the desired shape of the bijection.
-
-        Args:
-            loc (ArrayLike): Location parameter. Defaults to 0.
-            scale (ArrayLike): Scale parameter. Defaults to 1.
-            positivity_constraint (AbstractBijection | None): Bijection with shape
-                matching the Affine bijection, that maps the scale parameter from an
-                unbounded domain to the positive domain. Defaults to SoftPlus.
-        """
         loc, scale = (arraylike_to_array(a, dtype=float) for a in (loc, scale))
         self.shape = jnp.broadcast_shapes(loc.shape, scale.shape)
         self.loc = jnp.broadcast_to(loc, self.shape)
@@ -51,20 +51,16 @@ class Affine(AbstractBijection):
         self._scale = positivity_constraint.inverse(jnp.broadcast_to(scale, self.shape))
 
     def transform(self, x, condition=None):
-        x, _ = self._argcheck_and_cast(x)
         return x * self.scale + self.loc
 
     def transform_and_log_det(self, x, condition=None):
-        x, _ = self._argcheck_and_cast(x)
         scale = self.scale
         return x * scale + self.loc, jnp.log(scale).sum()
 
     def inverse(self, y, condition=None):
-        y, _ = self._argcheck_and_cast(y)
         return (y - self.loc) / self.scale
 
     def inverse_and_log_det(self, y, condition=None):
-        y, _ = self._argcheck_and_cast(y)
         scale = self.scale
         return (y - self.loc) / scale, -jnp.log(scale).sum()
 
@@ -162,20 +158,16 @@ class TriangularAffine(AbstractBijection):
         return arr
 
     def transform(self, x, condition=None):
-        x, _ = self._argcheck_and_cast(x)
         return self.arr @ x + self.loc
 
     def transform_and_log_det(self, x, condition=None):
-        x, _ = self._argcheck_and_cast(x)
         arr = self.arr
         return arr @ x + self.loc, jnp.log(jnp.diag(arr)).sum()
 
     def inverse(self, y, condition=None):
-        y, _ = self._argcheck_and_cast(y)
         return solve_triangular(self.arr, y - self.loc, lower=self.lower)
 
     def inverse_and_log_det(self, y, condition=None):
-        y, _ = self._argcheck_and_cast(y)
         arr = self.arr
         x = solve_triangular(arr, y - self.loc, lower=self.lower)
         return x, -jnp.log(jnp.diag(arr)).sum()
@@ -228,17 +220,13 @@ class AdditiveCondition(AbstractBijection):
         self.cond_shape = cond_shape
 
     def transform(self, x, condition=None):
-        x, condition = self._argcheck_and_cast(x, condition)
         return x + self.module(condition)
 
     def transform_and_log_det(self, x, condition=None):
-        x, condition = self._argcheck_and_cast(x, condition)
         return self.transform(x, condition), jnp.array(0)
 
     def inverse(self, y, condition=None):
-        y, condition = self._argcheck_and_cast(y, condition)
         return y - self.module(condition)
 
     def inverse_and_log_det(self, y, condition=None):
-        y, condition = self._argcheck_and_cast(y, condition)
         return self.inverse(y, condition), jnp.array(0)

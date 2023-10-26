@@ -37,5 +37,5 @@ def test_RationalQuadraticSpline_init():
         spline,
         jr.normal(key, shape),
     )
-    y = spline.transform(x)
+    y = vmap(spline.transform)(x)
     assert pytest.approx(x, abs=1e-6) != y

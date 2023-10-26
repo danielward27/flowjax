@@ -24,12 +24,18 @@ class AbstractDistribution(eqx.Module):
     Distributions are registered as jax PyTrees (as they are equinox modules), and as
     such they are compatible with normal jax operations.
 
+    In general, when implementing custom distributions it is more convenient to use
+        -  :class:`AbstractStandardDistribution` for non-transformed distributions.
+        -  :class:`AbstractTransformed` for transformed distributions.
+
     Attributes:
         shape (AbstractVar[tuple[int, ...]]): Denotes the shape of a single sample from
             the distribution.
         cond_shape (AbstractVar[tuple[int, ...] | None]): The shape of an instance of
             the conditioning variable. This should be None for unconditional
             distributions.
+
+
     """
 
     shape: AbstractVar[tuple[int, ...]]
@@ -241,16 +247,16 @@ class AbstractDistribution(eqx.Module):
 class AbstractStandardDistribution(AbstractDistribution):
     """Abstract distribution type, representing a distribution that is not transformed.
 
-    The class implements a default ``_sample_and_log_prob`` method by calling
-    ``_sample`` and ``_log_prob`` methods seperately. Concrete subclasses can be
-    implemented as follows:
+    This class provides a default implementation for ``_sample_and_log_prob``, one of
+    the abstract methods of :class:`AbstractDistribution`.
 
+    Concrete subclasses can be implemented as follows:
         (1) Inherit from :class:`AbstractStandardDistribution`.
         (2) Define the abstract attributes ``shape`` and ``cond_shape``.
             ``cond_shape`` should be ``None`` for unconditional distributions.
         (3) Define the abstract methods :meth:`_sample` and :meth:`_log_prob`.
 
-    See the source code for :class:`StandardNormal` for a simple example implementation.
+    See the source code for :class:`StandardNormal` for a simple concrete example.
     """
 
     def _sample_and_log_prob(self, key, condition=None):
@@ -261,14 +267,12 @@ class AbstractStandardDistribution(AbstractDistribution):
 class AbstractTransformed(AbstractDistribution):
     """Abstract class respresenting transformed distributions.
 
-    Concete implementations can be implemnted as follows:
+    We take the forward bijection for use in sampling, and the inverse for use in
+    density evaluation. See also :class:`Transformed`.
 
-        (1) Inherit from :class:`AbstractTransformed`.
-        (2) Define the abstract attributes `base_dist`, `bijection`.
-
-    bijection attributes. We take the forward bijection for use in sampling, and the
-    inverse for use in density evaluation. See also :class:`Transformed`
-
+    Concete implementations should subclass :class:`AbstractTransformed`, and
+    define the abstract attributes `base_dist` and `bijection`. See the source code for
+    :class:`Normal` as a simple example.
     """
 
     base_dist: AbstractVar[AbstractDistribution]
@@ -342,6 +346,19 @@ class Transformed(AbstractTransformed):
             It is the currently the users responsibility to ensure the bijection is
             valid across the entire support of the distribution. Failure to do so may
             lead to to unexpected results.
+
+    Args:
+        base_dist (AbstractDistribution): Base distribution.
+        bijection (AbstractBijection): Bijection to transform distribution.
+
+    Example:
+        .. doctest::
+
+            >>> from flowjax.distributions import StandardNormal, Transformed
+            >>> from flowjax.bijections import Affine
+            >>> normal = StandardNormal()
+            >>> bijection = Affine(1)
+            >>> transformed = Transformed(normal, bijection)
     """
 
     base_dist: AbstractDistribution
@@ -352,21 +369,6 @@ class Transformed(AbstractTransformed):
         base_dist: AbstractDistribution,
         bijection: AbstractBijection,
     ):
-        """Initialize the transformed distribution.
-
-        Args:
-            base_dist (AbstractDistribution): Base distribution.
-            bijection (AbstractBijection): Bijection to transform distribution.
-
-        Example:
-            .. doctest::
-
-                >>> from flowjax.distributions import StandardNormal, Transformed
-                >>> from flowjax.bijections import Affine
-                >>> normal = StandardNormal()
-                >>> bijection = Affine(1)
-                >>> transformed = Transformed(normal, bijection)
-        """
         self.base_dist = base_dist
         self.bijection = bijection
 

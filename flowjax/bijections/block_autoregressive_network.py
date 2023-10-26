@@ -119,7 +119,6 @@ class BlockAutoregressiveNetwork(AbstractBijection):
         self.activation = activation
 
     def transform(self, x, condition=None):
-        x, condition = self._argcheck_and_cast(x, condition)
         for layer in self.layers[:-1]:
             x = layer(x, condition)[0]
             x = eqx.filter_vmap(self.activation.transform)(x)
@@ -127,7 +126,6 @@ class BlockAutoregressiveNetwork(AbstractBijection):
         return self.layers[-1](x, condition)[0]
 
     def transform_and_log_det(self, x, condition=None):
-        x, condition = self._argcheck_and_cast(x, condition)
         log_jacobian_3ds = []
         for layer in self.layers[:-1]:
             x, log_det_3d = layer(x, condition)

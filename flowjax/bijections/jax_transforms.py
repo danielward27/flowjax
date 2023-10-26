@@ -45,8 +45,6 @@ class Scan(AbstractBijection):
         self.bijection = bijection
 
     def transform(self, x, condition=None):
-        x, condition = self._argcheck_and_cast(x, condition)
-
         def step(x, bijection):
             return (bijection.transform(x, condition), None)
 
@@ -54,8 +52,6 @@ class Scan(AbstractBijection):
         return y
 
     def transform_and_log_det(self, x, condition=None):
-        x, condition = self._argcheck_and_cast(x, condition)
-
         def step(carry, bijection):
             x, log_det = carry
             y, log_det_i = bijection.transform_and_log_det(x, condition)
@@ -65,8 +61,6 @@ class Scan(AbstractBijection):
         return y, log_det
 
     def inverse(self, y, condition=None):
-        y, _ = self._argcheck_and_cast(y, condition)
-
         def step(y, bijection):
             return bijection.inverse(y, condition), None
 
@@ -74,8 +68,6 @@ class Scan(AbstractBijection):
         return x
 
     def inverse_and_log_det(self, y, condition=None):
-        y, _ = self._argcheck_and_cast(y, condition)
-
         def step(carry, bijection):
             y, log_det = carry
             x, log_det_i = bijection.inverse_and_log_det(y, condition)
@@ -193,8 +185,6 @@ class Vmap(AbstractBijection):
         self.axis_size = axis_size
 
     def transform(self, x, condition=None):
-        x, condition = self._argcheck_and_cast(x, condition)
-
         def _transform(bijection, x, condition):
             return bijection.transform(x, condition)
 
@@ -205,8 +195,6 @@ class Vmap(AbstractBijection):
         )
 
     def transform_and_log_det(self, x, condition=None):
-        x, condition = self._argcheck_and_cast(x, condition)
-
         def _transform_and_log_det(bijection, x, condition):
             return bijection.transform_and_log_det(x, condition)
 
@@ -218,8 +206,6 @@ class Vmap(AbstractBijection):
         return y, jnp.sum(log_det)
 
     def inverse(self, y, condition=None):
-        y, condition = self._argcheck_and_cast(y, condition)
-
         def _inverse(bijection, x, condition):
             return bijection.inverse(x, condition)
 
@@ -230,8 +216,6 @@ class Vmap(AbstractBijection):
         )
 
     def inverse_and_log_det(self, y, condition=None):
-        y, condition = self._argcheck_and_cast(y, condition)
-
         def _inverse_and_log_det(bijection, x, condition):
             return bijection.inverse_and_log_det(x, condition)
 

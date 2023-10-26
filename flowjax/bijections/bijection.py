@@ -7,8 +7,12 @@ bijection can be used to invert the orientation if a fast inverse is desired (e.
 maximum likelihood fitting of flows).
 """
 
+import functools
+import inspect
 from abc import abstractmethod
+from contextlib import suppress
 
+import equinox as eqx
 from equinox import AbstractVar, Module
 from jax import Array
 from jax.typing import ArrayLike
@@ -16,7 +20,35 @@ from jax.typing import ArrayLike
 from flowjax.utils import arraylike_to_array
 
 
-class AbstractBijection(Module):
+class _BijectionMeta(type(eqx.Module)):
+    # Metaclass for bijections. This serves two roles:
+    # 1) wraps methods to enforce input shapes to match the shapes of the bijection.
+    # 2) Converts inputs to Array where appropriate.
+    def __new__(
+        mcs,
+        name,
+        bases,
+        dict_,
+        /,
+        strict: bool = False,
+        abstract: bool = False,
+        **kwargs,
+    ):
+        wrap_methods = [
+            "transform",
+            "transform_and_log_det",
+            "inverse",
+            "inverse_and_log_det",
+        ]
+        with suppress(NameError):
+            if AbstractBijection in bases and not inspect.isabstract(mcs):
+                for meth in wrap_methods:
+                    if not hasattr(dict_[meth], "__isabstractmethod__"):
+                        dict_[meth] = _check_and_cast(dict_[meth])
+        return super().__new__(mcs, name, bases, dict_, strict, abstract, **kwargs)
+
+
+class AbstractBijection(Module, metaclass=_BijectionMeta):
     """Bijection abstract class.
 
     Similar to :py:class:`~flowjax.distributions.AbstractDistribution`, bijections have
@@ -67,13 +99,6 @@ class AbstractBijection(Module):
         Args:
             x (ArrayLike): Input with shape matching the bijections shape
             condition (ArrayLike | None, optional): . Defaults to None.
-
-        Raises:
-            ValueError: _description_
-            ValueError: _description_
-
-        Returns:
-            tuple[Array, Array]: _description_
         """
 
     @abstractmethod
@@ -102,27 +127,28 @@ class AbstractBijection(Module):
                 None.
         """
 
-    def _argcheck_and_cast(
-        self,
-        x: ArrayLike,
-        condition: ArrayLike | None = None,
-    ) -> tuple[Array, Array | None]:
-        """Utility method to check input shapes and cast inputs to arrays if required.
 
-        Note this permits passing a condition array to unconditional distributions.
-        """
-        x = arraylike_to_array(x, err_name="x")
+def _check_and_cast(method):
+    """Decorator that performs argument checking and converts arraylike to array."""
 
-        if x.shape != self.shape:
-            raise ValueError(f"Expected x.shape {self.shape}; got {x.shape}")
-
-        if condition is not None:
-            condition = arraylike_to_array(condition, err_name="condition")
+    @functools.wraps(method)
+    def wrapper(self, x, condition=None):
+        def _check_condition(condition):
+            if condition is not None:
+                condition = arraylike_to_array(condition, err_name="condition")
 
             if self.cond_shape is not None and condition.shape != self.cond_shape:
                 raise ValueError(
-                    f"Expected condition.shape {self.cond_shape}; got "
-                    f"{condition.shape}",
+                    f"Expected condition.shape {self.cond_shape}; got {condition.shape}",
                 )
+            return condition
 
-        return x, condition
+        def _check_x(x):
+            x = arraylike_to_array(x)
+            if x.shape != self.shape:
+                raise ValueError(f"Expected input shape {self.shape}; got {x.shape}")
+            return x
+
+        return method(self, _check_x(x), _check_condition(condition))
+
+    return wrapper

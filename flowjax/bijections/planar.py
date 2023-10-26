@@ -12,7 +12,7 @@ from jax import Array
 from jax.nn import softplus
 from jax.numpy.linalg import norm
 
-from flowjax.bijections import AbstractBijection
+from flowjax.bijections.bijection import AbstractBijection
 
 
 class Planar(AbstractBijection):
@@ -57,11 +57,9 @@ class Planar(AbstractBijection):
             self.cond_shape = (cond_dim,)
 
     def transform(self, x, condition=None):
-        x, condition = self._argcheck_and_cast(x, condition)
         return self.get_planar(condition).transform(x)
 
     def transform_and_log_det(self, x, condition=None):
-        x, condition = self._argcheck_and_cast(x, condition)
         return self.get_planar(condition).transform_and_log_det(x)
 
     def inverse(self, y, condition=None):
