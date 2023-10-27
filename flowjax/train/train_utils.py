@@ -13,18 +13,32 @@ from flowjax.distributions import AbstractDistribution
 
 PyTree = Any
 
-
 @eqx.filter_jit
 def step(
+    params: PyTree,
+    static: PyTree,
+    *args,
     optimizer: optax.GradientTransformation,
     opt_state: PyTree,
     loss_fn: Callable,
-    params: AbstractDistribution,
-    *args,
-    **kwargs,
 ):
-    """Carry out a training step with *args and **kwargs passed to the loss function."""
-    loss_val, grads = eqx.filter_value_and_grad(loss_fn)(params, *args, **kwargs)
+    """Carry out a training step.
+    
+    Args:
+        params (PyTree): Parameters for the model
+        static (PyTree): Static components of the model.
+        *args: Arguments passed to the loss function.
+        optimizer (optax.GradientTransformation): Optax optimizer.
+        opt_state (PyTree): Optimizer state.
+        loss_fn (Callable): The loss function. This should take params and static as
+            the first two arguments.
+            
+    Returns:
+        tuple: (params, opt_state, loss_val)
+    """
+    loss_val, grads = eqx.filter_value_and_grad(loss_fn)(
+        params, static, *args
+        )
     updates, opt_state = optimizer.update(grads, opt_state)
     params = eqx.apply_updates(params, updates)
     return params, opt_state, loss_val

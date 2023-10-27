@@ -31,9 +31,9 @@ from flowjax.distributions import (
 
 _test_distributions = {
     # flowjax.distributions
-    "StandardNormal": lambda shape: StandardNormal(shape),
+    "StandardNormal": StandardNormal,
     "Normal": lambda shape: Normal(jnp.zeros(shape)),
-    "_StandardUniform": lambda shape: _StandardUniform(shape),
+    "_StandardUniform": _StandardUniform,
     "Uniform": lambda shape: Uniform(jnp.zeros(shape), 1),
     "_StandardGumbel": _StandardGumbel,
     "Gumbel": lambda shape: Gumbel(jnp.zeros(shape)),

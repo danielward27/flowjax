@@ -10,7 +10,6 @@ from jax import Array
 from jax.typing import ArrayLike
 from tqdm import tqdm
 
-from flowjax.distributions import AbstractDistribution
 from flowjax.train.losses import MaximumLikelihoodLoss
 from flowjax.train.train_utils import (
     count_fruitless,
@@ -24,7 +23,7 @@ PyTree = Any
 
 def fit_to_data(
     key: Array,
-    dist: AbstractDistribution,
+    dist: PyTree,
     x: ArrayLike,
     condition: ArrayLike = None,
     loss_fn: Callable | None = None,
@@ -41,11 +40,12 @@ def fit_to_data(
 
     The distribution can be unconditional :math:`p(x)` or conditional
     :math:`p(x|\text{condition})`. Note that the last batch in each epoch is dropped
-    if truncated.
+    if truncated (to avoid recompilation). This function can also be used to fit
+    non-distribution pytrees as long as a compatible loss function is provided.
 
     Args:
         key (KeyArray): Jax random seed.
-        dist (AbstractDistribution): Distribution object.
+        dist (PyTree): The distribution to train.
         x (ArrayLike): Samples from target distribution.
         condition (ArrayLike | None): Conditioning variables. Defaults to None.
         loss_fn (Callable | None): Loss function. Defaults to MaximumLikelihoodLoss.
@@ -79,7 +79,7 @@ def fit_to_data(
 
     # train val split
     key, subkey = jr.split(key)
-    train_data, val_data = train_val_split(key, data, val_prop=val_prop)
+    train_data, val_data = train_val_split(subkey, data, val_prop=val_prop)
     losses = {"train": [], "val": []}
 
     loop = tqdm(range(max_epochs), disable=not show_progress)
@@ -94,12 +94,12 @@ def fit_to_data(
         batch_losses = []
         for batch in zip(*get_batches(train_data, batch_size), strict=True):
             params, opt_state, loss_i = step(
-                optimizer,
-                opt_state,
-                loss_fn,
                 params,
                 static,
                 *batch,
+                optimizer=optimizer,
+                opt_state=opt_state,
+                loss_fn=loss_fn,
             )
             batch_losses.append(loss_i)
         losses["train"].append(sum(batch_losses) / len(batch_losses))
