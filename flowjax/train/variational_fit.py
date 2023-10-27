@@ -48,11 +48,6 @@ def fit_to_variational_target(
     if optimizer is None:
         optimizer = optax.adam(learning_rate)
 
-    @eqx.filter_value_and_grad
-    def loss_val_and_grad(trainable, static, key):
-        model = eqx.combine(trainable, static)
-        return loss_fn(model, key)
-
     params, static = eqx.partition(dist, filter_spec)
     opt_state = optimizer.init(params)
 
@@ -63,12 +58,12 @@ def fit_to_variational_target(
 
     for key in keys:
         params, opt_state, loss = step(
-            optimizer,
-            opt_state,
-            loss_fn,
             params,
             static,
             key,
+            optimizer=optimizer,
+            opt_state=opt_state,
+            loss_fn=loss_fn,
         )
         losses.append(loss.item())
         keys.set_postfix({"loss": loss.item()})

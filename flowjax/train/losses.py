@@ -24,8 +24,8 @@ class MaximumLikelihoodLoss:
     @eqx.filter_jit
     def __call__(
         self,
-        static: AbstractDistribution,
         params: AbstractDistribution,
+        static: AbstractDistribution,
         x: Array,
         condition: Array | None = None,
     ):
@@ -67,8 +67,8 @@ class ContrastiveLoss:
     @eqx.filter_jit
     def __call__(
         self,
-        static: AbstractDistribution,
         params: AbstractDistribution,
+        static: AbstractDistribution,
         x: Array,
         condition: Array | None = None,
     ):
