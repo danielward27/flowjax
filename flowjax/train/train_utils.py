@@ -9,9 +9,8 @@ import jax.random as jr
 import optax
 from jax import Array, jit
 
-from flowjax.distributions import AbstractDistribution
-
 PyTree = Any
+
 
 @eqx.filter_jit
 def step(
@@ -23,7 +22,7 @@ def step(
     loss_fn: Callable,
 ):
     """Carry out a training step.
-    
+
     Args:
         params (PyTree): Parameters for the model
         static (PyTree): Static components of the model.
@@ -32,14 +31,12 @@ def step(
         opt_state (PyTree): Optimizer state.
         loss_fn (Callable): The loss function. This should take params and static as
             the first two arguments.
-            
+
     Returns:
         tuple: (params, opt_state, loss_val)
     """
-    loss_val, grads = eqx.filter_value_and_grad(loss_fn)(
-        params, static, *args
-        )
-    updates, opt_state = optimizer.update(grads, opt_state)
+    loss_val, grads = eqx.filter_value_and_grad(loss_fn)(params, static, *args)
+    updates, opt_state = optimizer.update(grads, opt_state, params=params)
     params = eqx.apply_updates(params, updates)
     return params, opt_state, loss_val
 
