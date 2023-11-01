@@ -1,7 +1,6 @@
 """Premade versions of common flow architetctures from ``flowjax.flows``.
 
-All these flows create the corresponding bijection, and transform a normal base
-distribution. See :class:`~flowjax.distributions.Transformed`.
+All these functions return a :class:`~flowjax.distributions.Transformed` distribution.
 """
 # Note that here although we could chain arbitrary bijections using `Chain`, here,
 # we generally opt to use `Scan`, which avoids excessive compilation
@@ -245,7 +244,7 @@ def triangular_spline_flow(
     tanh_max_val: float = 3.0,
     invert: bool = True,
     init: Callable | None = None,
-):
+) -> Transformed:
     """Triangular spline flow.
 
     A single layer consists where each layer consists of a triangular affine
