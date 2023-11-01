@@ -15,7 +15,7 @@ from numpyro.optim import Adam
 from flowjax.bijections import AdditiveCondition
 from flowjax.distributions import Normal, StandardNormal, Transformed
 from flowjax.experimental.numpyro import TransformedToNumpyro, register_params
-from flowjax.flows import BlockNeuralAutoregressiveFlow
+from flowjax.flows import block_neural_autoregressive_flow
 
 true_mean, true_std = jnp.ones(2), 2 * jnp.ones(2)
 
@@ -73,9 +73,9 @@ def test_vi():
 
     # Test intermediates are used - note BNAF has no inverse so intermediates
     # are required to compute the log_prob in VI.
-    guide_dist = BlockNeuralAutoregressiveFlow(
+    guide_dist = block_neural_autoregressive_flow(
         key,
-        Normal(jnp.zeros(2), 1),
+        base_dist=Normal(jnp.zeros(2)),
         invert=False,
         nn_block_dim=1,
     )
@@ -170,9 +170,9 @@ def test_batched_condition():
     dim = 2
     cond_dim = 3
     key, subkey = jr.split(jr.PRNGKey(0))
-    dist = BlockNeuralAutoregressiveFlow(
+    dist = block_neural_autoregressive_flow(
         key,
-        Normal(jnp.zeros(dim)),
+        base_dist=Normal(jnp.zeros(dim)),
         cond_dim=cond_dim,
     )
 

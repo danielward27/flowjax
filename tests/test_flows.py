@@ -4,11 +4,11 @@ import pytest
 from flowjax.bijections import Affine, RationalQuadraticSpline
 from flowjax.distributions import StandardNormal
 from flowjax.flows import (
-    BlockNeuralAutoregressiveFlow,
-    CouplingFlow,
-    MaskedAutoregressiveFlow,
-    PlanarFlow,
-    TriangularSplineFlow,
+    block_neural_autoregressive_flow,
+    coupling_flow,
+    masked_autoregressive_flow,
+    planar_flow,
+    triangular_spline_flow,
 )
 
 DIM = 3
@@ -20,18 +20,18 @@ KWARGS = {
 }
 
 testcases = {
-    "BNAF": BlockNeuralAutoregressiveFlow(**KWARGS),
-    "TriangularSplineFlow": TriangularSplineFlow(**KWARGS),
-    "Affine_Coupling": CouplingFlow(transformer=Affine(), **KWARGS),
-    "Spline_Coupling": CouplingFlow(
+    "BNAF": block_neural_autoregressive_flow(**KWARGS),
+    "triangular_spline_flow": triangular_spline_flow(**KWARGS),
+    "Affine_Coupling": coupling_flow(transformer=Affine(), **KWARGS),
+    "Spline_Coupling": coupling_flow(
         transformer=RationalQuadraticSpline(3, 2),
         **KWARGS,
     ),
-    "Affine_MaskedAutoregessive": MaskedAutoregressiveFlow(
+    "Affine_MaskedAutoregessive": masked_autoregressive_flow(
         transformer=Affine(),
         **KWARGS,
     ),
-    "Planar": PlanarFlow(**KWARGS),
+    "Planar": planar_flow(**KWARGS),
 }
 
 
@@ -50,20 +50,20 @@ def test_unconditional_flow_log_prob(flow):
 
 
 conditional_testcases = {
-    "BNAF": BlockNeuralAutoregressiveFlow(**KWARGS, cond_dim=2),
-    "TriangularSplineFlow": TriangularSplineFlow(**KWARGS, cond_dim=2),
-    "Affine_Coupling": CouplingFlow(transformer=Affine(), **KWARGS, cond_dim=2),
-    "Spline_Coupling": CouplingFlow(
+    "BNAF": block_neural_autoregressive_flow(**KWARGS, cond_dim=2),
+    "triangular_spline_flow": triangular_spline_flow(**KWARGS, cond_dim=2),
+    "Affine_Coupling": coupling_flow(transformer=Affine(), **KWARGS, cond_dim=2),
+    "Spline_Coupling": coupling_flow(
         transformer=RationalQuadraticSpline(3, 2),
         **KWARGS,
         cond_dim=2,
     ),
-    "Affine_MaskedAutoregessive": MaskedAutoregressiveFlow(
+    "Affine_MaskedAutoregessive": masked_autoregressive_flow(
         transformer=Affine(),
         **KWARGS,
         cond_dim=2,
     ),
-    "Planar": PlanarFlow(**KWARGS, cond_dim=2, width_size=3, depth=1),
+    "Planar": planar_flow(**KWARGS, cond_dim=2, width_size=3, depth=1),
 }
 
 
