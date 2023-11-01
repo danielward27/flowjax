@@ -70,7 +70,7 @@ class MaskedAutoregressive(AbstractBijection):
             self.cond_shape = (cond_dim,)
             # we give conditioning variables rank -1 (no masking of edges to output)
             in_ranks = jnp.hstack(
-                (jnp.arange(dim), -jnp.ones(cond_dim, dtype=jnp.int32))
+                (jnp.arange(dim), -jnp.ones(cond_dim, dtype=jnp.int32)),
             )
 
         hidden_ranks = jnp.arange(nn_width) % dim

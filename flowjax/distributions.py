@@ -105,13 +105,13 @@ class AbstractDistribution(eqx.Module):
                 from flowjax.distributions import StandardNormal
                 import jax.random as jr
                 import jax.numpy as jnp
-                from flowjax.flows import CouplingFlow
+                from flowjax.flows import coupling_flow
                 from flowjax.bijections import Affine
                 # For a unconditional distribution:
                 key = jr.PRNGKey(0)
                 dist = StandardNormal((2,))
                 # For a conditional distribution
-                cond_dist = CouplingFlow(
+                cond_dist = coupling_flow(
                     key, StandardNormal((2,)), cond_dim=3, transformer=Affine()
                     )
 
