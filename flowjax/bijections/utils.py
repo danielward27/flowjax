@@ -21,8 +21,6 @@ class Invert(AbstractBijection):
     achieve this aim.
     """
 
-    shape: tuple[int, ...]
-    cond_shape: tuple[int, ...] | None
     bijection: AbstractBijection
 
     def __init__(self, bijection: AbstractBijection):
@@ -32,8 +30,6 @@ class Invert(AbstractBijection):
             bijection (AbstractBijection): Bijection to invert.
         """
         self.bijection = bijection
-        self.shape = bijection.shape
-        self.cond_shape = bijection.cond_shape
 
     def transform(self, x, condition=None):
         return self.bijection.inverse(x, condition)
@@ -46,6 +42,14 @@ class Invert(AbstractBijection):
 
     def inverse_and_log_det(self, y, condition=None):
         return self.bijection.transform_and_log_det(y, condition)
+
+    @property
+    def shape(self):
+        return self.bijection.shape
+
+    @property
+    def cond_shape(self):
+        return self.bijection.cond_shape
 
 
 class Permute(AbstractBijection):
@@ -131,7 +135,6 @@ class Partial(AbstractBijection):
     """Applies bijection to specific indices of an input."""
 
     shape: tuple[int, ...]
-    cond_shape: tuple[int, ...] | None
     bijection: AbstractBijection
     idxs: int | slice | Array | tuple
 
@@ -153,7 +156,6 @@ class Partial(AbstractBijection):
         self.bijection = bijection
         self.idxs = idxs
         self.shape = shape
-        self.cond_shape = bijection.cond_shape
 
         if jnp.zeros(shape)[idxs].shape != bijection.shape:
             raise ValueError(
@@ -182,6 +184,10 @@ class Partial(AbstractBijection):
         x, log_det = self.bijection.inverse_and_log_det(y[self.idxs], condition)
         return y.at[self.idxs].set(x), log_det
 
+    @property
+    def cond_shape(self):
+        return self.bijection.cond_shape
+
 
 class EmbedCondition(AbstractBijection):
     """Wrap a bijection to include an embedding network.
@@ -190,7 +196,6 @@ class EmbedCondition(AbstractBijection):
     variable. The returned bijection has cond_dim equal to the raw condition size.
     """
 
-    shape: tuple[int, ...]
     cond_shape: tuple[int, ...]
     bijection: AbstractBijection
     embedding_net: Callable
@@ -213,8 +218,6 @@ class EmbedCondition(AbstractBijection):
         """
         self.bijection = bijection
         self.embedding_net = embedding_net
-
-        self.shape = bijection.shape
         self.cond_shape = raw_cond_shape
 
     def transform(self, x, condition=None):
@@ -236,3 +239,7 @@ class EmbedCondition(AbstractBijection):
         y, condition = self._argcheck_and_cast(y, condition)
         condition = self.embedding_net(condition)
         return self.bijection.inverse_and_log_det(y, condition)
+
+    @property
+    def shape(self):
+        return self.bijection.shape

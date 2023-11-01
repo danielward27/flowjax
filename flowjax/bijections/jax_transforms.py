@@ -16,8 +16,6 @@ class Scan(AbstractBijection):
     Internally, uses `jax.lax.scan` to reduce compilation time.
     """
 
-    shape: tuple[int, ...]
-    cond_shape: tuple[int, ...] | None
     bijection: AbstractBijection
 
     def __init__(self, bijection: AbstractBijection):
@@ -44,8 +42,6 @@ class Scan(AbstractBijection):
                 >>> affine = eqx.filter_vmap(Affine)(params)
                 >>> affine = Scan(affine)
         """
-        self.shape = bijection.shape
-        self.cond_shape = bijection.cond_shape
         self.bijection = bijection
 
     def transform(self, x, condition=None):
@@ -87,6 +83,14 @@ class Scan(AbstractBijection):
 
         (y, log_det), _ = _filter_scan(step, (y, 0), self.bijection, reverse=True)
         return y, log_det
+
+    @property
+    def shape(self):
+        return self.bijection.shape
+
+    @property
+    def cond_shape(self):
+        return self.bijection.cond_shape
 
 
 def _filter_scan(f, init, xs, reverse=False):
@@ -188,22 +192,6 @@ class Vmap(AbstractBijection):
         self.bijection = bijection
         self.axis_size = axis_size
 
-    @property
-    def shape(self):
-        return (self.axis_size, *self.bijection.shape)
-
-    @property
-    def cond_shape(self):
-        ax = self.in_axes[2]
-        if self.bijection.cond_shape is None or ax is None:
-            return self.bijection.cond_shape
-
-        return (
-            *self.bijection.cond_shape[:ax],
-            self.axis_size,
-            *self.bijection.cond_shape[ax:],
-        )
-
     def transform(self, x, condition=None):
         x, condition = self._argcheck_and_cast(x, condition)
 
@@ -253,6 +241,22 @@ class Vmap(AbstractBijection):
             condition,
         )
         return x, jnp.sum(log_det)
+
+    @property
+    def shape(self):
+        return (self.axis_size, *self.bijection.shape)
+
+    @property
+    def cond_shape(self):
+        ax = self.in_axes[2]
+        if self.bijection.cond_shape is None or ax is None:
+            return self.bijection.cond_shape
+
+        return (
+            *self.bijection.cond_shape[:ax],
+            self.axis_size,
+            *self.bijection.cond_shape[ax:],
+        )
 
 
 def _infer_axis_size_from_params(tree, in_axis):
