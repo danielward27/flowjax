@@ -39,8 +39,6 @@ class CouplingFlow(AbstractTransformed):
     base_dist: AbstractDistribution
     bijection: AbstractBijection
     flow_layers: int
-    nn_width: int
-    nn_depth: int
 
     def __init__(
         self,
@@ -94,8 +92,6 @@ class CouplingFlow(AbstractTransformed):
         layers = eqx.filter_vmap(make_layer)(keys)
         bijection = Invert(Scan(layers)) if invert else Scan(layers)
 
-        self.nn_width = nn_width
-        self.nn_depth = nn_depth
         self.flow_layers = flow_layers
         self.base_dist = base_dist
         self.bijection = bijection
@@ -111,8 +107,6 @@ class MaskedAutoregressiveFlow(AbstractTransformed):
     base_dist: AbstractDistribution
     bijection: AbstractBijection
     flow_layers: int
-    nn_width: int
-    nn_depth: int
 
     def __init__(
         self,
@@ -164,11 +158,9 @@ class MaskedAutoregressiveFlow(AbstractTransformed):
         layers = eqx.filter_vmap(make_layer)(keys)
         bijection = Invert(Scan(layers)) if invert else Scan(layers)
 
-        self.nn_width = nn_width
-        self.nn_depth = nn_depth
-        self.flow_layers = flow_layers
         self.base_dist = base_dist
         self.bijection = bijection
+        self.flow_layers = flow_layers
 
 
 class BlockNeuralAutoregressiveFlow(AbstractTransformed):
@@ -184,8 +176,6 @@ class BlockNeuralAutoregressiveFlow(AbstractTransformed):
     base_dist: AbstractDistribution
     bijection: AbstractBijection
     flow_layers: int
-    nn_block_dim: int
-    nn_depth: int
 
     def __init__(
         self,
@@ -240,8 +230,6 @@ class BlockNeuralAutoregressiveFlow(AbstractTransformed):
         layers = eqx.filter_vmap(make_layer)(keys)
         bijection = Invert(Scan(layers)) if invert else Scan(layers)
 
-        self.nn_block_dim = nn_block_dim
-        self.nn_depth = nn_depth
         self.flow_layers = flow_layers
         self.base_dist = base_dist
         self.bijection = bijection
@@ -312,8 +300,6 @@ class TriangularSplineFlow(AbstractTransformed):
     base_dist: AbstractDistribution
     bijection: AbstractBijection
     flow_layers: int
-    knots: int
-    tanh_max_val: float
 
     def __init__(
         self,
@@ -385,8 +371,6 @@ class TriangularSplineFlow(AbstractTransformed):
         bijection = Invert(Scan(layers)) if invert else Scan(layers)
 
         self.flow_layers = flow_layers
-        self.knots = knots
-        self.tanh_max_val = tanh_max_val
         self.base_dist = base_dist
         self.bijection = bijection
 
