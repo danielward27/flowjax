@@ -193,10 +193,10 @@ class Identity(AbstractBijection):
     """The identity bijection.
 
     Args:
-       shape (tuple[int, ...]): The shape of the bijection.
+       shape (tuple[int, ...]): The shape of the bijection. Defaults to ().
     """
 
-    shape: tuple[int, ...]
+    shape: tuple[int, ...] = ()
     cond_shape: ClassVar[None] = None
 
     def transform(self, x, condition=None):
