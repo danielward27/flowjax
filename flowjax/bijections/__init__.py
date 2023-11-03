@@ -13,7 +13,7 @@ from .planar import Planar
 from .rational_quadratic_spline import RationalQuadraticSpline
 from .softplus import SoftPlus
 from .tanh import LeakyTanh, Tanh
-from .utils import EmbedCondition, Flip, Invert, Partial, Permute
+from .utils import EmbedCondition, Flip, Identity, Invert, Partial, Permute
 
 __all__ = [
     "AdditiveCondition",
@@ -27,6 +27,7 @@ __all__ = [
     "EmbedCondition",
     "Exp",
     "Flip",
+    "Identity",
     "Invert",
     "MaskedAutoregressive",
     "Partial",

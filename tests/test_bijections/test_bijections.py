@@ -15,6 +15,7 @@ from flowjax.bijections import (
     EmbedCondition,
     Exp,
     Flip,
+    Identity,
     LeakyTanh,
     MaskedAutoregressive,
     Partial,
@@ -36,6 +37,7 @@ POS_DEF_TRAINGLES = jnp.full((DIM, DIM), 0.5) + jnp.diag(jnp.ones(DIM))
 
 
 bijections = {
+    "Identity": Identity((DIM,)),
     "Flip": Flip((DIM,)),
     "Permute": Permute(jnp.flip(jnp.arange(DIM))),
     "Permute (3D)": Permute(
