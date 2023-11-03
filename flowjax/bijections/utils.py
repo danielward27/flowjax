@@ -189,6 +189,33 @@ class Partial(AbstractBijection):
         return self.bijection.cond_shape
 
 
+class Identity(AbstractBijection):
+    """The identity bijection.
+
+    Args:
+       shape (tuple[int, ...]): The shape of the bijection.
+    """
+
+    shape: tuple[int, ...]
+    cond_shape: ClassVar[None] = None
+
+    def transform(self, x, condition=None):
+        x, _ = self._argcheck_and_cast(x)
+        return x
+
+    def transform_and_log_det(self, x, condition=None):
+        x, _ = self._argcheck_and_cast(x)
+        return x, jnp.zeros(())
+
+    def inverse(self, y, condition=None):
+        x, _ = self._argcheck_and_cast(y)
+        return y
+
+    def inverse_and_log_det(self, y, condition=None):
+        x, _ = self._argcheck_and_cast(y)
+        return y, jnp.zeros(())
+
+
 class EmbedCondition(AbstractBijection):
     """Wrap a bijection to include an embedding network.
 
