@@ -18,7 +18,7 @@ from flowjax.utils import arraylike_to_array
 
 
 class _BijectionMeta(type(eqx.Module)):
-    # Metaclass for bijections. This serves wraps the methods to achieve the following.
+    # Metaclass for bijections. This wraps the methods to achieve the following.
     # 1) Enforce input shapes to match the shapes of the bijection.
     # 2) Converts inputs from ArrayLike to Array where appropriate.
     def __new__(
