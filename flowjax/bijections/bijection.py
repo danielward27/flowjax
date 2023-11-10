@@ -8,12 +8,9 @@ maximum likelihood fitting of flows).
 """
 
 import functools
-import inspect
 from abc import abstractmethod
-from contextlib import suppress
 
 import equinox as eqx
-from equinox import AbstractVar, Module
 from jax import Array
 from jax.typing import ArrayLike
 
@@ -21,17 +18,15 @@ from flowjax.utils import arraylike_to_array
 
 
 class _BijectionMeta(type(eqx.Module)):
-    # Metaclass for bijections. This serves two roles:
-    # 1) wraps methods to enforce input shapes to match the shapes of the bijection.
-    # 2) Converts inputs to Array where appropriate.
+    # Metaclass for bijections. This serves wraps the methods to achieve the following.
+    # 1) Enforce input shapes to match the shapes of the bijection.
+    # 2) Converts inputs from ArrayLike to Array where appropriate.
     def __new__(
         mcs,
         name,
         bases,
         dict_,
         /,
-        strict: bool = False,
-        abstract: bool = False,
         **kwargs,
     ):
         wrap_methods = [
@@ -40,15 +35,49 @@ class _BijectionMeta(type(eqx.Module)):
             "inverse",
             "inverse_and_log_det",
         ]
-        with suppress(NameError):
-            if AbstractBijection in bases and not inspect.isabstract(mcs):
-                for meth in wrap_methods:
-                    if not hasattr(dict_[meth], "__isabstractmethod__"):
-                        dict_[meth] = _check_and_cast(dict_[meth])
-        return super().__new__(mcs, name, bases, dict_, strict, abstract, **kwargs)
+        if name != "AbstractBijection":  # No need to wrap AbstractBijection itself.
+            for meth in wrap_methods:
+                if meth in dict_ and not hasattr(dict_[meth], "__isabstractmethod__"):
+                    assert not hasattr(dict_[meth], "__check_and_cast__")
+                    dict_[meth] = _check_and_cast(dict_[meth])
+
+        # Use name Module to avoid equinox assert name == "Module" when
+        # inferring if a dataclass default init is present
+        cls = super().__new__(mcs, "Module", bases, dict_, **kwargs)
+        cls.__name__ = name
+        return cls
 
 
-class AbstractBijection(Module, metaclass=_BijectionMeta):
+def _check_and_cast(method):
+    """Decorator that performs argument checking and converts arraylike to array."""
+
+    @functools.wraps(method)
+    def wrapper(self, x, condition=None):
+        def _check_condition(condition):
+            if condition is not None:
+                condition = arraylike_to_array(condition, err_name="condition")
+            elif self.cond_shape is not None:
+                raise ValueError("Expected condition to be provided.")
+
+            if self.cond_shape is not None and condition.shape != self.cond_shape:
+                raise ValueError(
+                    f"Expected condition.shape {self.cond_shape}; got {condition.shape}",
+                )
+            return condition
+
+        def _check_x(x):
+            x = arraylike_to_array(x)
+            if x.shape != self.shape:
+                raise ValueError(f"Expected input shape {self.shape}; got {x.shape}")
+            return x
+
+        return method(self, _check_x(x), _check_condition(condition))
+
+    wrapper.__check_and_cast__ = True
+    return wrapper
+
+
+class AbstractBijection(metaclass=_BijectionMeta):
     """Bijection abstract class.
 
     Similar to :py:class:`~flowjax.distributions.AbstractDistribution`, bijections have
@@ -74,8 +103,8 @@ class AbstractBijection(Module, metaclass=_BijectionMeta):
             for ``condition``.
     """
 
-    shape: AbstractVar[tuple[int, ...]]
-    cond_shape: AbstractVar[tuple[int, ...] | None]
+    shape: eqx.AbstractVar[tuple[int, ...]]
+    cond_shape: eqx.AbstractVar[tuple[int, ...] | None]
 
     @abstractmethod
     def transform(self, x: ArrayLike, condition: ArrayLike | None = None) -> Array:
@@ -126,29 +155,3 @@ class AbstractBijection(Module, metaclass=_BijectionMeta):
                 bijection.cond_shape. Required for conditional bijections. Defaults to
                 None.
         """
-
-
-def _check_and_cast(method):
-    """Decorator that performs argument checking and converts arraylike to array."""
-
-    @functools.wraps(method)
-    def wrapper(self, x, condition=None):
-        def _check_condition(condition):
-            if condition is not None:
-                condition = arraylike_to_array(condition, err_name="condition")
-
-            if self.cond_shape is not None and condition.shape != self.cond_shape:
-                raise ValueError(
-                    f"Expected condition.shape {self.cond_shape}; got {condition.shape}",
-                )
-            return condition
-
-        def _check_x(x):
-            x = arraylike_to_array(x)
-            if x.shape != self.shape:
-                raise ValueError(f"Expected input shape {self.shape}; got {x.shape}")
-            return x
-
-        return method(self, _check_x(x), _check_condition(condition))
-
-    return wrapper

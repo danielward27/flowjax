@@ -188,19 +188,15 @@ class Identity(AbstractBijection):
     cond_shape: ClassVar[None] = None
 
     def transform(self, x, condition=None):
-        x, _ = self._argcheck_and_cast(x)
         return x
 
     def transform_and_log_det(self, x, condition=None):
-        x, _ = self._argcheck_and_cast(x)
         return x, jnp.zeros(())
 
     def inverse(self, y, condition=None):
-        x, _ = self._argcheck_and_cast(y)
         return y
 
     def inverse_and_log_det(self, y, condition=None):
-        x, _ = self._argcheck_and_cast(y)
         return y, jnp.zeros(())
 
 

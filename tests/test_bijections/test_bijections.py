@@ -1,4 +1,6 @@
 "General tests for bijections (including transformers)."
+from abc import abstractmethod
+
 import equinox as eqx
 import jax
 import jax.numpy as jnp
@@ -6,6 +8,7 @@ import jax.random as jr
 import pytest
 
 from flowjax.bijections import (
+    AbstractBijection,
     AdditiveCondition,
     Affine,
     BlockAutoregressiveNetwork,
@@ -215,3 +218,74 @@ def test_transform_inverse_and_log_dets(bijection):
 
     except NotImplementedError:
         pass
+
+
+class _AstractTestBijection(AbstractBijection):
+    shape: tuple[int, ...] = ()
+    cond_shape: tuple[int, ...] | None = None
+
+    def transform(self, x, condition=None):
+        return x
+
+    def transform_and_log_det(self, x, condition=None):
+        return x, jnp.zeros(())
+
+    @abstractmethod
+    def inverse(self, y, condition=None):
+        pass
+
+    @abstractmethod
+    def inverse_and_log_det(self, y, condition=None):
+        return y, jnp.zeros(())
+
+
+class _TestBijection(_AstractTestBijection):
+    # Test bijection (with inheritance + method overide)
+    def transform(self, x, condition=None):  # Check overiding
+        return x
+
+    def inverse(self, y, condition=None):
+        return y
+
+    def inverse_and_log_det(self, y, condition=None):
+        return y, jnp.zeros(())
+
+
+test_cases = {
+    "wrong x shape": (
+        [(), None],
+        [jnp.ones(2), None],
+        "Expected input shape",
+    ),
+    "wrong condition shape": (
+        [(), (2,)],
+        [1, jnp.ones(3)],
+        "Expected condition.shape",
+    ),
+    "missing condition": (
+        [(), (2,)],
+        [1, None],
+        "Expected condition to be provided.",
+    ),
+}
+
+
+@pytest.mark.parametrize(
+    ("args", "inputs", "match"),
+    test_cases.values(),
+    ids=test_cases.keys(),
+)
+def test_argcheck(args, inputs, match):
+    bijection = _TestBijection(*args)
+
+    with pytest.raises(ValueError, match=match):
+        bijection.transform(*inputs)
+
+    with pytest.raises(ValueError, match=match):
+        bijection.inverse(*inputs)
+
+    with pytest.raises(ValueError, match=match):
+        bijection.transform_and_log_det(*inputs)
+
+    with pytest.raises(ValueError, match=match):
+        bijection.inverse_and_log_det(*inputs)
