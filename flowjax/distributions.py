@@ -24,9 +24,13 @@ class AbstractDistribution(eqx.Module):
     Distributions are registered as jax PyTrees (as they are equinox modules), and as
     such they are compatible with normal jax operations.
 
-    In general, when implementing custom distributions it is more convenient to use
-        -  :class:`AbstractStandardDistribution` for non-transformed distributions.
-        -  :class:`AbstractTransformed` for transformed distributions.
+    Concrete subclasses can be implemented as follows:
+        (1) Inherit from :class:`AbstractDistribution`.
+        (2) Define the abstract attributes ``shape`` and ``cond_shape``.
+            ``cond_shape`` should be ``None`` for unconditional distributions.
+        (3) Define the abstract methods :meth:`_sample` and :meth:`_log_prob`.
+
+    See the source code for :class:`StandardNormal` for a simple concrete example.
 
     Attributes:
         shape (AbstractVar[tuple[int, ...]]): Denotes the shape of a single sample from
@@ -34,7 +38,6 @@ class AbstractDistribution(eqx.Module):
         cond_shape (AbstractVar[tuple[int, ...] | None]): The shape of an instance of
             the conditioning variable. This should be None for unconditional
             distributions.
-
 
     """
 
@@ -158,6 +161,10 @@ class AbstractDistribution(eqx.Module):
         keys = self._get_sample_keys(key, sample_shape, condition)
         return self._vectorize(self._sample)(keys, condition)
 
+    def _sample_and_log_prob(self, key, condition=None):
+        x = self._sample(key, condition)
+        return x, self._log_prob(x, condition)
+
     def sample_and_log_prob(
         self,
         key: Array,
@@ -244,26 +251,6 @@ class AbstractDistribution(eqx.Module):
         return jnp.reshape(jr.split(key, key_size), (*key_shape, 2))
 
 
-class AbstractStandardDistribution(AbstractDistribution):
-    """Abstract distribution type, representing a distribution that is not transformed.
-
-    This class provides a default implementation for ``_sample_and_log_prob``, one of
-    the abstract methods of :class:`AbstractDistribution`.
-
-    Concrete subclasses can be implemented as follows:
-        (1) Inherit from :class:`AbstractStandardDistribution`.
-        (2) Define the abstract attributes ``shape`` and ``cond_shape``.
-            ``cond_shape`` should be ``None`` for unconditional distributions.
-        (3) Define the abstract methods :meth:`_sample` and :meth:`_log_prob`.
-
-    See the source code for :class:`StandardNormal` for a simple concrete example.
-    """
-
-    def _sample_and_log_prob(self, key, condition=None):
-        x = self._sample(key, condition)
-        return x, self._log_prob(x, condition)
-
-
 class AbstractTransformed(AbstractDistribution):
     """Abstract class respresenting transformed distributions.
 
@@ -288,7 +275,7 @@ class AbstractTransformed(AbstractDistribution):
         return self.bijection.transform(base_sample, condition)
 
     def _sample_and_log_prob(self, key: Array, condition=None):
-        # We avoid computing the inverse transformation.
+        # We override to avoid computing the inverse transformation.
         base_sample, log_prob_base = self.base_dist._sample_and_log_prob(key, condition)
         sample, forward_log_dets = self.bijection.transform_and_log_det(
             base_sample,
@@ -373,7 +360,7 @@ class Transformed(AbstractTransformed):
         self.bijection = bijection
 
 
-class StandardNormal(AbstractStandardDistribution):
+class StandardNormal(AbstractDistribution):
     """Standard normal distribution.
 
     Note unlike :class:`Normal`, this has no trainable parameters.
@@ -429,7 +416,7 @@ class Normal(AbstractTransformed):
         return self.bijection.scale
 
 
-class _StandardUniform(AbstractStandardDistribution):
+class _StandardUniform(AbstractDistribution):
     r"""Implements a standard Uniform distribution."""
     shape: tuple[int, ...]
     cond_shape: ClassVar[None] = None
@@ -480,7 +467,7 @@ class Uniform(AbstractTransformed):
         return self.bijection.loc + self.bijection.scale
 
 
-class _StandardGumbel(AbstractStandardDistribution):
+class _StandardGumbel(AbstractDistribution):
     """Standard gumbel distribution (https://en.wikipedia.org/wiki/Gumbel_distribution)."""
 
     shape: tuple[int, ...]
@@ -525,7 +512,7 @@ class Gumbel(AbstractTransformed):
         return self.bijection.scale
 
 
-class _StandardCauchy(AbstractStandardDistribution):
+class _StandardCauchy(AbstractDistribution):
     """Implements standard cauchy distribution (loc=0, scale=1).
 
     Ref: https://en.wikipedia.org/wiki/Cauchy_distribution.
@@ -573,7 +560,7 @@ class Cauchy(AbstractTransformed):
         return self.bijection.scale
 
 
-class _StandardStudentT(AbstractStandardDistribution):
+class _StandardStudentT(AbstractDistribution):
     """Implements student T distribution with specified degrees of freedom."""
 
     shape: tuple[int, ...]
