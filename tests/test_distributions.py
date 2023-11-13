@@ -188,48 +188,46 @@ def test_transformed_merge_transforms():
 
 
 class _TestCase(NamedTuple):
+    name: str
     method: Callable
     args: tuple
     error: Exception
+    match: str
 
-
-unexpected_condition_error = TypeError(
-    "Expected condition to be None; got <class 'int'>.",
-)
 
 test_cases = [
-    # method, args, expected error
     _TestCase(
+        name="missing condition sample",
+        method=_TestDist((), ()).sample,
+        args=(jr.PRNGKey(0),),
+        error=TypeError,
+        match="Expected condition to be arraylike",
+    ),
+    _TestCase(
+        name="missing x log prob",
         method=_TestDist((), None).log_prob,
-        args=(0, 1),
-        error=unexpected_condition_error,
+        args=("",),
+        error=TypeError,
+        match="Expected x to be arraylike",
     ),
     _TestCase(
-        method=_TestDist((), None).sample,
-        args=(jr.PRNGKey(0), (0,), 1),
-        error=unexpected_condition_error,
-    ),
-    _TestCase(
-        method=_TestDist((), None).sample_and_log_prob,
-        args=(jr.PRNGKey(0), (), 1),
-        error=unexpected_condition_error,
-    ),
-    _TestCase(
+        name="wrong x shape log prob",
         method=_TestDist((2,), None).log_prob,
         args=(jnp.ones((3, 3)), None),
-        error=ValueError("Expected trailing dimensions matching (2,) for x; got (3,)."),
+        error=ValueError,
+        match="Expected trailing dimensions matching",
     ),
     _TestCase(
+        name="wrong condition shape log prob",
         method=_TestDist((), (2, 3)).log_prob,
         args=(0, jnp.ones((3, 3))),
-        error=ValueError(
-            "Expected trailing dimensions matching (2, 3) for condition; got (3, 3).",
-        ),
+        error=ValueError,
+        match="Expected trailing dimensions matching",
     ),
 ]
 
 
-@pytest.mark.parametrize("test_case", test_cases)
+@pytest.mark.parametrize("test_case", test_cases, ids=[t.name for t in test_cases])
 def test_method_errors(test_case):
-    with pytest.raises(type(test_case.error), match=re.escape(test_case.error.args[0])):
+    with pytest.raises(test_case.error, match=test_case.match):
         test_case.method(*test_case.args)

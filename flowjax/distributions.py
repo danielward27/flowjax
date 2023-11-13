@@ -1,6 +1,7 @@
 """Distributions, including the abstract and concrete classes."""
 import inspect
 from abc import abstractmethod
+from functools import wraps
 from math import prod
 from typing import ClassVar
 
@@ -81,8 +82,9 @@ class AbstractDistribution(eqx.Module):
         Returns:
             Array: Jax array of log probabilities.
         """
-        x = arraylike_to_array(x, "x")
-        condition = self._argcheck_and_cast_condition(condition)
+        x = arraylike_to_array(x, err_name="x")
+        if self.cond_shape is not None:
+            condition = arraylike_to_array(condition, err_name="condition")
         lps = self._vectorize(self._log_prob)(x, condition)
         return jnp.where(jnp.isnan(lps), -jnp.inf, lps)
 
@@ -157,7 +159,8 @@ class AbstractDistribution(eqx.Module):
 
 
         """
-        condition = self._argcheck_and_cast_condition(condition)
+        if self.cond_shape is not None:
+            condition = arraylike_to_array(condition, err_name="condition")
         keys = self._get_sample_keys(key, sample_shape, condition)
         return self._vectorize(self._sample)(keys, condition)
 
@@ -183,7 +186,8 @@ class AbstractDistribution(eqx.Module):
             condition (ArrayLike | None): Conditioning variables. Defaults to None.
             sample_shape (tuple[int, ...]): Sample shape. Defaults to ().
         """
-        condition = self._argcheck_and_cast_condition(condition)
+        if self.cond_shape is not None:
+            condition = arraylike_to_array(condition, err_name="condition")
         keys = self._get_sample_keys(key, sample_shape, condition)
         return self._vectorize(self._sample_and_log_prob)(keys, condition)
 
@@ -196,15 +200,6 @@ class AbstractDistribution(eqx.Module):
     def cond_ndim(self):
         """Number of dimensions of the conditioning variable (length of cond_shape)."""
         return None if self.cond_shape is None else len(self.cond_shape)
-
-    def _argcheck_and_cast_condition(self, condition: ArrayLike | None):
-        if self.cond_shape is None:
-            if condition is not None:
-                raise TypeError(
-                    f"Expected condition to be None; got {type(condition)}.",
-                )
-            return None
-        return arraylike_to_array(condition, err_name="condition")
 
     def _vectorize(self, method: callable) -> callable:
         """Returns a vectorized version of the distribution method."""
@@ -224,16 +219,18 @@ class AbstractDistribution(eqx.Module):
 
         def _check_shapes(method):
             # Wraps unvectorised method with shape checking
-            def _wrapper(*args):
-                argnames = list(inspect.signature(method).parameters)
-                assert len(args) == len(argnames)
-                for in_shape, arg, name in zip(in_shapes, args, argnames, strict=False):
+            @wraps(method)
+            def _wrapper(*args, **kwargs):
+                bound = inspect.signature(method).bind(*args, **kwargs)
+                for in_shape, (name, arg) in zip(
+                    in_shapes, bound.arguments.items(), strict=False
+                ):
                     if arg.shape != in_shape:
                         raise ValueError(
                             f"Expected trailing dimensions matching {in_shape} for "
                             f"{name}; got {arg.shape}.",
                         )
-                return method(*args)
+                return method(*args, **kwargs)
 
             return _wrapper
 
