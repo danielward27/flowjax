@@ -16,6 +16,7 @@ PyTree = Any
 
 def fit_to_variational_target(
     key: Array,
+    *,
     dist: AbstractDistribution,
     loss_fn: Callable,
     steps: int = 100,

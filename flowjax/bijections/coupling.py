@@ -27,6 +27,7 @@ class Coupling(AbstractBijection):
     def __init__(
         self,
         key: KeyArray,
+        *,
         transformer: AbstractBijection,
         untransformed_dim: int,
         dim: int,

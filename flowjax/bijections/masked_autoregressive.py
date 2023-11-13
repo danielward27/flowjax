@@ -35,6 +35,7 @@ class MaskedAutoregressive(AbstractBijection):
     def __init__(
         self,
         key: KeyArray,
+        *,
         transformer: AbstractBijection,
         dim: int,
         cond_dim: int | None,

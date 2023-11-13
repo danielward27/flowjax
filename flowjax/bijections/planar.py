@@ -31,6 +31,7 @@ class Planar(AbstractBijection):
     def __init__(
         self,
         key: Array,
+        *,
         dim: int,
         cond_dim: int | None = None,
         **mlp_kwargs,

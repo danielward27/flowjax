@@ -32,6 +32,7 @@ from flowjax.bijections import (
     Scan,
     TriangularAffine,
     Vmap,
+    Affine,
 )
 from flowjax.distributions import AbstractDistribution, Transformed
 
@@ -40,7 +41,7 @@ def coupling_flow(
     key: Array,
     *,
     base_dist: AbstractDistribution,
-    transformer: AbstractBijection,
+    transformer: AbstractBijection | None = None,
     cond_dim: int | None = None,
     flow_layers: int = 8,
     nn_width: int = 50,
@@ -54,7 +55,7 @@ def coupling_flow(
         key (Array): Jax random number generator key.
         base_dist (AbstractDistribution): Base distribution, with ``base_dist.ndim==1``.
         transformer (AbstractBijection): Bijection to be parameterised by
-        conditioner.
+        conditioner. Defaults to ``Affine()``.
         cond_dim (int): Dimension of conditioning variables. Defaults to None.
         flow_layers (int): Number of coupling layers. Defaults to 5.
         nn_width (int): Conditioner hidden layer size. Defaults to 40.
@@ -65,6 +66,7 @@ def coupling_flow(
             False will prioritise faster `transform` methods, leading to faster
             `sample`. Defaults to True.
     """
+    transformer = Affine() if transformer is None else transformer
     dim = base_dist.shape[-1]
 
     def make_layer(key):  # coupling layer + permutation
@@ -91,7 +93,7 @@ def masked_autoregressive_flow(
     key: Array,
     *,
     base_dist: AbstractDistribution,
-    transformer: AbstractBijection,
+    transformer: AbstractBijection | None = None,
     cond_dim: int | None = None,
     flow_layers: int = 8,
     nn_width: int = 50,
@@ -108,7 +110,7 @@ def masked_autoregressive_flow(
         key (Array): Random seed.
         base_dist (AbstractDistribution): Base distribution, with ``base_dist.ndim==1``.
         transformer (AbstractBijection): Bijection parameterised by autoregressive
-            network.
+            network. Defaults to ``Affine()``.
         cond_dim (int): _description_. Defaults to 0.
         flow_layers (int): Number of flow layers. Defaults to 5.
         nn_width (int): Number of hidden layers in neural network. Defaults to 40.
@@ -118,6 +120,7 @@ def masked_autoregressive_flow(
             prioritise a faster inverse, leading to faster `log_prob`, False will
             prioritise faster forward, leading to faster `sample`. Defaults to True.
     """
+    transformer = Affine() if transformer is None else transformer
     dim = base_dist.shape[-1]
 
     def make_layer(key):  # masked autoregressive layer + permutation

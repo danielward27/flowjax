@@ -23,6 +23,7 @@ PyTree = Any
 
 def fit_to_data(
     key: Array,
+    *,
     dist: PyTree,
     x: ArrayLike,
     condition: ArrayLike = None,

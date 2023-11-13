@@ -58,6 +58,7 @@ class BlockAutoregressiveNetwork(AbstractBijection):
     def __init__(
         self,
         key: KeyArray,
+        *,
         dim: int,
         cond_dim: int | None,
         depth: int,

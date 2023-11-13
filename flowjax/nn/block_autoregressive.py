@@ -32,6 +32,7 @@ class BlockAutoregressiveLinear(eqx.Module):
     def __init__(
         self,
         key: KeyArray,
+        *,
         n_blocks: int,
         block_shape: tuple,
         cond_dim: int | None = None,

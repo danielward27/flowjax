@@ -154,6 +154,7 @@ class Vmap(AbstractBijection):
     def __init__(
         self,
         bijection: AbstractBijection,
+        *,
         in_axis: int | None | Callable = None,
         axis_size: int | None = None,
         in_axis_condition: int | None = None,

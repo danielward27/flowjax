@@ -17,37 +17,6 @@ from jax.typing import ArrayLike
 from flowjax.utils import arraylike_to_array
 
 
-class _BijectionMeta(type(eqx.Module)):
-    # Metaclass for bijections. This wraps the methods to achieve the following.
-    # 1) Enforce input shapes to match the shapes of the bijection.
-    # 2) Converts inputs from ArrayLike to Array where appropriate.
-    def __new__(
-        mcs,
-        name,
-        bases,
-        dict_,
-        /,
-        **kwargs,
-    ):
-        wrap_methods = [
-            "transform",
-            "transform_and_log_det",
-            "inverse",
-            "inverse_and_log_det",
-        ]
-        if name != "AbstractBijection":  # No need to wrap AbstractBijection itself.
-            for meth in wrap_methods:
-                if meth in dict_ and not hasattr(dict_[meth], "__isabstractmethod__"):
-                    assert not hasattr(dict_[meth], "__check_and_cast__")
-                    dict_[meth] = _check_and_cast(dict_[meth])
-
-        # Use name Module to avoid equinox assert name == "Module" when
-        # inferring if a dataclass default init is present
-        cls = super().__new__(mcs, "Module", bases, dict_, **kwargs)
-        cls.__name__ = name
-        return cls
-
-
 def _check_and_cast(method):
     """Decorator that performs argument checking and converts arraylike to array."""
 
@@ -77,7 +46,7 @@ def _check_and_cast(method):
     return wrapper
 
 
-class AbstractBijection(metaclass=_BijectionMeta):
+class AbstractBijection(eqx.Module):
     """Bijection abstract class.
 
     Similar to :py:class:`~flowjax.distributions.AbstractDistribution`, bijections have
@@ -105,6 +74,22 @@ class AbstractBijection(metaclass=_BijectionMeta):
 
     shape: eqx.AbstractVar[tuple[int, ...]]
     cond_shape: eqx.AbstractVar[tuple[int, ...] | None]
+
+    def __init_subclass__(cls) -> None:
+        # We wrap the class methods with argument checking
+        wrap_methods = [
+            "transform",
+            "transform_and_log_det",
+            "inverse",
+            "inverse_and_log_det",
+        ]
+        for meth in wrap_methods:
+            if meth in cls.__dict__ and not hasattr(
+                cls.__dict__[meth], "__isabstractmethod__"
+            ):
+                assert not hasattr(cls.__dict__[meth], "__check_and_cast__")
+                setattr(cls, meth, _check_and_cast(cls.__dict__[meth]))
+        return cls
 
     @abstractmethod
     def transform(self, x: ArrayLike, condition: ArrayLike | None = None) -> Array:
