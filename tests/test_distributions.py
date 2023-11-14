@@ -5,6 +5,7 @@ import jax.numpy as jnp
 import jax.random as jr
 import numpy as np
 import pytest
+from jax.scipy.stats import multivariate_normal
 
 from flowjax.bijections import Exp
 from flowjax.distributions import (
@@ -12,6 +13,7 @@ from flowjax.distributions import (
     AbstractTransformed,
     Cauchy,
     Gumbel,
+    MultivariateNormal,
     Normal,
     StandardNormal,
     StudentT,
@@ -111,6 +113,18 @@ class _TestDist(AbstractDistribution):
 
     def _sample_and_log_prob(self, key, condition=None):
         return jnp.zeros(self.shape), np.zeros(())
+
+
+def test_multivariate_normal():
+    loc = jnp.arange(2)
+    cov = jnp.array([[2, 0.5], [0.5, 3]])
+    mvn = MultivariateNormal(loc, cov)
+
+    key = jr.PRNGKey(0)
+    sample = mvn.sample(key)
+    expected = pytest.approx(multivariate_normal.logpdf(sample, loc, cov))
+    assert mvn.log_prob(sample) == expected
+    assert mvn.covariance == pytest.approx(cov)
 
 
 @pytest.mark.parametrize("dist_shape", dist_shape)

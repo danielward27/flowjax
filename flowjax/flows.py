@@ -7,6 +7,7 @@ All these functions return a :class:`~flowjax.distributions.Transformed` distrib
 # when the flow layers share the same structure.
 
 from collections.abc import Callable
+from functools import partial
 
 import equinox as eqx
 import jax.nn as jnn
@@ -34,7 +35,6 @@ from flowjax.bijections import (
     TriangularAffine,
     Vmap,
 )
-from functools import partial
 from flowjax.distributions import AbstractDistribution, Transformed
 
 
@@ -230,7 +230,10 @@ def planar_flow(
     def make_layer(key):  # Planar layer + permutation
         bij_key, perm_key = jr.split(key)
         bijection = Planar(
-            bij_key, dim=base_dist.shape[-1], cond_dim=cond_dim, **mlp_kwargs
+            bij_key,
+            dim=base_dist.shape[-1],
+            cond_dim=cond_dim,
+            **mlp_kwargs,
         )
         return _add_default_permute(bijection, base_dist.shape[-1], perm_key)
 
