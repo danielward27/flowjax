@@ -77,7 +77,8 @@ class TriangularAffine(AbstractBijection):
     triangular matrix, and :math:`b` is the bias vector.
 
     Args:
-        loc (ArrayLike): Location parameter.
+        loc (ArrayLike): Location parameter. If this is scalar, it is broadcast to the
+            dimension inferred from arr.
         arr (ArrayLike): Triangular matrix.
         lower (bool): Whether the mask should select the lower or upper
         triangular matrix (other elements ignored). Defaults to True (lower).

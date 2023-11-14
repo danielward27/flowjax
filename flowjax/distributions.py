@@ -12,10 +12,11 @@ from equinox import AbstractVar
 from jax import Array
 from jax.experimental import checkify
 from jax.lax import stop_gradient
+from jax.numpy import linalg
 from jax.scipy import stats as jstats
 from jax.typing import ArrayLike
 
-from flowjax.bijections import AbstractBijection, Affine, Chain
+from flowjax.bijections import AbstractBijection, Affine, Chain, TriangularAffine
 from flowjax.utils import _get_ufunc_signature, arraylike_to_array, merge_cond_shapes
 
 
@@ -267,7 +268,9 @@ class AbstractTransformed(AbstractDistribution):
         return self.bijection.transform(base_sample, condition)
 
     def _sample_and_log_prob(
-        self, key: Array, condition=None
+        self,
+        key: Array,
+        condition=None,
     ):  # TODO add overide decorator when python>=3.12 is common
         # We override to avoid computing the inverse transformation.
         base_sample, log_prob_base = self.base_dist._sample_and_log_prob(key, condition)
@@ -394,6 +397,35 @@ class Normal(AbstractTransformed):
     def scale(self):
         """Scale of the distribution."""
         return self.bijection.scale
+
+
+class MultivariateNormal(AbstractTransformed):
+    """Multivariate normal distribution.
+
+    Internally this is parameterised using the Cholesky decomposition of the covariance
+    matrix.
+
+    Args:
+        loc (ArrayLike): The location/mean parameter vector. If this is scalar it is
+            broadcast to the dimension implied by the covariance matrix.
+        covariance (ArrayLike, optional): Covariance matrix.
+    """
+
+    base_dist: StandardNormal
+    bijection: TriangularAffine
+
+    def __init__(self, loc: ArrayLike, covariance: ArrayLike):
+        self.bijection = TriangularAffine(loc, linalg.cholesky(covariance))
+        self.base_dist = StandardNormal(self.bijection.shape)
+
+    @property
+    def loc(self):
+        return self.bijection.loc
+
+    @property
+    def covariance(self):
+        """The covariance matrix."""
+        return self.bijection.arr @ self.bijection.arr.T
 
 
 class _StandardUniform(AbstractDistribution):

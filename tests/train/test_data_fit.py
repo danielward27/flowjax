@@ -18,7 +18,7 @@ def test_data_fit_filter_spec():
     before = eqx.filter(flow, eqx.is_inexact_array)
     x = random.normal(random.PRNGKey(0), (100, dim))
     flow, _ = fit_to_data(
-        random.PRNGKey(0), dist=flow, x=x, max_epochs=1, batch_size=50
+        random.PRNGKey(0), dist=flow, x=x, max_epochs=1, batch_size=50,
     )
     after = eqx.filter(flow, eqx.is_inexact_array)
 
