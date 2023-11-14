@@ -350,14 +350,6 @@ class Transformed(AbstractTransformed):
     base_dist: AbstractDistribution
     bijection: AbstractBijection
 
-    def __init__(
-        self,
-        base_dist: AbstractDistribution,
-        bijection: AbstractBijection,
-    ):
-        self.base_dist = base_dist
-        self.bijection = bijection
-
 
 class StandardNormal(AbstractDistribution):
     """Standard normal distribution.
