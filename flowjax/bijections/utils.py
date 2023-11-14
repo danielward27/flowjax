@@ -19,17 +19,12 @@ class Invert(AbstractBijection):
     training flows, we generally want the inverse method (used in density
     evaluation), to be faster. Hence it is often useful to use this class to
     achieve this aim.
+
+    Args:
+        bijection (AbstractBijection): Bijection to invert.
     """
 
     bijection: AbstractBijection
-
-    def __init__(self, bijection: AbstractBijection):
-        """Initialize the bijection.
-
-        Args:
-            bijection (AbstractBijection): Bijection to invert.
-        """
-        self.bijection = bijection
 
     def transform(self, x, condition=None):
         return self.bijection.inverse(x, condition)
@@ -53,7 +48,13 @@ class Invert(AbstractBijection):
 
 
 class Permute(AbstractBijection):
-    """Permutation transformation."""
+    """Permutation transformation.
+
+    Args:
+        permutation (ArrayLike): An array with shape matching the array to
+            transform, with elements 0-(array.size-1) representing the new order
+            based on the flattened array (uses, C-like ordering).
+    """
 
     shape: tuple[int, ...]
     cond_shape: ClassVar[None] = None
@@ -61,13 +62,6 @@ class Permute(AbstractBijection):
     inverse_permutation: tuple[Array, ...]
 
     def __init__(self, permutation: ArrayLike):
-        """Initialize the permutation bijection.
-
-        Args:
-            permutation (ArrayLike): An array with shape matching the array to
-                transform, with elements 0-(array.size-1) representing the new order
-                based on the flattened array (uses, C-like ordering).
-        """
         permutation = jnp.asarray(permutation)
         checkify.check(
             (permutation.ravel().sort() == jnp.arange(permutation.size)).all(),
@@ -87,19 +81,15 @@ class Permute(AbstractBijection):
         )
 
     def transform(self, x, condition=None):
-        x, _ = self._argcheck_and_cast(x)
         return x[self.permutation]
 
     def transform_and_log_det(self, x, condition=None):
-        x, _ = self._argcheck_and_cast(x)
         return x[self.permutation], jnp.array(0)
 
     def inverse(self, y, condition=None):
-        y, _ = self._argcheck_and_cast(y)
         return y[self.inverse_permutation]
 
     def inverse_and_log_det(self, y, condition=None):
-        x, _ = self._argcheck_and_cast(y)
         return y[self.inverse_permutation], jnp.array(0)
 
 
@@ -115,72 +105,55 @@ class Flip(AbstractBijection):
     cond_shape: ClassVar[None] = None
 
     def transform(self, x, condition=None):
-        x, _ = self._argcheck_and_cast(x)
         return jnp.flip(x)
 
     def transform_and_log_det(self, x, condition=None):
-        x, _ = self._argcheck_and_cast(x)
         return jnp.flip(x), jnp.array(0)
 
     def inverse(self, y, condition=None):
-        y, _ = self._argcheck_and_cast(y)
         return jnp.flip(y)
 
     def inverse_and_log_det(self, y, condition=None):
-        y, _ = self._argcheck_and_cast(y)
         return jnp.flip(y), jnp.array(0)
 
 
 class Partial(AbstractBijection):
-    """Applies bijection to specific indices of an input."""
+    """Applies bijection to specific indices of an input.
 
-    shape: tuple[int, ...]
+    Args:
+        bijection (AbstractBijection): Bijection that is compatible with the subset
+            of x indexed by idxs. idxs: Indices (Integer, a slice, or an ndarray
+            with integer/bool dtype) of the transformed portion.
+        idxs (int | slice | Array | tuple): The indexes to transform.
+        shape (tuple[int, ...] | None): Shape of the bijection. Defaults to None.
+    """
+
     bijection: AbstractBijection
     idxs: int | slice | Array | tuple
+    shape: tuple[int, ...]
 
-    def __init__(
-        self,
-        bijection: AbstractBijection,
-        idxs: int | slice | Array | tuple,
-        shape: tuple[int, ...],
-    ):
-        """Initialize the bijection.
-
-        Args:
-            bijection (AbstractBijection): Bijection that is compatible with the subset
-                of x indexed by idxs. idxs: Indices (Integer, a slice, or an ndarray
-                with integer/bool dtype) of the transformed portion.
-            idxs (int | slice | Array | tuple): The indexes to transform.
-            shape (tuple[int, ...] | None): Shape of the bijection. Defaults to None.
-        """
-        self.bijection = bijection
-        self.idxs = idxs
-        self.shape = shape
-
-        if jnp.zeros(shape)[idxs].shape != bijection.shape:
+    def __check_init__(self):
+        expected_shape = jnp.zeros(self.shape)[self.idxs].shape
+        if expected_shape != self.bijection.shape:
             raise ValueError(
                 f"The bijection shape is incompatible with the subset of the input "
-                f"indexed by 'idxs'. The bijection has a shape of {bijection.shape}, "
-                f"while the subset has a shape of {jnp.zeros(shape)[idxs].shape}.",
+                f"indexed by 'idxs'. Bijection has shape {self.bijection.shape}, "
+                f"while the subset has a shape of {expected_shape}.",
             )
 
     def transform(self, x, condition=None):
-        x, condition = self._argcheck_and_cast(x, condition)
         y = self.bijection.transform(x[self.idxs], condition)
         return x.at[self.idxs].set(y)
 
     def transform_and_log_det(self, x, condition=None):
-        x, condition = self._argcheck_and_cast(x, condition)
         y, log_det = self.bijection.transform_and_log_det(x[self.idxs], condition)
         return x.at[self.idxs].set(y), log_det
 
     def inverse(self, y, condition=None):
-        y, condition = self._argcheck_and_cast(y, condition)
         x = self.bijection.inverse(y[self.idxs], condition)
         return y.at[self.idxs].set(x)
 
     def inverse_and_log_det(self, y, condition=None):
-        y, condition = self._argcheck_and_cast(y, condition)
         x, log_det = self.bijection.inverse_and_log_det(y[self.idxs], condition)
         return y.at[self.idxs].set(x), log_det
 
@@ -200,19 +173,15 @@ class Identity(AbstractBijection):
     cond_shape: ClassVar[None] = None
 
     def transform(self, x, condition=None):
-        x, _ = self._argcheck_and_cast(x)
         return x
 
     def transform_and_log_det(self, x, condition=None):
-        x, _ = self._argcheck_and_cast(x)
         return x, jnp.zeros(())
 
     def inverse(self, y, condition=None):
-        x, _ = self._argcheck_and_cast(y)
         return y
 
     def inverse_and_log_det(self, y, condition=None):
-        x, _ = self._argcheck_and_cast(y)
         return y, jnp.zeros(())
 
 
@@ -221,10 +190,18 @@ class EmbedCondition(AbstractBijection):
 
     Generally this is used to reduce the dimensionality of the conditioning
     variable. The returned bijection has cond_dim equal to the raw condition size.
+
+    Args:
+        bijection (AbstractBijection): Bijection with ``bijection.cond_dim`` equal
+        to the embedded size.
+        embedding_net (Callable): A callable (e.g. equinox module) that embeds a
+        conditioning variable to size ``bijection.cond_dim``.
+        raw_cond_shape (tuple[int, ...] | None): The dimension of the raw
+        conditioning variable.
     """
 
-    cond_shape: tuple[int, ...]
     bijection: AbstractBijection
+    cond_shape: tuple[int, ...]
     embedding_net: Callable
 
     def __init__(
@@ -233,37 +210,23 @@ class EmbedCondition(AbstractBijection):
         embedding_net: Callable,
         raw_cond_shape: tuple[int, ...],
     ) -> None:
-        """Intialize the bijection.
-
-        Args:
-            bijection (AbstractBijection): Bijection with ``bijection.cond_dim`` equal
-            to the embedded size.
-            embedding_net (Callable): A callable (e.g. equinox module) that embeds a
-            conditioning variable to size ``bijection.cond_dim``.
-            raw_cond_shape (tuple[int, ...] | None): The dimension of the raw
-            conditioning variable.
-        """
         self.bijection = bijection
         self.embedding_net = embedding_net
         self.cond_shape = raw_cond_shape
 
     def transform(self, x, condition=None):
-        x, condition = self._argcheck_and_cast(x, condition)
         condition = self.embedding_net(condition)
         return self.bijection.transform(x, condition)
 
     def transform_and_log_det(self, x, condition=None):
-        x, condition = self._argcheck_and_cast(x, condition)
         condition = self.embedding_net(condition)
         return self.bijection.transform_and_log_det(x, condition)
 
     def inverse(self, y, condition=None):
-        y, condition = self._argcheck_and_cast(y, condition)
         condition = self.embedding_net(condition)
         return self.bijection.inverse(y, condition)
 
     def inverse_and_log_det(self, y, condition=None):
-        y, condition = self._argcheck_and_cast(y, condition)
         condition = self.embedding_net(condition)
         return self.bijection.inverse_and_log_det(y, condition)
 

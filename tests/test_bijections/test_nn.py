@@ -10,7 +10,9 @@ from flowjax.nn import AutoregressiveMLP, BlockAutoregressiveLinear, MaskedLinea
 
 def test_BlockAutoregressiveLinear():
     block_shape = (3, 2)
-    layer = BlockAutoregressiveLinear(jax.random.PRNGKey(0), 3, block_shape)
+    layer = BlockAutoregressiveLinear(
+        jax.random.PRNGKey(0), n_blocks=3, block_shape=block_shape
+    )
     x = jnp.ones(6)
     a, log_jac_3d = layer(x)
     assert log_jac_3d.shape == (3, *block_shape)

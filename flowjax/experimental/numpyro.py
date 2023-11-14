@@ -38,15 +38,13 @@ PyTree = Any
 
 
 class _VectorizedBijection:
-    """Wrap a flowjax bijection to support vectorization."""
+    """Wrap a flowjax bijection to support vectorization.
+
+    Args:
+        bijection (AbstractBijection): flowjax bijection to be wrapped.
+    """
 
     def __init__(self, bijection: AbstractBijection):
-        """Initialize the vectorized bijection.
-
-        Args:
-            bijection (AbstractBijection): flowjax bijection to be wrapped.
-            Defaults to constraints.real.
-        """
         self.bijection = bijection
         self.shape = self.bijection.shape
         self.cond_shape = self.bijection.cond_shape
@@ -66,7 +64,7 @@ class _VectorizedBijection:
         )
         return transform_and_log_det(x, condition)
 
-    def vectorize(self, func, log_det=False):
+    def vectorize(self, func, *, log_det=False):
         in_shapes, out_shapes = [self.bijection.shape], [self.bijection.shape]
         if log_det:
             out_shapes.append(())
@@ -83,6 +81,12 @@ class TransformedToNumpyro(numpyro.distributions.Distribution):
     """Convert a :class:`Transformed` flowjax distribution to a numpyro distribution.
 
     We assume the support of the distribution is unbounded.
+
+    Args:
+        dist (AbstractTransformed): The distribution.
+        condition (ArrayLike | None, optional): Conditioning variables. Any
+            leading batch dimensions will be converted to a batch dimension in
+            the numpyro distribution. Defaults to None.
     """
 
     def __init__(
@@ -90,14 +94,6 @@ class TransformedToNumpyro(numpyro.distributions.Distribution):
         dist: AbstractTransformed,
         condition: ArrayLike | None = None,
     ):
-        """Initialize the numpyro distribution.
-
-        Args:
-            dist (AbstractTransformed): The distribution
-            condition (ArrayLike | None, optional): Conditioning variables. Any
-            leading batch dimensions will be converted to a batch dimension in
-            the numpyro distribution. Defaults to None.
-        """
         if condition is not None:
             condition = arraylike_to_array(condition, "condition")
             batch_shape = (

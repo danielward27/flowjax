@@ -43,7 +43,7 @@ In general you should consider the form and scales of the target samples. For ex
     >>> from flowjax.distributions import Transformed
     >>> preprocess = Affine(-x.mean(axis=0)/x.std(axis=0), 1/x.std(axis=0))
     >>> x_processed = jax.vmap(preprocess.transform)(x)
-    >>> flow, losses = fit_to_data(key, flow, x_processed) # doctest: +SKIP
+    >>> flow, losses = fit_to_data(key, dist=flow, x=x_processed) # doctest: +SKIP
     >>> flow = Transformed(flow, Invert(preprocess))  # "undo" the preprocessing
     
 

@@ -13,40 +13,30 @@ from flowjax.bijections.bijection import AbstractBijection
 class Scan(AbstractBijection):
     """Repeatedly apply the same bijection with different parameter values.
 
-    Internally, uses `jax.lax.scan` to reduce compilation time.
+    Internally, uses `jax.lax.scan` to reduce compilation time. Often it is convenient
+    to construct these using ``equinox.filter_vmap``.
+
+    Args:
+        bijection (AbstractBijection): A bijection, in which the arrays leaves have
+            an additional leading axis to scan over. It is often can convenient to
+            create compatible bijections with ``equinox.filter_vmap``.
+
+    Example:
+        Below is equivilent to ``Chain([Affine(p) for p in params])``.
+
+        .. doctest::
+
+            >>> from flowjax.bijections import Scan, Affine
+            >>> import jax.numpy as jnp
+            >>> import equinox as eqx
+            >>> params = jnp.ones((3, 2))
+            >>> affine = eqx.filter_vmap(Affine)(params)
+            >>> affine = Scan(affine)
     """
 
     bijection: AbstractBijection
 
-    def __init__(self, bijection: AbstractBijection):
-        """Initialize the scan bijection.
-
-        The array leaves in `bijection` should have an additional leading axis to scan
-        over. Often it is convenient to construct these using ``equinox.filter_vmap``.
-
-        Args:
-            bijection (AbstractBijection): A bijection, in which the arrays leaves have
-                an additional leading axis to scan over. For complex bijections, it can
-                be convenient to create compatible bijections with
-                ``equinox.filter_vmap``.
-
-        Example:
-            Below is equivilent to ``Chain([Affine(p) for p in params])``.
-
-            .. doctest::
-
-                >>> from flowjax.bijections import Scan, Affine
-                >>> import jax.numpy as jnp
-                >>> import equinox as eqx
-                >>> params = jnp.ones((3, 2))
-                >>> affine = eqx.filter_vmap(Affine)(params)
-                >>> affine = Scan(affine)
-        """
-        self.bijection = bijection
-
     def transform(self, x, condition=None):
-        x, condition = self._argcheck_and_cast(x, condition)
-
         def step(x, bijection):
             return (bijection.transform(x, condition), None)
 
@@ -54,8 +44,6 @@ class Scan(AbstractBijection):
         return y
 
     def transform_and_log_det(self, x, condition=None):
-        x, condition = self._argcheck_and_cast(x, condition)
-
         def step(carry, bijection):
             x, log_det = carry
             y, log_det_i = bijection.transform_and_log_det(x, condition)
@@ -65,8 +53,6 @@ class Scan(AbstractBijection):
         return y, log_det
 
     def inverse(self, y, condition=None):
-        y, _ = self._argcheck_and_cast(y, condition)
-
         def step(y, bijection):
             return bijection.inverse(y, condition), None
 
@@ -74,8 +60,6 @@ class Scan(AbstractBijection):
         return x
 
     def inverse_and_log_det(self, y, condition=None):
-        y, _ = self._argcheck_and_cast(y, condition)
-
         def step(carry, bijection):
             y, log_det = carry
             x, log_det_i = bijection.inverse_and_log_det(y, condition)
@@ -93,7 +77,7 @@ class Scan(AbstractBijection):
         return self.bijection.cond_shape
 
 
-def _filter_scan(f, init, xs, reverse=False):
+def _filter_scan(f, init, xs, *, reverse=False):
     params, static = eqx.partition(xs, filter_spec=eqx.is_array)
 
     def _scan_fn(carry, x):
@@ -107,6 +91,18 @@ def _filter_scan(f, init, xs, reverse=False):
 class Vmap(AbstractBijection):
     """Applies vmap to bijection methods to add a batch dimension to the bijection.
 
+    Args:
+        bijection (AbstractBijection): The bijection to vectorize.
+        in_axis (int | None | Callable): Specify which axes of the bijection
+            parameters to vectorise over. It should be a PyTree of ``None``, ``int``
+            with the tree structure being a prefix of the bijection, or a callable
+            mapping ``Leaf -> Union[None, int]``. Defaults to None.
+        axis_size (int, optional): The size of the new axis. This should be left
+            unspecified if in_axis is provided, as the size can be inferred from the
+            bijection parameters. Defaults to None.
+        in_axis_condition (int | None, optional): Optionally define an axis of
+            the conditioning variable to vectorize over. Defaults to None.
+
     Example:
         The two most common use cases, are shown below:
 
@@ -116,14 +112,17 @@ class Vmap(AbstractBijection):
 
             >>> import jax.numpy as jnp
             >>> import equinox as eqx
-            >>> from flowjax.bijections import Vmap, RationalQuadraticSpline
-            >>> bijection = eqx.filter_vmap(RationalQuadraticSpline, axis_size=10)(5, 2)
-            >>> bijection = Vmap(bijection, eqx.if_array(0))
+            >>> from flowjax.bijections import Vmap, RationalQuadraticSpline, Affine
+            >>> bijection = eqx.filter_vmap(
+            ...    lambda: RationalQuadraticSpline(knots=5, interval=2),
+            ...    axis_size=10
+            ... )()
+            >>> bijection = Vmap(bijection, in_axis=eqx.if_array(0))
             >>> bijection.shape
             (10,)
 
             Add a batch dimension to a bijection, broadcasting bijection parameters:
-            >>> bijection = RationalQuadraticSpline(5, 2)
+            >>> bijection = RationalQuadraticSpline(knots=5, interval=2)
             >>> bijection = Vmap(bijection, axis_size=10)
             >>> bijection.shape
             (10,)
@@ -162,24 +161,11 @@ class Vmap(AbstractBijection):
     def __init__(
         self,
         bijection: AbstractBijection,
+        *,
         in_axis: int | None | Callable = None,
         axis_size: int | None = None,
         in_axis_condition: int | None = None,
     ):
-        """Initialize the bijection.
-
-        Args:
-            bijection (AbstractBijection): The bijection to vectorize.
-            in_axis (int | None | Callable): Specify which axes of the bijection
-                parameters to vectorise over. It should be a PyTree of ``None``, ``int``
-                with the tree structure being a prefix of the bijection, or a callable
-                mapping ``Leaf -> Union[None, int]``. Defaults to None.
-            axis_size (int, optional): The size of the new axis. This should be left
-                unspecified if in_axis is provided, as the size can be inferred from the
-                bijection parameters. Defaults to None.
-            in_axis_condition (int | None, optional): Optionally define an axis of
-                the conditioning variable to vectorize over. Defaults to None.
-        """
         if in_axis is not None and axis_size is not None:
             raise ValueError("Cannot specify both in_axis and axis_size.")
 
@@ -193,8 +179,6 @@ class Vmap(AbstractBijection):
         self.axis_size = axis_size
 
     def transform(self, x, condition=None):
-        x, condition = self._argcheck_and_cast(x, condition)
-
         def _transform(bijection, x, condition):
             return bijection.transform(x, condition)
 
@@ -205,8 +189,6 @@ class Vmap(AbstractBijection):
         )
 
     def transform_and_log_det(self, x, condition=None):
-        x, condition = self._argcheck_and_cast(x, condition)
-
         def _transform_and_log_det(bijection, x, condition):
             return bijection.transform_and_log_det(x, condition)
 
@@ -218,8 +200,6 @@ class Vmap(AbstractBijection):
         return y, jnp.sum(log_det)
 
     def inverse(self, y, condition=None):
-        y, condition = self._argcheck_and_cast(y, condition)
-
         def _inverse(bijection, x, condition):
             return bijection.inverse(x, condition)
 
@@ -230,8 +210,6 @@ class Vmap(AbstractBijection):
         )
 
     def inverse_and_log_det(self, y, condition=None):
-        y, condition = self._argcheck_and_cast(y, condition)
-
         def _inverse_and_log_det(bijection, x, condition):
             return bijection.inverse_and_log_det(x, condition)
 

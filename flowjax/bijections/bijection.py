@@ -7,16 +7,47 @@ bijection can be used to invert the orientation if a fast inverse is desired (e.
 maximum likelihood fitting of flows).
 """
 
+import functools
 from abc import abstractmethod
 
-from equinox import AbstractVar, Module
+import equinox as eqx
 from jax import Array
 from jax.typing import ArrayLike
 
 from flowjax.utils import arraylike_to_array
 
 
-class AbstractBijection(Module):
+def _check_and_cast(method):
+    """Decorator that performs argument checking and converts arraylike to array."""
+
+    @functools.wraps(method)
+    def wrapper(self, x, condition=None):
+        def _check_condition(condition):
+            if condition is not None:
+                condition = arraylike_to_array(condition, err_name="condition")
+            elif self.cond_shape is not None:
+                raise ValueError("Expected condition to be provided.")
+
+            if self.cond_shape is not None and condition.shape != self.cond_shape:
+                raise ValueError(
+                    f"Expected condition.shape {self.cond_shape}; got "
+                    f"{condition.shape}",
+                )
+            return condition
+
+        def _check_x(x):
+            x = arraylike_to_array(x)
+            if x.shape != self.shape:
+                raise ValueError(f"Expected input shape {self.shape}; got {x.shape}")
+            return x
+
+        return method(self, _check_x(x), _check_condition(condition))
+
+    wrapper.__check_and_cast__ = True
+    return wrapper
+
+
+class AbstractBijection(eqx.Module):
     """Bijection abstract class.
 
     Similar to :py:class:`~flowjax.distributions.AbstractDistribution`, bijections have
@@ -42,8 +73,25 @@ class AbstractBijection(Module):
             for ``condition``.
     """
 
-    shape: AbstractVar[tuple[int, ...]]
-    cond_shape: AbstractVar[tuple[int, ...] | None]
+    shape: eqx.AbstractVar[tuple[int, ...]]
+    cond_shape: eqx.AbstractVar[tuple[int, ...] | None]
+
+    def __init_subclass__(cls) -> None:
+        # We wrap the class methods with argument checking
+        wrap_methods = [
+            "transform",
+            "transform_and_log_det",
+            "inverse",
+            "inverse_and_log_det",
+        ]
+        for meth in wrap_methods:
+            if meth in cls.__dict__ and not hasattr(
+                cls.__dict__[meth],
+                "__isabstractmethod__",
+            ):
+                assert not hasattr(cls.__dict__[meth], "__check_and_cast__")
+                setattr(cls, meth, _check_and_cast(cls.__dict__[meth]))
+        return cls
 
     @abstractmethod
     def transform(self, x: ArrayLike, condition: ArrayLike | None = None) -> Array:
@@ -67,13 +115,6 @@ class AbstractBijection(Module):
         Args:
             x (ArrayLike): Input with shape matching the bijections shape
             condition (ArrayLike | None, optional): . Defaults to None.
-
-        Raises:
-            ValueError: _description_
-            ValueError: _description_
-
-        Returns:
-            tuple[Array, Array]: _description_
         """
 
     @abstractmethod
@@ -101,28 +142,3 @@ class AbstractBijection(Module):
                 bijection.cond_shape. Required for conditional bijections. Defaults to
                 None.
         """
-
-    def _argcheck_and_cast(
-        self,
-        x: ArrayLike,
-        condition: ArrayLike | None = None,
-    ) -> tuple[Array, Array | None]:
-        """Utility method to check input shapes and cast inputs to arrays if required.
-
-        Note this permits passing a condition array to unconditional distributions.
-        """
-        x = arraylike_to_array(x, err_name="x")
-
-        if x.shape != self.shape:
-            raise ValueError(f"Expected x.shape {self.shape}; got {x.shape}")
-
-        if condition is not None:
-            condition = arraylike_to_array(condition, err_name="condition")
-
-            if self.cond_shape is not None and condition.shape != self.cond_shape:
-                raise ValueError(
-                    f"Expected condition.shape {self.cond_shape}; got "
-                    f"{condition.shape}",
-                )
-
-        return x, condition

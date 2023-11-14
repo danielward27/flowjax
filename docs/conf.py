@@ -32,7 +32,7 @@ templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 add_module_names = False
-napoleon_include_init_with_doc = True
+napoleon_include_init_with_doc = False
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
@@ -51,6 +51,7 @@ html_theme_options = {
 
 pygments_style = "xcode"
 autodoc_typehints = "none"
+autodoc_member_order = "bysource"
 
 copybutton_prompt_text = r">>> |\.\.\. "
 copybutton_prompt_is_regexp = True

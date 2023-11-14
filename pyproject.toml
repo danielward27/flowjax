@@ -43,9 +43,9 @@ pythonpath = ["."]
 
 
 [tool.ruff]
-select = ["E", "F", "B", "D", "COM", "I", "UP", "TRY004", "RET", "PT"]
+select = ["E", "F", "B", "D", "COM", "I", "UP", "TRY004", "RET", "PT", "FBT"]
 include = ["*.py", "*.pyi", "**/pyproject.toml", "*.ipynb"]
-ignore = ["D102", "D105"]                                              # Ignore due to trigerring on inherited docstrings
+ignore = ["D102", "D105", "D107"]
 
 [tool.ruff.pydocstyle]
 convention = "google"

@@ -25,6 +25,7 @@ def fit_to_data(
     key: Array,
     dist: PyTree,
     x: ArrayLike,
+    *,
     condition: ArrayLike = None,
     loss_fn: Callable | None = None,
     max_epochs: int = 100,

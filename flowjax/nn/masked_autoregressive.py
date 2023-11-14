@@ -17,19 +17,18 @@ def _identity(x):
 
 
 class MaskedLinear(Module):
-    """Masked linear neural network layer."""
+    """Masked linear neural network layer.
+
+    Args:
+        mask (ArrayLike): Mask with shape (out_features, in_features).
+        key (KeyArray): Jax PRNGKey
+        use_bias (bool): Whether to include bias terms. Defaults to True.
+    """
 
     linear: Linear
     mask: Array
 
-    def __init__(self, mask: ArrayLike, use_bias: bool = True, *, key: KeyArray):
-        """Initialize the masked linear layer.
-
-        Args:
-            mask (ArrayLike): Mask with shape (out_features, in_features).
-            key (KeyArray): Jax PRNGKey
-            use_bias (bool): Whether to include bias terms. Defaults to True.
-        """
+    def __init__(self, mask: ArrayLike, *, use_bias: bool = True, key: KeyArray):
         mask = jnp.asarray(mask)
         self.linear = Linear(mask.shape[1], mask.shape[0], use_bias, key=key)
         self.mask = mask
@@ -52,6 +51,16 @@ class AutoregressiveMLP(Module):
 
     Similar to ``equinox.nn.composed.MLP``, however, connections will only exist between
     nodes where in_ranks < out_ranks.
+
+    Args:
+        in_ranks (ArrayLike): Ranks of the inputs.
+        hidden_ranks (ArrayLike): Ranks of the hidden layer(s).
+        out_ranks (ArrayLike): Ranks of the outputs.
+        depth (int): Number of hidden layers.
+        activation (Callable): Activation function. Defaults to jnn.relu.
+        final_activation (Callable): Final activation function. Defaults to
+            _identity.
+        key (KeyArray): Jax PRNGKey.
     """
 
     in_size: int
@@ -76,18 +85,6 @@ class AutoregressiveMLP(Module):
         *,
         key,
     ) -> None:
-        """Initialize the autoregressive multilayer perceptron.
-
-        Args:
-            in_ranks (ArrayLike): Ranks of the inputs.
-            hidden_ranks (ArrayLike): Ranks of the hidden layer(s).
-            out_ranks (ArrayLike): Ranks of the outputs.
-            depth (int): Number of hidden layers.
-            activation (Callable): Activation function. Defaults to jnn.relu.
-            final_activation (Callable): Final activation function. Defaults to
-                _identity.
-            key (KeyArray): Jax PRNGKey.
-        """
         in_ranks, hidden_ranks, out_ranks = (
             jnp.asarray(a, jnp.int32) for a in (in_ranks, hidden_ranks, out_ranks)
         )

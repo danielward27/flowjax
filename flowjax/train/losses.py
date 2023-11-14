@@ -50,17 +50,14 @@ class ContrastiveLoss:
         - https://arxiv.org/abs/1905.07488
         - https://arxiv.org/abs/2002.03712
 
+    Args:
+        prior (AbstractDistribution): The prior distribution over x (the target
+            variable).
+        n_contrastive (int): The number of contrastive samples/atoms to use when
+            computing the loss.
     """
 
     def __init__(self, prior: AbstractDistribution, n_contrastive: int):
-        """Initialize the loss function.
-
-        Args:
-            prior (AbstractDistribution): The prior distribution over x (the target
-                variable).
-            n_contrastive (int): The number of contrastive samples/atoms to use when
-                computing the loss.
-        """
         self.prior = prior
         self.n_contrastive = n_contrastive
 
@@ -96,7 +93,21 @@ class ContrastiveLoss:
 
 
 class ElboLoss:
-    """The negative evidence lower bound (ELBO), approximated using samples."""
+    """The negative evidence lower bound (ELBO), approximated using samples.
+
+    Args:
+        num_samples (int): Number of samples to use in the ELBO approximation.
+        target (Callable[[ArrayLike], Array]): The target, i.e. log posterior
+            density up to an additive constant / the negative of the potential
+            function, evaluated for a single point.
+        stick_the_landing (bool): Whether to use the (often) lower variance ELBO
+            gradient estimator introduced in https://arxiv.org/pdf/1703.09194.pdf.
+            Note for flows this requires evaluating the flow in both directions
+            (running the forward and inverse transformation). For some flow
+            architectures, this may be computationally expensive due to assymetrical
+            computational complexity between the forward and inverse transformation.
+            Defaults to False.
+    """
 
     target: Callable[[ArrayLike], Array]
     num_samples: int
@@ -106,23 +117,9 @@ class ElboLoss:
         self,
         target: Callable[[ArrayLike], Array],
         num_samples: int,
+        *,
         stick_the_landing: bool = False,
     ):
-        """Initialize the ELBO loss.
-
-        Args:
-            num_samples (int): Number of samples to use in the ELBO approximation.
-            target (Callable[[ArrayLike], Array]): The target, i.e. log posterior
-                density up to an additive constant / the negative of the potential
-                function, evaluated for a single point.
-            stick_the_landing (bool): Whether to use the (often) lower variance ELBO
-                gradient estimator introduced in https://arxiv.org/pdf/1703.09194.pdf.
-                Note for flows this requires evaluating the flow in both directions
-                (running the forward and inverse transformation). For some flow
-                architectures, this may be computationally expensive due to assymetrical
-                computational complexity between the forward and inverse transformation.
-                Defaults to False.
-        """
         self.target = target
         self.num_samples = num_samples
         self.stick_the_landing = stick_the_landing

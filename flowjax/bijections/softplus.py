@@ -13,18 +13,14 @@ class SoftPlus(AbstractBijection):
     cond_shape: ClassVar[None] = None
 
     def transform(self, x, condition=None):
-        x, _ = self._argcheck_and_cast(x)
         return softplus(x)
 
     def transform_and_log_det(self, x, condition=None):
-        x, _ = self._argcheck_and_cast(x)
         return softplus(x), -softplus(-x).sum()
 
     def inverse(self, y, condition=None):
-        y, _ = self._argcheck_and_cast(y)
         return jnp.log(-jnp.expm1(-y)) + y
 
     def inverse_and_log_det(self, y, condition=None):
-        y, _ = self._argcheck_and_cast(y)
         x = self.inverse(y)
         return x, softplus(-x).sum()

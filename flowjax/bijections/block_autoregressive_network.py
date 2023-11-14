@@ -47,6 +47,20 @@ class BlockAutoregressiveNetwork(AbstractBijection):
     we use :class:`~flowjax.bijections.tanh.LeakyTanh`. This ensures the codomain of the
     activation is the set of real values, which will ensure properly normalised
     densities (see https://github.com/danielward27/flowjax/issues/102).
+
+    Args:
+        key (KeyArray): Jax PRNGKey
+        dim (int): Dimension of the distribution.
+        cond_dim (tuple[int, ...] | None): Dimension of conditioning variables.
+        depth (int): Number of hidden layers in the network.
+        block_dim (int): Block dimension (hidden layer size is `dim*block_dim`).
+        activation: (Bijection | Callable | None). Activation function, either
+            a scalar bijection or a callable that computes the activation for a
+            scalar value. Note that the activation should be bijective
+            to ensure invertibility of the network and in general should map
+            real -> real to ensure that when transforming a distribution (either
+            with the forward or inverse), the map is defined across the support of
+            the base distribution. Defaults to ``LeakyTanh(3)``.
     """
     shape: tuple[int, ...]
     cond_shape: tuple[int, ...] | None
@@ -58,28 +72,13 @@ class BlockAutoregressiveNetwork(AbstractBijection):
     def __init__(
         self,
         key: KeyArray,
+        *,
         dim: int,
         cond_dim: int | None,
         depth: int,
         block_dim: int,
         activation: AbstractBijection | Callable | None = None,
     ):
-        """Initialize the bijection.
-
-        Args:
-            key (KeyArray): Jax PRNGKey
-            dim (int): Dimension of the distribution.
-            cond_dim (tuple[int, ...] | None): Dimension of conditioning variables.
-            depth (int): Number of hidden layers in the network.
-            block_dim (int): Block dimension (hidden layer size is `dim*block_dim`).
-            activation: (Bijection | Callable | None). Activation function, either
-                a scalar bijection or a callable that computes the activation for a
-                scalar value. Note that the activation should be bijective
-                to ensure invertibility of the network and in general should map
-                real -> real to ensure that when transforming a distribution (either
-                with the forward or inverse), the map is defined across the support of
-                the base distribution. Defaults to ``LeakyTanh(3)``.
-        """
         if activation is None:
             activation = LeakyTanh(3)
         elif isinstance(activation, AbstractBijection):
@@ -90,7 +89,14 @@ class BlockAutoregressiveNetwork(AbstractBijection):
 
         layers = []
         if depth == 0:
-            layers.append(BlockAutoregressiveLinear(key, dim, (1, 1), cond_dim))
+            layers.append(
+                BlockAutoregressiveLinear(
+                    key,
+                    n_blocks=dim,
+                    block_shape=(1, 1),
+                    cond_dim=cond_dim,
+                ),
+            )
         else:
             keys = random.split(key, depth + 1)
 
@@ -108,7 +114,12 @@ class BlockAutoregressiveNetwork(AbstractBijection):
                 strict=True,
             ):
                 layers.append(
-                    BlockAutoregressiveLinear(layer_key, dim, block_shape, cond_d),
+                    BlockAutoregressiveLinear(
+                        layer_key,
+                        n_blocks=dim,
+                        block_shape=block_shape,
+                        cond_dim=cond_d,
+                    ),
                 )
 
         self.depth = depth
@@ -119,7 +130,6 @@ class BlockAutoregressiveNetwork(AbstractBijection):
         self.activation = activation
 
     def transform(self, x, condition=None):
-        x, condition = self._argcheck_and_cast(x, condition)
         for layer in self.layers[:-1]:
             x = layer(x, condition)[0]
             x = eqx.filter_vmap(self.activation.transform)(x)
@@ -127,7 +137,6 @@ class BlockAutoregressiveNetwork(AbstractBijection):
         return self.layers[-1](x, condition)[0]
 
     def transform_and_log_det(self, x, condition=None):
-        x, condition = self._argcheck_and_cast(x, condition)
         log_jacobian_3ds = []
         for layer in self.layers[:-1]:
             x, log_det_3d = layer(x, condition)
