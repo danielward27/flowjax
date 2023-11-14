@@ -250,8 +250,8 @@ class AbstractTransformed(AbstractDistribution):
     density evaluation. See also :class:`Transformed`.
 
     Concete implementations should subclass :class:`AbstractTransformed`, and
-    define the abstract attributes `base_dist` and `bijection`. See the source code for
-    :class:`Normal` as a simple example.
+    define the abstract attributes ``base_dist`` and ``bijection``. See the source code
+    for :class:`Normal` as a simple example.
     """
 
     base_dist: AbstractVar[AbstractDistribution]
