@@ -62,13 +62,10 @@ class AbstractDistribution(eqx.Module):
         ``distribution.shape``.
         """
 
-    @abstractmethod
-    def _sample_and_log_prob(
-        self,
-        key: Array,
-        condition: Array | None = None,
-    ) -> tuple[Array, Array]:
+    def _sample_and_log_prob(self, key, condition=None):
         """Sample a point from the distribution, and return its log probability."""
+        x = self._sample(key, condition)
+        return x, self._log_prob(x, condition)
 
     def log_prob(self, x: ArrayLike, condition: ArrayLike | None = None) -> Array:
         """Evaluate the log probability.
@@ -163,10 +160,6 @@ class AbstractDistribution(eqx.Module):
             condition = arraylike_to_array(condition, err_name="condition")
         keys = self._get_sample_keys(key, sample_shape, condition)
         return self._vectorize(self._sample)(keys, condition)
-
-    def _sample_and_log_prob(self, key, condition=None):
-        x = self._sample(key, condition)
-        return x, self._log_prob(x, condition)
 
     def sample_and_log_prob(
         self,
@@ -273,7 +266,9 @@ class AbstractTransformed(AbstractDistribution):
         base_sample = self.base_dist._sample(key, condition)
         return self.bijection.transform(base_sample, condition)
 
-    def _sample_and_log_prob(self, key: Array, condition=None):
+    def _sample_and_log_prob(
+        self, key: Array, condition=None
+    ):  # TODO add overide decorator when python>=3.12 is common
         # We override to avoid computing the inverse transformation.
         base_sample, log_prob_base = self.base_dist._sample_and_log_prob(key, condition)
         sample, forward_log_dets = self.bijection.transform_and_log_det(
