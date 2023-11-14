@@ -91,7 +91,14 @@ class BlockAutoregressiveNetwork(AbstractBijection):
 
         layers = []
         if depth == 0:
-            layers.append(BlockAutoregressiveLinear(key, dim, (1, 1), cond_dim))
+            layers.append(
+                BlockAutoregressiveLinear(
+                    key,
+                    n_blocks=dim,
+                    block_shape=(1, 1),
+                    cond_dim=cond_dim,
+                ),
+            )
         else:
             keys = random.split(key, depth + 1)
 
@@ -109,7 +116,12 @@ class BlockAutoregressiveNetwork(AbstractBijection):
                 strict=True,
             ):
                 layers.append(
-                    BlockAutoregressiveLinear(layer_key, dim, block_shape, cond_d),
+                    BlockAutoregressiveLinear(
+                        layer_key,
+                        n_blocks=dim,
+                        block_shape=block_shape,
+                        cond_dim=cond_d,
+                    ),
                 )
 
         self.depth = depth

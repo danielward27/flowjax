@@ -123,7 +123,7 @@ class AbstractDistribution(eqx.Module):
                 dist = StandardNormal((2,))
                 # For a conditional distribution
                 cond_dist = coupling_flow(
-                    key, StandardNormal((2,)), cond_dim=3, transformer=Affine()
+                    key, base_dist=StandardNormal((2,)), cond_dim=3
                     )
 
             For an unconditional distribution:
@@ -223,7 +223,9 @@ class AbstractDistribution(eqx.Module):
             def _wrapper(*args, **kwargs):
                 bound = inspect.signature(method).bind(*args, **kwargs)
                 for in_shape, (name, arg) in zip(
-                    in_shapes, bound.arguments.items(), strict=False
+                    in_shapes,
+                    bound.arguments.items(),
+                    strict=False,
                 ):
                     if arg.shape != in_shape:
                         raise ValueError(
@@ -629,6 +631,7 @@ class SpecializeCondition(AbstractDistribution):  # TODO check tested
         self,
         dist: AbstractDistribution,
         condition: ArrayLike,
+        *,
         stop_gradient: bool = True,
     ):
         """Initialize the distribution.

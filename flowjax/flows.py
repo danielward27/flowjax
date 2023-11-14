@@ -19,6 +19,7 @@ from jax.nn.initializers import glorot_uniform
 from flowjax.bijections import (
     AbstractBijection,
     AdditiveCondition,
+    Affine,
     BlockAutoregressiveNetwork,
     Chain,
     Coupling,
@@ -32,8 +33,8 @@ from flowjax.bijections import (
     Scan,
     TriangularAffine,
     Vmap,
-    Affine,
 )
+from functools import partial
 from flowjax.distributions import AbstractDistribution, Transformed
 
 
@@ -184,7 +185,7 @@ def block_neural_autoregressive_flow(
     def make_layer(key):  # bnaf layer + permutation
         bij_key, perm_key = jr.split(key)
         bijection = BlockAutoregressiveNetwork(
-            key=bij_key,
+            bij_key,
             dim=base_dist.shape[-1],
             cond_dim=cond_dim,
             depth=nn_depth,
@@ -228,7 +229,9 @@ def planar_flow(
 
     def make_layer(key):  # Planar layer + permutation
         bij_key, perm_key = jr.split(key)
-        bijection = Planar(bij_key, base_dist.shape[-1], cond_dim, **mlp_kwargs)
+        bijection = Planar(
+            bij_key, dim=base_dist.shape[-1], cond_dim=cond_dim, **mlp_kwargs
+        )
         return _add_default_permute(bijection, base_dist.shape[-1], perm_key)
 
     keys = jr.split(key, flow_layers)
@@ -273,6 +276,11 @@ def triangular_spline_flow(
     init = init if init is not None else glorot_uniform()
     dim = base_dist.shape[-1]
 
+    def get_splines():
+        fn = partial(RationalQuadraticSpline, knots=knots, interval=1)
+        spline = eqx.filter_vmap(fn, axis_size=dim)()
+        return Vmap(spline, in_axis=eqx.if_array(0))
+
     def make_layer(key):
         lt_key, perm_key, cond_key = jr.split(key, 3)
         weights = init(lt_key, (dim, dim))
@@ -285,10 +293,7 @@ def triangular_spline_flow(
 
         bijections = [
             LeakyTanh(tanh_max_val, (dim,)),
-            Vmap(
-                eqx.filter_vmap(RationalQuadraticSpline, axis_size=dim)(knots, 1),
-                eqx.if_array(0),
-            ),
+            get_splines(),
             Invert(LeakyTanh(tanh_max_val, (dim,))),
             lower_tri,
         ]

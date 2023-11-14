@@ -24,7 +24,7 @@ testcases = {
     "triangular_spline_flow": triangular_spline_flow(**KWARGS),
     "Affine_Coupling": coupling_flow(transformer=Affine(), **KWARGS),
     "Spline_Coupling": coupling_flow(
-        transformer=RationalQuadraticSpline(3, 2),
+        transformer=RationalQuadraticSpline(knots=3, interval=2),
         **KWARGS,
     ),
     "Affine_MaskedAutoregessive": masked_autoregressive_flow(
@@ -54,7 +54,7 @@ conditional_testcases = {
     "triangular_spline_flow": triangular_spline_flow(**KWARGS, cond_dim=2),
     "Affine_Coupling": coupling_flow(transformer=Affine(), **KWARGS, cond_dim=2),
     "Spline_Coupling": coupling_flow(
-        transformer=RationalQuadraticSpline(3, 2),
+        transformer=RationalQuadraticSpline(knots=3, interval=2),
         **KWARGS,
         cond_dim=2,
     ),

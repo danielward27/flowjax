@@ -91,6 +91,7 @@ class TriangularAffine(AbstractBijection):
         self,
         loc: ArrayLike,
         arr: ArrayLike,
+        *,
         lower: bool = True,
         weight_normalisation: bool = False,
         positivity_constraint: AbstractBijection | None = None,

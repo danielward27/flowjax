@@ -12,7 +12,7 @@ from jax import Array
 from jax.scipy.linalg import block_diag
 
 
-def rank_based_mask(in_ranks: Array, out_ranks: Array, eq: bool = False):
+def rank_based_mask(in_ranks: Array, out_ranks: Array, *, eq: bool = False):
     """Forms mask matrix, with 1s where the out_ranks > or >= in_ranks.
 
     Args:

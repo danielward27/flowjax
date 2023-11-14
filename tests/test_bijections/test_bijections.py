@@ -74,7 +74,7 @@ bijections = {
     "RationalQuadraticSpline": RationalQuadraticSpline(knots=4, interval=1),
     "Coupling (unconditional)": Coupling(
         KEY,
-        Affine(),
+        transformer=Affine(),
         untransformed_dim=DIM // 2,
         dim=DIM,
         cond_dim=None,
@@ -83,7 +83,7 @@ bijections = {
     ),
     "Coupling (conditional)": Coupling(
         KEY,
-        Affine(),
+        transformer=Affine(),
         untransformed_dim=DIM // 2,
         dim=DIM,
         cond_dim=COND_DIM,
@@ -92,7 +92,7 @@ bijections = {
     ),
     "MaskedAutoregressive_Affine (unconditional)": MaskedAutoregressive(
         KEY,
-        Affine(),
+        transformer=Affine(),
         cond_dim=0,
         dim=DIM,
         nn_width=5,
@@ -100,7 +100,7 @@ bijections = {
     ),
     "MaskedAutoregressive_Affine (conditional)": MaskedAutoregressive(
         KEY,
-        Affine(),
+        transformer=Affine(),
         cond_dim=COND_DIM,
         dim=DIM,
         nn_width=5,
@@ -108,7 +108,7 @@ bijections = {
     ),
     "MaskedAutoregressiveRationalQuadraticSpline (unconditional)": MaskedAutoregressive(
         KEY,
-        RationalQuadraticSpline(5, 3),
+        transformer=RationalQuadraticSpline(knots=5, interval=3),
         dim=DIM,
         cond_dim=0,
         nn_width=10,
@@ -157,12 +157,12 @@ bijections = {
     ),
     "Planar": Planar(
         KEY,
-        DIM,
+        dim=DIM,
     ),
     "Vmap (broadcast params)": Vmap(Affine(1, 2), axis_size=10),
     "Vmap (vectorize params)": Vmap(
         eqx.filter_vmap(Affine)(jnp.ones(3)),
-        eqx.if_array(0),
+        in_axis=eqx.if_array(0),
     ),
 }
 

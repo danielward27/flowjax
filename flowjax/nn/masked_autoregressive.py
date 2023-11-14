@@ -22,7 +22,7 @@ class MaskedLinear(Module):
     linear: Linear
     mask: Array
 
-    def __init__(self, mask: ArrayLike, use_bias: bool = True, *, key: KeyArray):
+    def __init__(self, mask: ArrayLike, *, use_bias: bool = True, key: KeyArray):
         """Initialize the masked linear layer.
 
         Args:

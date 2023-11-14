@@ -85,7 +85,7 @@ class Scan(AbstractBijection):
         return self.bijection.cond_shape
 
 
-def _filter_scan(f, init, xs, reverse=False):
+def _filter_scan(f, init, xs, *, reverse=False):
     params, static = eqx.partition(xs, filter_spec=eqx.is_array)
 
     def _scan_fn(carry, x):
@@ -108,14 +108,17 @@ class Vmap(AbstractBijection):
 
             >>> import jax.numpy as jnp
             >>> import equinox as eqx
-            >>> from flowjax.bijections import Vmap, RationalQuadraticSpline
-            >>> bijection = eqx.filter_vmap(RationalQuadraticSpline, axis_size=10)(5, 2)
-            >>> bijection = Vmap(bijection, eqx.if_array(0))
+            >>> from flowjax.bijections import Vmap, RationalQuadraticSpline, Affine
+            >>> bijection = eqx.filter_vmap(
+            ...    lambda: RationalQuadraticSpline(knots=5, interval=2),
+            ...    axis_size=10
+            ... )()
+            >>> bijection = Vmap(bijection, in_axis=eqx.if_array(0))
             >>> bijection.shape
             (10,)
 
             Add a batch dimension to a bijection, broadcasting bijection parameters:
-            >>> bijection = RationalQuadraticSpline(5, 2)
+            >>> bijection = RationalQuadraticSpline(knots=5, interval=2)
             >>> bijection = Vmap(bijection, axis_size=10)
             >>> bijection.shape
             (10,)

@@ -26,8 +26,8 @@ class RationalQuadraticSpline(AbstractBijection):
 
     def __init__(
         self,
-        knots: int,
         *,
+        knots: int,
         interval: float,
         min_derivative: float = 1e-3,
         softmax_adjust: float = 1e-2,

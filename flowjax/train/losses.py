@@ -106,6 +106,7 @@ class ElboLoss:
         self,
         target: Callable[[ArrayLike], Array],
         num_samples: int,
+        *,
         stick_the_landing: bool = False,
     ):
         """Initialize the ELBO loss.

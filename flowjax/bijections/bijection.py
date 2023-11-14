@@ -30,7 +30,8 @@ def _check_and_cast(method):
 
             if self.cond_shape is not None and condition.shape != self.cond_shape:
                 raise ValueError(
-                    f"Expected condition.shape {self.cond_shape}; got {condition.shape}",
+                    f"Expected condition.shape {self.cond_shape}; got "
+                    f"{condition.shape}",
                 )
             return condition
 
@@ -85,7 +86,8 @@ class AbstractBijection(eqx.Module):
         ]
         for meth in wrap_methods:
             if meth in cls.__dict__ and not hasattr(
-                cls.__dict__[meth], "__isabstractmethod__"
+                cls.__dict__[meth],
+                "__isabstractmethod__",
             ):
                 assert not hasattr(cls.__dict__[meth], "__check_and_cast__")
                 setattr(cls, meth, _check_and_cast(cls.__dict__[meth]))

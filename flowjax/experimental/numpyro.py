@@ -66,7 +66,7 @@ class _VectorizedBijection:
         )
         return transform_and_log_det(x, condition)
 
-    def vectorize(self, func, log_det=False):
+    def vectorize(self, func, *, log_det=False):
         in_shapes, out_shapes = [self.bijection.shape], [self.bijection.shape]
         if log_det:
             out_shapes.append(())
