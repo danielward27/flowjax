@@ -33,7 +33,6 @@ class GaussianMixtureSimulator:
     """
 
     def __init__(self, dim: int = 2, prior_bound: float = 10.0) -> None:
-        """Initialize the task."""
         self.dim = dim
         self.prior_bound = prior_bound
         self.prior = Uniform(-jnp.full(dim, prior_bound), jnp.full(dim, prior_bound))

@@ -47,6 +47,20 @@ class BlockAutoregressiveNetwork(AbstractBijection):
     we use :class:`~flowjax.bijections.tanh.LeakyTanh`. This ensures the codomain of the
     activation is the set of real values, which will ensure properly normalised
     densities (see https://github.com/danielward27/flowjax/issues/102).
+
+    Args:
+        key (KeyArray): Jax PRNGKey
+        dim (int): Dimension of the distribution.
+        cond_dim (tuple[int, ...] | None): Dimension of conditioning variables.
+        depth (int): Number of hidden layers in the network.
+        block_dim (int): Block dimension (hidden layer size is `dim*block_dim`).
+        activation: (Bijection | Callable | None). Activation function, either
+            a scalar bijection or a callable that computes the activation for a
+            scalar value. Note that the activation should be bijective
+            to ensure invertibility of the network and in general should map
+            real -> real to ensure that when transforming a distribution (either
+            with the forward or inverse), the map is defined across the support of
+            the base distribution. Defaults to ``LeakyTanh(3)``.
     """
     shape: tuple[int, ...]
     cond_shape: tuple[int, ...] | None
@@ -65,22 +79,6 @@ class BlockAutoregressiveNetwork(AbstractBijection):
         block_dim: int,
         activation: AbstractBijection | Callable | None = None,
     ):
-        """Initialize the bijection.
-
-        Args:
-            key (KeyArray): Jax PRNGKey
-            dim (int): Dimension of the distribution.
-            cond_dim (tuple[int, ...] | None): Dimension of conditioning variables.
-            depth (int): Number of hidden layers in the network.
-            block_dim (int): Block dimension (hidden layer size is `dim*block_dim`).
-            activation: (Bijection | Callable | None). Activation function, either
-                a scalar bijection or a callable that computes the activation for a
-                scalar value. Note that the activation should be bijective
-                to ensure invertibility of the network and in general should map
-                real -> real to ensure that when transforming a distribution (either
-                with the forward or inverse), the map is defined across the support of
-                the base distribution. Defaults to ``LeakyTanh(3)``.
-        """
         if activation is None:
             activation = LeakyTanh(3)
         elif isinstance(activation, AbstractBijection):

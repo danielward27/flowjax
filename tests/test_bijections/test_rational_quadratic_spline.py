@@ -24,7 +24,7 @@ def test_RationalQuadraticSpline_tails():
 
 
 def test_RationalQuadraticSpline_init():
-    # Test it is initialised at the identity
+    # Test it is initialized at the identity
     x = jnp.array([-1, 0.1, 2, 1])
     key = jr.PRNGKey(0)
     spline = RationalQuadraticSpline(knots=10, interval=3)

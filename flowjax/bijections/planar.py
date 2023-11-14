@@ -22,6 +22,14 @@ class Planar(AbstractBijection):
     :math:`u \in \mathbb{R}^D, \ w \in \mathbb{R}^D` and :math:`b \in \mathbb{R}`. In
     the unconditional case, :math:`w`, :math:`u`  and :math:`b` are learned directly.
     In the conditional case they are parameterised by an MLP.
+
+    Args:
+        key (Array): Jax random seed.
+        dim (int): Dimension of the bijection.
+        cond_dim (int | None, optional): Dimension of extra conditioning variables.
+            Defaults to None.
+        **mlp_kwargs: Key word arguments (excluding in_size and out_size) passed to
+            the MLP (equinox.nn.MLP). Ignored when cond_dim is None.
     """
     shape: tuple[int, ...]
     cond_shape: tuple[int, ...] | None
@@ -36,16 +44,6 @@ class Planar(AbstractBijection):
         cond_dim: int | None = None,
         **mlp_kwargs,
     ):
-        """Initialize the bijection.
-
-        Args:
-            key (Array): Jax random seed.
-            dim (int): Dimension of the bijection.
-            cond_dim (int | None, optional): Dimension of extra conditioning variables.
-                Defaults to None.
-            **mlp_kwargs: Key word arguments (excluding in_size and out_size) passed to
-                the MLP (equinox.nn.MLP). Ignored when cond_dim is None.
-        """
         self.shape = (dim,)
 
         if cond_dim is None:
@@ -81,7 +79,11 @@ class Planar(AbstractBijection):
 
 
 class _UnconditionalPlanar(AbstractBijection):
-    """Unconditional planar bijection, used in Planar."""
+    """Unconditional planar bijection, used in Planar.
+
+    Note act_scale (u in the paper) is unconstrained and the constraint to ensure
+    invertiblitiy is applied in the ``get_act_scale``.
+    """
 
     shape: tuple[int, ...]
     cond_shape: ClassVar[None] = None
@@ -90,11 +92,6 @@ class _UnconditionalPlanar(AbstractBijection):
     bias: Array
 
     def __init__(self, weight, act_scale, bias):
-        """Construct an unconditional planar bijection.
-
-        Note act_scale (u in the paper) is unconstrained and the constraint to ensure
-        invertiblitiy is applied in the ``get_act_scale``.
-        """
         self.weight = weight
         self._act_scale = act_scale
         self.bias = bias

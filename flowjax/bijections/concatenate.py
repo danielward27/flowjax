@@ -13,6 +13,11 @@ class Concatenate(AbstractBijection):
     """Concatenate bijections along an existing axis, similar to ``jnp.concatenate``.
 
     See also :class:`Stack`.
+
+    Args:
+        bijections (Sequence[Bijection]): Bijections, to stack into a single
+            bijection.
+        axis (int): Axis along which to stack. Defaults to 0.
     """
 
     shape: tuple[int, ...]
@@ -22,13 +27,6 @@ class Concatenate(AbstractBijection):
     axis: int
 
     def __init__(self, bijections: Sequence[AbstractBijection], axis: int = 0):
-        """Initialize the bijection.
-
-        Args:
-            bijections (Sequence[Bijection]): Bijections, to stack into a single
-                bijection.
-            axis (int): Axis along which to stack. Defaults to 0.
-        """
         self.bijections = bijections
         self.axis = axis
 
@@ -94,6 +92,10 @@ class Stack(AbstractBijection):
     """Stack bijections along a new axis (analagous to ``jnp.stack``).
 
     See also :class:`Concatenate`.
+
+    Args:
+        bijections (list[Bijection]): Bijections.
+        axis (int): Axis along which to stack. Defaults to 0.
     """
 
     shape: tuple[int, ...]
@@ -102,12 +104,6 @@ class Stack(AbstractBijection):
     axis: int
 
     def __init__(self, bijections: list[AbstractBijection], axis: int = 0):
-        """Initialize the bijection.
-
-        Args:
-            bijections (list[Bijection]): Bijections.
-            axis (int): Axis along which to stack. Defaults to 0.
-        """
         self.axis = axis
         self.bijections = bijections
 

@@ -13,36 +13,28 @@ from flowjax.bijections.bijection import AbstractBijection
 class Scan(AbstractBijection):
     """Repeatedly apply the same bijection with different parameter values.
 
-    Internally, uses `jax.lax.scan` to reduce compilation time.
+    Internally, uses `jax.lax.scan` to reduce compilation time. Often it is convenient
+    to construct these using ``equinox.filter_vmap``.
+
+    Args:
+        bijection (AbstractBijection): A bijection, in which the arrays leaves have
+            an additional leading axis to scan over. It is often can convenient to
+            create compatible bijections with ``equinox.filter_vmap``.
+
+    Example:
+        Below is equivilent to ``Chain([Affine(p) for p in params])``.
+
+        .. doctest::
+
+            >>> from flowjax.bijections import Scan, Affine
+            >>> import jax.numpy as jnp
+            >>> import equinox as eqx
+            >>> params = jnp.ones((3, 2))
+            >>> affine = eqx.filter_vmap(Affine)(params)
+            >>> affine = Scan(affine)
     """
 
     bijection: AbstractBijection
-
-    def __init__(self, bijection: AbstractBijection):
-        """Initialize the scan bijection.
-
-        The array leaves in `bijection` should have an additional leading axis to scan
-        over. Often it is convenient to construct these using ``equinox.filter_vmap``.
-
-        Args:
-            bijection (AbstractBijection): A bijection, in which the arrays leaves have
-                an additional leading axis to scan over. For complex bijections, it can
-                be convenient to create compatible bijections with
-                ``equinox.filter_vmap``.
-
-        Example:
-            Below is equivilent to ``Chain([Affine(p) for p in params])``.
-
-            .. doctest::
-
-                >>> from flowjax.bijections import Scan, Affine
-                >>> import jax.numpy as jnp
-                >>> import equinox as eqx
-                >>> params = jnp.ones((3, 2))
-                >>> affine = eqx.filter_vmap(Affine)(params)
-                >>> affine = Scan(affine)
-        """
-        self.bijection = bijection
 
     def transform(self, x, condition=None):
         def step(x, bijection):
@@ -98,6 +90,18 @@ def _filter_scan(f, init, xs, *, reverse=False):
 
 class Vmap(AbstractBijection):
     """Applies vmap to bijection methods to add a batch dimension to the bijection.
+
+    Args:
+        bijection (AbstractBijection): The bijection to vectorize.
+        in_axis (int | None | Callable): Specify which axes of the bijection
+            parameters to vectorise over. It should be a PyTree of ``None``, ``int``
+            with the tree structure being a prefix of the bijection, or a callable
+            mapping ``Leaf -> Union[None, int]``. Defaults to None.
+        axis_size (int, optional): The size of the new axis. This should be left
+            unspecified if in_axis is provided, as the size can be inferred from the
+            bijection parameters. Defaults to None.
+        in_axis_condition (int | None, optional): Optionally define an axis of
+            the conditioning variable to vectorize over. Defaults to None.
 
     Example:
         The two most common use cases, are shown below:
@@ -162,20 +166,6 @@ class Vmap(AbstractBijection):
         axis_size: int | None = None,
         in_axis_condition: int | None = None,
     ):
-        """Initialize the bijection.
-
-        Args:
-            bijection (AbstractBijection): The bijection to vectorize.
-            in_axis (int | None | Callable): Specify which axes of the bijection
-                parameters to vectorise over. It should be a PyTree of ``None``, ``int``
-                with the tree structure being a prefix of the bijection, or a callable
-                mapping ``Leaf -> Union[None, int]``. Defaults to None.
-            axis_size (int, optional): The size of the new axis. This should be left
-                unspecified if in_axis is provided, as the size can be inferred from the
-                bijection parameters. Defaults to None.
-            in_axis_condition (int | None, optional): Optionally define an axis of
-                the conditioning variable to vectorize over. Defaults to None.
-        """
         if in_axis is not None and axis_size is not None:
             raise ValueError("Cannot specify both in_axis and axis_size.")
 

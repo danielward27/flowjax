@@ -22,9 +22,19 @@ class MaskedAutoregressive(AbstractBijection):
     The transformer is parameterised by a neural network, with weights masked to ensure
     an autoregressive structure.
 
-    Ref:
+    Refs:
         - https://arxiv.org/abs/1705.07057v4
         - https://arxiv.org/abs/1705.07057v4
+
+    Args:
+        key (KeyArray): Jax PRNGKey
+        transformer (AbstractBijection): Bijection with shape () to be parameterised
+        by the autoregressive network.
+        dim (int): Dimension.
+        cond_dim (int | None): Dimension of any conditioning variables.
+        nn_width (int): Neural network width.
+        nn_depth (int): Neural network depth.
+        nn_activation (Callable): Neural network activation. Defaults to jnn.relu.
     """
 
     shape: tuple[int, ...]
@@ -43,18 +53,6 @@ class MaskedAutoregressive(AbstractBijection):
         nn_depth: int,
         nn_activation: Callable = jnn.relu,
     ) -> None:
-        """Initialize the masked autoregressive bijection.
-
-        Args:
-            key (KeyArray): Jax PRNGKey
-            transformer (AbstractBijection): Bijection with shape () to be parameterised
-            by the autoregressive network.
-            dim (int): Dimension.
-            cond_dim (int | None): Dimension of any conditioning variables.
-            nn_width (int): Neural network width.
-            nn_depth (int): Neural network depth.
-            nn_activation (Callable): Neural network activation. Defaults to jnn.relu.
-        """
         if transformer.shape != () or transformer.cond_shape is not None:
             raise ValueError(
                 "Only unconditional transformers with shape () are supported.",

@@ -40,6 +40,10 @@ class LeakyTanh(AbstractBijection):
     This bijection can be useful to encourage values to be within an interval, whilst
     avoiding numerical precision issues, or in cases we require a real -> real mapping
     so Tanh is not appropriate.
+
+    Args:
+        max_val (float): Value above or below which the function becomes linear.
+        shape (tuple[int, ...] | None): The shape of the bijection. Defaults to ().
     """
 
     shape: tuple[int, ...] = ()
@@ -49,12 +53,6 @@ class LeakyTanh(AbstractBijection):
     linear_grad: float
 
     def __init__(self, max_val: float, shape: tuple[int, ...] = ()):
-        """Initialize the leaky tanh bijection.
-
-        Args:
-            max_val (float): Value above or below which the function becomes linear.
-            shape (tuple[int, ...] | None): The shape of the bijection. Defaults to ().
-        """
         self.max_val = float(max_val)
         self.linear_grad = math.exp(_tanh_log_grad(max_val))
         self.intercept = math.tanh(max_val) - self.linear_grad * max_val

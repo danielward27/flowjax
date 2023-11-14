@@ -75,6 +75,18 @@ class TriangularAffine(AbstractBijection):
 
     Transformation has the form :math:`Ax + b`, where :math:`A` is a lower or upper
     triangular matrix, and :math:`b` is the bias vector.
+
+    Args:
+        loc (ArrayLike): Location parameter.
+        arr (ArrayLike): Triangular matrix.
+        lower (bool): Whether the mask should select the lower or upper
+        triangular matrix (other elements ignored). Defaults to True (lower).
+        weight_normalisation (bool): If true, carry out weight normalisation.
+        positivity_constraint (AbstractBijection): Bijection with shape matching the
+            dimension of the triangular affine bijection, that maps the diagonal
+            entries of the array from an unbounded domain to the positive domain.
+            Also used for weight normalisation parameters, if used. Defaults to
+            SoftPlus.
     """
     shape: tuple[int, ...]
     cond_shape: ClassVar[None] = None
@@ -96,20 +108,6 @@ class TriangularAffine(AbstractBijection):
         weight_normalisation: bool = False,
         positivity_constraint: AbstractBijection | None = None,
     ):
-        """Initialize the triangular affine transformation.
-
-        Args:
-            loc (ArrayLike): Location parameter.
-            arr (ArrayLike): Triangular matrix.
-            lower (bool): Whether the mask should select the lower or upper
-            triangular matrix (other elements ignored). Defaults to True (lower).
-            weight_normalisation (bool): If true, carry out weight normalisation.
-            positivity_constraint (AbstractBijection): Bijection with shape matching the
-                dimension of the triangular affine bijection, that maps the diagonal
-                entries of the array from an unbounded domain to the positive domain.
-                Also used for weight normalisation parameters, if used. Defaults to
-                SoftPlus.
-        """
         loc, arr = (arraylike_to_array(a, dtype=float) for a in (loc, arr))
         if (arr.ndim != 2) or (arr.shape[0] != arr.shape[1]):
             raise ValueError("arr must be a square, 2-dimensional matrix.")
@@ -178,7 +176,31 @@ class AdditiveCondition(AbstractBijection):
     """Given a callable ``f``, carries out the transformation ``y = x + f(condition)``.
 
     If used to transform a distribution, this allows the "location" to be changed as a
-    function of the conditioning variables.
+    function of the conditioning variables. Note that the callable can be a callable
+    module with trainable parameters.
+
+    Args:
+        module (Callable[[ArrayLike], ArrayLike]): A callable (e.g. a function or
+            callable module) that maps array with shape cond_shape, to a shape
+            that is broadcastable with the shape of the bijection.
+        shape (tuple[int, ...]): The shape of the bijection.
+        cond_shape (tuple[int, ...]): The condition shape of the bijection.
+
+    Example:
+        Conditioning using a linear transformation
+
+        .. doctest::
+
+            >>> from flowjax.bijections import AdditiveCondition
+            >>> from equinox.nn import Linear
+            >>> import jax.numpy as jnp
+            >>> import jax.random as jr
+            >>> bijection = AdditiveCondition(
+            ...     Linear(2, 3, key=jr.PRNGKey(0)), shape=(3,), cond_shape=(2,)
+            ...     )
+            >>> bijection.transform(jnp.ones(3), condition=jnp.ones(2))
+            Array([1.9670618, 0.8156546, 1.7763454], dtype=float32)
+
     """
 
     shape: tuple[int, ...]
@@ -191,31 +213,6 @@ class AdditiveCondition(AbstractBijection):
         shape: tuple[int, ...],
         cond_shape: tuple[int, ...],
     ):
-        """Note that the callable can be a callable module with trainable parameters.
-
-        Args:
-            module (Callable[[ArrayLike], ArrayLike]): A callable (e.g. a function or
-                callable module) that maps array with shape cond_shape, to a shape
-                that is broadcastable with the shape of the bijection.
-            shape (tuple[int, ...]): The shape of the bijection.
-            cond_shape (tuple[int, ...]): The condition shape of the bijection.
-
-
-        Example:
-            Conditioning using a linear transformation
-
-            .. doctest::
-
-                >>> from flowjax.bijections import AdditiveCondition
-                >>> from equinox.nn import Linear
-                >>> import jax.numpy as jnp
-                >>> import jax.random as jr
-                >>> bijection = AdditiveCondition(
-                ...     Linear(2, 3, key=jr.PRNGKey(0)), shape=(3,), cond_shape=(2,)
-                ...     )
-                >>> bijection.transform(jnp.ones(3), condition=jnp.ones(2))
-                Array([1.9670618, 0.8156546, 1.7763454], dtype=float32)
-        """
         self.module = module
         self.shape = shape
         self.cond_shape = cond_shape

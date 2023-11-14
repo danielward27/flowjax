@@ -15,7 +15,21 @@ from flowjax.utils import Array, get_ravelled_bijection_constructor
 
 
 class Coupling(AbstractBijection):
-    """Coupling layer implementation (https://arxiv.org/abs/1605.08803)."""
+    """Coupling layer implementation (https://arxiv.org/abs/1605.08803).
+
+    Args:
+        key (KeyArray): Jax PRNGKey
+        transformer (AbstractBijection): Unconditional bijection with shape ()
+            to be parameterised by the conditioner neural netork.
+        untransformed_dim (int): Number of untransformed conditioning variables
+            (e.g. dim // 2).
+        dim (int): Total dimension.
+        cond_dim (int | None): Dimension of additional conditioning variables.
+        nn_width (int): Neural network hidden layer width.
+        nn_depth (int): Neural network hidden layer size.
+        nn_activation (Callable): Neural network activation function.
+            Defaults to jnn.relu.
+    """
 
     shape: tuple[int, ...]
     cond_shape: tuple[int, ...] | None
@@ -36,21 +50,6 @@ class Coupling(AbstractBijection):
         nn_depth: int,
         nn_activation: Callable = jnn.relu,
     ):
-        """Initialize the coupling bijection.
-
-        Args:
-            key (KeyArray): Jax PRNGKey
-            transformer (AbstractBijection): Unconditional bijection with shape ()
-                to be parameterised by the conditioner neural netork.
-            untransformed_dim (int): Number of untransformed conditioning variables
-                (e.g. dim // 2).
-            dim (int): Total dimension.
-            cond_dim (int | None): Dimension of additional conditioning variables.
-            nn_width (int): Neural network hidden layer width.
-            nn_depth (int): Neural network hidden layer size.
-            nn_activation (Callable): Neural network activation function.
-                Defaults to jnn.relu.
-        """
         if transformer.shape != () or transformer.cond_shape is not None:
             raise ValueError(
                 "Only unconditional transformers with shape () are supported.",
