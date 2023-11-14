@@ -51,6 +51,7 @@ html_theme_options = {
 
 pygments_style = "xcode"
 autodoc_typehints = "none"
+autodoc_member_order = "bysource"
 
 copybutton_prompt_text = r">>> |\.\.\. "
 copybutton_prompt_is_regexp = True
