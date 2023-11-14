@@ -268,7 +268,9 @@ class AbstractTransformed(AbstractDistribution):
         return self.bijection.transform(base_sample, condition)
 
     def _sample_and_log_prob(
-        self, key: Array, condition=None,
+        self,
+        key: Array,
+        condition=None,
     ):  # TODO add overide decorator when python>=3.12 is common
         # We override to avoid computing the inverse transformation.
         base_sample, log_prob_base = self.base_dist._sample_and_log_prob(key, condition)
@@ -406,7 +408,7 @@ class MultivariateNormal(AbstractTransformed):
     Args:
         loc (ArrayLike): The location/mean parameter vector. If this is scalar it is
             broadcast to the dimension implied by the covariance matrix.
-        covariance (ArrayLike, optional): Covariance matrix. Defaults to None.
+        covariance (ArrayLike, optional): Covariance matrix.
     """
 
     base_dist: StandardNormal
