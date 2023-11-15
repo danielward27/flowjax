@@ -1,4 +1,5 @@
 """Configuration file for the Sphinx documentation builder."""
+
 import sys
 from pathlib import Path
 
@@ -50,8 +51,9 @@ html_theme_options = {
 }
 
 pygments_style = "xcode"
-autodoc_typehints = "none"
-autodoc_member_order = "bysource"
 
 copybutton_prompt_text = r">>> |\.\.\. "
 copybutton_prompt_is_regexp = True
+autodoc_type_aliases = {"ArrayLike": "ArrayLike"}
+autodoc_typehints_format = "short"
+python_use_unqualified_type_names = True

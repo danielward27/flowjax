@@ -14,8 +14,8 @@ from jax.experimental import checkify
 from jax.lax import stop_gradient
 from jax.numpy import linalg
 from jax.scipy import stats as jstats
-from jax.typing import ArrayLike
 
+from flowjax._custom_types import ArrayLike
 from flowjax.bijections import AbstractBijection, Affine, Chain, TriangularAffine
 from flowjax.utils import _get_ufunc_signature, arraylike_to_array, merge_cond_shapes
 
@@ -35,11 +35,9 @@ class AbstractDistribution(eqx.Module):
     See the source code for :class:`StandardNormal` for a simple concrete example.
 
     Attributes:
-        shape (AbstractVar[tuple[int, ...]]): Denotes the shape of a single sample from
-            the distribution.
-        cond_shape (AbstractVar[tuple[int, ...] | None]): The shape of an instance of
-            the conditioning variable. This should be None for unconditional
-            distributions.
+        shape: Denotes the shape of a single sample from the distribution.
+        cond_shape: The shape of an instance of the conditioning variable. This should
+            be None for unconditional distributions.
 
     """
 
@@ -74,8 +72,8 @@ class AbstractDistribution(eqx.Module):
         Uses numpy-like broadcasting if additional leading dimensions are passed.
 
         Args:
-            x (ArrayLike): Points at which to evaluate density.
-            condition (ArrayLike | None): Conditioning variables. Defaults to None.
+            x: Points at which to evaluate density.
+            condition: Conditioning variables. Defaults to None.
 
         Returns:
             Array: Jax array of log probabilities.
@@ -101,9 +99,9 @@ class AbstractDistribution(eqx.Module):
         See the example for more information.
 
         Args:
-            key (Array): Jax random key.
-            condition (ArrayLike | None): Conditioning variables. Defaults to None.
-            sample_shape (tuple[int, ...]): Sample shape. Defaults to ().
+            key: Jax random key.
+            condition: Conditioning variables. Defaults to None.
+            sample_shape: Sample shape. Defaults to ().
 
         Example:
             The below example shows the behaviour of sampling, for an unconditional
@@ -176,9 +174,9 @@ class AbstractDistribution(eqx.Module):
         more information.
 
         Args:
-            key (Array): Jax random key.
-            condition (ArrayLike | None): Conditioning variables. Defaults to None.
-            sample_shape (tuple[int, ...]): Sample shape. Defaults to ().
+            key: Jax random key.
+            condition: Conditioning variables. Defaults to None.
+            sample_shape: Sample shape. Defaults to ().
         """
         if self.cond_shape is not None:
             condition = arraylike_to_array(condition, err_name="condition")
@@ -253,6 +251,10 @@ class AbstractTransformed(AbstractDistribution):
     Concete implementations should subclass :class:`AbstractTransformed`, and
     define the abstract attributes ``base_dist`` and ``bijection``. See the source code
     for :class:`Normal` as a simple example.
+
+    Attributes:
+        base_dist: The base distribution.
+        bijection: The transformation to apply.
     """
 
     base_dist: AbstractVar[AbstractDistribution]
@@ -332,8 +334,8 @@ class Transformed(AbstractTransformed):
             lead to to unexpected results.
 
     Args:
-        base_dist (AbstractDistribution): Base distribution.
-        bijection (AbstractBijection): Bijection to transform distribution.
+        base_dist: Base distribution.
+        bijection: Bijection to transform distribution.
 
     Example:
         .. doctest::
@@ -355,7 +357,7 @@ class StandardNormal(AbstractDistribution):
     Note unlike :class:`Normal`, this has no trainable parameters.
 
     Args:
-        shape (tuple[int, ...]): The shape of the distribution. Defaults to ().
+        shape: The shape of the distribution. Defaults to ().
     """
 
     shape: tuple[int, ...] = ()
@@ -374,8 +376,8 @@ class Normal(AbstractTransformed):
     ``loc`` and ``scale`` should broadcast to the desired shape of the distribution.
 
     Args:
-        loc (ArrayLike): Means. Defaults to 0.
-        scale (ArrayLike): Standard deviations. Defaults to 1.
+        loc: Means. Defaults to 0.
+        scale: Standard deviations. Defaults to 1.
     """
 
     base_dist: StandardNormal
@@ -406,9 +408,9 @@ class MultivariateNormal(AbstractTransformed):
     matrix.
 
     Args:
-        loc (ArrayLike): The location/mean parameter vector. If this is scalar it is
-            broadcast to the dimension implied by the covariance matrix.
-        covariance (ArrayLike, optional): Covariance matrix.
+        loc: The location/mean parameter vector. If this is scalar it is broadcast to
+            the dimension implied by the covariance matrix.
+        covariance: Covariance matrix.
     """
 
     base_dist: StandardNormal
@@ -446,8 +448,8 @@ class Uniform(AbstractTransformed):
     ``minval`` and ``maxval`` should broadcast to the desired distribution shape.
 
     Args:
-        minval (ArrayLike): Minimum values.
-        maxval (ArrayLike): Maximum values.
+        minval: Minimum values.
+        maxval: Maximum values.
     """
 
     base_dist: _StandardUniform
@@ -494,8 +496,8 @@ class Gumbel(AbstractTransformed):
     ``loc`` and ``scale`` should broadcast to the dimension of the distribution.
 
     Args:
-        loc (ArrayLike): Location paramter.
-        scale (ArrayLike): Scale parameter. Defaults to 1.0.
+        loc: Location paramter.
+        scale: Scale parameter. Defaults to 1.0.
     """
 
     base_dist: _StandardGumbel
@@ -540,8 +542,8 @@ class Cauchy(AbstractTransformed):
     ``loc`` and ``scale`` should broadcast to the dimension of the distribution.
 
     Args:
-        loc (ArrayLike): Location paramter.
-        scale (ArrayLike): Scale parameter. Defaults to 1.0.
+        loc: Location paramter.
+        scale: Scale parameter. Defaults to 1.0.
     """
 
     base_dist: _StandardCauchy
@@ -595,9 +597,9 @@ class StudentT(AbstractTransformed):
     ``df``, ``loc`` and ``scale`` broadcast to the dimension of the distribution.
 
     Args:
-        df (ArrayLike): The degrees of freedom.
-        loc (ArrayLike): Location parameter. Defaults to 0.0.
-        scale (ArrayLike): Scale parameter. Defaults to 1.0.
+        df: The degrees of freedom.
+        loc: Location parameter. Defaults to 0.0.
+        scale: Scale parameter. Defaults to 1.0.
     """
 
     base_dist: _StandardStudentT
@@ -632,11 +634,11 @@ class SpecializeCondition(AbstractDistribution):  # TODO check tested
     of the class.
 
     Args:
-        dist (AbstractDistribution): Conditional distribution to specialize.
-        condition (ArrayLike, optional): Instance of conditioning variable with
-            shape matching ``dist.cond_shape``. Defaults to None.
-        stop_gradient (bool): Whether to use ``jax.lax.stop_gradient`` to prevent
-            training of the condition array. Defaults to True.
+        dist: Conditional distribution to specialize.
+        condition: Instance of conditioning variable with shape matching
+            ``dist.cond_shape``. Defaults to None.
+        stop_gradient: Whether to use ``jax.lax.stop_gradient`` to prevent training of
+            the condition array. Defaults to True.
     """
 
     shape: tuple[int, ...]

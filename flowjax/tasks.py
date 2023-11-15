@@ -1,4 +1,5 @@
 """Example tasks."""
+from __future__ import annotations
 
 import equinox as eqx
 import jax
@@ -8,6 +9,7 @@ from jax import Array
 from jax.typing import ArrayLike
 
 from flowjax.distributions import Uniform
+from flowjax.utils import arraylike_to_array
 
 
 def two_moons(key: Array, n_samples, noise_std=0.2):
@@ -40,7 +42,7 @@ class GaussianMixtureSimulator:
     @eqx.filter_jit
     def simulator(self, key: Array, theta: ArrayLike):
         """Carry out simulations."""
-        theta = jnp.atleast_2d(jnp.asarray(theta))
+        theta = jnp.atleast_2d(arraylike_to_array(theta))
         key, subkey = jr.split(key)
         component = jr.bernoulli(subkey, shape=(theta.shape[0],))
         scales = jnp.where(component, 0.1, 1)
@@ -57,9 +59,9 @@ class GaussianMixtureSimulator:
         """Sample the reference posterior given an observation.
 
         Uses the closed form solution with rejection sampling for samples outside prior
-            bound.
+        bound.
         """
-        observation = jnp.asarray(observation)
+        observation = arraylike_to_array(observation)
         if observation.shape != (self.dim,):
             raise ValueError(f"Expected shape {(self.dim, )}, got {observation.shape}")
 

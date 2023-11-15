@@ -1,4 +1,6 @@
 """Utility bijections (embedding network, permutations, inversion etc.)."""
+from __future__ import annotations
+
 from collections.abc import Callable
 from typing import ClassVar
 
@@ -8,6 +10,7 @@ from jax.experimental import checkify
 from jax.typing import ArrayLike
 
 from flowjax.bijections.bijection import AbstractBijection
+from flowjax.utils import arraylike_to_array
 
 
 class Invert(AbstractBijection):
@@ -21,7 +24,7 @@ class Invert(AbstractBijection):
     achieve this aim.
 
     Args:
-        bijection (AbstractBijection): Bijection to invert.
+        bijection: Bijection to invert.
     """
 
     bijection: AbstractBijection
@@ -51,9 +54,9 @@ class Permute(AbstractBijection):
     """Permutation transformation.
 
     Args:
-        permutation (ArrayLike): An array with shape matching the array to
-            transform, with elements 0-(array.size-1) representing the new order
-            based on the flattened array (uses, C-like ordering).
+        permutation: An array with shape matching the array to transform, with elements
+            0-(array.size-1) representing the new order based on the flattened array
+            (uses, C-like ordering).
     """
 
     shape: tuple[int, ...]
@@ -62,7 +65,7 @@ class Permute(AbstractBijection):
     inverse_permutation: tuple[Array, ...]
 
     def __init__(self, permutation: ArrayLike):
-        permutation = jnp.asarray(permutation)
+        permutation = arraylike_to_array(permutation)
         checkify.check(
             (permutation.ravel().sort() == jnp.arange(permutation.size)).all(),
             "Invalid permutation array provided.",
@@ -97,8 +100,7 @@ class Flip(AbstractBijection):
     """Flip the input array. Condition argument is ignored.
 
     Args:
-        shape (tuple[int, ...]): The shape of the bijection.
-            Defaults to None.
+        shape: The shape of the bijection. Defaults to None.
     """
 
     shape: tuple[int, ...] = ()
@@ -121,11 +123,11 @@ class Partial(AbstractBijection):
     """Applies bijection to specific indices of an input.
 
     Args:
-        bijection (AbstractBijection): Bijection that is compatible with the subset
+        bijection: Bijection that is compatible with the subset
             of x indexed by idxs. idxs: Indices (Integer, a slice, or an ndarray
             with integer/bool dtype) of the transformed portion.
-        idxs (int | slice | Array | tuple): The indexes to transform.
-        shape (tuple[int, ...] | None): Shape of the bijection. Defaults to None.
+        idxs: The indexes to transform.
+        shape: Shape of the bijection. Defaults to None.
     """
 
     bijection: AbstractBijection
@@ -166,7 +168,7 @@ class Identity(AbstractBijection):
     """The identity bijection.
 
     Args:
-       shape (tuple[int, ...]): The shape of the bijection. Defaults to ().
+       shape: The shape of the bijection. Defaults to ().
     """
 
     shape: tuple[int, ...] = ()
@@ -192,12 +194,10 @@ class EmbedCondition(AbstractBijection):
     variable. The returned bijection has cond_dim equal to the raw condition size.
 
     Args:
-        bijection (AbstractBijection): Bijection with ``bijection.cond_dim`` equal
-        to the embedded size.
-        embedding_net (Callable): A callable (e.g. equinox module) that embeds a
-        conditioning variable to size ``bijection.cond_dim``.
-        raw_cond_shape (tuple[int, ...] | None): The dimension of the raw
-        conditioning variable.
+        bijection: Bijection with ``bijection.cond_dim`` equal to the embedded size.
+        embedding_net: A callable (e.g. equinox module) that embeds a conditioning
+            variable to size ``bijection.cond_dim``.
+        raw_cond_shape: The dimension of the raw conditioning variable.
     """
 
     bijection: AbstractBijection

@@ -27,14 +27,14 @@ class MaskedAutoregressive(AbstractBijection):
         - https://arxiv.org/abs/1705.07057v4
 
     Args:
-        key (KeyArray): Jax PRNGKey
-        transformer (AbstractBijection): Bijection with shape () to be parameterised
-        by the autoregressive network.
-        dim (int): Dimension.
-        cond_dim (int | None): Dimension of any conditioning variables.
-        nn_width (int): Neural network width.
-        nn_depth (int): Neural network depth.
-        nn_activation (Callable): Neural network activation. Defaults to jnn.relu.
+        key: Jax PRNGKey
+        transformer: Bijection with shape () to be parameterised by the autoregressive
+            network.
+        dim: Dimension.
+        cond_dim: Dimension of any conditioning variables.
+        nn_width: Neural network width.
+        nn_depth: Neural network depth.
+        nn_activation: Neural network activation. Defaults to jnn.relu.
     """
 
     shape: tuple[int, ...]

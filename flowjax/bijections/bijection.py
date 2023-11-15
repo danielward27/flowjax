@@ -6,14 +6,13 @@ implement only the forward methods if an inverse is not available. The `Invert`
 bijection can be used to invert the orientation if a fast inverse is desired (e.g.
 maximum likelihood fitting of flows).
 """
-
 import functools
 from abc import abstractmethod
 
 import equinox as eqx
 from jax import Array
-from jax.typing import ArrayLike
 
+from flowjax._custom_types import ArrayLike
 from flowjax.utils import arraylike_to_array
 
 
@@ -98,10 +97,10 @@ class AbstractBijection(eqx.Module):
         """Apply the forward transformation.
 
         Args:
-            x (ArrayLike): Input with shape matching bijections.shape.
-            condition (ArrayLike | None, optional): Condition, with shape matching
-                bijection.cond_shape, required for conditional bijections. Defaults to
-                None.
+            x: Input with shape matching ``bijections.shape``.
+            condition: Condition, with shape matching ``bijection.cond_shape``, required
+                for conditional bijections and ignored for unconditional bijections.
+                Defaults to None.
         """
 
     @abstractmethod
@@ -113,8 +112,8 @@ class AbstractBijection(eqx.Module):
         """Apply transformation and compute the log absolute Jacobian determinant.
 
         Args:
-            x (ArrayLike): Input with shape matching the bijections shape
-            condition (ArrayLike | None, optional): . Defaults to None.
+            x: Input with shape matching the bijections shape
+            condition: . Defaults to None.
         """
 
     @abstractmethod
@@ -122,10 +121,9 @@ class AbstractBijection(eqx.Module):
         """Compute the inverse transformation.
 
         Args:
-            y (ArrayLike): Input array with shape matching bijection.shape
-            condition (ArrayLike | None, optional): Condition array with shape matching
-                bijection.cond_shape. Required for conditional bijections. Defaults to
-                None.
+            y: Input array with shape matching bijection.shape
+            condition: Condition array with shape matching bijection.cond_shape.
+                Required for conditional bijections. Defaults to None.
         """
 
     @abstractmethod
@@ -137,8 +135,7 @@ class AbstractBijection(eqx.Module):
         """Inverse transformation and corresponding log absolute jacobian determinant.
 
         Args:
-            y (ArrayLike): Input array with shape matching bijection.shape.
-            condition (ArrayLike | None, optional): Condition array with shape matching
-                bijection.cond_shape. Required for conditional bijections. Defaults to
-                None.
+            y: Input array with shape matching bijection.shape.
+            condition: Condition array with shape matching bijection.cond_shape.
+                Required for conditional bijections. Defaults to None.
         """

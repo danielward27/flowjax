@@ -1,4 +1,6 @@
 """Utility functions."""
+from __future__ import annotations
+
 from collections.abc import Sequence
 
 import equinox as eqx
@@ -17,12 +19,12 @@ def real_to_increasing_on_interval(
     """Transform unconstrained vector to monotonically increasing positions on [-B, B].
 
     Args:
-        arr (Array): Parameter vector.
-        B (float): Interval to transform output. Defaults to 1.
-        softmax_adjust (float): Rescales softmax output using (widths +
-            softmax_adjust/widths.size) / (1 + softmax_adjust). e.g. 0=no adjustment,
-            1=average softmax output with evenly spaced widths, >1 promotes more evenly
-            spaced widths.
+        arr: Parameter vector.
+        B : Interval to transform output. Defaults to 1.
+        softmax_adjust : Rescales softmax output using
+            ``(widths + softmax_adjust/widths.size) / (1 + softmax_adjust)``. e.g.
+            0=no adjustment, 1=average softmax output with evenly spaced widths, >1
+            promotes more evenly spaced widths.
     """
     if softmax_adjust < 0:
         raise ValueError("softmax_adjust should be >= 0.")
@@ -92,12 +94,12 @@ def get_ravelled_bijection_constructor(
     construction of the bijection directly from the neural network output.
 
     Args:
-        bijection (AbstractBijection): Bijection to form constructor for.
+        bijection: Bijection to form constructor for.
         filter_spec: Filter function to specify parameters. Defaults to
             eqx.is_inexact_array.
 
     Returns:
-        tuple: The constructor, and the current parameter vector.
+        The constructor, and the current parameter vector.
     """
     params, static = eqx.partition(bijection, filter_spec)
     current, unravel = ravel_pytree(params)
@@ -109,7 +111,7 @@ def get_ravelled_bijection_constructor(
     return constructor, current
 
 
-def arraylike_to_array(arr, err_name: str = "input", **kwargs) -> Array:
+def arraylike_to_array(arr: ArrayLike, err_name: str = "input", **kwargs) -> Array:
     """Check the input is arraylike and convert to a jax Array with ``jnp.asarray``.
 
     Combines ``jnp.asarray``, with an isinstance(arr, ArrayLike) check. This
@@ -119,8 +121,7 @@ def arraylike_to_array(arr, err_name: str = "input", **kwargs) -> Array:
 
     Args:
         arr: Arraylike input to convert to a jax array.
-        err_name (str, optional): Name of the input in the error message. Defaults to
-            "input".
+        err_name: Name of the input in the error message. Defaults to "input".
         **kwargs: Key word arguments passed to jnp.asarray.
     """
     if not isinstance(arr, ArrayLike):

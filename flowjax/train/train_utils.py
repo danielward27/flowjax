@@ -24,13 +24,13 @@ def step(
     """Carry out a training step.
 
     Args:
-        params (PyTree): Parameters for the model
-        static (PyTree): Static components of the model.
+        params: Parameters for the model
+        static: Static components of the model.
         *args: Arguments passed to the loss function.
-        optimizer (optax.GradientTransformation): Optax optimizer.
-        opt_state (PyTree): Optimizer state.
-        loss_fn (Callable): The loss function. This should take params and static as
-            the first two arguments.
+        optimizer: Optax optimizer.
+        opt_state: Optimizer state.
+        loss_fn: The loss function. This should take params and static as the first two
+            arguments.
 
     Returns:
         tuple: (params, opt_state, loss_val)
@@ -45,12 +45,12 @@ def train_val_split(key: Array, arrays: Sequence[Array], val_prop: float = 0.1):
     """Random train validation split for a sequence of arrays.
 
     Args:
-        key (KeyArray): Jax random key.
-        arrays (Sequence[Array]): Sequence of arrays, with matching size on axis 0.
-        val_prop (float): Proportion of data to use for validation. Defaults to 0.1.
+        key: Jax random key.
+        arrays: Sequence of arrays, with matching size on axis 0.
+        val_prop: Proportion of data to use for validation. Defaults to 0.1.
 
     Returns:
-        tuple[tuple]: (train_arrays, validation_arrays)
+        A tuple containing the train arrays and the validation arrays.
     """
     if not 0 <= val_prop <= 1:
         raise ValueError("val_prop should be between 0 and 1.")
@@ -80,8 +80,8 @@ def get_batches(arrays: Sequence[Array], batch_size: int):
             batch size to be equal to the data length.
 
     Args:
-        arrays (Sequence[Array]): Sequence of arrays, with shape matching on axis 0.
-        batch_size (int): The batch size.
+        arrays: Sequence of arrays, with shape matching on axis 0.
+        batch_size: The batch size.
     """
     data_len = arrays[0].shape[0]
     if not all(arr.shape[0] == data_len for arr in arrays):
@@ -101,7 +101,7 @@ def count_fruitless(losses: list[float]) -> int:
     """Count the number of epochs since the minimum loss in a list of losses.
 
     Args:
-        losses (list[float]): List of losses.
+        losses: List of losses.
 
     """
     min_idx = jnp.argmin(jnp.array(losses)).item()

@@ -18,17 +18,15 @@ class Coupling(AbstractBijection):
     """Coupling layer implementation (https://arxiv.org/abs/1605.08803).
 
     Args:
-        key (KeyArray): Jax PRNGKey
-        transformer (AbstractBijection): Unconditional bijection with shape ()
-            to be parameterised by the conditioner neural netork.
-        untransformed_dim (int): Number of untransformed conditioning variables
-            (e.g. dim // 2).
-        dim (int): Total dimension.
-        cond_dim (int | None): Dimension of additional conditioning variables.
-        nn_width (int): Neural network hidden layer width.
-        nn_depth (int): Neural network hidden layer size.
-        nn_activation (Callable): Neural network activation function.
-            Defaults to jnn.relu.
+        key: Jax PRNGKey
+        transformer: Unconditional bijection with shape () to be parameterised by the
+            conditioner neural netork.
+        untransformed_dim: Number of untransformed conditioning variables (e.g. dim//2).
+        dim: Total dimension.
+        cond_dim: Dimension of additional conditioning variables.
+        nn_width: Neural network hidden layer width.
+        nn_depth: Neural network hidden layer size.
+        nn_activation: Neural network activation function. Defaults to jnn.relu.
     """
 
     shape: tuple[int, ...]
