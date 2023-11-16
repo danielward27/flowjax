@@ -1,4 +1,6 @@
 """Autoregressive linear layers and multilayer perceptron."""
+from __future__ import annotations
+
 from collections.abc import Callable
 
 import jax.nn as jnn
@@ -6,7 +8,6 @@ import jax.numpy as jnp
 from equinox import Module
 from equinox.nn import Linear
 from jax import Array, random
-from jax.random import KeyArray
 from jax.typing import ArrayLike
 
 from flowjax.masks import rank_based_mask
@@ -20,15 +21,15 @@ class MaskedLinear(Module):
     """Masked linear neural network layer.
 
     Args:
-        mask (ArrayLike): Mask with shape (out_features, in_features).
-        key (KeyArray): Jax PRNGKey
-        use_bias (bool): Whether to include bias terms. Defaults to True.
+        mask: Mask with shape (out_features, in_features).
+        key: Jax random key.
+        use_bias: Whether to include bias terms. Defaults to True.
     """
 
     linear: Linear
     mask: Array
 
-    def __init__(self, mask: ArrayLike, *, use_bias: bool = True, key: KeyArray):
+    def __init__(self, mask: ArrayLike, *, use_bias: bool = True, key: Array):
         mask = jnp.asarray(mask)
         self.linear = Linear(mask.shape[1], mask.shape[0], use_bias, key=key)
         self.mask = mask
@@ -37,7 +38,7 @@ class MaskedLinear(Module):
         """Run the masked linear layer.
 
         Args:
-            x (ArrayLike): Array with shape ``(mask.shape[1], )``
+            x: Array with shape ``(mask.shape[1], )``
         """
         x = jnp.asarray(x)
         x = self.linear.weight * self.mask @ x
@@ -53,14 +54,13 @@ class AutoregressiveMLP(Module):
     nodes where in_ranks < out_ranks.
 
     Args:
-        in_ranks (ArrayLike): Ranks of the inputs.
-        hidden_ranks (ArrayLike): Ranks of the hidden layer(s).
-        out_ranks (ArrayLike): Ranks of the outputs.
-        depth (int): Number of hidden layers.
-        activation (Callable): Activation function. Defaults to jnn.relu.
-        final_activation (Callable): Final activation function. Defaults to
-            _identity.
-        key (KeyArray): Jax PRNGKey.
+        in_ranks: Ranks of the inputs.
+        hidden_ranks: Ranks of the hidden layer(s).
+        out_ranks: Ranks of the outputs.
+        depth: Number of hidden layers.
+        activation: Activation function. Defaults to jnn.relu.
+        final_activation: Final activation function. Defaults to _identity.
+        key: Jax PRNGKey.
     """
 
     in_size: int

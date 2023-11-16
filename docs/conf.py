@@ -1,6 +1,10 @@
 """Configuration file for the Sphinx documentation builder."""
+
+import builtins
 import sys
 from pathlib import Path
+
+builtins.GENERATING_DOCUMENTATION = True  # For processing ArrayLike
 
 import jax  # noqa Required to avoid circular import
 
@@ -22,17 +26,23 @@ author = "Daniel Ward"
 extensions = [
     "sphinx.ext.viewcode",
     "sphinx.ext.autodoc",
-    "sphinx.ext.napoleon",
     "sphinx.ext.doctest",
+    "sphinx.ext.intersphinx",
     "nbsphinx",
     "sphinx_copybutton",
+    "sphinx.ext.napoleon",
+    "sphinx_autodoc_typehints",
 ]
+
+intersphinx_mapping = {
+    "python": ("https://docs.python.org/3/", None),
+    "jax": ("https://jax.readthedocs.io/en/latest/", None),
+}
 
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
-add_module_names = False
-napoleon_include_init_with_doc = False
+# napoleon_include_init_with_doc = False
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
@@ -50,8 +60,12 @@ html_theme_options = {
 }
 
 pygments_style = "xcode"
-autodoc_typehints = "none"
-autodoc_member_order = "bysource"
 
 copybutton_prompt_text = r">>> |\.\.\. "
 copybutton_prompt_is_regexp = True
+
+napolean_use_rtype = False
+napoleon_attr_annotations = True
+
+autodoc_type_aliases = {"ArrayLike": "ArrayLike"}
+add_module_names = False

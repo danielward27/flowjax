@@ -49,16 +49,15 @@ class BlockAutoregressiveNetwork(AbstractBijection):
     densities (see https://github.com/danielward27/flowjax/issues/102).
 
     Args:
-        key (KeyArray): Jax PRNGKey
-        dim (int): Dimension of the distribution.
-        cond_dim (tuple[int, ...] | None): Dimension of conditioning variables.
-        depth (int): Number of hidden layers in the network.
-        block_dim (int): Block dimension (hidden layer size is `dim*block_dim`).
-        activation: (Bijection | Callable | None). Activation function, either
-            a scalar bijection or a callable that computes the activation for a
-            scalar value. Note that the activation should be bijective
-            to ensure invertibility of the network and in general should map
-            real -> real to ensure that when transforming a distribution (either
+        key: Jax PRNGKey
+        dim: Dimension of the distribution.
+        cond_dim: Dimension of conditioning variables.
+        depth: Number of hidden layers in the network.
+        block_dim: Block dimension (hidden layer size is `dim*block_dim`).
+        activation: Activation function, either a scalar bijection or a callable that
+            computes the activation for a scalar value. Note that the activation should
+            be bijective to ensure invertibility of the network and in general should
+            map real -> real to ensure that when transforming a distribution (either
             with the forward or inverse), the map is defined across the support of
             the base distribution. Defaults to ``LeakyTanh(3)``.
     """

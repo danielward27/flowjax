@@ -1,4 +1,6 @@
 """Function to fit flows to samples from a distribution."""
+from __future__ import annotations
+
 from collections.abc import Callable
 from typing import Any
 
@@ -26,7 +28,7 @@ def fit_to_data(
     dist: PyTree,
     x: ArrayLike,
     *,
-    condition: ArrayLike = None,
+    condition: ArrayLike | None = None,
     loss_fn: Callable | None = None,
     max_epochs: int = 100,
     max_patience: int = 5,
@@ -45,25 +47,26 @@ def fit_to_data(
     non-distribution pytrees as long as a compatible loss function is provided.
 
     Args:
-        key (KeyArray): Jax random seed.
-        dist (PyTree): The distribution to train.
-        x (ArrayLike): Samples from target distribution.
-        condition (ArrayLike | None): Conditioning variables. Defaults to None.
-        loss_fn (Callable | None): Loss function. Defaults to MaximumLikelihoodLoss.
-        max_epochs (int): Maximum number of epochs. Defaults to 100.
-        max_patience (int): Number of consecutive epochs with no validation
-            loss improvement after which training is terminated. Defaults to 5.
-        batch_size (int): Batch size. Defaults to 100.
-        val_prop (float): Proportion of data to use in validation set. Defaults to 0.1.
-        learning_rate (float): Adam learning rate. Defaults to 5e-4.
-        optimizer (optax.GradientTransformation): Optax optimizer. If provided, this
-            overrides the default Adam optimizer, and the learning_rate is ignored.
-            Defaults to None.
-        filter_spec (Callable | PyTree): Equinox `filter_spec` for specifying trainable
-            parameters. Either a callable `leaf -> bool`, or a PyTree with prefix
-            structure matching `dist` with True/False values. Defaults to
-            `eqx.is_inexact_array`.
-        show_progress (bool): Whether to show progress bar. Defaults to True.
+        key: Jax random seed.
+        dist: The distribution to train.
+        x: Samples from target distribution.
+        condition: Conditioning variables. Defaults to None.
+        loss_fn: Loss function. Defaults to MaximumLikelihoodLoss.
+        max_epochs: Maximum number of epochs. Defaults to 100.
+        max_patience: Number of consecutive epochs with no validation loss improvement
+            after which training is terminated. Defaults to 5.
+        batch_size: Batch size. Defaults to 100.
+        val_prop: Proportion of data to use in validation set. Defaults to 0.1.
+        learning_rate: Adam learning rate. Defaults to 5e-4.
+        optimizer: Optax optimizer. If provided, this overrides the default Adam
+            optimizer, and the learning_rate is ignored. Defaults to None.
+        filter_spec: Equinox `filter_spec` for specifying trainable parameters. Either a
+            callable `leaf -> bool`, or a PyTree with prefix structure matching `dist`
+            with True/False values. Defaults to `eqx.is_inexact_array`.
+        show_progress: Whether to show progress bar. Defaults to True.
+
+    Returns:
+        A tuple containing the trained distribution and the losses.
     """
     data = (x,) if condition is None else (x, condition)
     data = tuple(jnp.asarray(a) for a in data)

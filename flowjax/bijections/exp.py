@@ -10,8 +10,7 @@ class Exp(AbstractBijection):
     """Elementwise exponential transform (forward) and log transform (inverse).
 
     Args:
-        shape (tuple[int, ...] | None): Shape of the bijection.
-            Defaults to None.
+        shape: Shape of the bijection. Defaults to ().
     """
 
     shape: tuple[int, ...] = ()

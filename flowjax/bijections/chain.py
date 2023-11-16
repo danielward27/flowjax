@@ -9,8 +9,8 @@ class Chain(AbstractBijection):
     """Chain together arbitrary bijections to form another bijection.
 
     Args:
-        bijections (Sequence[Bijection]): Sequence of bijections. The bijection
-        shapes must match, and any none None condition shapes must match.
+        bijections: Sequence of bijections. The bijection shapes must match, and any
+            none None condition shapes must match.
     """
 
     shape: tuple[int, ...]

@@ -16,7 +16,7 @@ license = { file = "LICENSE" }
 name = "flowjax"
 readme = "README.md"
 requires-python = ">=3.10"
-version = "10.1.0"
+version = "11.0.0"
 
 [project.urls]
 repository = "https://github.com/danielward27/flowjax"
@@ -29,6 +29,7 @@ dev = [
   "sphinx",
   "sphinx-rtd-theme",
   "sphinx-copybutton",
+  "sphinx-autodoc-typehints",
   "nbsphinx",
   "ipython",
   "numpyro",

@@ -1,4 +1,5 @@
 """Affine bijections."""
+from __future__ import annotations
 
 from collections.abc import Callable
 from typing import ClassVar
@@ -20,12 +21,11 @@ class Affine(AbstractBijection):
     ``loc`` and ``scale`` should broadcast to the desired shape of the bijection.
 
     Args:
-        loc (ArrayLike): Location parameter. Defaults to 0.
-        scale (ArrayLike): Scale parameter. Defaults to 1.
-        positivity_constraint (AbstractBijection | None): Bijection with shape
-            matching the Affine bijection, that maps the scale parameter from an
-            unbounded domain to the positive domain. Defaults to
-            :class:`~flowjax.bijections.SoftPlus`.
+        loc: Location parameter. Defaults to 0.
+        scale: Scale parameter. Defaults to 1.
+        positivity_constraint: Bijection with shape matching the Affine bijection, that
+            maps the scale parameter from an unbounded domain to the positive domain.
+            Defaults to :class:`~flowjax.bijections.SoftPlus`.
     """
 
     shape: tuple[int, ...]
@@ -77,17 +77,16 @@ class TriangularAffine(AbstractBijection):
     triangular matrix, and :math:`b` is the bias vector.
 
     Args:
-        loc (ArrayLike): Location parameter. If this is scalar, it is broadcast to the
-            dimension inferred from arr.
-        arr (ArrayLike): Triangular matrix.
-        lower (bool): Whether the mask should select the lower or upper
-        triangular matrix (other elements ignored). Defaults to True (lower).
-        weight_normalisation (bool): If true, carry out weight normalisation.
-        positivity_constraint (AbstractBijection): Bijection with shape matching the
-            dimension of the triangular affine bijection, that maps the diagonal
-            entries of the array from an unbounded domain to the positive domain.
-            Also used for weight normalisation parameters, if used. Defaults to
-            SoftPlus.
+        loc: Location parameter. If this is scalar, it is broadcast to the dimension
+            inferred from arr.
+        arr: Triangular matrix.
+        lower: Whether the mask should select the lower or upper
+            triangular matrix (other elements ignored). Defaults to True (lower).
+        weight_normalisation: If true, carry out weight normalisation.
+        positivity_constraint: Bijection with shape matching the dimension of the
+            triangular affine bijection, that maps the diagonal entries of the array
+            from an unbounded domain to the positive domain. Also used for weight
+            normalisation parameters, if used. Defaults to SoftPlus.
     """
     shape: tuple[int, ...]
     cond_shape: ClassVar[None] = None
@@ -181,11 +180,11 @@ class AdditiveCondition(AbstractBijection):
     module with trainable parameters.
 
     Args:
-        module (Callable[[ArrayLike], ArrayLike]): A callable (e.g. a function or
-            callable module) that maps array with shape cond_shape, to a shape
-            that is broadcastable with the shape of the bijection.
-        shape (tuple[int, ...]): The shape of the bijection.
-        cond_shape (tuple[int, ...]): The condition shape of the bijection.
+        module: A callable (e.g. a function or callable module) that maps array with
+            shape cond_shape, to a shape that is broadcastable with the shape of the
+            bijection.
+        shape: The shape of the bijection.
+        cond_shape: The condition shape of the bijection.
 
     Example:
         Conditioning using a linear transformation

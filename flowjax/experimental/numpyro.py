@@ -3,6 +3,7 @@
 Note these utilities require `numpyro <https://github.com/pyro-ppl/numpyro>`_ to be
 installed.
 """
+from __future__ import annotations
 
 from collections.abc import Callable
 from typing import Any
@@ -41,7 +42,7 @@ class _VectorizedBijection:
     """Wrap a flowjax bijection to support vectorization.
 
     Args:
-        bijection (AbstractBijection): flowjax bijection to be wrapped.
+        bijection: flowjax bijection to be wrapped.
     """
 
     def __init__(self, bijection: AbstractBijection):
@@ -78,15 +79,14 @@ class _VectorizedBijection:
 
 
 class TransformedToNumpyro(numpyro.distributions.Distribution):
-    """Convert a :class:`Transformed` flowjax distribution to a numpyro distribution.
+    """Convert a flowjax transformed distribution to a numpyro distribution.
 
     We assume the support of the distribution is unbounded.
 
     Args:
-        dist (AbstractTransformed): The distribution.
-        condition (ArrayLike | None, optional): Conditioning variables. Any
-            leading batch dimensions will be converted to a batch dimension in
-            the numpyro distribution. Defaults to None.
+        dist: The flowjax distribution.
+        condition: Conditioning variables. Any leading batch dimensions will be
+            converted to batch dimensions in the numpyro distribution. Defaults to None.
     """
 
     def __init__(
@@ -150,13 +150,11 @@ def register_params(
     context to have an effect, e.g. within a numpyro model or guide function.
 
     Args:
-        name (str): Name for the parameter set.
-        model (PyTree): The pytree (e.g. an equinox module, flowjax distribution,
-            or a flowjax bijection).
-        filter_spec (Callable | PyTree): Equinox `filter_spec` for specifying trainable
-            parameters. Either a callable `leaf -> bool`, or a PyTree with prefix
-            structure matching `dist` with True/False values. Defaults to
-            `eqx.is_inexact_array`.
+        name: Name for the parameter set.
+        model: The pytree (e.g. an equinox module, flowjax distribution/bijection).
+        filter_spec: Equinox `filter_spec` for specifying trainable parameters. Either a
+            callable `leaf -> bool`, or a PyTree with prefix structure matching `dist`
+            with True/False values. Defaults to `eqx.is_inexact_array`.
 
     """
     params, static = eqx.partition(model, filter_spec)

@@ -15,9 +15,8 @@ class Concatenate(AbstractBijection):
     See also :class:`Stack`.
 
     Args:
-        bijections (Sequence[Bijection]): Bijections, to stack into a single
-            bijection.
-        axis (int): Axis along which to stack. Defaults to 0.
+        bijections: Bijections, to stack into a single bijection.
+        axis: Axis along which to stack. Defaults to 0.
     """
 
     shape: tuple[int, ...]
@@ -94,8 +93,8 @@ class Stack(AbstractBijection):
     See also :class:`Concatenate`.
 
     Args:
-        bijections (list[Bijection]): Bijections.
-        axis (int): Axis along which to stack. Defaults to 0.
+        bijections: Bijections.
+        axis: Axis along which to stack. Defaults to 0.
     """
 
     shape: tuple[int, ...]

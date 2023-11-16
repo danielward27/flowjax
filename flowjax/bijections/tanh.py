@@ -42,8 +42,8 @@ class LeakyTanh(AbstractBijection):
     so Tanh is not appropriate.
 
     Args:
-        max_val (float): Value above or below which the function becomes linear.
-        shape (tuple[int, ...] | None): The shape of the bijection. Defaults to ().
+        max_val: Value above or below which the function becomes linear.
+        shape: The shape of the bijection. Defaults to ().
     """
 
     shape: tuple[int, ...] = ()

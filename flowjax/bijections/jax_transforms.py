@@ -17,9 +17,9 @@ class Scan(AbstractBijection):
     to construct these using ``equinox.filter_vmap``.
 
     Args:
-        bijection (AbstractBijection): A bijection, in which the arrays leaves have
-            an additional leading axis to scan over. It is often can convenient to
-            create compatible bijections with ``equinox.filter_vmap``.
+        bijection: A bijection, in which the arrays leaves have an additional leading
+            axis to scan over. It is often can convenient to create compatible
+            bijections with ``equinox.filter_vmap``.
 
     Example:
         Below is equivilent to ``Chain([Affine(p) for p in params])``.
@@ -92,16 +92,16 @@ class Vmap(AbstractBijection):
     """Applies vmap to bijection methods to add a batch dimension to the bijection.
 
     Args:
-        bijection (AbstractBijection): The bijection to vectorize.
-        in_axis (int | None | Callable): Specify which axes of the bijection
-            parameters to vectorise over. It should be a PyTree of ``None``, ``int``
-            with the tree structure being a prefix of the bijection, or a callable
-            mapping ``Leaf -> Union[None, int]``. Defaults to None.
-        axis_size (int, optional): The size of the new axis. This should be left
-            unspecified if in_axis is provided, as the size can be inferred from the
-            bijection parameters. Defaults to None.
-        in_axis_condition (int | None, optional): Optionally define an axis of
-            the conditioning variable to vectorize over. Defaults to None.
+        bijection: The bijection to vectorize.
+        in_axis: Specify which axes of the bijection parameters to vectorise over. It
+            should be a PyTree of ``None``, ``int`` with the tree structure being a
+            prefix of the bijection, or a callable mapping ``Leaf -> Union[None, int]``.
+            Defaults to None.
+        axis_size: The size of the new axis. This should be left unspecified if in_axis
+            is provided, as the size can be inferred from the bijection parameters.
+            Defaults to None.
+        in_axis_condition: Optionally define an axis of the conditioning variable to
+            vectorize over. Defaults to None.
 
     Example:
         The two most common use cases, are shown below:

@@ -3,6 +3,8 @@
 The loss functions are callables, with the first two arguments being the partitioned
 distribution (see equinox.partition).
 """
+from __future__ import annotations
+
 from collections.abc import Callable
 
 import equinox as eqx
@@ -46,15 +48,15 @@ class ContrastiveLoss:
     variable (the simulator parameters), and ``condition`` for the conditioning variable
     (the simulator output/oberved data).
 
+    Args:
+        prior: The prior distribution over x (the target
+            variable).
+        n_contrastive: The number of contrastive samples/atoms to use when
+            computing the loss.
+
     References:
         - https://arxiv.org/abs/1905.07488
         - https://arxiv.org/abs/2002.03712
-
-    Args:
-        prior (AbstractDistribution): The prior distribution over x (the target
-            variable).
-        n_contrastive (int): The number of contrastive samples/atoms to use when
-            computing the loss.
     """
 
     def __init__(self, prior: AbstractDistribution, n_contrastive: int):
@@ -96,17 +98,15 @@ class ElboLoss:
     """The negative evidence lower bound (ELBO), approximated using samples.
 
     Args:
-        num_samples (int): Number of samples to use in the ELBO approximation.
-        target (Callable[[ArrayLike], Array]): The target, i.e. log posterior
-            density up to an additive constant / the negative of the potential
-            function, evaluated for a single point.
-        stick_the_landing (bool): Whether to use the (often) lower variance ELBO
-            gradient estimator introduced in https://arxiv.org/pdf/1703.09194.pdf.
-            Note for flows this requires evaluating the flow in both directions
-            (running the forward and inverse transformation). For some flow
-            architectures, this may be computationally expensive due to assymetrical
-            computational complexity between the forward and inverse transformation.
-            Defaults to False.
+        num_samples: Number of samples to use in the ELBO approximation.
+        target: The target, i.e. log posterior density up to an additive constant / the
+            negative of the potential function, evaluated for a single point.
+        stick_the_landing: Whether to use the (often) lower variance ELBO gradient
+            estimator introduced in https://arxiv.org/pdf/1703.09194.pdf. Note for flows
+            this requires evaluating the flow in both directions (running the forward
+            and inverse transformation). For some flow architectures, this may be
+            computationally expensive due to assymetrical computational complexity
+            between the forward and inverse transformation. Defaults to False.
     """
 
     target: Callable[[ArrayLike], Array]
@@ -134,9 +134,9 @@ class ElboLoss:
         """Compute the ELBO loss.
 
         Args:
-            params (AbstractDistribution): The trainable parameters of the model.
-            static (AbstractDistribution): The static components of the model.
-            key (Array): Jax random seed.
+            params: The trainable parameters of the model.
+            static: The static components of the model.
+            key: Jax random seed.
         """
         dist = eqx.combine(params, static)
 

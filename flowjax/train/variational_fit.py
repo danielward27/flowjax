@@ -16,35 +16,33 @@ PyTree = Any
 
 def fit_to_variational_target(
     key: Array,
-    *,
     dist: AbstractDistribution,
     loss_fn: Callable,
+    *,
     steps: int = 100,
     learning_rate: float = 5e-4,
     optimizer: optax.GradientTransformation | None = None,
     filter_spec: Callable | PyTree = eqx.is_inexact_array,
     show_progress: bool = True,
-):
+) -> tuple[AbstractDistribution, list]:
     """Train a distribution (e.g. a flow) by variational inference.
 
     Args:
-        key (Array): Jax PRNGKey.
-        dist (AbstractDistribution): Distribution object, trainable parameters are found
-            using equinox.is_inexact_array.
-        loss_fn (Callable | None): The loss function to optimize (e.g. the ElboLoss).
-        steps (int, optional): The number of training steps to run. Defaults to 100.
-        learning_rate (float, optional): Learning rate. Defaults to 5e-4.
-        optimizer (optax.GradientTransformation | None, optional): Optax optimizer. If
-            provided, this overrides the default Adam optimizer, and the learning_rate
-            is ignored. Defaults to None.
-        filter_spec (Callable | PyTree, optional): Equinox `filter_spec` for
-            specifying trainable parameters. Either a callable `leaf -> bool`, or a
-            PyTree with prefix structure matching `dist` with True/False values.
-            Defaults to eqx.is_inexact_array.
-        show_progress (bool, optional): Whether to show progress bar. Defaults to True.
+        key: Jax PRNGKey.
+        dist: Distribution object, trainable parameters are found using
+            equinox.is_inexact_array.
+        loss_fn: The loss function to optimize (e.g. the ElboLoss).
+        steps: The number of training steps to run. Defaults to 100.
+        learning_rate: Learning rate. Defaults to 5e-4.
+        optimizer: Optax optimizer. If provided, this overrides the default Adam
+            optimizer, and the learning_rate is ignored. Defaults to None.
+        filter_spec: Equinox `filter_spec` for specifying trainable parameters. Either
+            a callable `leaf -> bool`, or a PyTree with prefix structure matching `dist`
+            with True/False values. Defaults to eqx.is_inexact_array.
+        show_progress: Whether to show progress bar. Defaults to True.
 
     Returns:
-        tuple: (distribution, losses).
+        A tuple containing the trained distribution and the losses.
     """
     if optimizer is None:
         optimizer = optax.adam(learning_rate)

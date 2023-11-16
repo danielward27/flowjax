@@ -16,9 +16,9 @@ def rank_based_mask(in_ranks: Array, out_ranks: Array, *, eq: bool = False):
     """Forms mask matrix, with 1s where the out_ranks > or >= in_ranks.
 
     Args:
-        in_ranks (Array): Ranks of the inputs.
-        out_ranks (Array): Ranks of the outputs.
-        eq (bool): If true, compares with >= instead of >. Defaults to False.
+        in_ranks: Ranks of the inputs.
+        out_ranks: Ranks of the outputs.
+        eq: If true, compares with >= instead of >. Defaults to False.
 
     Returns:
         Array: Mask with shape `(len(out_ranks), len(in_ranks))`
