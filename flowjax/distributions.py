@@ -30,14 +30,14 @@ class AbstractDistribution(eqx.Module):
         (1) Inherit from :class:`AbstractDistribution`.
         (2) Define the abstract attributes ``shape`` and ``cond_shape``.
             ``cond_shape`` should be ``None`` for unconditional distributions.
-        (3) Define the abstract methods :meth:`_sample` and :meth:`_log_prob`.
+        (3) Define the abstract methods `_sample` and `_log_prob`.
 
     See the source code for :class:`StandardNormal` for a simple concrete example.
 
     Attributes:
-        shape: Denotes the shape of a single sample from the distribution.
-        cond_shape: The shape of an instance of the conditioning variable. This should
-            be None for unconditional distributions.
+        shape: Tuple denoting the shape of a single sample from the distribution.
+        cond_shape: Tuple denoting the shape of an instance of the conditioning
+            variable. This should be None for unconditional distributions.
 
     """
 
@@ -422,6 +422,7 @@ class MultivariateNormal(AbstractTransformed):
 
     @property
     def loc(self):
+        """Location (mean) of the distribution."""
         return self.bijection.loc
 
     @property

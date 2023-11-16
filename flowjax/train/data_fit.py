@@ -1,4 +1,6 @@
 """Function to fit flows to samples from a distribution."""
+from __future__ import annotations
+
 from collections.abc import Callable
 from typing import Any
 
@@ -7,9 +9,9 @@ import jax.numpy as jnp
 import jax.random as jr
 import optax
 from jax import Array
+from jax.typing import ArrayLike
 from tqdm import tqdm
 
-from flowjax._custom_types import ArrayLike
 from flowjax.train.losses import MaximumLikelihoodLoss
 from flowjax.train.train_utils import (
     count_fruitless,
@@ -26,7 +28,7 @@ def fit_to_data(
     dist: PyTree,
     x: ArrayLike,
     *,
-    condition: ArrayLike = None,
+    condition: ArrayLike | None = None,
     loss_fn: Callable | None = None,
     max_epochs: int = 100,
     max_patience: int = 5,

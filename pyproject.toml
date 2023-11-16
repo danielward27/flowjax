@@ -29,6 +29,7 @@ dev = [
   "sphinx",
   "sphinx-rtd-theme",
   "sphinx-copybutton",
+  "sphinx-autodoc-typehints",
   "nbsphinx",
   "ipython",
   "numpyro",

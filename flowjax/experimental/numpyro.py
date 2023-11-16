@@ -79,7 +79,7 @@ class _VectorizedBijection:
 
 
 class TransformedToNumpyro(numpyro.distributions.Distribution):
-    """Convert a :class:`Transformed` flowjax distribution to a numpyro distribution.
+    """Convert a flowjax transformed distribution to a numpyro distribution.
 
     We assume the support of the distribution is unbounded.
 
