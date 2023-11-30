@@ -22,7 +22,12 @@ data_key, flow_key, train_key = random.split(random.PRNGKey(0), 3)
 x = random.uniform(data_key, (10000, 3))  # Toy data
 base_dist = Normal(jnp.zeros(x.shape[1]))
 flow = block_neural_autoregressive_flow(flow_key, base_dist=base_dist)
-flow, losses = fit_to_data(train_key, flow, x, learning_rate=1e-2)
+flow, losses = fit_to_data(
+    key=train_key,
+    dist=flow,
+    x=x,
+    learning_rate=1e-2,
+    )
 
 # We can now evaluate the log-probability of arbitrary points
 flow.log_prob(x)
