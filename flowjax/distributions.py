@@ -422,12 +422,12 @@ class LogNormal(AbstractTransformed):
     @property
     def loc(self):
         """Location of the distribution."""
-        return self.bijection.loc
+        return self.bijection[0].loc
 
     @property
     def scale(self):
         """Scale of the distribution."""
-        return self.bijection.scale
+        return self.bijection[0].scale
 
 
 class MultivariateNormal(AbstractTransformed):
