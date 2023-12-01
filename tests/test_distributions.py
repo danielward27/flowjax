@@ -13,6 +13,7 @@ from flowjax.distributions import (
     AbstractTransformed,
     Cauchy,
     Gumbel,
+    LogNormal,
     MultivariateNormal,
     Normal,
     StandardNormal,
@@ -42,6 +43,7 @@ _test_distributions = {
     "Cauchy": lambda shape: Cauchy(jnp.zeros(shape)),
     "_StandardStudentT": lambda shape: _StandardStudentT(jnp.ones(shape)),
     "StudentT": lambda shape: StudentT(jnp.ones(shape)),
+    "LogNormal": lambda shape: LogNormal(jnp.ones(shape), 2),
 }
 
 

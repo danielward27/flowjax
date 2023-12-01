@@ -16,7 +16,7 @@ from jax.numpy import linalg
 from jax.scipy import stats as jstats
 
 from flowjax._custom_types import ArrayLike
-from flowjax.bijections import AbstractBijection, Affine, Chain, TriangularAffine
+from flowjax.bijections import AbstractBijection, Affine, Chain, Exp, TriangularAffine
 from flowjax.utils import _get_ufunc_signature, arraylike_to_array, merge_cond_shapes
 
 
@@ -399,6 +399,35 @@ class Normal(AbstractTransformed):
     def scale(self):
         """Scale of the distribution."""
         return self.bijection.scale
+
+
+class LogNormal(AbstractTransformed):
+    """Log normal distribution.
+
+    ``loc`` and ``scale`` here refers to the underlying normal distribution.
+
+    Args:
+        loc: Location paramter. Defaults to 0.
+        scale: Scale parameter. Defaults to 1.0.
+    """
+
+    base_dist: StandardNormal
+    bijection: Chain
+
+    def __init__(self, loc: ArrayLike = 0, scale: ArrayLike = 1):
+        shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
+        self.base_dist = StandardNormal(shape)
+        self.bijection = Chain([Affine(loc, scale), Exp(shape)])
+
+    @property
+    def loc(self):
+        """Location of the distribution."""
+        return self.bijection[0].loc
+
+    @property
+    def scale(self):
+        """Scale of the distribution."""
+        return self.bijection[0].scale
 
 
 class MultivariateNormal(AbstractTransformed):
