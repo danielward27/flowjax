@@ -272,7 +272,7 @@ class AbstractTransformed(AbstractDistribution):
     def _sample_and_log_prob(
         self,
         key: Array,
-        condition=None,
+        condition: Array | None = None,
     ):  # TODO add overide decorator when python>=3.12 is common
         # We override to avoid computing the inverse transformation.
         base_sample, log_prob_base = self.base_dist._sample_and_log_prob(key, condition)
@@ -654,6 +654,48 @@ class StudentT(AbstractTransformed):
     def df(self):
         """The degrees of freedom of the distribution."""
         return self.base_dist.df
+
+
+class _StandardLaplace(AbstractDistribution):
+    """Implements standard laplace distribution (loc=0, scale=1)."""
+
+    shape: tuple[int, ...] = ()
+    cond_shape: ClassVar[None] = None
+
+    def _log_prob(self, x, condition=None):
+        return jstats.laplace.logpdf(x).sum()
+
+    def _sample(self, key, condition=None):
+        return jr.laplace(key, shape=self.shape)
+
+
+class Laplace(AbstractTransformed):
+    """Laplace distribution.
+
+    ``loc`` and ``scale`` here refers to the underlying normal distribution.
+
+    Args:
+        loc: Location paramter. Defaults to 0.
+        scale: Scale parameter. Defaults to 1.0.
+    """
+
+    base_dist: _StandardLaplace
+    bijection: Affine
+
+    def __init__(self, loc: ArrayLike = 0, scale: ArrayLike = 1):
+        shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
+        self.base_dist = _StandardLaplace(shape)
+        self.bijection = Affine(loc, scale)
+
+    @property
+    def loc(self):
+        """Location of the distribution."""
+        return self.bijection.loc
+
+    @property
+    def scale(self):
+        """Scale of the distribution."""
+        return self.bijection.scale
 
 
 class SpecializeCondition(AbstractDistribution):  # TODO check tested
