@@ -2,7 +2,7 @@
 <img src="./logo.png?raw=true" alt="logo" width="500" ></img>
 </div>
 
-# FlowJax: Normalizing Flows in Jax
+# FlowJax: Distributions and Normalizing Flows in Jax
 
 ## Documentation
 Available [here](https://danielward27.github.io/flowjax/index.html).
@@ -64,7 +64,7 @@ A few limitations / things that could be worth including in the future:
 - Add ability to "reshape" bijections.
 
 ## Related
-We make use of the [Equinox](https://arxiv.org/abs/2111.00254) package, which facilitates object-oriented programming with Jax. 
+We make use of the [Equinox](https://arxiv.org/abs/2111.00254) package, which facilitates defining models using a PyTorch-like syntax with Jax. 
 
 ## Authors
 `flowjax` was written by `Daniel Ward <danielward27@outlook.com>`.
