@@ -408,7 +408,7 @@ class LogNormal(AbstractTransformed):
 
     Args:
         loc: Location paramter. Defaults to 0.
-        scale: Scale parameter. Defaults to 1.0.
+        scale: Scale parameter. Defaults to 1.
     """
 
     base_dist: StandardNormal
@@ -527,7 +527,7 @@ class Gumbel(AbstractTransformed):
 
     Args:
         loc: Location paramter.
-        scale: Scale parameter. Defaults to 1.0.
+        scale: Scale parameter. Defaults to 1.
     """
 
     base_dist: _StandardGumbel
@@ -573,7 +573,7 @@ class Cauchy(AbstractTransformed):
 
     Args:
         loc: Location paramter.
-        scale: Scale parameter. Defaults to 1.0.
+        scale: Scale parameter. Defaults to 1.
     """
 
     base_dist: _StandardCauchy
@@ -628,8 +628,8 @@ class StudentT(AbstractTransformed):
 
     Args:
         df: The degrees of freedom.
-        loc: Location parameter. Defaults to 0.0.
-        scale: Scale parameter. Defaults to 1.0.
+        loc: Location parameter. Defaults to 0.
+        scale: Scale parameter. Defaults to 1.
     """
 
     base_dist: _StandardStudentT
@@ -672,11 +672,11 @@ class _StandardLaplace(AbstractDistribution):
 class Laplace(AbstractTransformed):
     """Laplace distribution.
 
-    ``loc`` and ``scale`` here refers to the underlying normal distribution.
+    ``loc`` and ``scale`` should broadcast to the dimension of the distribution..
 
     Args:
         loc: Location paramter. Defaults to 0.
-        scale: Scale parameter. Defaults to 1.0.
+        scale: Scale parameter. Defaults to 1.
     """
 
     base_dist: _StandardLaplace
