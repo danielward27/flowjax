@@ -19,7 +19,6 @@ __all__ = [
     "AdditiveCondition",
     "Affine",
     "AbstractBijection",
-    "Vmap",
     "BlockAutoregressiveNetwork",
     "Chain",
     "Concatenate",
@@ -29,6 +28,7 @@ __all__ = [
     "Flip",
     "Identity",
     "Invert",
+    "LeakyTanh",
     "MaskedAutoregressive",
     "Partial",
     "Permute",
@@ -38,6 +38,6 @@ __all__ = [
     "SoftPlus",
     "Stack",
     "Tanh",
-    "LeakyTanh",
     "TriangularAffine",
+    "Vmap",
 ]

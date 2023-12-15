@@ -17,30 +17,37 @@ from flowjax.distributions import Normal
 from jax import random
 import jax.numpy as jnp
 
-data_key, flow_key, train_key = random.split(random.PRNGKey(0), 3)
+data_key, flow_key, train_key, sample_key = random.split(random.PRNGKey(0), 3)
 
 x = random.uniform(data_key, (10000, 3))  # Toy data
 base_dist = Normal(jnp.zeros(x.shape[1]))
-flow = block_neural_autoregressive_flow(flow_key, base_dist=base_dist)
+flow = block_neural_autoregressive_flow(flow_key, base_dist=base_dist, nn_block_dim=15)
 flow, losses = fit_to_data(
     key=train_key,
     dist=flow,
     x=x,
-    learning_rate=1e-2,
+    learning_rate=2e-3,
+    max_epochs=200,
     )
 
 # We can now evaluate the log-probability of arbitrary points
-flow.log_prob(x)
+log_probs = flow.log_prob(x)
+
+# And sample the distribution
+samples = flow.sample(sample_key, (1000, ))
 ```
 
 The package currently includes:
 - Many simple bijections and distributions, implemented as [Equinox](https://arxiv.org/abs/2111.00254) modules.
 - `coupling_flow` ([Dinh et al., 2017](https://arxiv.org/abs/1605.08803)) and `masked_autoregressive_flow` ([Kingma et al., 2016](https://arxiv.org/abs/1606.04934), [Papamakarios et al., 2017](https://arxiv.org/abs/1705.07057v4)) normalizing flow architectures.
     - These can be used with arbitrary bijections as transformers, such as `Affine` or `RationalQuadraticSpline` (the latter used in neural spline flows; [Durkan et al., 2019](https://arxiv.org/abs/1906.04032)). 
-- `block_neural_autoregressive_flow`, as introduced by [De Cao et al., 2019](https://arxiv.org/abs/1904.04676)
+- `block_neural_autoregressive_flow`, as introduced by [De Cao et al., 2019](https://arxiv.org/abs/1904.04676).
 - `planar_flow`, as introduced by [Rezende and Mohamed, 2015](https://arxiv.org/pdf/1505.05770.pdf).
 - `triangular_spline_flow`, introduced here.
-- Training scripts for fitting by maximum likelihood, variational inference, or using contrastive learning for sequential neural posterior estimation ([Greenberg et al., 2019](https://arxiv.org/abs/1905.07488); [Durkan et al., 2020](https://arxiv.org/abs/2002.03712]))
+- Training scripts for fitting by maximum likelihood, variational inference, or using contrastive learning for sequential neural posterior estimation ([Greenberg et al., 2019](https://arxiv.org/abs/1905.07488); [Durkan et al., 2020](https://arxiv.org/abs/2002.03712])).
+- A bisection search algorihtm that allows inverting some bijections without a
+known inverse, allowing for example both sampling and density evaluation to be
+performed with block neural autoregressive flows.
 
 ## Installation
 ```

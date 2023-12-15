@@ -152,14 +152,16 @@ def block_neural_autoregressive_flow(
     flow_layers: int = 1,
     invert: bool = True,
     activation: AbstractBijection | Callable | None = None,
+    inverter: Callable | None = None,
 ) -> Transformed:
     """Block neural autoregressive flow (BNAF) (https://arxiv.org/abs/1904.04676).
 
     Each flow layer contains a
     :class:`~flowjax.bijections.block_autoregressive_network.BlockAutoregressiveNetwork`
-    bijection. The bijection does not have an analytic inverse, so either
-    ``log_prob`` or ``sample`` and ``sample_and_log_prob`` will be unavailable,
-    controlled using the invert argument.
+    bijection. The bijection does not have an analytic inverse, so must be inverted
+    using numerical methods (by default a bisection search). Note that this means
+    that only one of ``log_prob`` or ``sample{_and_log_prob}`` can be efficient,
+    controlled by the ``invert`` argument.
 
     Args:
         key: Jax PRNGKey.
@@ -168,14 +170,18 @@ def block_neural_autoregressive_flow(
         nn_depth: Number of hidden layers within the networks. Defaults to 1.
         nn_block_dim: Block size. Hidden layer width is dim*nn_block_dim. Defaults to 8.
         flow_layers: Number of BNAF layers. Defaults to 1.
-        invert: Use `True` for access of ``log_prob`` only (e.g. fitting by maximum
-            likelihood), `False` for the forward direction (``sample`` and
-            ``sample_and_log_prob``) only (e.g. for fitting variationally).
+        invert: Use `True` for efficient ``log_prob`` (e.g. when fitting by maximum
+            likelihood), and `False` for efficient ``sample`` and
+            ``sample_and_log_prob`` methods (e.g. for fitting variationally).
         activation: Activation function used within block neural autoregressive
             networks. Note this should be bijective and in some use cases should map
             real -> real. For more information, see
             :class:`~flowjax.bijections.block_autoregressive_network.BlockAutoregressiveNetwork`.
             Defaults to :class:`~flowjax.bijections.tanh.LeakyTanh`.
+        inverter: Callable that implements the required numerical method to invert the
+            ``BlockAutoregressiveNetwork`` bijection. Must have the signature
+            ``inverter(bijection, y, condition=None)``. Defaults to using a bisection
+            search via ``AutoregressiveBisectionInverter``.
     """
 
     def make_layer(key):  # bnaf layer + permutation
@@ -187,6 +193,7 @@ def block_neural_autoregressive_flow(
             depth=nn_depth,
             block_dim=nn_block_dim,
             activation=activation,
+            inverter=inverter,
         )
         return _add_default_permute(bijection, base_dist.shape[-1], perm_key)
 

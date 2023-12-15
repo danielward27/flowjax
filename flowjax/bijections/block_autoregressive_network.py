@@ -10,6 +10,7 @@ from jax.random import KeyArray
 
 from flowjax.bijections.bijection import AbstractBijection
 from flowjax.bijections.tanh import LeakyTanh
+from flowjax.bisection_search import AutoregressiveBisectionInverter
 from flowjax.nn.block_autoregressive import BlockAutoregressiveLinear
 
 
@@ -60,6 +61,10 @@ class BlockAutoregressiveNetwork(AbstractBijection):
             map real -> real to ensure that when transforming a distribution (either
             with the forward or inverse), the map is defined across the support of
             the base distribution. Defaults to ``LeakyTanh(3)``.
+        inverter: Callable that implements the required numerical method to invert the
+            ``BlockAutoregressiveNetwork`` bijection. Must have the signature
+            ``inverter(bijection, y, condition=None)``. Defaults to
+            ``AutoregressiveBisectionInverter``.
     """
     shape: tuple[int, ...]
     cond_shape: tuple[int, ...] | None
@@ -67,6 +72,7 @@ class BlockAutoregressiveNetwork(AbstractBijection):
     layers: list
     block_dim: int
     activation: AbstractBijection
+    inverter: Callable
 
     def __init__(
         self,
@@ -77,6 +83,7 @@ class BlockAutoregressiveNetwork(AbstractBijection):
         depth: int,
         block_dim: int,
         activation: AbstractBijection | Callable | None = None,
+        inverter: Callable | None = None,
     ):
         if activation is None:
             activation = LeakyTanh(3)
@@ -85,6 +92,10 @@ class BlockAutoregressiveNetwork(AbstractBijection):
                 raise ValueError("Bijection must be unconditional with shape ().")
         else:
             activation = _CallableToBijection(activation)
+
+        self.inverter = (
+            AutoregressiveBisectionInverter() if inverter is None else inverter
+        )
 
         layers = []
         if depth == 0:
@@ -153,15 +164,13 @@ class BlockAutoregressiveNetwork(AbstractBijection):
             log_det = logmatmulexp(log_det, log_jacobian)
         return x, log_det.sum()
 
-    def inverse(self, *args, **kwargs):
-        raise NotImplementedError(
-            "This transform would require numerical methods for inversion.",
-        )
+    def inverse(self, y, condition=None):
+        return self.inverter(self, y, condition)
 
-    def inverse_and_log_det(self, *args, **kwargs):
-        raise NotImplementedError(
-            "This transform would require numerical methods for inversion.",
-        )
+    def inverse_and_log_det(self, y, condition=None):
+        x = self.inverter(self, y, condition)
+        _, forward_log_det = self.transform_and_log_det(x, condition)
+        return x, -forward_log_det
 
     def _activation_and_log_det_3d(self, x):
         """Compute activation and the log determinant (blocks, block_dim, block_dim)."""
