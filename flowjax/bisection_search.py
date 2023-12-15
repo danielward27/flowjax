@@ -190,13 +190,14 @@ def adapt_interval_to_include_root(
 
     def body_fn(state):
         sign = state.lower_fn_sign  # Note we know the signs match from cond_fn
-
+        lower_update = jnp.where(sign == 1, state.lower - state.expand_by, state.upper)
+        upper_update = jnp.where(sign == 1, state.lower, state.upper + state.expand_by)
         return _State(
-            lower=jnp.where(sign == 1, state.lower - state.expand_by, state.upper),
-            upper=jnp.where(sign == 1, state.lower, state.upper + state.expand_by),
+            lower=lower_update,
+            upper=upper_update,
             expand_by=state.expand_by * expand_factor,
-            lower_fn_sign=jnp.sign(func(state.lower)),
-            upper_fn_sign=jnp.sign(func(state.upper)),
+            lower_fn_sign=jnp.sign(func(lower_update)),
+            upper_fn_sign=jnp.sign(func(upper_update)),
             iteration=state.iteration + 1,
         )
 
