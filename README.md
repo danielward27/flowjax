@@ -17,16 +17,16 @@ from flowjax.distributions import Normal
 from jax import random
 import jax.numpy as jnp
 
-data_key, flow_key, train_key, sample_key = random.split(random.PRNGKey(0), 3)
+data_key, flow_key, train_key, sample_key = random.split(random.PRNGKey(0), 4)
 
-x = random.uniform(data_key, (10000, 3))  # Toy data
+x = random.uniform(data_key, (5000, 2))  # Toy data
 base_dist = Normal(jnp.zeros(x.shape[1]))
-flow = block_neural_autoregressive_flow(flow_key, base_dist=base_dist, nn_block_dim=15)
+flow = block_neural_autoregressive_flow(flow_key, base_dist=base_dist)
 flow, losses = fit_to_data(
     key=train_key,
     dist=flow,
     x=x,
-    learning_rate=2e-3,
+    learning_rate=5e-3,
     max_epochs=200,
     )
 
