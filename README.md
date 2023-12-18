@@ -50,29 +50,39 @@ known inverse, allowing for example both sampling and density evaluation to be
 performed with block neural autoregressive flows.
 
 ## Installation
-```
+```bash
 pip install flowjax
 ```
 
+## Warning
+This package is in its early stages of development and may undergo significant changes, including breaking changes, between major releases. Whilst ideally we should be on version 0.y.z to indicate its state, we have already progressed beyond that stage.
+
 ## Development
 We can install a version for development as follows
-```
+```bash
 git clone https://github.com/danielward27/flowjax.git
 cd flowjax
 pip install -e .[dev]
 sudo apt-get install pandoc  # Required for building documentation
 ```
 
-## Warning
-This package is in its early stages of development and may undergo significant changes, including breaking changes, between major releases. Whilst ideally we should be on version 0.y.z to indicate its state, we have already progressed beyond that stage.
-
-## TODO
-A few limitations / things that could be worth including in the future:
-- Add ability to "reshape" bijections.
-
 ## Related
-We make use of the [Equinox](https://arxiv.org/abs/2111.00254) package, which facilitates defining models using a PyTorch-like syntax with Jax. 
+We make use of the [Equinox](https://arxiv.org/abs/2111.00254) package, which
+facilitates defining models using a PyTorch-like syntax with Jax. 
 
-## Authors
-`flowjax` was written by `Daniel Ward <danielward27@outlook.com>`.
+## Citation
+If you found this package useful in academic work, please consider citing it using the
+template below, filling in ``[version number]`` and ``[release year of version]`` to the
+appropriate values. Version specific DOIs
+can be obtained from [zenodo](https://zenodo.org/records/10402073) if desired.
 
+```bibtex
+@software{ward2023flowjax,
+  title = {FlowJax: Distributions and Normalizing Flows in Jax},
+  author = {Daniel Ward},
+  url = {https://github.com/danielward27/flowjax},
+  version = {[version number]},
+  year = {[release year of version]},
+  doi = {10.5281/zenodo.10402073},
+}
+```
