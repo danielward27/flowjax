@@ -14,8 +14,8 @@ from jax import lax
 class AutoregressiveBisectionInverter(eqx.Module):
     """Callable module to invert an autoregressive bijection using a bisection search.
 
-    Note that if the value is not within lower and upper, the bounds are dynamically
-    adjusted using ``adapt_interval_to_include_root``.
+    Note that if the inverse value is not within lower and upper, the bounds are
+    dynamically adjusted using ``adapt_interval_to_include_root``.
 
     Args:
         lower: Lower bound of the initial interval where the inverse value is expected.
@@ -35,6 +35,8 @@ class AutoregressiveBisectionInverter(eqx.Module):
             raise ValueError("Lower must be less than upper.")
         if self.tol <= 0:
             raise ValueError("Tolerance must be positive.")
+        if self.max_iter < 0:
+            raise ValueError("max_iter must be a positive integer.")
 
     def __call__(self, bijection, y, condition=None):
         def fn(x):
@@ -125,6 +127,11 @@ def bisection_search(
         A tuple ``(root, adapt_iterations, iterations)``. ``adapt_iterations`` will be
             zero if the root is beteween lower and upper).
     """
+    if max_iter < 0:
+        raise ValueError("max_iter must be positive.")
+    if tol <= 0:
+        raise ValueError("tol must be positive.")
+
     lower, upper, adapt_iterations = adapt_interval_to_include_root(
         func,
         lower=lower,
@@ -138,9 +145,13 @@ def bisection_search(
     def body_fn(state):
         lower, upper, iterations = state
         midpoint = (lower + upper) / 2
-        is_result_positive = func(midpoint) >= 0
-        lower = jnp.where(is_result_positive, lower, midpoint)
-        upper = jnp.where(is_result_positive, midpoint, upper)
+        sign = jnp.sign(func(midpoint))
+        lower = jnp.where(sign == 1, lower, midpoint)
+        upper = jnp.where(sign == 1, midpoint, upper)
+
+        # In case we hit the root exactly
+        lower = jnp.where(sign == 0, midpoint, lower)
+        upper = jnp.where(sign == 0, midpoint, upper)
         return lower, upper, iterations + 1
 
     init_state = (lower, upper, 0)
@@ -155,7 +166,6 @@ def adapt_interval_to_include_root(
     lower: float,
     upper: float,
     expand_factor: float = 2.0,
-    max_iterations: int = 200,
 ):
     """Dyamically adjust the interval to include the root of an increasing function.
 
@@ -165,14 +175,12 @@ def adapt_interval_to_include_root(
 
     Args:
         func: A scalar increasing function.
-        lower: Lower component of interval.
-        upper: Upper component of interval.
+        lower: Lower component of interval. Must be less than upper.
+        upper: Upper component of interval. Must be greater than upper.
         expand_factor: How much to (multiplicatively) increase the adjustment by on
             each iteration. The magnitude of the adjustment of the necessary bound is
             given by ``(init_upper - init_lower)*expand_factor**iteration``. Defaults to
             2.0.
-        max_iterations: The maxmimum number of iterations before the function errors.
-            Defaults to 100.
     """
     fn_lower, fn_upper = func(lower), func(upper)
 
@@ -185,8 +193,7 @@ def adapt_interval_to_include_root(
         iteration: int = 0
 
     def cond_fn(state):
-        signs_match = state.lower_fn_sign == state.upper_fn_sign
-        return jnp.logical_and(signs_match, state.iteration < max_iterations)
+        return state.lower_fn_sign == state.upper_fn_sign
 
     def body_fn(state):
         sign = state.lower_fn_sign  # Note we know the signs match from cond_fn
@@ -212,4 +219,8 @@ def adapt_interval_to_include_root(
     )
     state = lax.while_loop(cond_fn, body_fn, init_state)
 
-    return state.lower, state.upper, state.iteration
+    # In case we land on root exactly, return lower==upper==root
+    lower, upper = state.lower, state.upper
+    lower = jnp.where(state.upper_fn_sign == 0, upper, lower)
+    upper = jnp.where(state.lower_fn_sign == 0, lower, upper)
+    return lower, upper, state.iteration

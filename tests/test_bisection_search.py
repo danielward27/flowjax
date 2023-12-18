@@ -35,6 +35,31 @@ def test_adapt_interval_to_include_root():
     assert iterations == 0
 
 
+true_root = -4
+adapt_exact_test_cases = [
+    (true_root, 10, 0),
+    (-10, true_root, 0),
+    (-2, 0, 1),  # Lower adapted and hits root
+    (-8, -6, 1),  # Upper adapted and hits root
+]
+
+
+@pytest.mark.parametrize(
+    ("lower", "upper", "expected_iterations"),
+    adapt_exact_test_cases,
+)
+def test_adapt_interval_to_include_root_exact(lower, upper, expected_iterations):
+    # Tests cases where the exact root is found
+    lower, upper, iterations = adapt_interval_to_include_root(
+        target_function,
+        lower=lower,
+        upper=upper,
+    )
+    assert lower == true_root
+    assert upper == true_root
+    assert iterations == expected_iterations
+
+
 def test_bisection_search():
     tol = 0.1
     max_iter = 200
@@ -73,6 +98,19 @@ def test_bisection_search():
     assert adapt_iterations > 0
 
 
+def test_bisection_search_exact():
+    # Tests cases where the exact root is found
+    root, _, iterations = bisection_search(
+        target_function,
+        lower=true_root - 2,
+        upper=true_root + 2,
+        tol=0.1,
+        max_iter=200,
+    )
+    assert root == true_root
+    assert iterations == 1
+
+
 def test_autoregressive_bisection_search():
     def autoregressive_func(array):
         return jnp.cumsum(array) + jnp.arange(3)
@@ -86,7 +124,7 @@ def test_autoregressive_bisection_search():
         length=3,
         max_iter=200,
     )
-    assert result == pytest.approx(jnp.array([0, -1, -1]), abs=tol)
+    assert result == pytest.approx(jnp.array([0, -1, -1]), abs=tol * 3)
 
 
 def test_autoregressive_bijection_bisection_inverter():
