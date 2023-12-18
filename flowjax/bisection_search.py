@@ -15,7 +15,7 @@ class AutoregressiveBisectionInverter(eqx.Module):
     """Callable module to invert an autoregressive bijection using a bisection search.
 
     Note that if the inverse value is not within lower and upper, the bounds are
-    dynamically adjusted using ``adapt_interval_to_include_root``.
+    dynamically adjusted using ``_adapt_interval_to_include_root``.
 
     Args:
         lower: Lower bound of the initial interval where the inverse value is expected.
@@ -31,7 +31,7 @@ class AutoregressiveBisectionInverter(eqx.Module):
     max_iter: int = 200
 
     def __check_init__(self):
-        if self.lower >= self.upper:
+        if not self.lower < self.upper:
             raise ValueError("Lower must be less than upper.")
         if self.tol <= 0:
             raise ValueError("Tolerance must be positive.")
@@ -42,7 +42,7 @@ class AutoregressiveBisectionInverter(eqx.Module):
         def fn(x):
             return bijection.transform(x, condition) - y
 
-        return autoregressive_bisection_search(
+        return _autoregressive_bisection_search(
             autoregressive_fn=fn,
             lower=self.lower,
             upper=self.upper,
@@ -52,7 +52,7 @@ class AutoregressiveBisectionInverter(eqx.Module):
         )
 
 
-def autoregressive_bisection_search(
+def _autoregressive_bisection_search(
     autoregressive_fn: Callable,
     *,
     lower: float,
@@ -87,7 +87,7 @@ def autoregressive_bisection_search(
             x = y.at[i].set(x)
             return autoregressive_fn(x)[i]
 
-        root, *_ = bisection_search(
+        root, *_ = _bisection_search(
             scalar_fn,
             tol=tol,
             lower=lower,
@@ -102,7 +102,7 @@ def autoregressive_bisection_search(
     return root
 
 
-def bisection_search(
+def _bisection_search(
     func: Callable,
     *,
     lower: float,
@@ -132,7 +132,7 @@ def bisection_search(
     if tol <= 0:
         raise ValueError("tol must be positive.")
 
-    lower, upper, adapt_iterations = adapt_interval_to_include_root(
+    lower, upper, adapt_iterations = _adapt_interval_to_include_root(
         func,
         lower=lower,
         upper=upper,
@@ -160,7 +160,7 @@ def bisection_search(
     return root, adapt_iterations, iterations
 
 
-def adapt_interval_to_include_root(
+def _adapt_interval_to_include_root(
     func,
     *,
     lower: float,
