@@ -8,7 +8,7 @@ import numpyro.distributions as ndist
 import pytest
 from equinox.nn import Linear
 from jax.flatten_util import ravel_pytree
-from numpyro import sample
+from flowjax.experimental.numpyro import sample
 from numpyro.infer import MCMC, NUTS, SVI, Trace_ELBO
 from numpyro.optim import Adam
 
@@ -21,7 +21,7 @@ true_mean, true_std = jnp.ones(2), 2 * jnp.ones(2)
 
 
 def numpyro_model():
-    sample("x", TransformedToNumpyro(Normal(true_mean, true_std)))
+    sample("x", Normal(true_mean, true_std))
 
 
 def test_mcmc():
@@ -39,7 +39,7 @@ def test_mcmc():
         # We could add support in the numpyro context later if we wish. Note below,
         # the plate dim is -1 (as the flowjax normal has event dim (2,)).
         with numpyro.plate("obs", 10, dim=-1):
-            sample("x", TransformedToNumpyro(Normal(true_mean, true_std)))
+            sample("x", Normal(true_mean, true_std))
 
     mcmc = MCMC(NUTS(plate_model), num_warmup=50, num_samples=500)  # 2d N(1, 2)
     key, subkey = jr.split(key)
@@ -56,7 +56,6 @@ def test_vi():
 
     def guide(dist):
         dist = register_params("guide", dist)
-        dist = TransformedToNumpyro(dist)
         sample("x", dist)
 
     optimizer = Adam(step_size=0.01)
@@ -94,12 +93,12 @@ def test_conditional_vi():
 
     def model():
         cond = sample("cond", ndist.Normal(jnp.zeros((3,))))
-        sample("x", TransformedToNumpyro(true_dist, cond))
+        sample("x", true_dist, condition=cond)
 
     def guide(guide_dist):
         guide_dist = register_params("guide", guide_dist)
         cond = sample("cond", ndist.Normal(jnp.zeros((3,))))
-        sample("x", TransformedToNumpyro(guide_dist, cond))
+        sample("x", guide_dist, condition=cond)
 
     optimizer = Adam(step_size=0.01)
     svi = SVI(model, partial(guide, guide_dist), optimizer, loss=Trace_ELBO())
@@ -122,14 +121,14 @@ def test_vi_plate():
 
     def model():
         with numpyro.plate("obs", plate_dim):
-            sample("x", TransformedToNumpyro(Normal(true_mean, true_std)))
+            sample("x", Normal(true_mean, true_std))
 
     guide_dist = Normal(jnp.ones_like(true_mean), jnp.ones_like(true_std))
 
     def guide(guide_dist):
         guide = register_params("guide", guide_dist)
         with numpyro.plate("obs", plate_dim):
-            sample("x", TransformedToNumpyro(guide))
+            sample("x", guide)
 
     guide = partial(guide, guide_dist)
     optimizer = Adam(step_size=0.01)
@@ -186,13 +185,13 @@ def test_batched_condition():
     def model():
         with numpyro.plate("N", 10, dim=-2):
             cond = sample("cond", ndist.Normal(jnp.zeros(3)).to_event())
-            sample("x", TransformedToNumpyro(true_dist, cond))
+            sample("x", true_dist, condition=cond)
 
     def guide(guide_dist):
         guide_dist = register_params("guide", guide_dist)
         with numpyro.plate("N", 10, dim=-2):
             cond = sample("cond", ndist.Normal(jnp.zeros(3)).to_event())
-            sample("x", TransformedToNumpyro(guide_dist, cond))
+            sample("x", guide_dist, condition=cond)
 
     optimizer = Adam(step_size=0.01)
     svi = SVI(model, partial(guide, guide_dist), optimizer, loss=Trace_ELBO())

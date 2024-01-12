@@ -25,7 +25,6 @@ except ImportError as e:
     raise
 
 from numpyro.distributions import constraints
-
 from flowjax.bijections import AbstractBijection
 from flowjax.distributions import AbstractTransformed
 from flowjax.utils import _get_ufunc_signature
@@ -136,6 +135,25 @@ class TransformedToNumpyro(numpyro.distributions.Distribution):
     @property
     def _base_condition(self):
         return self.condition if self.dist.base_dist.cond_shape else None
+
+
+def sample(name: str, fn: Any, *args, condition=None, **kwargs):
+    """Numpyro sample wrapper that wraps flowjax AbstractTransformed distributions.
+
+    Args:
+        name: Name of the sample site.
+        fn: A flowjax distribution, numpyro distribution or a stochastic function that
+            returns a sample.
+        condition: Conditioning variable if fn is a conditional flowjax distribution.
+            Defaults to None.
+        *args: Passed to numpyro sample.
+        **kwargs: Passed to numpyro sample.
+    """
+
+    if isinstance(fn, AbstractTransformed):
+        fn = TransformedToNumpyro(fn, condition)
+
+    return numpyro.sample(name, fn, *args, **kwargs)
 
 
 def register_params(
