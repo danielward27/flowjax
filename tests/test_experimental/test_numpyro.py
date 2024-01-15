@@ -8,16 +8,16 @@ import numpyro.distributions as ndist
 import pytest
 from equinox.nn import Linear
 from jax.flatten_util import ravel_pytree
-from flowjax.experimental.numpyro import sample
 from numpyro.infer import MCMC, NUTS, SVI, Trace_ELBO
 from numpyro.optim import Adam
 
 from flowjax.bijections import AdditiveCondition
 from flowjax.distributions import Normal, StandardNormal, Transformed
 from flowjax.experimental.numpyro import (
+    _get_batch_shape,
     distribution_to_numpyro,
     register_params,
-    _get_batch_shape,
+    sample,
 )
 from flowjax.flows import block_neural_autoregressive_flow
 

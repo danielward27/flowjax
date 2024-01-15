@@ -11,8 +11,9 @@ from typing import Any
 import equinox as eqx
 import jax
 import jax.numpy as jnp
-from jax.typing import ArrayLike
 from jax import Array
+from jax.typing import ArrayLike
+
 from flowjax.utils import arraylike_to_array
 
 try:
@@ -25,8 +26,9 @@ except ImportError as e:
     raise
 
 from numpyro.distributions import constraints
+
 from flowjax.bijections import AbstractBijection
-from flowjax.distributions import AbstractTransformed, AbstractDistribution
+from flowjax.distributions import AbstractDistribution, AbstractTransformed
 from flowjax.utils import _get_ufunc_signature
 
 PyTree = Any
@@ -48,7 +50,6 @@ def sample(name: str, fn: Any, *args, condition=None, **kwargs):
         *args: Passed to numpyro sample.
         **kwargs: Passed to numpyro sample.
     """
-
     if isinstance(fn, AbstractDistribution):
         fn = distribution_to_numpyro(fn, condition)
 
@@ -80,7 +81,8 @@ def register_params(
 
 
 def distribution_to_numpyro(
-    dist: AbstractDistribution, condition: ArrayLike | None = None
+    dist: AbstractDistribution,
+    condition: ArrayLike | None = None,
 ):
     """Convert a flowjax distribution to a numpyro distribution.
 
@@ -90,7 +92,6 @@ def distribution_to_numpyro(
             be converted to batch dimensions in the numpyro distribution. Defaults to
             None.
     """
-
     if isinstance(dist, AbstractTransformed):
         return _TransformedToNumpyro(dist, condition)
     return _DistributionToNumpyro(dist, condition)
@@ -211,6 +212,5 @@ def _get_batch_shape(condition, cond_shape):
     if condition is not None:
         if len(cond_shape) > 0:
             return condition.shape[: -len(cond_shape)]
-        else:
-            return condition.shape
+        return condition.shape
     return ()
