@@ -17,10 +17,9 @@ in its infancy and there may be breaking changes without warning.
     
 In general, we can use a combination of flowjax and numpyro distributions in a
 numpyro model by using :func:`~flowjax.experimental.numpyro.sample`, in place of
-numpyro's ``sample``. This will wrap flowjax
-:class:`~flowjax.distributions.AbstractTransformed` distributions to numpyro
-distributions, using :class:`~flowjax.experimental.numpyro.TransformedToNumpyro`.
-This can be used for example to embed normalising flows into arbitrary
+numpyro's ``sample``. This will wrap flowjax distributions to numpyro
+distributions, using :func:`~flowjax.experimental.numpyro.distribution_to_numpyro`.
+This approach can be used for example to embed normalising flows into arbitrary
 probabilistic models. Here is a simple example
 
     .. doctest::
