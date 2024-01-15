@@ -8,13 +8,17 @@ import numpyro.distributions as ndist
 import pytest
 from equinox.nn import Linear
 from jax.flatten_util import ravel_pytree
-from flowjax.experimental.numpyro import sample
 from numpyro.infer import MCMC, NUTS, SVI, Trace_ELBO
 from numpyro.optim import Adam
 
 from flowjax.bijections import AdditiveCondition
 from flowjax.distributions import Normal, StandardNormal, Transformed
-from flowjax.experimental.numpyro import TransformedToNumpyro, register_params
+from flowjax.experimental.numpyro import (
+    _get_batch_shape,
+    distribution_to_numpyro,
+    register_params,
+    sample,
+)
 from flowjax.flows import block_neural_autoregressive_flow
 
 true_mean, true_std = jnp.ones(2), 2 * jnp.ones(2)
@@ -22,6 +26,12 @@ true_mean, true_std = jnp.ones(2), 2 * jnp.ones(2)
 
 def numpyro_model():
     sample("x", Normal(true_mean, true_std))
+
+
+def test_get_batch_shape():
+    assert _get_batch_shape(jnp.ones((2, 3)), ()) == (2, 3)
+    assert _get_batch_shape(jnp.ones(3), (3,)) == ()
+    assert _get_batch_shape(jnp.ones((1, 2, 3)), (2, 3)) == (1,)
 
 
 def test_mcmc():
@@ -143,26 +153,28 @@ def test_vi_plate():
 
 
 key = jr.PRNGKey(0)
-test_cases = [[(), ()], [(2,), ()], [(), (2,)], [(3, 2, 4), (1, 2)]]
+test_cases = {
+    "distribution": [
+        StandardNormal(()),
+        StandardNormal((1, 2)),
+        Normal(),
+        Normal(jnp.ones((1, 2))),
+    ],
+    "sample_shape": [(), (3, 4)],
+}
 
 
-@pytest.mark.parametrize(("shape", "sample_shape"), test_cases)
-def test_TransformedToNumpyro(shape, sample_shape):
-    key, subkey = jr.split(jr.PRNGKey(0))
-    means = jr.normal(subkey, shape)
-
-    key, subkey = jr.split(key)
-    stds = jnp.exp(jr.normal(subkey, shape))
-
-    dist = Normal(means, stds)
-    wrapped = TransformedToNumpyro(dist)
+@pytest.mark.parametrize("distribution", test_cases["distribution"])
+@pytest.mark.parametrize("sample_shape", test_cases["sample_shape"])
+def test_distribution_to_numpyro(distribution, sample_shape):
+    wrapped = distribution_to_numpyro(distribution)
 
     # Same key should lead to same samples
-    x = dist.sample(key, sample_shape)
+    x = distribution.sample(key, sample_shape)
     assert wrapped.sample(key, sample_shape) == pytest.approx(x)
 
     # Should give same log prob
-    assert wrapped.log_prob(x) == pytest.approx(dist.log_prob(x))
+    assert wrapped.log_prob(x) == pytest.approx(distribution.log_prob(x))
 
 
 def test_batched_condition():
@@ -176,7 +188,7 @@ def test_batched_condition():
     )
 
     condition = jnp.ones((10, 3))
-    wrapped = TransformedToNumpyro(dist, condition)
+    wrapped = distribution_to_numpyro(dist, condition)
     assert wrapped.batch_shape == (10,)
 
     key, subkey = jr.split(key)
