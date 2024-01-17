@@ -12,6 +12,7 @@ from flowjax.distributions import (
     AbstractDistribution,
     AbstractTransformed,
     Cauchy,
+    Exponential,
     Gumbel,
     Laplace,
     LogNormal,
@@ -48,6 +49,7 @@ _test_distributions = {
     "LogNormal": lambda shape: LogNormal(jnp.ones(shape), 2),
     "_StandardLaplace": _StandardLaplace,
     "Laplace": lambda shape: Laplace(jnp.ones(shape)),
+    "Exponential": lambda shape: Exponential(jnp.ones(shape)),
 }
 
 

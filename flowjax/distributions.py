@@ -16,7 +16,14 @@ from jax.numpy import linalg
 from jax.scipy import stats as jstats
 
 from flowjax._custom_types import ArrayLike
-from flowjax.bijections import AbstractBijection, Affine, Chain, Exp, TriangularAffine
+from flowjax.bijections import (
+    AbstractBijection,
+    Affine,
+    Chain,
+    Exp,
+    Scale,
+    TriangularAffine,
+)
 from flowjax.utils import _get_ufunc_signature, arraylike_to_array, merge_cond_shapes
 
 
@@ -696,6 +703,36 @@ class Laplace(AbstractTransformed):
     def scale(self):
         """Scale of the distribution."""
         return self.bijection.scale
+
+
+class _StandardExponential(AbstractDistribution):
+    shape: tuple[int, ...] = ()
+    cond_shape: ClassVar[None] = None
+
+    def _log_prob(self, x, condition=None):
+        return jstats.expon.logpdf(x).sum()
+
+    def _sample(self, key, condition=None):
+        return jr.exponential(key, shape=self.shape)
+
+
+class Exponential(AbstractTransformed):
+    """Exponential distribution.
+
+    Args:
+        rate: The rate parameter (1 / scale).
+    """
+
+    base_dist: _StandardExponential
+    bijection: Scale
+
+    def __init__(self, rate: Array):
+        self.base_dist = _StandardExponential(rate.shape)
+        self.bijection = Scale(1 / rate)
+
+    @property
+    def rate(self):
+        return 1 / self.bijection.scale
 
 
 class SpecializeCondition(AbstractDistribution):  # TODO check tested
