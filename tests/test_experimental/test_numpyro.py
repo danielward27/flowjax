@@ -7,7 +7,9 @@ import numpyro
 import numpyro.distributions as ndist
 import pytest
 from equinox.nn import Linear
+from jax import Array
 from jax.flatten_util import ravel_pytree
+from numpyro import handlers
 from numpyro.infer import MCMC, NUTS, SVI, Trace_ELBO
 from numpyro.optim import Adam
 
@@ -229,3 +231,23 @@ def get_conditional_true_guide(key, dim, cond_dim):
         for k in jr.split(key)
     )
     return true_dist, guide_dist
+
+
+def test_callable_params():
+    class MyParams(eqx.Module):
+        a: Array
+        b: Array
+
+        def __call__(self, *args, **kwargs):
+            raise NotImplementedError()
+
+    def model(params):
+        params = register_params("my_params", params)
+        sample("x", Normal(params.a, params.b))
+
+    my_params = MyParams(jnp.ones(3), jnp.ones(3))
+    model = handlers.seed(model, key)
+    model_trace = handlers.trace(model).get_trace(my_params)
+
+    assert "my_params" in model_trace
+    assert eqx.tree_equal(my_params, model_trace["my_params"]["value"])

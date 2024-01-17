@@ -32,10 +32,6 @@ from flowjax.distributions import AbstractDistribution, AbstractTransformed
 from flowjax.utils import _get_ufunc_signature
 
 PyTree = Any
-# TODO list:
-#    - How to add support of batch dimensions.
-#    - Allow control of supports and constraints - will applications of transformations
-#           to apply constraints lead to problems with reparameterisation?
 
 
 def sample(name: str, fn: Any, *args, condition=None, **kwargs):
@@ -76,7 +72,13 @@ def register_params(
 
     """
     params, static = eqx.partition(model, filter_spec)
-    params = numpyro.param(name, params)
+    if callable(params):
+        # Wrap to avoid special handling of callables by numpyro. Numpyro expects a
+        # callable to be used for lazy initialization, whereas in our case it is likely
+        # a callable module we wish to train.
+        params = numpyro.param(name, lambda _: params)
+    else:
+        params = numpyro.param(name, params)
     return eqx.combine(params, static)
 
 
@@ -150,17 +152,16 @@ class _TransformedToNumpyro(numpyro.distributions.Distribution):
     def sample_with_intermediates(self, key, sample_shape=...):
         # Sample the distribution returning the base distribution sample.
         z = self.dist.base_dist.sample(key, sample_shape, self._base_condition)
-        x = _VectorizedBijection(self.dist.bijection).transform(z, self.condition)
-        return x, [z]
+        x, log_det = _VectorizedBijection(self.dist.bijection).transform_and_log_det(
+            z, self.condition
+        )
+        return x, [z, log_det]
 
     def log_prob(self, value, intermediates=None):
         if intermediates is None:
             return self.dist.log_prob(value, self.condition)
 
-        z = intermediates[0]
-        _, log_det = _VectorizedBijection(
-            self.dist.bijection,
-        ).transform_and_log_det(z, self.condition)
+        z, log_det = intermediates
         return self.dist.base_dist.log_prob(z, self._base_condition) - log_det
 
     @property

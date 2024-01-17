@@ -70,6 +70,55 @@ class Affine(AbstractBijection):
         return self.positivity_constraint.transform(self._scale)
 
 
+class Scale(AbstractBijection):
+    """Scale transformation ``y = a*x``.
+
+    Args:
+        scale: Scale parameter. Defaults to 1.
+        positivity_constraint: Bijection with shape matching the Affine bijection, that
+            maps the scale parameter from an unbounded domain to the positive domain.
+            Defaults to :class:`~flowjax.bijections.SoftPlus`.
+    """
+
+    _scale: Array
+    positivity_constraint: AbstractBijection
+    cond_shape: ClassVar[None] = None
+
+    def __init__(
+        self,
+        scale: ArrayLike,
+        positivity_constraint: AbstractBijection | None = None,
+    ):
+        if positivity_constraint is None:
+            positivity_constraint = SoftPlus(jnp.shape(scale))
+
+        self.positivity_constraint = positivity_constraint
+        self._scale = positivity_constraint.inverse(scale)
+
+    def transform(self, x, condition=None):
+        return x * self.scale
+
+    def transform_and_log_det(self, x, condition=None):
+        scale = self.scale
+        return x * scale, jnp.log(scale).sum()
+
+    def inverse(self, y, condition=None):
+        return y / self.scale
+
+    def inverse_and_log_det(self, y, condition=None):
+        scale = self.scale
+        return y / scale, -jnp.log(scale).sum()
+
+    @property
+    def scale(self):
+        """The scale parameter of the affine transformation."""
+        return self.positivity_constraint.transform(self._scale)
+
+    @property
+    def shape(self):
+        return self._scale.shape
+
+
 class TriangularAffine(AbstractBijection):
     r"""A triangular affine transformation.
 

@@ -25,6 +25,7 @@ from flowjax.bijections import (
     Permute,
     Planar,
     RationalQuadraticSpline,
+    Scale,
     Scan,
     SoftPlus,
     Stack,
@@ -140,6 +141,7 @@ bijections = {
     ),
     "Chain": Chain([Flip((DIM,)), Affine(jnp.ones(DIM), jnp.full(DIM, 2))]),
     "Scan": Scan(eqx.filter_vmap(Affine)(jnp.ones((2, DIM)))),
+    "Scale": Scale(jnp.full(DIM, 2)),
     "Concatenate": Concatenate([Affine(jnp.ones(DIM)), Tanh(shape=(DIM,))]),
     "ConcatenateAxis1": Concatenate(
         [Affine(jnp.ones((3, 3))), Tanh(shape=((3, 3)))],
