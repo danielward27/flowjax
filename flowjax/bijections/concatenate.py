@@ -35,7 +35,7 @@ class Concatenate(AbstractBijection):
         self.shape = (
             shapes[0][:axis] + (sum(s[axis] for s in shapes),) + shapes[0][axis + 1 :]
         )
-        self.split_idxs = jnp.array([s[axis] for s in shapes[:-1]])
+        self.split_idxs = jnp.cumsum(jnp.array([s[axis] for s in shapes[:-1]]))
         self.cond_shape = merge_cond_shapes([b.cond_shape for b in bijections])
 
     def transform(self, x, condition=None):
