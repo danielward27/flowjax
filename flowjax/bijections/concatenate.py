@@ -1,6 +1,7 @@
 """Module contains bijections formed by "stacking/concatenating" other bijections."""
 
 from collections.abc import Sequence
+from itertools import accumulate
 
 import jax.numpy as jnp
 from jax import Array
@@ -21,7 +22,7 @@ class Concatenate(AbstractBijection):
 
     shape: tuple[int, ...]
     cond_shape: tuple[int, ...] | None
-    split_idxs: Array
+    split_idxs: tuple[int, ...]
     bijections: Sequence[AbstractBijection]
     axis: int
 
@@ -35,7 +36,7 @@ class Concatenate(AbstractBijection):
         self.shape = (
             shapes[0][:axis] + (sum(s[axis] for s in shapes),) + shapes[0][axis + 1 :]
         )
-        self.split_idxs = jnp.cumsum(jnp.array([s[axis] for s in shapes[:-1]]))
+        self.split_idxs = tuple(accumulate([s[axis] for s in shapes[:-1]]))
         self.cond_shape = merge_cond_shapes([b.cond_shape for b in bijections])
 
     def transform(self, x, condition=None):
