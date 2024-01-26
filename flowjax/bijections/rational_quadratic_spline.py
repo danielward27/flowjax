@@ -83,7 +83,7 @@ class RationalQuadraticSpline(AbstractBijection):
     def transform(self, x, condition=None):
         # Following notation from the paper
         x_pos, y_pos, derivatives = self.x_pos, self.y_pos, self.derivatives
-        in_bounds = jnp.logical_and(x > -self.interval, x < self.interval)
+        in_bounds = jnp.logical_and(x >= -self.interval, x <= self.interval)
         x_robust = jnp.where(in_bounds, x, 0)  # To avoid nans
         k = jnp.searchsorted(x_pos, x_robust) - 1  # k is bin number
         xi = (x_robust - x_pos[k]) / (x_pos[k + 1] - x_pos[k])
@@ -102,8 +102,7 @@ class RationalQuadraticSpline(AbstractBijection):
     def inverse(self, y, condition=None):
         # Following notation from the paper
         x_pos, y_pos, derivatives = self.x_pos, self.y_pos, self.derivatives
-        in_bounds = jnp.logical_and(y > -self.interval, y < self.interval)
-
+        in_bounds = jnp.logical_and(y >= -self.interval, y <= self.interval)
         y_robust = jnp.where(in_bounds, y, 0)  # To avoid nans
         k = jnp.searchsorted(y_pos, y_robust) - 1
         xk, xk1, yk, yk1 = x_pos[k], x_pos[k + 1], y_pos[k], y_pos[k + 1]
@@ -128,7 +127,7 @@ class RationalQuadraticSpline(AbstractBijection):
         """The derivative dy/dx of the forward transformation."""
         # Following notation from the paper (eq. 5)
         x_pos, y_pos, derivatives = self.x_pos, self.y_pos, self.derivatives
-        in_bounds = jnp.logical_and(x > -self.interval, x < self.interval)
+        in_bounds = jnp.logical_and(x >= -self.interval, x <= self.interval)
         x_robust = jnp.where(in_bounds, x, 0)  # To avoid nans
         k = jnp.searchsorted(x_pos, x_robust) - 1
         xi = (x_robust - x_pos[k]) / (x_pos[k + 1] - x_pos[k])
