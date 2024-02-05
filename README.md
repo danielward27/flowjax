@@ -45,7 +45,7 @@ The package currently includes:
 - `planar_flow`, as introduced by [Rezende and Mohamed, 2015](https://arxiv.org/pdf/1505.05770.pdf).
 - `triangular_spline_flow`, introduced here.
 - Training scripts for fitting by maximum likelihood, variational inference, or using contrastive learning for sequential neural posterior estimation ([Greenberg et al., 2019](https://arxiv.org/abs/1905.07488); [Durkan et al., 2020](https://arxiv.org/abs/2002.03712])).
-- A bisection search algorihtm that allows inverting some bijections without a
+- A bisection search algorithm that allows inverting some bijections without a
 known inverse, allowing for example both sampling and density evaluation to be
 performed with block neural autoregressive flows.
 
