@@ -137,7 +137,7 @@ class _TransformedToNumpyro(numpyro.distributions.Distribution):
     ):
         self.dist = dist.merge_transforms()  # Ensure base distribution not transformed
 
-        if dist.base_dist.cond_shape is not None:
+        if self.dist.base_dist.cond_shape is not None:
             raise ValueError("Conditional base distributions are not yet supported.")
 
         if condition is not None:
