@@ -1,4 +1,5 @@
 """Exponential bijection."""
+
 from typing import ClassVar
 
 import jax.numpy as jnp

@@ -2,12 +2,12 @@
 
 Ref: https://arxiv.org/abs/1605.08803.
 """
+
 from collections.abc import Callable
 
 import equinox as eqx
 import jax.nn as jnn
 import jax.numpy as jnp
-from jax.random import KeyArray
 
 from flowjax.bijections.bijection import AbstractBijection
 from flowjax.bijections.jax_transforms import Vmap
@@ -38,7 +38,7 @@ class Coupling(AbstractBijection):
 
     def __init__(
         self,
-        key: KeyArray,
+        key: Array,
         *,
         transformer: AbstractBijection,
         untransformed_dim: int,
@@ -68,9 +68,9 @@ class Coupling(AbstractBijection):
         )
 
         conditioner = eqx.nn.MLP(
-            in_size=untransformed_dim
-            if cond_dim is None
-            else untransformed_dim + cond_dim,
+            in_size=(
+                untransformed_dim if cond_dim is None else untransformed_dim + cond_dim
+            ),
             out_size=conditioner_output_size,
             width_size=nn_width,
             depth=nn_depth,

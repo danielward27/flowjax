@@ -1,12 +1,12 @@
 """Block Neural Autoregressive bijection implementation."""
+
 from collections.abc import Callable
 from typing import ClassVar
 
 import equinox as eqx
 import jax
 import jax.numpy as jnp
-from jax import random
-from jax.random import KeyArray
+from jax import Array, random
 
 from flowjax.bijections.bijection import AbstractBijection
 from flowjax.bijections.tanh import LeakyTanh
@@ -66,6 +66,7 @@ class BlockAutoregressiveNetwork(AbstractBijection):
             ``inverter(bijection, y, condition=None)``. Defaults to
             ``AutoregressiveBisectionInverter``.
     """
+
     shape: tuple[int, ...]
     cond_shape: tuple[int, ...] | None
     depth: int
@@ -76,7 +77,7 @@ class BlockAutoregressiveNetwork(AbstractBijection):
 
     def __init__(
         self,
-        key: KeyArray,
+        key: Array,
         *,
         dim: int,
         cond_dim: int | None,
