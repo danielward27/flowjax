@@ -1,6 +1,7 @@
 from functools import partial
 
 import equinox as eqx
+import jax
 import jax.numpy as jnp
 import jax.random as jr
 import numpyro
@@ -14,14 +15,18 @@ from numpyro.infer import MCMC, NUTS, SVI, Trace_ELBO
 from numpyro.optim import Adam
 
 from flowjax.bijections import AdditiveCondition
-from flowjax.distributions import Normal, StandardNormal, Transformed
+from flowjax.distributions import (
+    Normal,
+    StandardNormal,
+    Transformed,
+)
 from flowjax.experimental.numpyro import (
     _get_batch_shape,
     distribution_to_numpyro,
     register_params,
     sample,
 )
-from flowjax.flows import block_neural_autoregressive_flow
+from flowjax.flows import block_neural_autoregressive_flow, masked_autoregressive_flow
 
 true_mean, true_std = jnp.ones(2), 2 * jnp.ones(2)
 
@@ -251,3 +256,70 @@ def test_callable_params():
 
     assert "my_params" in model_trace
     assert eqx.tree_equal(my_params, model_trace["my_params"]["value"])
+
+
+def test_expected_elbo():
+    dim = 2
+    cond_dim = 3
+    n_obs = 5
+    key, subkey = jr.split(jr.PRNGKey(0))
+
+    likelihood = block_neural_autoregressive_flow(
+        key,
+        base_dist=Normal(jnp.zeros(dim)),
+        cond_dim=cond_dim,
+        nn_block_dim=2,
+    )
+    prior = StandardNormal((cond_dim,))
+
+    key, subkey = jr.split(jr.PRNGKey(0))
+    posterior = block_neural_autoregressive_flow(
+        key,
+        base_dist=Normal(jnp.zeros(cond_dim)),
+        cond_dim=dim,
+        nn_block_dim=2,
+        invert=False,
+    )
+
+    def model(obs):
+        with numpyro.plate("obs", n_obs):
+            theta = sample("theta", prior)
+            sample("x", likelihood, obs=obs, condition=theta)
+
+    def guide(obs):
+        with numpyro.plate("obs", n_obs):
+            sample("theta", posterior, condition=obs)
+
+    def manual_elbo(key):
+        guide_samps, guide_lps = posterior.sample_and_log_prob(key, condition=obs)
+        model_lps = prior.log_prob(guide_samps) + likelihood.log_prob(obs, guide_samps)
+        return model_lps.sum() - guide_lps.sum()
+
+    from numpyro.infer import Trace_ELBO
+
+    key, subkey = jr.split(key)
+    obs = jr.normal(subkey, (n_obs, dim))
+
+    key, subkey = jr.split(key)
+    elbo = -Trace_ELBO(num_particles=500).loss(subkey, {}, model, guide, obs)
+
+    # Seed handling is different, so we compare stochastic elbo for simplicity
+    manual = jax.vmap(manual_elbo)(jr.split(subkey, 500)).mean()
+    assert elbo == pytest.approx(manual, abs=1)
+
+
+def test_conditional_sample_with_intermediates():
+
+    cond_flow = masked_autoregressive_flow(
+        jr.PRNGKey(0),
+        base_dist=Normal(jnp.ones(3)),
+        cond_dim=2,
+        flow_layers=2,
+    )
+
+    dist = distribution_to_numpyro(cond_flow, condition=jnp.ones((10, 2)))
+
+    sample, (z, log_det) = dist.sample_with_intermediates(key)
+    assert sample.shape == z.shape
+    assert log_det.shape == (10,)
+    assert not pytest.approx(sample[0]) == sample[1]  # Ensures different base sample

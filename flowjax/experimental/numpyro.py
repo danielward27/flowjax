@@ -3,6 +3,7 @@
 Note these utilities require `numpyro <https://github.com/pyro-ppl/numpyro>`_ to be
 installed.
 """
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -121,7 +122,7 @@ class _DistributionToNumpyro(numpyro.distributions.Distribution):
     def condition(self):
         return jax.lax.stop_gradient(self._condition)
 
-    def sample(self, key, sample_shape=...):
+    def sample(self, key, sample_shape=()):
         return self.dist.sample(key, sample_shape, self.condition)
 
     def log_prob(self, value):
@@ -135,6 +136,10 @@ class _TransformedToNumpyro(numpyro.distributions.Distribution):
         condition: ArrayLike | None = None,
     ):
         self.dist = dist.merge_transforms()  # Ensure base distribution not transformed
+
+        if self.dist.base_dist.cond_shape is not None:
+            raise ValueError("Conditional base distributions are not yet supported.")
+
         if condition is not None:
             condition = arraylike_to_array(condition, "condition")
         self._condition = condition
@@ -146,14 +151,14 @@ class _TransformedToNumpyro(numpyro.distributions.Distribution):
     def condition(self):
         return jax.lax.stop_gradient(self._condition)
 
-    def sample(self, key, sample_shape=...):
+    def sample(self, key, sample_shape=()):
         return self.dist.sample(key, sample_shape, self.condition)
 
-    def sample_with_intermediates(self, key, sample_shape=...):
-        # Sample the distribution returning the base distribution sample.
-        z = self.dist.base_dist.sample(key, sample_shape, self._base_condition)
+    def sample_with_intermediates(self, key, sample_shape=()):
+        z = self.dist.base_dist.sample(key, sample_shape + self.batch_shape)
         x, log_det = _VectorizedBijection(self.dist.bijection).transform_and_log_det(
-            z, self.condition
+            x=z,
+            condition=self.condition,
         )
         return x, [z, log_det]
 
@@ -162,11 +167,7 @@ class _TransformedToNumpyro(numpyro.distributions.Distribution):
             return self.dist.log_prob(value, self.condition)
 
         z, log_det = intermediates
-        return self.dist.base_dist.log_prob(z, self._base_condition) - log_det
-
-    @property
-    def _base_condition(self):
-        return self.condition if self.dist.base_dist.cond_shape else None
+        return self.dist.base_dist.log_prob(z) - log_det
 
 
 class _VectorizedBijection:
@@ -195,6 +196,13 @@ class _VectorizedBijection:
             log_det=True,
         )
         return transform_and_log_det(x, condition)
+
+    def inverse_and_log_det(self, x, condition=None):
+        inverse_and_log_det = self.vectorize(
+            self.bijection.inverse_and_log_det,
+            log_det=True,
+        )
+        return inverse_and_log_det(x, condition)
 
     def vectorize(self, func, *, log_det=False):
         in_shapes, out_shapes = [self.bijection.shape], [self.bijection.shape]

@@ -8,7 +8,6 @@ import jax
 import jax.nn as jnn
 import jax.numpy as jnp
 from jax import Array
-from jax.random import KeyArray
 
 from flowjax.bijections.bijection import AbstractBijection
 from flowjax.bijections.jax_transforms import Vmap
@@ -44,7 +43,7 @@ class MaskedAutoregressive(AbstractBijection):
 
     def __init__(
         self,
-        key: KeyArray,
+        key: Array,
         *,
         transformer: AbstractBijection,
         dim: int,

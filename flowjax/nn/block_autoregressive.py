@@ -1,11 +1,11 @@
 """Block autoregressive neural network components."""
+
 from collections.abc import Callable
 
 import equinox as eqx
 import jax.numpy as jnp
 from jax import Array, random
 from jax.nn.initializers import glorot_uniform
-from jax.random import KeyArray
 
 from flowjax.masks import block_diag_mask, block_tril_mask
 
@@ -39,7 +39,7 @@ class BlockAutoregressiveLinear(eqx.Module):
 
     def __init__(
         self,
-        key: KeyArray,
+        key: Array,
         *,
         n_blocks: int,
         block_shape: tuple,
