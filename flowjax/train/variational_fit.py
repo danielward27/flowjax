@@ -1,4 +1,5 @@
 """Basic training script for fitting a flow using variational inference."""
+
 from collections.abc import Callable
 from typing import Any
 
@@ -23,6 +24,7 @@ def fit_to_variational_target(
     learning_rate: float = 5e-4,
     optimizer: optax.GradientTransformation | None = None,
     filter_spec: Callable | PyTree = eqx.is_inexact_array,
+    return_best: bool = True,
     show_progress: bool = True,
 ) -> tuple[AbstractDistribution, list]:
     """Train a distribution (e.g. a flow) by variational inference.
@@ -39,6 +41,9 @@ def fit_to_variational_target(
         filter_spec: Equinox `filter_spec` for specifying trainable parameters. Either
             a callable `leaf -> bool`, or a PyTree with prefix structure matching `dist`
             with True/False values. Defaults to eqx.is_inexact_array.
+        return_best: Whether the result should use the parameters where the minimum loss
+            was reached (when True), or the parameters after the last update (when
+            False). Defaults to True.
         show_progress: Whether to show progress bar. Defaults to True.
 
     Returns:
@@ -68,5 +73,5 @@ def fit_to_variational_target(
         keys.set_postfix({"loss": loss.item()})
         if loss.item() == min(losses):
             best_params = params
-
-    return eqx.combine(best_params, static), losses
+    params = best_params if return_best else params
+    return eqx.combine(params, static), losses

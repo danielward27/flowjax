@@ -1,4 +1,5 @@
 """Function to fit flows to samples from a distribution."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -37,6 +38,7 @@ def fit_to_data(
     learning_rate: float = 5e-4,
     optimizer: optax.GradientTransformation | None = None,
     filter_spec: Callable | PyTree = eqx.is_inexact_array,
+    return_best: bool = True,
     show_progress: bool = True,
 ):
     r"""Train a distribution (e.g. a flow) to samples from the target distribution.
@@ -63,6 +65,9 @@ def fit_to_data(
         filter_spec: Equinox `filter_spec` for specifying trainable parameters. Either a
             callable `leaf -> bool`, or a PyTree with prefix structure matching `dist`
             with True/False values. Defaults to `eqx.is_inexact_array`.
+        return_best: Whether the result should use the parameters where the minimum loss
+            was reached (when True), or the parameters after the last update (when
+            False). Defaults to True.
         show_progress: Whether to show progress bar. Defaults to True.
 
     Returns:
@@ -123,5 +128,6 @@ def fit_to_data(
             loop.set_postfix_str(f"{loop.postfix} (Max patience reached)")
             break
 
-    dist = eqx.combine(best_params, static)
+    params = best_params if return_best else params
+    dist = eqx.combine(params, static)
     return dist, losses
