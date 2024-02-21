@@ -44,14 +44,17 @@ pythonpath = ["."]
 
 
 [tool.ruff]
-select = ["E", "F", "B", "D", "COM", "I", "UP", "TRY004", "RET", "PT", "FBT"]
 include = ["*.py", "*.pyi", "**/pyproject.toml", "*.ipynb"]
+
+[tool.ruff.lint]
+select = ["E", "F", "B", "D", "COM", "I", "UP", "TRY004", "RET", "PT", "FBT"]
 ignore = ["D102", "D105", "D107"]
 
-[tool.ruff.pydocstyle]
+
+[tool.ruff.lint.pydocstyle]
 convention = "google"
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "tests/*" = ["D"]
 "*.ipynb" = ["D"]
 "__init__.py" = ["D"]
