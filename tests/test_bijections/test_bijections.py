@@ -169,7 +169,15 @@ bijections = {
     ),
     "Reshape (unconditional)": Reshape(Affine(scale=jnp.arange(1, 5)), (2, 2)),
     "Reshape (conditional)": Reshape(
-        BlockAutoregressiveNetwork(KEY, dim=DIM, cond_dim=1, block_dim=3, depth=1),
+        MaskedAutoregressive(
+            KEY,
+            transformer=Affine(),
+            dim=4,
+            cond_dim=1,
+            nn_width=3,
+            nn_depth=1,
+        ),
+        shape=(1, 4, 1),
         cond_shape=(),
     ),
 }
