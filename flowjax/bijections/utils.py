@@ -1,7 +1,9 @@
 """Utility bijections (embedding network, permutations, inversion etc.)."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
+from math import prod
 from typing import ClassVar
 
 import jax.numpy as jnp
@@ -233,3 +235,89 @@ class EmbedCondition(AbstractBijection):
     @property
     def shape(self):
         return self.bijection.shape
+
+
+class Reshape(AbstractBijection):
+    """Wraps bijection methods with reshaping operations.
+
+    One use case for this is for bijections that do not directly support a scalar
+    shape, but this allows construction with shape (1, ) and reshaping to ().
+
+    Args:
+        bijection: The bijection to wrap.
+        shape: The new input and output shape of the bijection. Defaults to
+            unchanged.
+        cond_shape: The new cond_shape of the bijection. Defaults to unchanged.
+
+    Example:
+        .. doctest::
+
+            >>> import jax.numpy as jnp
+            >>> from flowjax.bijections import Affine, Reshape
+            >>> affine = Affine(loc=jnp.arange(4))
+            >>> affine.shape
+            (4,)
+            >>> affine = Reshape(affine, (2,2))
+            >>> affine.shape
+            (2, 2)
+            >>> affine.transform(jnp.zeros((2,2)))
+            Array([[0., 1.],
+                   [2., 3.]], dtype=float32)
+    """
+
+    bijection: AbstractBijection
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None = None
+
+    def __init__(
+        self,
+        bijection: AbstractBijection,
+        shape: tuple[int, ...] | None = None,
+        cond_shape: tuple[int, ...] | None = None,
+    ):
+        self.bijection = bijection
+        self.shape = shape if shape is not None else bijection.shape
+        self.cond_shape = cond_shape if cond_shape is not None else bijection.cond_shape
+
+    def __check_init__(self):
+        if self.bijection.cond_shape is None and self.cond_shape is not None:
+            raise ValueError(
+                "Cannot reshape cond_shape for unconditional bijection.",
+            )
+        shapes = {
+            "shape": (self.shape, self.bijection.shape),
+            "cond_shape": (self.cond_shape, self.bijection.cond_shape),
+        }
+
+        for k, v in shapes.items():
+            if v != (None, None) and prod(v[0]) != prod(v[1]):
+                raise ValueError(
+                    f"Cannot reshape to a different number of elements. Got {k} "
+                    f"{v[0]}, but bijection has shape {v[1]}.",
+                )
+
+    def transform(self, x, condition=None):
+        x = x.reshape(self.bijection.shape)
+        if self.cond_shape is not None:
+            condition = condition.reshape(self.bijection.cond_shape)
+        return self.bijection.transform(x, condition).reshape(self.shape)
+
+    def inverse(self, y, condition=None):
+        y = y.reshape(self.bijection.shape)
+        if self.cond_shape is not None:
+            condition = condition.reshape(self.bijection.cond_shape)
+        return self.bijection.inverse(y, condition).reshape(self.shape)
+
+    def transform_and_log_det(self, x, condition=None):
+        x = x.reshape(self.bijection.shape)
+        if self.cond_shape is not None:
+            condition = condition.reshape(self.bijection.cond_shape)
+        y, log_det = self.bijection.transform_and_log_det(x, condition)
+        return y.reshape(self.shape), log_det
+
+    def inverse_and_log_det(self, y, condition=None):
+        y = y.reshape(self.bijection.shape)
+        if self.cond_shape is not None:
+            condition = condition.reshape(self.bijection.cond_shape)
+        x, log_det = self.bijection.inverse_and_log_det(y, condition)
+        return x.reshape(self.shape), log_det

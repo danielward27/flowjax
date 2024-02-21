@@ -25,6 +25,7 @@ from flowjax.bijections import (
     Permute,
     Planar,
     RationalQuadraticSpline,
+    Reshape,
     Scale,
     Scan,
     SoftPlus,
@@ -165,6 +166,11 @@ bijections = {
     "Vmap (vectorize params)": Vmap(
         eqx.filter_vmap(Affine)(jnp.ones(3)),
         in_axis=eqx.if_array(0),
+    ),
+    "Reshape (unconditional)": Reshape(Affine(scale=jnp.arange(1, 5)), (2, 2)),
+    "Reshape (conditional)": Reshape(
+        BlockAutoregressiveNetwork(KEY, dim=DIM, cond_dim=1, block_dim=3, depth=1),
+        cond_shape=(),
     ),
 }
 
