@@ -11,16 +11,19 @@ from equinox.nn import Linear
 from jax import Array
 from jax.flatten_util import ravel_pytree
 from numpyro import handlers
+from numpyro.distributions.transforms import AffineTransform
 from numpyro.infer import MCMC, NUTS, SVI, Trace_ELBO
 from numpyro.optim import Adam
 
-from flowjax.bijections import AdditiveCondition
+from flowjax.bijections import AdditiveCondition, Affine
 from flowjax.distributions import (
+    LogNormal,
     Normal,
     StandardNormal,
     Transformed,
 )
 from flowjax.experimental.numpyro import (
+    _BijectionToNumpyro,
     _get_batch_shape,
     distribution_to_numpyro,
     register_params,
@@ -308,7 +311,7 @@ def test_expected_elbo():
     assert elbo == pytest.approx(manual, abs=1)
 
 
-def test_conditional_sample_with_intermediates():
+def test_conditional_sample_and_log_prob_with_intermediates():
 
     cond_flow = masked_autoregressive_flow(
         jr.PRNGKey(0),
@@ -316,10 +319,75 @@ def test_conditional_sample_with_intermediates():
         cond_dim=2,
         flow_layers=2,
     )
+    condition = jnp.linspace(-1, 1, num=20).reshape((10, 2))
+    dist = distribution_to_numpyro(cond_flow, condition=condition)
 
-    dist = distribution_to_numpyro(cond_flow, condition=jnp.ones((10, 2)))
+    assert dist.batch_shape == (condition.shape[0],)
+    assert dist.base_dist.batch_shape == (condition.shape[0],)
 
-    sample, (z, log_det) = dist.sample_with_intermediates(key)
+    sample, intermediates = dist.sample_with_intermediates(key)
+    z, log_det = intermediates[0]
     assert sample.shape == z.shape
-    assert log_det.shape == (10,)
+    assert log_det.shape == (condition.shape[0],)
     assert not pytest.approx(sample[0]) == sample[1]  # Ensures different base sample
+
+    expected = cond_flow.log_prob(sample, condition)
+    log_probs = dist.log_prob(sample, intermediates)
+    assert pytest.approx(expected) == log_probs
+
+
+def test_BijectionToNumpyro_unconditional():
+    loc, scale = jnp.arange(3), jnp.arange(1, 4)
+    affine = _BijectionToNumpyro(Affine(loc, scale))
+    npro_affine = AffineTransform(
+        loc,
+        scale,
+    )
+
+    x = jnp.array([2, 1, 3])
+    assert pytest.approx(affine(x)) == npro_affine(x)
+    assert pytest.approx(affine.inv(x)) == npro_affine.inv(x)
+    assert (
+        pytest.approx(affine.log_abs_det_jacobian(x, y=None))
+        == npro_affine.log_abs_det_jacobian(x, y=None).sum()
+    )
+
+    transformed, npro_transformed = (
+        numpyro.distributions.TransformedDistribution(
+            numpyro.distributions.Normal(jnp.zeros(3)),
+            aff,
+        )
+        for aff in [affine, npro_affine]
+    )
+    expected = npro_transformed.log_prob(jnp.arange(9).reshape(3, 3)).sum(axis=-1)
+    observed = transformed.log_prob(jnp.arange(9).reshape(3, 3))
+    assert pytest.approx(expected) == observed
+
+
+def test_invalid_domains_BijectionToNumpyro():
+    affine = Affine(jnp.arange(3), jnp.arange(1, 4))
+
+    with pytest.raises(ValueError, match="domain.event_dim"):
+        _BijectionToNumpyro(affine, domain=numpyro.distributions.constraints.real)
+
+    with pytest.raises(ValueError, match="codomain.event_dim"):
+        _BijectionToNumpyro(affine, codomain=numpyro.distributions.constraints.real)
+
+
+def test_transformed_reparam():
+    loc, scale = 2, 3
+
+    config = {"x": numpyro.infer.reparam.TransformReparam()}
+    log_norm = LogNormal(loc, scale)
+
+    def model():
+        with numpyro.handlers.reparam(config=config):
+            sample("x", log_norm)
+
+    trace = handlers.trace(
+        handlers.seed(model, jr.PRNGKey(0)),
+    ).get_trace()
+
+    assert "x_base" in trace.keys()
+    expected_x = log_norm.bijection.transform(trace["x_base"]["value"])
+    assert pytest.approx(expected_x) == trace["x"]["value"]
