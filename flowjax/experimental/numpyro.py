@@ -15,7 +15,9 @@ import jax.numpy as jnp
 from jax import Array
 from jax.typing import ArrayLike
 
-from flowjax.utils import arraylike_to_array
+from flowjax.bijections import AbstractBijection
+from flowjax.distributions import AbstractDistribution, AbstractTransformed
+from flowjax.utils import _get_ufunc_signature, arraylike_to_array
 
 try:
     import numpyro
@@ -26,13 +28,26 @@ except ImportError as e:
     )
     raise
 
-from numpyro.distributions import constraints
-
-from flowjax.bijections import AbstractBijection
-from flowjax.distributions import AbstractDistribution, AbstractTransformed
-from flowjax.utils import _get_ufunc_signature
+from numpyro.distributions.constraints import (
+    _IndependentConstraint,
+    _Real,
+)
+from numpyro.distributions.transforms import IndependentTransform, biject_to
 
 PyTree = Any
+
+
+class _RealNdim(_IndependentConstraint):
+    def __init__(self, event_dim: int):
+        super().__init__(_Real(), event_dim)
+
+
+@biject_to.register(_RealNdim)
+def _biject_to_independent(constraint):
+    return IndependentTransform(
+        biject_to(constraint.base_constraint),
+        constraint.reinterpreted_batch_ndims,
+    )
 
 
 def sample(name: str, fn: Any, *args, condition=None, **kwargs):
@@ -96,11 +111,17 @@ def distribution_to_numpyro(
             None.
     """
     if isinstance(dist, AbstractTransformed):
-        return _TransformedToNumpyro(dist, condition)
+        return _transformed_to_numpyro(dist, condition)
     return _DistributionToNumpyro(dist, condition)
 
 
 class _DistributionToNumpyro(numpyro.distributions.Distribution):
+    """Convert a AbstractDistribution to a numpyro distribution.
+
+    Note that for transformed distributions, ``_transformed_to_numpyro`` should be used
+    instead.
+    """
+
     dist: AbstractDistribution
     _condition: Array
 
@@ -114,9 +135,9 @@ class _DistributionToNumpyro(numpyro.distributions.Distribution):
         if condition is not None:
             condition = arraylike_to_array(condition, "condition")
         self._condition = condition
-        self.support = constraints.real
+        self.support = _RealNdim(dist.ndim)
         batch_shape = _get_batch_shape(condition, dist.cond_shape)
-        super().__init__(batch_shape=batch_shape, event_shape=dist.shape)
+        super().__init__(batch_shape, dist.shape)
 
     @property
     def condition(self):
@@ -129,45 +150,21 @@ class _DistributionToNumpyro(numpyro.distributions.Distribution):
         return self.dist.log_prob(value, self.condition)
 
 
-class _TransformedToNumpyro(numpyro.distributions.Distribution):
-    def __init__(
-        self,
-        dist: AbstractTransformed,
-        condition: ArrayLike | None = None,
-    ):
-        self.dist = dist.merge_transforms()  # Ensure base distribution not transformed
+def _transformed_to_numpyro(dist, condition=None):
+    dist = dist.merge_transforms()  # Ensure base dist not transformed
 
-        if self.dist.base_dist.cond_shape is not None:
-            raise ValueError("Conditional base distributions are not yet supported.")
+    if condition is not None:
+        condition = arraylike_to_array(condition, "condition")
 
-        if condition is not None:
-            condition = arraylike_to_array(condition, "condition")
-        self._condition = condition
-        self.support = constraints.real
+    if dist.base_dist.cond_shape is not None:
+        base_dist = _DistributionToNumpyro(dist.base_dist, condition)
+    else:
+        # add batch dimension to the base dist is condition is batched
         batch_shape = _get_batch_shape(condition, dist.cond_shape)
-        super().__init__(batch_shape=batch_shape, event_shape=dist.shape)
+        base_dist = _DistributionToNumpyro(dist.base_dist).expand(batch_shape)
 
-    @property
-    def condition(self):
-        return jax.lax.stop_gradient(self._condition)
-
-    def sample(self, key, sample_shape=()):
-        return self.dist.sample(key, sample_shape, self.condition)
-
-    def sample_with_intermediates(self, key, sample_shape=()):
-        z = self.dist.base_dist.sample(key, sample_shape + self.batch_shape)
-        x, log_det = _VectorizedBijection(self.dist.bijection).transform_and_log_det(
-            x=z,
-            condition=self.condition,
-        )
-        return x, [z, log_det]
-
-    def log_prob(self, value, intermediates=None):
-        if intermediates is None:
-            return self.dist.log_prob(value, self.condition)
-
-        z, log_det = intermediates
-        return self.dist.base_dist.log_prob(z) - log_det
+    transform = _BijectionToNumpyro(dist.bijection, condition)
+    return numpyro.distributions.TransformedDistribution(base_dist, transform)
 
 
 class _VectorizedBijection:
@@ -223,3 +220,58 @@ def _get_batch_shape(condition, cond_shape):
             return condition.shape[: -len(cond_shape)]
         return condition.shape
     return ()
+
+
+class _BijectionToNumpyro(numpyro.distributions.transforms.Transform):
+    """Wrap a numpyro AbstractBijection to a numpyro transform."""
+
+    def __init__(
+        self,
+        bijection: AbstractBijection,
+        condition: Array = None,
+        domain=None,
+        codomain=None,
+    ):
+        self.bijection = bijection
+        self._condition = condition
+
+        if domain is None:
+            domain = _RealNdim(len(bijection.shape))
+        if codomain is None:
+            codomain = _RealNdim(len(bijection.shape))
+        self.domain = domain
+        self.codomain = codomain
+        self._argcheck_domains()
+
+    def __call__(self, x):
+        return self.vbijection.transform(x, self.condition)
+
+    def _inverse(self, y):
+        return self.vbijection.inverse(y, self.condition)
+
+    def log_abs_det_jacobian(self, x, y, intermediates=None):
+        if intermediates is not None:
+            return intermediates  # Logdet calculated with forward transformation
+        return self.vbijection.transform_and_log_det(x, self.condition)[1]
+
+    def call_with_intermediates(self, x):
+        return self.vbijection.transform_and_log_det(x, self.condition)
+
+    @property
+    def condition(self):
+        return jax.lax.stop_gradient(self._condition)
+
+    @property
+    def vbijection(self):
+        return _VectorizedBijection(self.bijection)
+
+    def tree_flatten(self):
+        raise NotImplementedError()
+
+    def _argcheck_domains(self):
+        for k, v in {"domain": self.domain, "codomain": self.codomain}.items():
+            if v is not None and v.event_dim != len(self.bijection.shape):
+                raise ValueError(
+                    f"{k}.event_dim {v.event_dim} did not match the length of the "
+                    f"bijection shape {len(self.bijection.shape)}.",
+                )
