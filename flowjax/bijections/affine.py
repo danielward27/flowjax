@@ -1,4 +1,5 @@
 """Affine bijections."""
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -137,6 +138,7 @@ class TriangularAffine(AbstractBijection):
             from an unbounded domain to the positive domain. Also used for weight
             normalisation parameters, if used. Defaults to SoftPlus.
     """
+
     shape: tuple[int, ...]
     cond_shape: ClassVar[None] = None
     loc: Array
