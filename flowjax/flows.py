@@ -59,7 +59,7 @@ def coupling_flow(
         key: Jax random number generator key.
         base_dist: Base distribution, with ``base_dist.ndim==1``.
         transformer: Bijection to be parameterised by conditioner. Defaults to
-            ``_affine_transformer()``.
+            affine.
         cond_dim: Dimension of conditioning variables. Defaults to None.
         flow_layers: Number of coupling layers. Defaults to 8.
         nn_width: Conditioner hidden layer size. Defaults to 50.
