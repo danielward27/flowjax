@@ -70,9 +70,7 @@ def coupling_flow(
             faster `transform` methods, leading to faster `sample`. Defaults to True.
     """
     if transformer is None:
-        transformer = Affine(
-            positivity_constraint=Chain([SoftPlus(), _PlusConst(1e-2)]),
-        )
+        transformer = Affine(scale_constraint=Chain([SoftPlus(), _PlusConst(1e-2)]))
 
     dim = base_dist.shape[-1]
 
@@ -128,9 +126,7 @@ def masked_autoregressive_flow(
             leading to faster `sample`. Defaults to True.
     """
     if transformer is None:
-        transformer = Affine(
-            positivity_constraint=Chain([SoftPlus(), _PlusConst(1e-2)]),
-        )
+        transformer = Affine(scale_constraint=Chain([SoftPlus(), _PlusConst(1e-2)]))
     dim = base_dist.shape[-1]
 
     def make_layer(key):  # masked autoregressive layer + permutation

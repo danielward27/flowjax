@@ -6,9 +6,9 @@ from collections.abc import Callable
 from math import prod
 from typing import ClassVar
 
+import equinox as eqx
 import jax.numpy as jnp
 from jax import Array
-from jax.experimental import checkify
 from jax.typing import ArrayLike
 
 from flowjax.bijections.bijection import AbstractBijection
@@ -68,8 +68,9 @@ class Permute(AbstractBijection):
 
     def __init__(self, permutation: ArrayLike):
         permutation = arraylike_to_array(permutation)
-        checkify.check(
-            (permutation.ravel().sort() == jnp.arange(permutation.size)).all(),
+        permutation = eqx.error_if(
+            permutation,
+            permutation.ravel().sort() != jnp.arange(permutation.size),
             "Invalid permutation array provided.",
         )
         self.shape = permutation.shape
