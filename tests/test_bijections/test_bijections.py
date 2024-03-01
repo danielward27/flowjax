@@ -38,7 +38,6 @@ from flowjax.bijections import (
 DIM = 3
 COND_DIM = 2
 KEY = jr.PRNGKey(0)
-POS_DEF_TRAINGLES = jnp.full((DIM, DIM), 0.5) + jnp.diag(jnp.ones(DIM))
 
 
 bijections = {
@@ -57,21 +56,33 @@ bijections = {
     "Partial (int array)": Partial(Flip((2,)), jnp.array([0, 2]), (DIM,)),
     "Partial (slice)": Partial(Affine(jnp.zeros(2)), slice(0, 2), (DIM,)),
     "Affine": Affine(jnp.ones(DIM), jnp.full(DIM, 2)),
+    "Affine (pos and neg scales)": Affine(
+        scale=jnp.array([-1, 2, 3]),
+        scale_constraint=Identity((DIM,)),
+    ),
     "Tanh": Tanh((DIM,)),
     "LeakyTanh": LeakyTanh(1, (DIM,)),
     "LeakyTanh (broadcast max_val)": LeakyTanh(1, (2, 3)),
     "Exp": Exp((DIM,)),
     "SoftPlus": SoftPlus((DIM,)),
-    "TriangularAffine (lower)": TriangularAffine(jnp.arange(DIM), POS_DEF_TRAINGLES),
+    "TriangularAffine (lower)": TriangularAffine(
+        jnp.arange(DIM),
+        jnp.full((DIM, DIM), 0.5),
+    ),
     "TriangularAffine (upper)": TriangularAffine(
         jnp.arange(DIM),
-        POS_DEF_TRAINGLES,
+        jnp.full((DIM, DIM), 0.5),
         lower=False,
     ),
     "TriangularAffine (weight_norm)": TriangularAffine(
         jnp.arange(DIM),
-        POS_DEF_TRAINGLES,
+        jnp.full((DIM, DIM), 0.5),
         weight_normalisation=True,
+    ),
+    "TriangularAffine (pos and neg diag)": TriangularAffine(
+        jnp.arange(3),
+        jnp.diag(jnp.array([-1, 1, 2])),
+        diag_constraint=Identity((3,)),
     ),
     "RationalQuadraticSpline": RationalQuadraticSpline(knots=4, interval=1),
     "Coupling (unconditional)": Coupling(
@@ -143,6 +154,10 @@ bijections = {
     "Chain": Chain([Flip((DIM,)), Affine(jnp.ones(DIM), jnp.full(DIM, 2))]),
     "Scan": Scan(eqx.filter_vmap(Affine)(jnp.ones((2, DIM)))),
     "Scale": Scale(jnp.full(DIM, 2)),
+    "Scale (pos and neg scales)": Scale(
+        jnp.array([-1, 1, 2]),
+        scale_constraint=Identity((DIM,)),
+    ),
     "Concatenate": Concatenate([Affine(jnp.ones(DIM)), Tanh(shape=(DIM,))]),
     "ConcatenateAxis1": Concatenate(
         [Affine(jnp.ones((3, 3))), Tanh(shape=((3, 3)))],

@@ -1,4 +1,5 @@
 """Distributions, including the abstract and concrete classes."""
+
 import inspect
 from abc import abstractmethod
 from functools import wraps
@@ -10,7 +11,6 @@ import jax.numpy as jnp
 import jax.random as jr
 from equinox import AbstractVar
 from jax import Array
-from jax.experimental import checkify
 from jax.lax import stop_gradient
 from jax.numpy import linalg
 from jax.scipy import stats as jstats
@@ -469,6 +469,7 @@ class MultivariateNormal(AbstractTransformed):
 
 class _StandardUniform(AbstractDistribution):
     r"""Standard Uniform distribution."""
+
     shape: tuple[int, ...] = ()
     cond_shape: ClassVar[None] = None
 
@@ -494,9 +495,8 @@ class Uniform(AbstractTransformed):
 
     def __init__(self, minval: ArrayLike, maxval: ArrayLike):
         minval, maxval = arraylike_to_array(minval), arraylike_to_array(maxval)
-        checkify.check(
-            jnp.all(maxval >= minval),
-            "Minimums must be less than the maximums.",
+        minval, maxval = eqx.error_if(
+            (minval, maxval), maxval <= minval, "minval must be less than the maxval."
         )
         self.base_dist = _StandardUniform(
             jnp.broadcast_shapes(minval.shape, maxval.shape),
