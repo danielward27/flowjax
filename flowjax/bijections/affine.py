@@ -119,6 +119,7 @@ class Scale(AbstractBijection):
 
     _scale: Array
     scale_constraint: AbstractBijection
+    shape: tuple[int, ...]
     cond_shape: ClassVar[None] = None
 
     def __init__(
@@ -131,7 +132,7 @@ class Scale(AbstractBijection):
 
         if scale_constraint is None:
             scale_constraint = SoftPlus(jnp.shape(scale))
-
+        self.shape = jnp.shape(scale)
         self.scale_constraint = scale_constraint
         self._scale = _argcheck_and_reparam_scale(scale, scale_constraint)
 
@@ -153,10 +154,6 @@ class Scale(AbstractBijection):
     def scale(self):
         """The scale parameter of the affine transformation."""
         return self.scale_constraint.transform(self._scale)
-
-    @property
-    def shape(self):
-        return self._scale.shape
 
 
 class TriangularAffine(AbstractBijection):
