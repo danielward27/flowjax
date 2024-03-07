@@ -359,6 +359,23 @@ class Transformed(AbstractTransformed):
     bijection: AbstractBijection
 
 
+class AbstractLocScaleDistribution(AbstractTransformed):
+    """Abstract distribution class for affine transformed distributions."""
+
+    base_dist: AbstractVar[AbstractDistribution]
+    bijection: AbstractVar[Affine]
+
+    @property
+    def loc(self):
+        """Location of the distribution."""
+        return self.bijection.loc
+
+    @property
+    def scale(self):
+        """Scale of the distribution."""
+        return unwrap(self.bijection.scale)
+
+
 class StandardNormal(AbstractDistribution):
     """Standard normal distribution.
 
@@ -378,7 +395,7 @@ class StandardNormal(AbstractDistribution):
         return jr.normal(key, self.shape)
 
 
-class Normal(AbstractTransformed):
+class Normal(AbstractLocScaleDistribution):
     """An independent Normal distribution with mean and std for each dimension.
 
     ``loc`` and ``scale`` should broadcast to the desired shape of the distribution.
@@ -398,18 +415,8 @@ class Normal(AbstractTransformed):
         )
         self.bijection = Affine(loc=loc, scale=scale)
 
-    @property
-    def loc(self):
-        """Location of the distribution."""
-        return self.bijection.loc
 
-    @property
-    def scale(self):
-        """Scale of the distribution."""
-        return unwrap(self.bijection.scale)
-
-
-class LogNormal(AbstractTransformed):
+class LogNormal(AbstractLocScaleDistribution):
     """Log normal distribution.
 
     ``loc`` and ``scale`` here refers to the underlying normal distribution.
@@ -426,16 +433,6 @@ class LogNormal(AbstractTransformed):
         shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
         self.base_dist = StandardNormal(shape)
         self.bijection = Chain([Affine(loc, scale), Exp(shape)])
-
-    @property
-    def loc(self):
-        """Location of the distribution."""
-        return self.bijection[0].loc
-
-    @property
-    def scale(self):
-        """Scale of the distribution."""
-        return unwrap(self.bijection[0].scale)
 
 
 class MultivariateNormal(AbstractTransformed):
@@ -482,7 +479,7 @@ class _StandardUniform(AbstractDistribution):
         return jr.uniform(key, shape=self.shape)
 
 
-class Uniform(AbstractTransformed):
+class Uniform(AbstractLocScaleDistribution):
     """Uniform distribution.
 
     ``minval`` and ``maxval`` should broadcast to the desired distribution shape.
@@ -529,7 +526,7 @@ class _StandardGumbel(AbstractDistribution):
         return jr.gumbel(key, shape=self.shape)
 
 
-class Gumbel(AbstractTransformed):
+class Gumbel(AbstractLocScaleDistribution):
     """Gumbel distribution (https://en.wikipedia.org/wiki/Gumbel_distribution).
 
     ``loc`` and ``scale`` should broadcast to the dimension of the distribution.
@@ -548,16 +545,6 @@ class Gumbel(AbstractTransformed):
         )
         self.bijection = Affine(loc, scale)
 
-    @property
-    def loc(self):
-        """Location of the distribution."""
-        return self.bijection.loc
-
-    @property
-    def scale(self):
-        """Scale of the distribution."""
-        return unwrap(self.bijection.scale)
-
 
 class _StandardCauchy(AbstractDistribution):
     """Implements standard cauchy distribution (loc=0, scale=1).
@@ -575,7 +562,7 @@ class _StandardCauchy(AbstractDistribution):
         return jr.cauchy(key, shape=self.shape)
 
 
-class Cauchy(AbstractTransformed):
+class Cauchy(AbstractLocScaleDistribution):
     """Cauchy distribution (https://en.wikipedia.org/wiki/Cauchy_distribution).
 
     ``loc`` and ``scale`` should broadcast to the dimension of the distribution.
@@ -593,16 +580,6 @@ class Cauchy(AbstractTransformed):
             jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale)),
         )
         self.bijection = Affine(loc, scale)
-
-    @property
-    def loc(self):
-        """Location of the distribution."""
-        return self.bijection.loc
-
-    @property
-    def scale(self):
-        """Scale of the distribution."""
-        return unwrap(self.bijection.scale)
 
 
 class _StandardStudentT(AbstractDistribution):
@@ -630,7 +607,7 @@ class _StandardStudentT(AbstractDistribution):
         return jnp.exp(self.log_df)
 
 
-class StudentT(AbstractTransformed):
+class StudentT(AbstractLocScaleDistribution):
     """Student T distribution (https://en.wikipedia.org/wiki/Student%27s_t-distribution).
 
     ``df``, ``loc`` and ``scale`` broadcast to the dimension of the distribution.
@@ -648,16 +625,6 @@ class StudentT(AbstractTransformed):
         df, loc, scale = jnp.broadcast_arrays(df, loc, scale)
         self.base_dist = _StandardStudentT(df)
         self.bijection = Affine(loc, scale)
-
-    @property
-    def loc(self):
-        """Location of the distribution."""
-        return self.bijection.loc
-
-    @property
-    def scale(self):
-        """Scale of the distribution."""
-        return unwrap(self.bijection.scale)
 
     @property
     def df(self):
@@ -678,7 +645,7 @@ class _StandardLaplace(AbstractDistribution):
         return jr.laplace(key, shape=self.shape)
 
 
-class Laplace(AbstractTransformed):
+class Laplace(AbstractLocScaleDistribution):
     """Laplace distribution.
 
     ``loc`` and ``scale`` should broadcast to the dimension of the distribution..
@@ -695,16 +662,6 @@ class Laplace(AbstractTransformed):
         shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
         self.base_dist = _StandardLaplace(shape)
         self.bijection = Affine(loc, scale)
-
-    @property
-    def loc(self):
-        """Location of the distribution."""
-        return self.bijection.loc
-
-    @property
-    def scale(self):
-        """Scale of the distribution."""
-        return unwrap(self.bijection.scale)
 
 
 class _StandardExponential(AbstractDistribution):

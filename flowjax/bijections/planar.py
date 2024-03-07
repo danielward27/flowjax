@@ -31,6 +31,7 @@ class Planar(AbstractBijection):
         **mlp_kwargs: Key word arguments (excluding in_size and out_size) passed to
             the MLP (equinox.nn.MLP). Ignored when cond_dim is None.
     """
+
     shape: tuple[int, ...]
     cond_shape: tuple[int, ...] | None
     conditioner: eqx.Module | None
