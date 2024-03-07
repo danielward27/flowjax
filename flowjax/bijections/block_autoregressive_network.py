@@ -116,7 +116,7 @@ class BlockAutoregressiveNetwork(AbstractBijection):
                 *[(block_dim, block_dim)] * (depth - 1),
                 (1, block_dim),
             ]
-            cond_dims = [cond_dim] + [None] * depth
+            cond_dims = [cond_dim] + [0] * depth
 
             for layer_key, block_shape, cond_d in zip(
                 keys,

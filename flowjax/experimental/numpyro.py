@@ -11,13 +11,12 @@ from typing import Any
 
 import equinox as eqx
 import jax
-import jax.numpy as jnp
 from jax import Array
 from jax.typing import ArrayLike
 
 from flowjax.bijections import AbstractBijection
 from flowjax.distributions import AbstractDistribution, AbstractTransformed
-from flowjax.utils import _get_ufunc_signature, arraylike_to_array
+from flowjax.utils import _VectorizedBijection, arraylike_to_array
 
 try:
     import numpyro
@@ -159,59 +158,12 @@ def _transformed_to_numpyro(dist, condition=None):
     if dist.base_dist.cond_shape is not None:
         base_dist = _DistributionToNumpyro(dist.base_dist, condition)
     else:
-        # add batch dimension to the base dist is condition is batched
+        # add batch dimension to the base dist if condition is batched
         batch_shape = _get_batch_shape(condition, dist.cond_shape)
         base_dist = _DistributionToNumpyro(dist.base_dist).expand(batch_shape)
 
     transform = _BijectionToNumpyro(dist.bijection, condition)
     return numpyro.distributions.TransformedDistribution(base_dist, transform)
-
-
-class _VectorizedBijection:
-    """Wrap a flowjax bijection to support vectorization.
-
-    Args:
-        bijection: flowjax bijection to be wrapped.
-    """
-
-    def __init__(self, bijection: AbstractBijection):
-        self.bijection = bijection
-        self.shape = self.bijection.shape
-        self.cond_shape = self.bijection.cond_shape
-
-    def transform(self, x, condition=None):
-        transform = self.vectorize(self.bijection.transform)
-        return transform(x, condition)
-
-    def inverse(self, y, condition=None):
-        inverse = self.vectorize(self.bijection.inverse)
-        return inverse(y, condition)
-
-    def transform_and_log_det(self, x, condition=None):
-        transform_and_log_det = self.vectorize(
-            self.bijection.transform_and_log_det,
-            log_det=True,
-        )
-        return transform_and_log_det(x, condition)
-
-    def inverse_and_log_det(self, x, condition=None):
-        inverse_and_log_det = self.vectorize(
-            self.bijection.inverse_and_log_det,
-            log_det=True,
-        )
-        return inverse_and_log_det(x, condition)
-
-    def vectorize(self, func, *, log_det=False):
-        in_shapes, out_shapes = [self.bijection.shape], [self.bijection.shape]
-        if log_det:
-            out_shapes.append(())
-        if self.bijection.cond_shape is not None:
-            in_shapes.append(self.bijection.cond_shape)
-            exclude = frozenset()
-        else:
-            exclude = frozenset([1])
-        sig = _get_ufunc_signature(in_shapes, out_shapes)
-        return jnp.vectorize(func, signature=sig, excluded=exclude)
 
 
 def _get_batch_shape(condition, cond_shape):

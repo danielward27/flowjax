@@ -24,10 +24,21 @@ def test_rank_based_mask():
 
 def test_block_tril_mask():
     args = [(1, 2), 3]
-    expected = jnp.array([[0, 0, 0, 0, 0, 0], [1, 1, 0, 0, 0, 0], [1, 1, 1, 1, 0, 0]])
+    expected = jnp.array([[1, 1, 0, 0, 0, 0], [1, 1, 1, 1, 0, 0], [1, 1, 1, 1, 1, 1]])
     mask = block_tril_mask(*args)
     assert mask.dtype == jnp.int32
     assert jnp.all(expected == mask)
+
+    expected = jnp.array([[1, 1, 1, 1, 0, 0], [1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1]])
+    mask = block_tril_mask(*args, k=1)
+    assert jnp.all(expected == mask)
+
+    expected = jnp.array([[0, 0, 0, 0, 0, 0], [1, 1, 0, 0, 0, 0], [1, 1, 1, 1, 0, 0]])
+    mask = block_tril_mask(*args, k=-1)
+    assert jnp.all(expected == mask)
+
+    assert jnp.all(block_tril_mask(*args, k=-10) == jnp.zeros_like(expected))
+    assert jnp.all(block_tril_mask(*args, k=10) == jnp.ones_like(expected))
 
 
 def test_block_diag_mask():

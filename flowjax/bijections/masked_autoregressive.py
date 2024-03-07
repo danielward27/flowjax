@@ -11,7 +11,7 @@ from jax import Array
 
 from flowjax.bijections.bijection import AbstractBijection
 from flowjax.bijections.jax_transforms import Vmap
-from flowjax.nn import AutoregressiveMLP
+from flowjax.nn import autoregressive_mlp
 from flowjax.utils import get_ravelled_bijection_constructor
 
 
@@ -39,7 +39,7 @@ class MaskedAutoregressive(AbstractBijection):
     shape: tuple[int, ...]
     cond_shape: tuple[int, ...] | None
     transformer_constructor: Callable
-    autoregressive_mlp: AutoregressiveMLP
+    autoregressive_mlp: eqx.nn.MLP
 
     def __init__(
         self,
@@ -74,19 +74,19 @@ class MaskedAutoregressive(AbstractBijection):
         hidden_ranks = jnp.arange(nn_width) % dim
         out_ranks = jnp.repeat(jnp.arange(dim), transformer_init_params.size)
 
-        autoregressive_mlp = AutoregressiveMLP(
+        amlp = autoregressive_mlp(
             in_ranks,
             hidden_ranks,
             out_ranks,
-            nn_depth,
-            nn_activation,
+            depth=nn_depth,
+            activation=nn_activation,
             key=key,
         )
 
         # Initialise bias terms to match the provided transformer parameters
         self.autoregressive_mlp = eqx.tree_at(
-            where=lambda t: t.layers[-1].linear.bias,
-            pytree=autoregressive_mlp,
+            where=lambda t: t.layers[-1].bias,
+            pytree=amlp,
             replace=jnp.tile(transformer_init_params, dim),
         )
 

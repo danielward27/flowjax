@@ -79,6 +79,7 @@ class Coupling(AbstractBijection):
         )
 
         # Initialise last bias terms to match the provided transformer parameters
+        # TODO more concise to absorb into constructor
         self.conditioner = eqx.tree_at(
             where=lambda mlp: mlp.layers[-1].bias,
             pytree=conditioner,

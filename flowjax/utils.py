@@ -1,4 +1,5 @@
 """Utility functions."""
+
 from __future__ import annotations
 
 from collections.abc import Sequence
@@ -9,6 +10,55 @@ import jax.numpy as jnp
 from jax import Array
 from jax.flatten_util import ravel_pytree
 from jax.typing import ArrayLike
+
+import flowjax
+
+
+class _VectorizedBijection:
+    """Wrap a flowjax bijection to support vectorization.
+
+    Args:
+        bijection: flowjax bijection to be wrapped.
+    """
+
+    def __init__(self, bijection: flowjax.bijections.AbstractBijection):
+        self.bijection = bijection
+        self.shape = self.bijection.shape
+        self.cond_shape = self.bijection.cond_shape
+
+    def transform(self, x, condition=None):
+        transform = self.vectorize(self.bijection.transform)
+        return transform(x, condition)
+
+    def inverse(self, y, condition=None):
+        inverse = self.vectorize(self.bijection.inverse)
+        return inverse(y, condition)
+
+    def transform_and_log_det(self, x, condition=None):
+        transform_and_log_det = self.vectorize(
+            self.bijection.transform_and_log_det,
+            log_det=True,
+        )
+        return transform_and_log_det(x, condition)
+
+    def inverse_and_log_det(self, x, condition=None):
+        inverse_and_log_det = self.vectorize(
+            self.bijection.inverse_and_log_det,
+            log_det=True,
+        )
+        return inverse_and_log_det(x, condition)
+
+    def vectorize(self, func, *, log_det=False):
+        in_shapes, out_shapes = [self.bijection.shape], [self.bijection.shape]
+        if log_det:
+            out_shapes.append(())
+        if self.bijection.cond_shape is not None:
+            in_shapes.append(self.bijection.cond_shape)
+            exclude = frozenset()
+        else:
+            exclude = frozenset([1])
+        sig = _get_ufunc_signature(in_shapes, out_shapes)
+        return jnp.vectorize(func, signature=sig, excluded=exclude)
 
 
 def real_to_increasing_on_interval(

@@ -25,6 +25,7 @@ from flowjax.bijections import (
     TriangularAffine,
 )
 from flowjax.utils import _get_ufunc_signature, arraylike_to_array, merge_cond_shapes
+from flowjax.wrappers import unwrap
 
 
 class AbstractDistribution(eqx.Module):
@@ -405,7 +406,7 @@ class Normal(AbstractTransformed):
     @property
     def scale(self):
         """Scale of the distribution."""
-        return self.bijection.scale
+        return unwrap(self.bijection.scale)
 
 
 class LogNormal(AbstractTransformed):
@@ -434,7 +435,7 @@ class LogNormal(AbstractTransformed):
     @property
     def scale(self):
         """Scale of the distribution."""
-        return self.bijection[0].scale
+        return unwrap(self.bijection[0].scale)
 
 
 class MultivariateNormal(AbstractTransformed):
@@ -464,7 +465,8 @@ class MultivariateNormal(AbstractTransformed):
     @property
     def covariance(self):
         """The covariance matrix."""
-        return self.bijection.arr @ self.bijection.arr.T
+        arr = unwrap(self.bijection.arr)
+        return arr @ arr.T
 
 
 class _StandardUniform(AbstractDistribution):
@@ -511,7 +513,7 @@ class Uniform(AbstractTransformed):
     @property
     def maxval(self):
         """Maximum value of the uniform distribution."""
-        return self.bijection.loc + self.bijection.scale
+        return self.bijection.loc + unwrap(self.bijection.scale)
 
 
 class _StandardGumbel(AbstractDistribution):
@@ -554,7 +556,7 @@ class Gumbel(AbstractTransformed):
     @property
     def scale(self):
         """Scale of the distribution."""
-        return self.bijection.scale
+        return unwrap(self.bijection.scale)
 
 
 class _StandardCauchy(AbstractDistribution):
@@ -600,7 +602,7 @@ class Cauchy(AbstractTransformed):
     @property
     def scale(self):
         """Scale of the distribution."""
-        return self.bijection.scale
+        return unwrap(self.bijection.scale)
 
 
 class _StandardStudentT(AbstractDistribution):
@@ -655,7 +657,7 @@ class StudentT(AbstractTransformed):
     @property
     def scale(self):
         """Scale of the distribution."""
-        return self.bijection.scale
+        return unwrap(self.bijection.scale)
 
     @property
     def df(self):
@@ -702,7 +704,7 @@ class Laplace(AbstractTransformed):
     @property
     def scale(self):
         """Scale of the distribution."""
-        return self.bijection.scale
+        return unwrap(self.bijection.scale)
 
 
 class _StandardExponential(AbstractDistribution):
@@ -732,7 +734,7 @@ class Exponential(AbstractTransformed):
 
     @property
     def rate(self):
-        return 1 / self.bijection.scale
+        return 1 / unwrap(self.bijection.scale)
 
 
 class SpecializeCondition(AbstractDistribution):  # TODO check tested

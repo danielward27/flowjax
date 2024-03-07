@@ -1,6 +1,6 @@
 """Bijections from ``flowjax.bijections``."""
 
-from .affine import AdditiveCondition, Affine, Scale, TriangularAffine
+from .affine import AdditiveCondition, Affine, Loc, Scale, TriangularAffine
 from .bijection import AbstractBijection
 from .block_autoregressive_network import BlockAutoregressiveNetwork
 from .chain import Chain
@@ -29,6 +29,7 @@ __all__ = [
     "Identity",
     "Invert",
     "LeakyTanh",
+    "Loc",
     "MaskedAutoregressive",
     "Partial",
     "Permute",

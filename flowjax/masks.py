@@ -35,12 +35,12 @@ def block_diag_mask(block_shape: tuple, n_blocks: int):
     return block_diag(*jnp.ones((n_blocks, *block_shape), jnp.int32))
 
 
-def block_tril_mask(block_shape: tuple, n_blocks: int):
-    """Upper triangular block mask, excluding diagonal blocks."""
+def block_tril_mask(block_shape: tuple, n_blocks: int, k: int = 0):
+    """Lower triangular block mask, with offset k."""
     mask = jnp.zeros((block_shape[0] * n_blocks, block_shape[1] * n_blocks), jnp.int32)
     for i in range(n_blocks):
         mask = mask.at[
-            (i + 1) * block_shape[0] :,
+            max(0, (i - k)) * block_shape[0] :,
             i * block_shape[1] : (i + 1) * block_shape[1],
         ].set(1)
     return mask

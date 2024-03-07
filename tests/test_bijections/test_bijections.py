@@ -20,6 +20,7 @@ from flowjax.bijections import (
     Flip,
     Identity,
     LeakyTanh,
+    Loc,
     MaskedAutoregressive,
     Partial,
     Permute,
@@ -63,6 +64,7 @@ bijections = {
     "Tanh": Tanh((DIM,)),
     "LeakyTanh": LeakyTanh(1, (DIM,)),
     "LeakyTanh (broadcast max_val)": LeakyTanh(1, (2, 3)),
+    "Loc": Loc(jnp.arange(DIM)),
     "Exp": Exp((DIM,)),
     "SoftPlus": SoftPlus((DIM,)),
     "TriangularAffine (lower)": TriangularAffine(
@@ -73,11 +75,6 @@ bijections = {
         jnp.arange(DIM),
         jnp.full((DIM, DIM), 0.5),
         lower=False,
-    ),
-    "TriangularAffine (weight_norm)": TriangularAffine(
-        jnp.arange(DIM),
-        jnp.full((DIM, DIM), 0.5),
-        weight_normalisation=True,
     ),
     "TriangularAffine (pos and neg diag)": TriangularAffine(
         jnp.arange(3),

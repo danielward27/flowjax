@@ -39,6 +39,7 @@ from flowjax.bijections import (
     Vmap,
 )
 from flowjax.distributions import AbstractDistribution, Transformed
+from flowjax.wrappers import WeightNormalization
 
 
 def coupling_flow(
@@ -294,17 +295,15 @@ def triangular_spline_flow(
         lt_key, perm_key, cond_key = jr.split(key, 3)
         weights = init(lt_key, (dim, dim))
         lt_weights = weights.at[jnp.diag_indices(dim)].set(1)
-        lower_tri = TriangularAffine(
-            jnp.zeros(dim),
-            lt_weights,
-            weight_normalisation=True,
+        tri_aff = TriangularAffine(jnp.zeros(dim), lt_weights)
+        tri_aff = eqx.tree_at(
+            lambda t: t.triangular, tri_aff, replace_fn=WeightNormalization
         )
-
         bijections = [
             LeakyTanh(tanh_max_val, (dim,)),
             get_splines(),
             Invert(LeakyTanh(tanh_max_val, (dim,))),
-            lower_tri,
+            tri_aff,
         ]
 
         if cond_dim is not None:
