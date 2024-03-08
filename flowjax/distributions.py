@@ -462,8 +462,8 @@ class MultivariateNormal(AbstractTransformed):
     @property
     def covariance(self):
         """The covariance matrix."""
-        arr = unwrap(self.bijection.arr)
-        return arr @ arr.T
+        cholesky = unwrap(self.bijection.triangular)
+        return cholesky @ cholesky.T
 
 
 class _StandardUniform(AbstractDistribution):
