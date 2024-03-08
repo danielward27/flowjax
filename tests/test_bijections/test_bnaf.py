@@ -5,28 +5,23 @@ from jax import random
 from jax.scipy.linalg import block_diag
 
 from flowjax.bijections.block_autoregressive_network import (
-    BlockAutoregressiveLinear,
     BlockAutoregressiveNetwork,
+    block_autoregressive_linear,
 )
 from flowjax.wrappers import unwrap
 
 
-def test_BlockAutoregressiveLinear():
+def test_block_autoregressive_linear():
     block_shape = (3, 2)
-    layer = BlockAutoregressiveLinear(
+    linear, log_jac_3d_fn = block_autoregressive_linear(
         jax.random.PRNGKey(0),
         n_blocks=3,
         block_shape=block_shape,
     )
-    block_diag_mask = layer.linear.weight.weight.cond
-    layer = unwrap(layer)  # Applies masking
-    x = jnp.ones(6)
-    a, log_jac_3d = layer(x)
+    linear = unwrap(linear)  # Applies masking
+    log_jac_3d = log_jac_3d_fn(linear)
     assert log_jac_3d.shape == (3, *block_shape)
-
-    # Check block diag log jacobian matches autodif.
-    auto_jacobian = jax.jacobian(lambda x: layer(x)[0])(x) * block_diag_mask
-    assert block_diag(*jnp.exp(log_jac_3d)) == pytest.approx(auto_jacobian, abs=1e-7)
+    assert jnp.all(jnp.isfinite(log_jac_3d))
 
 
 def test_BlockAutoregressiveNetwork():

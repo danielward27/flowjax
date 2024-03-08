@@ -89,6 +89,7 @@ class BlockAutoregressiveNetwork(AbstractBijection):
         activation: AbstractBijection | Callable | None = None,
         inverter: Callable | None = None,
     ):
+        cond_dim = 0 if cond_dim is None else cond_dim
         if activation is None:
             activation = LeakyTanh(3)
         elif isinstance(activation, AbstractBijection):
@@ -101,14 +102,14 @@ class BlockAutoregressiveNetwork(AbstractBijection):
             AutoregressiveBisectionInverter() if inverter is None else inverter
         )
 
-        layers = []
+        layers_and_log_jac_fns = []
         if depth == 0:
-            layers.append(
-                BlockAutoregressiveLinear(
+            layers_and_log_jac_fns.append(
+                block_autoregressive_linear(
                     key,
                     n_blocks=dim,
                     block_shape=(1, 1),
-                    cond_dim=cond_dim,
+                    extra_inputs=cond_dim,
                 ),
             )
         else:
@@ -127,44 +128,45 @@ class BlockAutoregressiveNetwork(AbstractBijection):
                 cond_dims,
                 strict=True,
             ):
-                layers.append(
-                    BlockAutoregressiveLinear(
+                layers_and_log_jac_fns.append(
+                    block_autoregressive_linear(
                         layer_key,
                         n_blocks=dim,
                         block_shape=block_shape,
-                        cond_dim=cond_d,
+                        extra_inputs=cond_d,
                     ),
                 )
 
         self.depth = depth
-        self.layers = layers
+        self.layers = layers_and_log_jac_fns
         self.block_dim = block_dim
         self.shape = (dim,)
-        self.cond_shape = (cond_dim,) if cond_dim is not None else None
+        self.cond_shape = (cond_dim,) if cond_dim != 0 else None
         self.activation = activation
 
     def transform(self, x, condition=None):
-        for layer in self.layers[:-1]:
-            x = layer(x, condition)[0]
+        x = x if condition is None else jnp.concatenate((x, condition))
+        for layer, _ in self.layers[:-1]:
+            x = layer(x)
             x = eqx.filter_vmap(self.activation.transform)(x)
-            condition = None
-        return self.layers[-1](x, condition)[0]
+        return self.layers[-1][0](x)
 
     def transform_and_log_det(self, x, condition=None):
-        log_jacobian_3ds = []
-        for layer in self.layers[:-1]:
-            x, log_det_3d = layer(x, condition)
-            log_jacobian_3ds.append(log_det_3d)
+        x = x if condition is None else jnp.concatenate((x, condition))
+        log_dets_3ds = []
+        for linear, log_jacobian_fn in self.layers[:-1]:
+            x = linear(x)
+            log_dets_3ds.append(log_jacobian_fn(linear))
 
-            x, log_det_3d = self._activation_and_log_det_3d(x)
-            log_jacobian_3ds.append(log_det_3d)
-            condition = None  # only pass array condition to first layer
+            x, log_det_3d = self._activation_and_log_jacobian_3d(x)
+            log_dets_3ds.append(log_det_3d)
 
-        x, log_det_3d = self.layers[-1](x, condition)
-        log_jacobian_3ds.append(log_det_3d)
+        linear, log_jacobian_fn = self.layers[-1]
+        x = linear(x)
+        log_dets_3ds.append(log_jacobian_fn(linear))
 
-        log_det = log_jacobian_3ds[-1]
-        for log_jacobian in reversed(log_jacobian_3ds[:-1]):
+        log_det = log_dets_3ds[-1]
+        for log_jacobian in reversed(log_dets_3ds[:-1]):
             log_det = logmatmulexp(log_det, log_jacobian)
         return x, log_det.sum()
 
@@ -176,7 +178,7 @@ class BlockAutoregressiveNetwork(AbstractBijection):
         _, forward_log_det = self.transform_and_log_det(x, condition)
         return x, -forward_log_det
 
-    def _activation_and_log_det_3d(self, x):
+    def _activation_and_log_jacobian_3d(self, x):
         """Compute activation and the log determinant (blocks, block_dim, block_dim)."""
         x, log_abs_grads = eqx.filter_vmap(self.activation.transform_and_log_det)(x)
         log_det_3d = jnp.full((self.shape[0], self.block_dim, self.block_dim), -jnp.inf)
@@ -188,84 +190,61 @@ class BlockAutoregressiveNetwork(AbstractBijection):
         return x, log_det_3d
 
 
-class BlockAutoregressiveLinear(eqx.Module):
+def block_autoregressive_linear(
+    key: Array,
+    *,
+    n_blocks: int,
+    block_shape: tuple,
+    extra_inputs: int = 0,
+) -> tuple[eqx.nn.Linear, Array]:
     """Block autoregressive linear layer (https://arxiv.org/abs/1904.04676).
 
-    Conditioning variables are incorporated by appending columns (one for each
-    conditioning variable) to the right of the block diagonal weight matrix.
+    Returns:
+        Tuple containing 1) an equinox.nn.Linear layer, with the weights wrapped
+        in order to provide a block lower triangular mask and weight normalisation.
+        2) callable taking the linear layer, returning the log block diagonal weights.
 
     Args:
         key: Random key.
         n_blocks: Number of diagonal blocks (dimension of original input).
         block_shape: The shape of the blocks.
-        cond_dim: Number of additional conditioning variables. Defaults to None.
+        extra_inputs: Number of additional input variables for which masking is not
+        required. Defaults to 0.
     """
+    in_features = block_shape[1] * n_blocks + extra_inputs
+    out_features = block_shape[0] * n_blocks
+    linear = eqx.nn.Linear(in_features, out_features, key=key)
 
-    linear: eqx.nn.Linear
-    cond_dim: int | None
-    block_shape: tuple[int, ...]
-    n_blocks: int
-    block_diag_idxs: Array
+    def _right_pad(arr, val, width):
+        return jnp.column_stack((arr, jnp.full((arr.shape[0], width), val, int)))
 
-    def __init__(
-        self,
-        key: Array,
-        *,
-        n_blocks: int,
-        block_shape: tuple,
-        cond_dim: int | None = None,
-    ):
-        self.cond_dim = cond_dim
-        cond_dim = 0 if cond_dim is None else cond_dim
+    block_diag_mask = _right_pad(
+        masks.block_diag_mask(block_shape, n_blocks),
+        val=False,
+        width=extra_inputs,
+    )
 
-        in_features = block_shape[1] * n_blocks + cond_dim
-        out_features = block_shape[0] * n_blocks
-        linear = eqx.nn.Linear(in_features, out_features, key=key)
+    block_tril_mask = _right_pad(
+        masks.block_tril_mask(block_shape, n_blocks),
+        val=True,
+        width=extra_inputs,
+    )
 
-        def _right_pad(arr, val, width):
-            return jnp.column_stack((arr, jnp.full((arr.shape[0], width), val, int)))
+    weight = Where(block_tril_mask, linear.weight, 0)
+    weight = Where(
+        block_diag_mask,
+        BijectionReparam(weight, SoftPlus(), invert_on_init=False),
+        weight,
+    )
+    weight = WeightNormalization(weight)
+    linear = eqx.tree_at(lambda linear: linear.weight, linear, replace=weight)
 
-        block_diag_mask = _right_pad(
-            masks.block_diag_mask(block_shape, n_blocks),
-            val=False,
-            width=cond_dim,
-        )
+    def layer_to_log_jacobian_3d(linear: eqx.nn.Linear):
+        idxs = jnp.where(block_diag_mask, size=prod(block_shape) * n_blocks)
+        jac_3d = linear.weight[idxs].reshape(n_blocks, *block_shape)
+        return jnp.log(jac_3d)
 
-        block_tril_mask = _right_pad(
-            masks.block_tril_mask(block_shape, n_blocks),
-            val=True,
-            width=cond_dim,
-        )
-
-        weight = Where(block_tril_mask, linear.weight, 0)
-        weight = Where(
-            block_diag_mask,
-            BijectionReparam(weight, SoftPlus(), invert_on_init=False),
-            weight,
-        )
-        weight = WeightNormalization(weight)
-
-        self.linear = eqx.tree_at(lambda linear: linear.weight, linear, replace=weight)
-        self.block_shape = block_shape
-        self.n_blocks = n_blocks
-
-        self.block_diag_idxs = jnp.where(
-            block_diag_mask, size=prod(block_shape) * n_blocks
-        )
-
-    def __call__(self, x, condition=None):
-        """Returns output y, and components of weight matrix needed log_det computation.
-
-        The weights of this module need to be unwrapped before use if using directly.
-        The log det term has shape``(n_blocks, *block_shape)``.
-        """
-        if condition is not None:
-            x = jnp.concatenate((x, condition))
-        y = self.linear(x)
-        jac_3d = self.linear.weight[self.block_diag_idxs].reshape(
-            self.n_blocks, *self.block_shape
-        )
-        return y, jnp.log(jac_3d)
+    return linear, layer_to_log_jacobian_3d
 
 
 def logmatmulexp(x, y):
