@@ -11,7 +11,7 @@ import jax.numpy as jnp
 
 from flowjax.bijections.bijection import AbstractBijection
 from flowjax.bijections.jax_transforms import Vmap
-from flowjax.utils import Array, get_ravelled_bijection_constructor
+from flowjax.utils import Array, get_ravelled_pytree_constructor
 
 
 class Coupling(AbstractBijection):
@@ -53,9 +53,7 @@ class Coupling(AbstractBijection):
                 "Only unconditional transformers with shape () are supported.",
             )
 
-        constructor, transformer_init_params = get_ravelled_bijection_constructor(
-            transformer,
-        )
+        constructor, num_params = get_ravelled_pytree_constructor(transformer)
 
         self.transformer_constructor = constructor
         self.untransformed_dim = untransformed_dim
@@ -63,11 +61,9 @@ class Coupling(AbstractBijection):
         self.shape = (dim,)
         self.cond_shape = (cond_dim,) if cond_dim is not None else None
 
-        conditioner_output_size = transformer_init_params.size * (
-            dim - untransformed_dim
-        )
+        conditioner_output_size = num_params * (dim - untransformed_dim)
 
-        conditioner = eqx.nn.MLP(
+        self.conditioner = eqx.nn.MLP(
             in_size=(
                 untransformed_dim if cond_dim is None else untransformed_dim + cond_dim
             ),
@@ -76,14 +72,6 @@ class Coupling(AbstractBijection):
             depth=nn_depth,
             activation=nn_activation,
             key=key,
-        )
-
-        # Initialise last bias terms to match the provided transformer parameters
-        # TODO more concise to absorb into constructor
-        self.conditioner = eqx.tree_at(
-            where=lambda mlp: mlp.layers[-1].bias,
-            pytree=conditioner,
-            replace=jnp.tile(transformer_init_params, dim - untransformed_dim),
         )
 
     def transform(self, x, condition=None):

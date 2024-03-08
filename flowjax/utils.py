@@ -132,33 +132,30 @@ def _get_ufunc_signature(in_shapes: tuple[int], out_shapes: tuple[int]):
     return f"{in_shapes_str}->{out_shapes_str}"
 
 
-def get_ravelled_bijection_constructor(
-    bijection,
-    filter_spec=eqx.is_inexact_array,
-) -> tuple:
-    """Get a constructor taking ravelled parameters and the current ravelled parameters.
+def get_ravelled_pytree_constructor(tree, filter_spec=eqx.is_inexact_array) -> tuple:
+    """Get a pytree constructor taking ravelled parameters, and the number of params.
 
     The constructor takes a single argument as input, which is all the bijection
     parameters flattened into a single contiguous vector. This is useful when we wish to
-    parameterize a bijection with a neural neural network, as it allows convenient
-    construction of the bijection directly from the neural network output.
+    parameterize a pytree with a neural neural network. Calling the constructor
+    at the zero vector will return the initial pytree.
 
     Args:
-        bijection: Bijection to form constructor for.
+        tree: Pytree to form constructor for.
         filter_spec: Filter function to specify parameters. Defaults to
             eqx.is_inexact_array.
 
     Returns:
-        The constructor, and the current parameter vector.
+        tuple: Tuple containing the constructor, and the number of parameters.
     """
-    params, static = eqx.partition(bijection, filter_spec)
-    current, unravel = ravel_pytree(params)
+    params, static = eqx.partition(tree, filter_spec)
+    init, unravel = ravel_pytree(params)
 
     def constructor(ravelled_params: Array):
-        params = unravel(ravelled_params)
+        params = unravel(ravelled_params + init)
         return eqx.combine(params, static)
 
-    return constructor, current
+    return constructor, len(init)
 
 
 def arraylike_to_array(arr: ArrayLike, err_name: str = "input", **kwargs) -> Array:

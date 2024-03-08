@@ -17,8 +17,8 @@ import flowjax
 from flowjax._custom_types import ArrayLike
 
 
-def _check_and_cast(method):
-    """Decorator that performs argument checking and converts arraylike to array."""
+def _unwrap_check_and_cast(method):
+    """Decorator that unwraps unwrappables, performs argument casting and checking."""
 
     @functools.wraps(method)
     def wrapper(bijection, x, condition=None):
@@ -100,7 +100,7 @@ class AbstractBijection(eqx.Module):
                 "__isabstractmethod__",
             ):
                 assert not hasattr(cls.__dict__[meth], "__unwrap_check_and_cast__")
-                setattr(cls, meth, _check_and_cast(cls.__dict__[meth]))
+                setattr(cls, meth, _unwrap_check_and_cast(cls.__dict__[meth]))
         return cls
 
     @abstractmethod
