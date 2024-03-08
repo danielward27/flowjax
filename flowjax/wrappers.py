@@ -17,11 +17,13 @@ If implementing a custom unwrappable, bear in mind:
 1) The wrapper should avoid implementing any logic or storing information beyond
     what is required for initialization and unwrapping, as this information will be
     lost when the object is unwrapped.
-2) The unwrapping should support broadcasting/vmapped initialization.
+2) The unwrapping should support broadcasting/vmapped initialization of the parameters,
+    as otherwise it may fail to unwrap.
 """
 
 from abc import abstractmethod
-from typing import Any, Callable, Generic, Iterable, TypeVar
+from collections.abc import Callable, Iterable
+from typing import Any, Generic, TypeVar
 
 import equinox as eqx
 import jax
@@ -37,6 +39,17 @@ PyTree = Any
 
 
 T = TypeVar("T")
+
+
+def _apply_inverse_and_check_valid(bijection, arr):
+    param_inv = _VectorizedBijection(bijection).inverse(arr)
+    return eqx.error_if(
+        param_inv,
+        jnp.logical_and(jnp.isfinite(arr), ~jnp.isfinite(param_inv)),
+        "Non-finite value(s) introduced when reparameterizing. This suggests "
+        "the parameter vector passed to BijectionReparam was incompatible with "
+        f"the bijection used for reparmeterizing ({type(bijection).__name__}).",
+    )
 
 
 class AbstractUnwrappable(eqx.Module, Generic[T]):
@@ -71,17 +84,6 @@ class StopGradient(AbstractUnwrappable[T]):
     def unwrap(self) -> T:
         differentiable, static = eqx.partition(self.tree, eqx.is_array_like)
         return eqx.combine(lax.stop_gradient(differentiable), static)
-
-
-def _apply_inverse_and_check_valid(bijection, arr):
-    param_inv = _VectorizedBijection(bijection).inverse(arr)
-    return eqx.error_if(
-        param_inv,
-        jnp.logical_and(jnp.isfinite(arr), ~jnp.isfinite(param_inv)),
-        "Non-finite value(s) introduced when reparameterizing. This suggests "
-        "the parameter vector passed to BijectionReparam was incompatible with "
-        f"the bijection used for reparmeterizing ({type(bijection).__name__}).",
-    )
 
 
 class BijectionReparam(AbstractUnwrappable[Array]):
@@ -155,21 +157,18 @@ class WeightNormalization(AbstractUnwrappable[Array]):
         return self.scale * self.weight / weight_norms
 
 
-class Diagonal(AbstractUnwrappable[Array]):
-    """Unwraps a vector to a diagonal array."""
-
-    arr: Array | AbstractUnwrappable[Array]
-
-    def unwrap(self):
-        return jnp.vectorize(jnp.diag, signature="(a)->(a,a)")(self.arr)
-
-
 class Lambda(AbstractUnwrappable[T]):
-    """Unwrap an object by calling fn with args and kwargs."""
+    """Unwrap an object by calling fn with (possibly trainable) args and kwargs.
+
+    Args:
+        fn: Function allowing numpy broadcasting, to call with args and kwargs.
+        *args: Positional arguments to pass to fn.
+        **kwargs: Key word arguments to pass to fn.
+    """
 
     fn: Callable[..., T]
     args: Iterable
-    kwargs: Iterable
+    kwargs: dict
 
     def __init__(self, fn, *args, **kwargs):
         self.fn = fn

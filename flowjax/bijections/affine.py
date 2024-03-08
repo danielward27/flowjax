@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from functools import partial
 from typing import ClassVar
 
 import jax.numpy as jnp
@@ -164,22 +163,19 @@ class TriangularAffine(AbstractBijection):
 
         dim = arr.shape[0]
 
-        # Make triangular parameterization by adding diagonal and triangular matrices.
-        if lower:
-            tri_mask = jnp.tril(jnp.ones((dim, dim), dtype=jnp.int32), k=-1)
-        else:
-            tri_mask = jnp.triu(jnp.ones((dim, dim), dtype=jnp.int32), k=1)
+        def _to_triangular(diag, arr):
+            diag = jnp.vectorize(jnp.diag, signature="(a)->(a,a)")(diag)
+            tri = jnp.tril(arr, k=-1) if lower else jnp.triu(arr, k=1)
+            return diag + tri
 
-        triangular = wrappers.Lambda(
-            lambda tril, diag: sum([tril, diag]),
-            tril=wrappers.Where(tri_mask, arr, 0),
-            diag=wrappers.Diagonal(
-                wrappers.BijectionReparam(jnp.diag(arr), diag_constraint)
-            ),
+        self.triangular = wrappers.Lambda(
+            _to_triangular,
+            diag=wrappers.BijectionReparam(jnp.diag(arr), diag_constraint),
+            arr=arr,
         )
+
         self.lower = lower
         self.shape = (dim,)
-        self.triangular = triangular
         self.loc = jnp.broadcast_to(loc, (dim,))
 
     def transform(self, x, condition=None):
