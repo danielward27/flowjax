@@ -7,6 +7,7 @@ from typing import ClassVar
 import equinox as eqx
 import jax
 import jax.numpy as jnp
+import jax.random as jr
 from jax import Array, random
 
 from flowjax import masks
@@ -74,6 +75,7 @@ class BlockAutoregressiveNetwork(AbstractBijection):
     cond_shape: tuple[int, ...] | None
     depth: int
     layers: list
+    cond_linear: eqx.nn.Linear | None
     block_dim: int
     activation: AbstractBijection
     inverter: Callable
@@ -89,7 +91,8 @@ class BlockAutoregressiveNetwork(AbstractBijection):
         activation: AbstractBijection | Callable | None = None,
         inverter: Callable | None = None,
     ):
-        cond_dim = 0 if cond_dim is None else cond_dim
+        key, subkey = jr.split(key)
+
         if activation is None:
             activation = LeakyTanh(3)
         elif isinstance(activation, AbstractBijection):
@@ -109,7 +112,6 @@ class BlockAutoregressiveNetwork(AbstractBijection):
                     key,
                     n_blocks=dim,
                     block_shape=(1, 1),
-                    extra_inputs=cond_dim,
                 ),
             )
         else:
@@ -120,22 +122,23 @@ class BlockAutoregressiveNetwork(AbstractBijection):
                 *[(block_dim, block_dim)] * (depth - 1),
                 (1, block_dim),
             ]
-            cond_dims = [cond_dim] + [0] * depth
 
-            for layer_key, block_shape, cond_d in zip(
-                keys,
-                block_shapes,
-                cond_dims,
-                strict=True,
-            ):
+            for layer_key, block_shape in zip(keys, block_shapes, strict=True):
                 layers_and_log_jac_fns.append(
                     block_autoregressive_linear(
                         layer_key,
                         n_blocks=dim,
                         block_shape=block_shape,
-                        extra_inputs=cond_d,
                     ),
                 )
+
+        if cond_dim is not None:
+            layer0_out_dim = layers_and_log_jac_fns[0][0].out_features
+            self.cond_linear = eqx.nn.Linear(
+                cond_dim, layer0_out_dim, use_bias=False, key=subkey
+            )
+        else:
+            self.cond_linear = None
 
         self.depth = depth
         self.layers = layers_and_log_jac_fns
@@ -145,19 +148,20 @@ class BlockAutoregressiveNetwork(AbstractBijection):
         self.activation = activation
 
     def transform(self, x, condition=None):
-        x = x if condition is None else jnp.concatenate((x, condition))
-        for layer, _ in self.layers[:-1]:
+        for i, (layer, _) in enumerate(self.layers[:-1]):
             x = layer(x)
+            if i == 0 and self.cond_linear is not None:
+                x += self.cond_linear(condition)
             x = eqx.filter_vmap(self.activation.transform)(x)
         return self.layers[-1][0](x)
 
     def transform_and_log_det(self, x, condition=None):
-        x = x if condition is None else jnp.concatenate((x, condition))
         log_dets_3ds = []
-        for linear, log_jacobian_fn in self.layers[:-1]:
+        for i, (linear, log_jacobian_fn) in enumerate(self.layers[:-1]):
             x = linear(x)
+            if i == 0 and self.cond_linear is not None:
+                x += self.cond_linear(condition)
             log_dets_3ds.append(log_jacobian_fn(linear))
-
             x, log_det_3d = self._activation_and_log_jacobian_3d(x)
             log_dets_3ds.append(log_det_3d)
 
@@ -195,7 +199,6 @@ def block_autoregressive_linear(
     *,
     n_blocks: int,
     block_shape: tuple,
-    extra_inputs: int = 0,
 ) -> tuple[eqx.nn.Linear, Array]:
     """Block autoregressive linear layer (https://arxiv.org/abs/1904.04676).
 
@@ -208,27 +211,11 @@ def block_autoregressive_linear(
         key: Random key.
         n_blocks: Number of diagonal blocks (dimension of original input).
         block_shape: The shape of the blocks.
-        extra_inputs: Number of additional input variables for which masking is not
-        required. Defaults to 0.
     """
-    in_features = block_shape[1] * n_blocks + extra_inputs
-    out_features = block_shape[0] * n_blocks
+    out_features, in_features = (b * n_blocks for b in block_shape)
     linear = eqx.nn.Linear(in_features, out_features, key=key)
-
-    def _right_pad(arr, val, width):
-        return jnp.column_stack((arr, jnp.full((arr.shape[0], width), val, int)))
-
-    block_diag_mask = _right_pad(
-        masks.block_diag_mask(block_shape, n_blocks),
-        val=False,
-        width=extra_inputs,
-    )
-
-    block_tril_mask = _right_pad(
-        masks.block_tril_mask(block_shape, n_blocks),
-        val=True,
-        width=extra_inputs,
-    )
+    block_diag_mask = masks.block_diag_mask(block_shape, n_blocks)
+    block_tril_mask = masks.block_tril_mask(block_shape, n_blocks)
 
     weight = Where(block_tril_mask, linear.weight, 0)
     weight = Where(
@@ -239,12 +226,12 @@ def block_autoregressive_linear(
     weight = WeightNormalization(weight)
     linear = eqx.tree_at(lambda linear: linear.weight, linear, replace=weight)
 
-    def layer_to_log_jacobian_3d(linear: eqx.nn.Linear):
+    def linear_to_log_jacobian_3d(linear: eqx.nn.Linear):
         idxs = jnp.where(block_diag_mask, size=prod(block_shape) * n_blocks)
         jac_3d = linear.weight[idxs].reshape(n_blocks, *block_shape)
         return jnp.log(jac_3d)
 
-    return linear, layer_to_log_jacobian_3d
+    return linear, linear_to_log_jacobian_3d
 
 
 def logmatmulexp(x, y):
