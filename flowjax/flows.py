@@ -173,7 +173,7 @@ def block_neural_autoregressive_flow(
     Args:
         key: Jax PRNGKey.
         base_dist: Base distribution, with ``base_dist.ndim==1``.
-        cond_dim: Dimension of conditional variables.
+        cond_dim: Dimension of conditional variables. Defaults to None.
         nn_depth: Number of hidden layers within the networks. Defaults to 1.
         nn_block_dim: Block size. Hidden layer width is dim*nn_block_dim. Defaults to 8.
         flow_layers: Number of BNAF layers. Defaults to 1.

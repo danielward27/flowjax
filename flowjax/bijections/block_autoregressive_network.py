@@ -56,7 +56,7 @@ class BlockAutoregressiveNetwork(AbstractBijection):
     Args:
         key: Jax PRNGKey
         dim: Dimension of the distribution.
-        cond_dim: Dimension of conditioning variables.
+        cond_dim: Dimension of conditioning variables. Defaults to None.
         depth: Number of hidden layers in the network.
         block_dim: Block dimension (hidden layer size is `dim*block_dim`).
         activation: Activation function, either a scalar bijection or a callable that
@@ -85,7 +85,7 @@ class BlockAutoregressiveNetwork(AbstractBijection):
         key: Array,
         *,
         dim: int,
-        cond_dim: int | None,
+        cond_dim: int | None = None,
         depth: int,
         block_dim: int,
         activation: AbstractBijection | Callable | None = None,
@@ -144,7 +144,7 @@ class BlockAutoregressiveNetwork(AbstractBijection):
         self.layers = layers_and_log_jac_fns
         self.block_dim = block_dim
         self.shape = (dim,)
-        self.cond_shape = (cond_dim,) if cond_dim != 0 else None
+        self.cond_shape = None if cond_dim is None else (cond_dim,)
         self.activation = activation
 
     def transform(self, x, condition=None):
@@ -186,11 +186,10 @@ class BlockAutoregressiveNetwork(AbstractBijection):
         """Compute activation and the log determinant (blocks, block_dim, block_dim)."""
         x, log_abs_grads = eqx.filter_vmap(self.activation.transform_and_log_det)(x)
         log_det_3d = jnp.full((self.shape[0], self.block_dim, self.block_dim), -jnp.inf)
-        log_det_3d = log_det_3d.at[
-            :,
-            jnp.arange(self.block_dim),
-            jnp.arange(self.block_dim),
-        ].set(log_abs_grads.reshape(self.shape[0], self.block_dim))
+        diag_idxs = jnp.arange(self.block_dim)
+        log_det_3d = log_det_3d.at[:, diag_idxs, diag_idxs].set(
+            log_abs_grads.reshape(self.shape[0], self.block_dim)
+        )
         return x, log_det_3d
 
 
@@ -226,12 +225,12 @@ def block_autoregressive_linear(
     weight = WeightNormalization(weight)
     linear = eqx.tree_at(lambda linear: linear.weight, linear, replace=weight)
 
-    def linear_to_log_jacobian_3d(linear: eqx.nn.Linear):
+    def linear_to_log_block_diagonal(linear: eqx.nn.Linear):
         idxs = jnp.where(block_diag_mask, size=prod(block_shape) * n_blocks)
         jac_3d = linear.weight[idxs].reshape(n_blocks, *block_shape)
         return jnp.log(jac_3d)
 
-    return linear, linear_to_log_jacobian_3d
+    return linear, linear_to_log_block_diagonal
 
 
 def logmatmulexp(x, y):

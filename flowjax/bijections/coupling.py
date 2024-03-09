@@ -23,7 +23,7 @@ class Coupling(AbstractBijection):
             conditioner neural netork.
         untransformed_dim: Number of untransformed conditioning variables (e.g. dim//2).
         dim: Total dimension.
-        cond_dim: Dimension of additional conditioning variables.
+        cond_dim: Dimension of additional conditioning variables. Defaults to None.
         nn_width: Neural network hidden layer width.
         nn_depth: Neural network hidden layer size.
         nn_activation: Neural network activation function. Defaults to jnn.relu.
@@ -43,7 +43,7 @@ class Coupling(AbstractBijection):
         transformer: AbstractBijection,
         untransformed_dim: int,
         dim: int,
-        cond_dim: int | None,
+        cond_dim: int | None = None,
         nn_width: int,
         nn_depth: int,
         nn_activation: Callable = jnn.relu,

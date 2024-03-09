@@ -34,7 +34,7 @@ class MaskedAutoregressive(AbstractBijection):
         transformer: Bijection with shape () to be parameterised by the autoregressive
             network.
         dim: Dimension.
-        cond_dim: Dimension of any conditioning variables.
+        cond_dim: Dimension of any conditioning variables. Defaults to None.
         nn_width: Neural network width.
         nn_depth: Neural network depth.
         nn_activation: Neural network activation. Defaults to jnn.relu.
@@ -51,7 +51,7 @@ class MaskedAutoregressive(AbstractBijection):
         *,
         transformer: AbstractBijection,
         dim: int,
-        cond_dim: int | None,
+        cond_dim: int | None = None,
         nn_width: int,
         nn_depth: int,
         nn_activation: Callable = jnn.relu,
@@ -69,9 +69,7 @@ class MaskedAutoregressive(AbstractBijection):
         else:
             self.cond_shape = (cond_dim,)
             # we give conditioning variables rank -1 (no masking of edges to output)
-            in_ranks = jnp.hstack(
-                (jnp.arange(dim), -jnp.ones(cond_dim, dtype=jnp.int32)),
-            )
+            in_ranks = jnp.hstack((jnp.arange(dim), -jnp.ones(cond_dim)))
 
         hidden_ranks = jnp.arange(nn_width) % dim
         out_ranks = jnp.repeat(jnp.arange(dim), num_params)
