@@ -1,24 +1,23 @@
 """:class:`AbstractUnwrappable` objects and utilities.
 
 These are "placeholder" values for specifying custom behaviour for nodes in a pytree.
-To apply the custom behaviour, we use :func:`unwrap`, which will replace the
+Many of these facilitate similar functions to pytorch parameterizations. To apply the
+custom behaviour, we use :func:`unwrap`, which will replace any
 :class:`AbstractUnwrappable` nodes in a pytree with the unwrapped versions.
 
-Examples of custom behaviour includes:
-- Reparameterizations: Store and optimize parameters in one (often unbounded) domain
-with easy unwrapping to another domain.
-- Masking:  Masking out particular values in an array, e.g. to form triangular matrices,
-or to enfore particular dependency structures in neural network weights.
-- Freezing parameters: Freezing parameters by applying ``jax.lax.stop_gradient`` before
-accessing.
-
+Note in flowjax, this unwrapping is automatically called in several places, currently:
+- Prior to calling the bijection methods: ``transform``, ``inverse``,
+``transform_and_log_det`` and ``inverse_and_log_det``.
+- Prior to calling distribution methods: ``log_prob``, ``sample`` and
+    ``sample_and_log_prob``.
+- Prior to computing the loss functions.
 
 If implementing a custom unwrappable, bear in mind:
 1) The wrapper should avoid implementing any logic or storing information beyond
     what is required for initialization and unwrapping, as this information will be
     lost when the object is unwrapped.
 2) The unwrapping should support broadcasting/vmapped initialization of the parameters,
-    as otherwise it may fail to unwrap.
+    as otherwise it may fail to unwrap or unwrap incorrectly.
 """
 
 from abc import abstractmethod
@@ -41,14 +40,14 @@ PyTree = Any
 T = TypeVar("T")
 
 
-def _apply_inverse_and_check_valid(bijection, arr):
-    param_inv = _VectorizedBijection(bijection).inverse(arr)
-    return eqx.error_if(
-        param_inv,
-        jnp.logical_and(jnp.isfinite(arr), ~jnp.isfinite(param_inv)),
-        "Non-finite value(s) introduced when reparameterizing. This suggests "
-        "the parameter vector passed to BijectionReparam was incompatible with "
-        f"the bijection used for reparmeterizing ({type(bijection).__name__}).",
+def unwrap(tree: PyTree):
+    """Unwrap all :class:`AbstractUnwrappable` nodes within a pytree."""
+    return jax.tree_util.tree_map(
+        f=lambda leaf: (
+            leaf.recursive_unwrap() if isinstance(leaf, AbstractUnwrappable) else leaf
+        ),
+        tree=tree,
+        is_leaf=lambda x: isinstance(x, AbstractUnwrappable),
     )
 
 
@@ -84,6 +83,17 @@ class StopGradient(AbstractUnwrappable[T]):
     def unwrap(self) -> T:
         differentiable, static = eqx.partition(self.tree, eqx.is_array_like)
         return eqx.combine(lax.stop_gradient(differentiable), static)
+
+
+def _apply_inverse_and_check_valid(bijection, arr):
+    param_inv = _VectorizedBijection(bijection).inverse(arr)
+    return eqx.error_if(
+        param_inv,
+        jnp.logical_and(jnp.isfinite(arr), ~jnp.isfinite(param_inv)),
+        "Non-finite value(s) introduced when reparameterizing. This suggests "
+        "the parameter vector passed to BijectionReparam was incompatible with "
+        f"the bijection used for reparmeterizing ({type(bijection).__name__}).",
+    )
 
 
 class BijectionReparam(AbstractUnwrappable[Array]):
@@ -177,14 +187,3 @@ class Lambda(AbstractUnwrappable[T]):
 
     def unwrap(self) -> T:
         return self.fn(*self.args, **self.kwargs)
-
-
-def unwrap(tree: PyTree):
-    """Unwrap all :class:`AbstractUnwrappable` nodes within a pytree."""
-    return jax.tree_util.tree_map(
-        f=lambda leaf: (
-            leaf.recursive_unwrap() if isinstance(leaf, AbstractUnwrappable) else leaf
-        ),
-        tree=tree,
-        is_leaf=lambda x: isinstance(x, AbstractUnwrappable),
-    )

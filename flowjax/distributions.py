@@ -86,6 +86,7 @@ class AbstractDistribution(eqx.Module):
         Returns:
             Array: Jax array of log probabilities.
         """
+        self = unwrap(self)
         x = arraylike_to_array(x, err_name="x")
         if self.cond_shape is not None:
             condition = arraylike_to_array(condition, err_name="condition")
@@ -163,6 +164,7 @@ class AbstractDistribution(eqx.Module):
 
 
         """
+        self = unwrap(self)
         if self.cond_shape is not None:
             condition = arraylike_to_array(condition, err_name="condition")
         keys = self._get_sample_keys(key, sample_shape, condition)
@@ -186,6 +188,7 @@ class AbstractDistribution(eqx.Module):
             condition: Conditioning variables. Defaults to None.
             sample_shape: Sample shape. Defaults to ().
         """
+        self = unwrap(self)
         if self.cond_shape is not None:
             condition = arraylike_to_array(condition, err_name="condition")
         keys = self._get_sample_keys(key, sample_shape, condition)
