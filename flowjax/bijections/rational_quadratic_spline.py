@@ -1,14 +1,50 @@
 """Rational quadratic spline bijections (https://arxiv.org/abs/1906.04032)."""
 
-
+from functools import partial
 from typing import ClassVar
 
 import jax
 import jax.numpy as jnp
 from jax import Array
 
+from flowjax import wrappers
 from flowjax.bijections.bijection import AbstractBijection
-from flowjax.utils import real_to_increasing_on_interval
+
+
+def _real_to_increasing_on_interval(
+    arr: Array,
+    interval: float = 1,
+    softmax_adjust: float = 1e-2,
+    *,
+    pad_with_ends: bool = True,
+):
+    """Transform unconstrained vector to monotonically increasing positions on [-B, B].
+
+    Args:
+        arr: Parameter vector.
+        interval: Interval to transform output. Defaults to 1.
+        softmax_adjust : Rescales softmax output using
+            ``(widths + softmax_adjust/widths.size) / (1 + softmax_adjust)``. e.g.
+            0=no adjustment, 1=average softmax output with evenly spaced widths, >1
+            promotes more evenly spaced widths.
+        pad_with_ends: Whether to pad the with -interval and interval. Defaults to True.
+    """
+
+    def _single(arr):
+        if softmax_adjust < 0:
+            raise ValueError("softmax_adjust should be >= 0.")
+
+        widths = jax.nn.softmax(arr)
+        widths = (widths + softmax_adjust / widths.size) / (1 + softmax_adjust)
+        widths = widths.at[0].set(widths[0] / 2)
+        pos = 2 * interval * jnp.cumsum(widths) - interval
+
+        if pad_with_ends:
+            pos = jnp.pad(pos, pad_width=1, constant_values=(-interval, interval))
+
+        return pos
+
+    return jnp.vectorize(_single, signature="(a)->(b)")(arr)
 
 
 class RationalQuadraticSpline(AbstractBijection):
@@ -30,9 +66,9 @@ class RationalQuadraticSpline(AbstractBijection):
     interval: float
     softmax_adjust: float
     min_derivative: float
-    unbounded_x_pos: Array
-    unbounded_y_pos: Array
-    unbounded_derivatives: Array
+    x_pos: Array
+    y_pos: Array
+    derivatives: Array
 
     def __init__(
         self,
@@ -48,37 +84,18 @@ class RationalQuadraticSpline(AbstractBijection):
         self.min_derivative = min_derivative
 
         # Inexact arrays
-        self.unbounded_x_pos = jnp.zeros(knots)
-        self.unbounded_y_pos = jnp.zeros(knots)
-        self.unbounded_derivatives = jnp.full(
-            knots + 2,
-            jnp.log(jnp.exp(1 - min_derivative) - 1),
+        pos_parameterization = partial(
+            _real_to_increasing_on_interval,
+            interval=interval,
+            softmax_adjust=softmax_adjust,
         )
 
-    @property
-    def x_pos(self):
-        """Get the knot x positions."""
-        x_pos = real_to_increasing_on_interval(
-            self.unbounded_x_pos,
-            self.interval,
-            self.softmax_adjust,
+        self.x_pos = wrappers.Lambda(pos_parameterization, jnp.zeros(knots))
+        self.y_pos = wrappers.Lambda(pos_parameterization, jnp.zeros(knots))
+        self.derivatives = wrappers.Lambda(
+            lambda arr: jax.nn.softplus(arr) + self.min_derivative,
+            jnp.full(knots + 2, jnp.log(jnp.exp(1 - min_derivative) - 1)),
         )
-        return jnp.pad(x_pos, 1, constant_values=(-self.interval, self.interval))
-
-    @property
-    def y_pos(self):
-        """Get the knot y positions."""
-        y_pos = real_to_increasing_on_interval(
-            self.unbounded_y_pos,
-            self.interval,
-            self.softmax_adjust,
-        )
-        return jnp.pad(y_pos, 1, constant_values=(-self.interval, self.interval))
-
-    @property
-    def derivatives(self):
-        """Get the knot derivitives."""
-        return jax.nn.softplus(self.unbounded_derivatives) + self.min_derivative
 
     def transform(self, x, condition=None):
         # Following notation from the paper
