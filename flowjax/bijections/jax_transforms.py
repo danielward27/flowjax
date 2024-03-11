@@ -112,7 +112,7 @@ class Vmap(AbstractBijection):
             should be a PyTree of ``None``, ``int`` with the tree structure being a
             prefix of the bijection, or a callable mapping ``Leaf -> Union[None, int]``.
             Defaults to None. Note, if the bijection contains unwrappables, then in_axes
-                should be specified for the unwrapped structure of the bijection.
+            should be specified for the unwrapped structure of the bijection.
         axis_size: The size of the new axis. This should be left unspecified if in_axis
             is provided, as the size can be inferred from the bijection parameters.
             Defaults to None.
@@ -150,6 +150,7 @@ class Vmap(AbstractBijection):
         parameter? We could achieve this as follows.
 
             >>> from jax.tree_util import tree_map
+            >>> from flowjax.wrappers import unwrap
             >>> bijection = Affine(jnp.zeros(()), jnp.ones(()))
             >>> bijection = eqx.tree_at(lambda bij: bij.loc, bijection, jnp.arange(3))
             >>> in_axis = tree_map(lambda _: None, unwrap(bijection))
@@ -161,7 +162,7 @@ class Vmap(AbstractBijection):
             (3,)
             >>> bijection.bijection.loc.shape
             (3,)
-            >>> bijection.bijection.scale.shape
+            >>> unwrap(bijection.bijection.scale).shape
             ()
 
             >>> x = jnp.ones(3)

@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 import equinox as eqx
-import jax
 import jax.numpy as jnp
 from jax import Array
 from jax.flatten_util import ravel_pytree
@@ -61,11 +60,6 @@ class _VectorizedBijection:
         return jnp.vectorize(func, signature=sig, excluded=exclude)
 
 
-def inv_cum_sum(x):
-    """Inverse of cumulative sum operation."""
-    return x - jnp.pad(x[:-1], (1, 0))
-
-
 def merge_cond_shapes(shapes: Sequence[tuple[int, ...] | None]):
     """Merges shapes (tuples of ints or None) used in bijections and distributions.
 
@@ -115,7 +109,8 @@ def get_ravelled_pytree_constructor(tree, filter_spec=eqx.is_inexact_array) -> t
     The constructor takes a single argument as input, which is all the bijection
     parameters flattened into a single contiguous vector. This is useful when we wish to
     parameterize a pytree with a neural neural network. Calling the constructor
-    at the zero vector will return the initial pytree.
+    at the zero vector will return the initial pytree. Parameters warpped in
+    ``NonTrainable`` are treated as leaves during partitioning.
 
     Args:
         tree: Pytree to form constructor for.
@@ -125,7 +120,11 @@ def get_ravelled_pytree_constructor(tree, filter_spec=eqx.is_inexact_array) -> t
     Returns:
         tuple: Tuple containing the constructor, and the number of parameters.
     """
-    params, static = eqx.partition(tree, filter_spec)
+    params, static = eqx.partition(
+        tree,
+        filter_spec,
+        is_leaf=lambda leaf: isinstance(leaf, flowjax.wrappers.NonTrainable),
+    )
     init, unravel = ravel_pytree(params)
 
     def constructor(ravelled_params: Array):
@@ -146,7 +145,7 @@ def arraylike_to_array(arr: ArrayLike, err_name: str = "input", **kwargs) -> Arr
     Args:
         arr: Arraylike input to convert to a jax array.
         err_name: Name of the input in the error message. Defaults to "input".
-        **kwargs: Key word arguments passed to jnp.asarray.
+        **kwargs: Keyword arguments passed to jnp.asarray.
     """
     if not isinstance(arr, ArrayLike):
         raise TypeError(

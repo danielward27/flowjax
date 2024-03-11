@@ -9,6 +9,7 @@ import optax
 from jax import Array
 from tqdm import tqdm
 
+from flowjax import wrappers
 from flowjax.distributions import AbstractDistribution
 from flowjax.train.train_utils import step
 
@@ -23,7 +24,6 @@ def fit_to_variational_target(
     steps: int = 100,
     learning_rate: float = 5e-4,
     optimizer: optax.GradientTransformation | None = None,
-    filter_spec: Callable | PyTree = eqx.is_inexact_array,
     return_best: bool = True,
     show_progress: bool = True,
 ) -> tuple[AbstractDistribution, list]:
@@ -38,9 +38,6 @@ def fit_to_variational_target(
         learning_rate: Learning rate. Defaults to 5e-4.
         optimizer: Optax optimizer. If provided, this overrides the default Adam
             optimizer, and the learning_rate is ignored. Defaults to None.
-        filter_spec: Equinox `filter_spec` for specifying trainable parameters. Either
-            a callable `leaf -> bool`, or a PyTree with prefix structure matching `dist`
-            with True/False values. Defaults to eqx.is_inexact_array.
         return_best: Whether the result should use the parameters where the minimum loss
             was reached (when True), or the parameters after the last update (when
             False). Defaults to True.
@@ -52,7 +49,11 @@ def fit_to_variational_target(
     if optimizer is None:
         optimizer = optax.adam(learning_rate)
 
-    params, static = eqx.partition(dist, filter_spec)
+    params, static = eqx.partition(
+        dist,
+        eqx.is_inexact_array,
+        is_leaf=lambda leaf: isinstance(leaf, wrappers.NonTrainable),
+    )
     opt_state = optimizer.init(params)
 
     losses = []

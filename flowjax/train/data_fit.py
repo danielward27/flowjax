@@ -13,6 +13,7 @@ from jax import Array
 from jax.typing import ArrayLike
 from tqdm import tqdm
 
+from flowjax import wrappers
 from flowjax.train.losses import MaximumLikelihoodLoss
 from flowjax.train.train_utils import (
     count_fruitless,
@@ -37,7 +38,6 @@ def fit_to_data(
     val_prop: float = 0.1,
     learning_rate: float = 5e-4,
     optimizer: optax.GradientTransformation | None = None,
-    filter_spec: Callable | PyTree = eqx.is_inexact_array,
     return_best: bool = True,
     show_progress: bool = True,
 ):
@@ -62,9 +62,6 @@ def fit_to_data(
         learning_rate: Adam learning rate. Defaults to 5e-4.
         optimizer: Optax optimizer. If provided, this overrides the default Adam
             optimizer, and the learning_rate is ignored. Defaults to None.
-        filter_spec: Equinox `filter_spec` for specifying trainable parameters. Either a
-            callable `leaf -> bool`, or a PyTree with prefix structure matching `dist`
-            with True/False values. Defaults to `eqx.is_inexact_array`.
         return_best: Whether the result should use the parameters where the minimum loss
             was reached (when True), or the parameters after the last update (when
             False). Defaults to True.
@@ -82,7 +79,11 @@ def fit_to_data(
     if loss_fn is None:
         loss_fn = MaximumLikelihoodLoss()
 
-    params, static = eqx.partition(dist, filter_spec)
+    params, static = eqx.partition(
+        dist,
+        eqx.is_inexact_array,
+        is_leaf=lambda leaf: isinstance(leaf, wrappers.NonTrainable),
+    )
     best_params = params
     opt_state = optimizer.init(params)
 

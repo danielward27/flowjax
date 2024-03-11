@@ -9,7 +9,6 @@ All these functions return a :class:`~flowjax.distributions.Transformed` distrib
 
 from collections.abc import Callable
 from functools import partial
-from typing import ClassVar
 
 import equinox as eqx
 import jax.nn as jnn
@@ -29,6 +28,7 @@ from flowjax.bijections import (
     Flip,
     Invert,
     LeakyTanh,
+    Loc,
     MaskedAutoregressive,
     Permute,
     Planar,
@@ -39,7 +39,7 @@ from flowjax.bijections import (
     Vmap,
 )
 from flowjax.distributions import AbstractDistribution, Transformed
-from flowjax.wrappers import WeightNormalization
+from flowjax.wrappers import NonTrainable, WeightNormalization
 
 
 def coupling_flow(
@@ -71,7 +71,9 @@ def coupling_flow(
             faster `transform` methods, leading to faster `sample`. Defaults to True.
     """
     if transformer is None:
-        transformer = Affine(scale_constraint=Chain([SoftPlus(), _PlusConst(1e-2)]))
+        transformer = Affine(
+            scale_constraint=Chain([SoftPlus(), NonTrainable(Loc(1e-2))])
+        )
 
     dim = base_dist.shape[-1]
 
@@ -127,7 +129,9 @@ def masked_autoregressive_flow(
             leading to faster `sample`. Defaults to True.
     """
     if transformer is None:
-        transformer = Affine(scale_constraint=Chain([SoftPlus(), _PlusConst(1e-2)]))
+        transformer = Affine(
+            scale_constraint=Chain([SoftPlus(), NonTrainable(Loc(1e-2))])
+        )
     dim = base_dist.shape[-1]
 
     def make_layer(key):  # masked autoregressive layer + permutation
@@ -232,7 +236,7 @@ def planar_flow(
         invert: Whether to invert the bijection. Broadly, True will prioritise a faster
             `inverse` methods, leading to faster `log_prob`, False will prioritise
             faster `transform` methods, leading to faster `sample`. Defaults to True.
-        **mlp_kwargs: Key word arguments (excluding in_size and out_size) passed to
+        **mlp_kwargs: Keyword arguments (excluding in_size and out_size) passed to
             the MLP (equinox.nn.MLP). Ignored when cond_dim is None.
     """
 
@@ -331,25 +335,3 @@ def _add_default_permute(bijection: AbstractBijection, dim: int, key: Array):
 
     perm = Permute(jr.permutation(key, jnp.arange(dim)))
     return Chain([bijection, perm]).merge_chains()
-
-
-class _PlusConst(AbstractBijection):
-    """Adds a constant."""
-
-    # We use this to add a small constant to the affine scale parameter
-    # which seems to improve stabillity masked autoregressive and coupling flows
-    const: float
-    shape: tuple[int, ...] = ()
-    cond_shape: ClassVar[None] = None
-
-    def transform(self, x, condition=None):
-        return x + self.const
-
-    def transform_and_log_det(self, x, condition=None):
-        return x + self.const, jnp.array(0)
-
-    def inverse_and_log_det(self, y, condition=None):
-        return y - self.const, jnp.array(0)
-
-    def inverse(self, y, condition=None):
-        return y - self.const

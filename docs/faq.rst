@@ -3,9 +3,9 @@ FAQ
 
 Freezing parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Often it is useful to not train particular parameters. To achieve this we can provide a
-``filter_spec`` to :func:`~flowjax.train.fit_to_data`. For example, to avoid
-training the base distribution, we could create a ``filter_spec`` as follows
+Often it is useful to not train particular parameters. The easiest way to achieve this
+is to use the :class:`flowjax.wrappers.NonTrainable` wrapper class. For example, to
+avoid training the base distribution of a transformed distribution:
 
 .. testsetup::
 
@@ -15,11 +15,11 @@ training the base distribution, we could create a ``filter_spec`` as follows
 .. doctest::
 
     >>> import equinox as eqx
-    >>> import jax.tree_util as jtu
-    >>> filter_spec = jtu.tree_map(lambda x: eqx.is_inexact_array(x), flow)
-    >>> filter_spec = eqx.tree_at(lambda tree: tree.base_dist, filter_spec, replace=False)
+    >>> from flowjax.wrappers import NonTrainable
+    >>> flow = eqx.tree_at(lambda flow: flow.base_dist, flow, replace_fn=NonTrainable)
 
-For more information about filtering, see the `equinox documentation <https://docs.kidger.site/equinox/all-of-equinox/>`_.
+If you wish to avoid training e.g. a specific type, it may be easier to use
+``jax.tree_map`` to apply the NonTrainable wrapper as required. 
 
 Standardising variables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

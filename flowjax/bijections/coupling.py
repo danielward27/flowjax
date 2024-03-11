@@ -20,7 +20,8 @@ class Coupling(AbstractBijection):
     Args:
         key: Jax PRNGKey
         transformer: Unconditional bijection with shape () to be parameterised by the
-            conditioner neural netork.
+            conditioner neural netork. Parameters wrapped with ``NonTrainable``
+            are excluded from being parameterized.
         untransformed_dim: Number of untransformed conditioning variables (e.g. dim//2).
         dim: Total dimension.
         cond_dim: Dimension of additional conditioning variables. Defaults to None.

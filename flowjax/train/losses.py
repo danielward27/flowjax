@@ -1,7 +1,7 @@
 """Common loss functions for training normalizing flows.
 
 The loss functions are callables, with the first two arguments being the partitioned
-distribution (see equinox.partition).
+distribution (see ``equinox.partition``).
 """
 
 from __future__ import annotations

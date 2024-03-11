@@ -6,7 +6,6 @@ installed.
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from typing import Any
 
 import equinox as eqx
@@ -14,6 +13,7 @@ import jax
 from jax import Array
 from jax.typing import ArrayLike
 
+from flowjax import wrappers
 from flowjax.bijections import AbstractBijection
 from flowjax.distributions import AbstractDistribution, AbstractTransformed
 from flowjax.utils import _VectorizedBijection, arraylike_to_array
@@ -70,7 +70,6 @@ def sample(name: str, fn: Any, *args, condition=None, **kwargs):
 def register_params(
     name: str,
     model: PyTree,
-    filter_spec: Callable | PyTree = eqx.is_inexact_array,
 ):
     """Register numpyro params for an arbitrary pytree.
 
@@ -81,12 +80,12 @@ def register_params(
     Args:
         name: Name for the parameter set.
         model: The pytree (e.g. an equinox module, flowjax distribution/bijection).
-        filter_spec: Equinox `filter_spec` for specifying trainable parameters. Either a
-            callable `leaf -> bool`, or a PyTree with prefix structure matching `dist`
-            with True/False values. Defaults to `eqx.is_inexact_array`.
-
     """
-    params, static = eqx.partition(model, filter_spec)
+    params, static = eqx.partition(
+        model,
+        eqx.is_inexact_array,
+        is_leaf=lambda leaf: isinstance(leaf, wrappers.NonTrainable),
+    )
     if callable(params):
         # Wrap to avoid special handling of callables by numpyro. Numpyro expects a
         # callable to be used for lazy initialization, whereas in our case it is likely
@@ -94,7 +93,7 @@ def register_params(
         params = numpyro.param(name, lambda _: params)
     else:
         params = numpyro.param(name, params)
-    return eqx.combine(params, static)
+    return wrappers.unwrap(eqx.combine(params, static))
 
 
 def distribution_to_numpyro(

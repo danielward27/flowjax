@@ -32,7 +32,7 @@ class MaskedAutoregressive(AbstractBijection):
     Args:
         key: Jax PRNGKey
         transformer: Bijection with shape () to be parameterised by the autoregressive
-            network.
+            network. Parameters wrapped with ``NonTrainable`` are exluded.
         dim: Dimension.
         cond_dim: Dimension of any conditioning variables. Defaults to None.
         nn_width: Neural network width.
@@ -144,7 +144,7 @@ def masked_autoregressive_mlp(
         in_ranks: The ranks of the inputs.
         hidden_ranks: The ranks of the hidden dimensions.
         out_ranks: The ranks of the output dimensions.
-        **kwargs: Key word arguments passed to equinox.nn.MLP.
+        **kwargs: Keyword arguments passed to equinox.nn.MLP.
     """
     in_ranks, hidden_ranks, out_ranks = (
         jnp.asarray(a, jnp.int32) for a in (in_ranks, hidden_ranks, out_ranks)
