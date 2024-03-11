@@ -29,22 +29,18 @@ def _real_to_increasing_on_interval(
             promotes more evenly spaced widths.
         pad_with_ends: Whether to pad the with -interval and interval. Defaults to True.
     """
+    if softmax_adjust < 0:
+        raise ValueError("softmax_adjust should be >= 0.")
 
-    def _single(arr):
-        if softmax_adjust < 0:
-            raise ValueError("softmax_adjust should be >= 0.")
+    widths = jax.nn.softmax(arr)
+    widths = (widths + softmax_adjust / widths.size) / (1 + softmax_adjust)
+    widths = widths.at[0].set(widths[0] / 2)
+    pos = 2 * interval * jnp.cumsum(widths) - interval
 
-        widths = jax.nn.softmax(arr)
-        widths = (widths + softmax_adjust / widths.size) / (1 + softmax_adjust)
-        widths = widths.at[0].set(widths[0] / 2)
-        pos = 2 * interval * jnp.cumsum(widths) - interval
+    if pad_with_ends:
+        pos = jnp.pad(pos, pad_width=1, constant_values=(-interval, interval))
 
-        if pad_with_ends:
-            pos = jnp.pad(pos, pad_width=1, constant_values=(-interval, interval))
-
-        return pos
-
-    return jnp.vectorize(_single, signature="(a)->(b)")(arr)
+    return pos
 
 
 class RationalQuadraticSpline(AbstractBijection):

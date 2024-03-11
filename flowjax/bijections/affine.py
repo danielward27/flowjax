@@ -164,16 +164,11 @@ class TriangularAffine(AbstractBijection):
         dim = arr.shape[0]
 
         def _to_triangular(diag, arr):
-            diag = jnp.vectorize(jnp.diag, signature="(a)->(a,a)")(diag)
             tri = jnp.tril(arr, k=-1) if lower else jnp.triu(arr, k=1)
-            return diag + tri
+            return jnp.diag(diag) + tri
 
-        self.triangular = wrappers.Lambda(
-            _to_triangular,
-            diag=wrappers.BijectionReparam(jnp.diag(arr), diag_constraint),
-            arr=arr,
-        )
-
+        diag = wrappers.BijectionReparam(jnp.diag(arr), diag_constraint)
+        self.triangular = wrappers.Lambda(_to_triangular, diag=diag, arr=arr)
         self.lower = lower
         self.shape = (dim,)
         self.loc = jnp.broadcast_to(loc, (dim,))
