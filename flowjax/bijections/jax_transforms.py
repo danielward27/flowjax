@@ -180,25 +180,25 @@ class Vmap(AbstractBijection):
         self,
         bijection: AbstractBijection,
         *,
-        in_axis: int | None | Callable = None,
+        in_axes: int | None | Callable = None,
         axis_size: int | None = None,
-        in_axis_condition: int | None = None,
+        in_axes_condition: int | None = None,
     ):
-        if in_axis is not None and axis_size is not None:
+        if in_axes is not None and axis_size is not None:
             raise ValueError("Cannot specify both in_axis and axis_size.")
 
         if axis_size is None:
-            if in_axis is None:
+            if in_axes is None:
                 raise ValueError("Either axis_size or in_axis must be provided.")
-            _check_no_unwrappables(in_axis)
+            _check_no_unwrappables(in_axes)
             axis_size = _infer_axis_size_from_params(
-                wrappers.unwrap(bijection), in_axis
+                wrappers.unwrap(bijection), in_axes
             )
 
-        self.in_axes = (in_axis, 0, in_axis_condition)
+        self.in_axes = (in_axes, 0, in_axes_condition)
         self.bijection = bijection
         self.axis_size = axis_size
-        self.cond_shape = self.get_cond_shape(in_axis_condition)
+        self.cond_shape = self.get_cond_shape(in_axes_condition)
 
     def vmap(self, f: Callable):
         return eqx.filter_vmap(f, in_axes=self.in_axes, axis_size=self.axis_size)

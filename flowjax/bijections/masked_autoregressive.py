@@ -125,7 +125,7 @@ class MaskedAutoregressive(AbstractBijection):
         dim = self.shape[-1]
         transformer_params = jnp.reshape(params, (dim, -1))
         transformer = eqx.filter_vmap(self.transformer_constructor)(transformer_params)
-        return Vmap(transformer, in_axis=eqx.if_array(0))
+        return Vmap(transformer, in_axes=eqx.if_array(0))
 
 
 def masked_autoregressive_mlp(

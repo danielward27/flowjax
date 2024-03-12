@@ -176,7 +176,7 @@ bijections = {
     "Vmap (broadcast params)": Vmap(Affine(1, 2), axis_size=10),
     "Vmap (vectorize params)": Vmap(
         eqx.filter_vmap(Affine)(jnp.ones(3)),
-        in_axis=eqx.if_array(0),
+        in_axes=eqx.if_array(0),
     ),
     "Reshape (unconditional)": Reshape(Affine(scale=jnp.arange(1, 5)), (2, 2)),
     "Reshape (conditional)": Reshape(

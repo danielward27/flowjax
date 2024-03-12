@@ -297,7 +297,7 @@ def triangular_spline_flow(
     def get_splines():
         fn = partial(RationalQuadraticSpline, knots=knots, interval=1)
         spline = eqx.filter_vmap(fn, axis_size=dim)()
-        return Vmap(spline, in_axis=eqx.if_array(0))
+        return Vmap(spline, in_axes=eqx.if_array(0))
 
     def make_layer(key):
         lt_key, perm_key, cond_key = jr.split(key, 3)

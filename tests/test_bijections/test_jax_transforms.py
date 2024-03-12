@@ -14,7 +14,7 @@ def test_vmap_uneven_init():
     bijection = eqx.tree_at(lambda bij: bij.loc, bijection, jnp.arange(3))
     in_axis = tree_map(lambda _: None, unwrap(bijection))
     in_axis = eqx.tree_at(lambda bij: bij.loc, in_axis, 0, is_leaf=lambda x: x is None)
-    bijection = Vmap(bijection, in_axis=in_axis)
+    bijection = Vmap(bijection, in_axes=in_axis)
 
     assert bijection.shape == (3,)
     assert bijection.bijection.loc.shape == (3,)
@@ -29,7 +29,7 @@ def test_vmap_error_with_unwrappable():
     bijection = Affine(jnp.zeros(1), jnp.ones(1))
     in_axis = tree_map(eqx.is_array, bijection)
     with pytest.raises(ValueError, match="unwrappable"):
-        bijection = Vmap(bijection, in_axis=in_axis)
+        bijection = Vmap(bijection, in_axes=in_axis)
 
 
 def test_vmap_condition_only():
@@ -46,9 +46,9 @@ def test_vmap_condition_only():
         ValueError,
         match="Either axis_size or in_axis must be provided.",
     ):
-        bijection = Vmap(bijection, in_axis_condition=0)
+        bijection = Vmap(bijection, in_axes_condition=0)
 
-    bijection = Vmap(bijection, in_axis_condition=1, axis_size=10)
+    bijection = Vmap(bijection, in_axes_condition=1, axis_size=10)
     assert bijection.shape == (10, 3)
     assert bijection.cond_shape == (4, 10)
 
