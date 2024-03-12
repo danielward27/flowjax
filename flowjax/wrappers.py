@@ -23,9 +23,11 @@ If implementing a custom unwrappable, bear in mind:
   correctly.
 """
 
+from __future__ import annotations
+
 from abc import abstractmethod
 from collections.abc import Callable, Iterable
-from typing import Any, ClassVar, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, TypeVar
 
 import equinox as eqx
 import jax
@@ -33,9 +35,10 @@ import jax.numpy as jnp
 from jax import Array, lax
 
 from flowjax._custom_types import ArrayLike
-from flowjax.bijections.bijection import AbstractBijection
-from flowjax.bijections.softplus import SoftPlus
 from flowjax.utils import _VectorizedBijection, arraylike_to_array
+
+if TYPE_CHECKING:
+    from flowjax.bijections.bijection import AbstractBijection
 
 PyTree = Any
 
@@ -190,6 +193,8 @@ class WeightNormalization(AbstractUnwrappable[Array]):
     _dummy: ClassVar[None] = None
 
     def __init__(self, weight: Array | AbstractUnwrappable[Array]):
+        from flowjax.bijections import SoftPlus  # Delayed to avoid circular import...
+
         self.weight = weight
         scale_init = 1 / jnp.linalg.norm(unwrap(weight), axis=-1, keepdims=True)
         self.scale = BijectionReparam(scale_init, SoftPlus())
