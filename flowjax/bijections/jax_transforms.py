@@ -108,15 +108,15 @@ class Vmap(AbstractBijection):
 
     Args:
         bijection: The bijection to vectorize.
-        in_axis: Specify which axes of the bijection parameters to vectorise over. It
+        in_axes: Specify which axes of the bijection parameters to vectorise over. It
             should be a PyTree of ``None``, ``int`` with the tree structure being a
             prefix of the bijection, or a callable mapping ``Leaf -> Union[None, int]``.
             Defaults to None. Note, if the bijection contains unwrappables, then in_axes
             should be specified for the unwrapped structure of the bijection.
-        axis_size: The size of the new axis. This should be left unspecified if in_axis
+        axis_size: The size of the new axis. This should be left unspecified if in_axes
             is provided, as the size can be inferred from the bijection parameters.
             Defaults to None.
-        in_axis_condition: Optionally define an axis of the conditioning variable to
+        in_axes_condition: Optionally define an axis of the conditioning variable to
             vectorize over. Defaults to None.
 
     Example:
@@ -133,7 +133,7 @@ class Vmap(AbstractBijection):
             ...    lambda: RationalQuadraticSpline(knots=5, interval=2),
             ...    axis_size=10
             ... )()
-            >>> bijection = Vmap(bijection, in_axis=eqx.if_array(0))
+            >>> bijection = Vmap(bijection, in_axes=eqx.if_array(0))
             >>> bijection.shape
             (10,)
 
@@ -153,11 +153,11 @@ class Vmap(AbstractBijection):
             >>> from flowjax.wrappers import unwrap
             >>> bijection = Affine(jnp.zeros(()), jnp.ones(()))
             >>> bijection = eqx.tree_at(lambda bij: bij.loc, bijection, jnp.arange(3))
-            >>> in_axis = tree_map(lambda _: None, unwrap(bijection))
-            >>> in_axis = eqx.tree_at(
-            ...     lambda bij: bij.loc, in_axis, 0, is_leaf=lambda x: x is None
+            >>> in_axes = tree_map(lambda _: None, unwrap(bijection))
+            >>> in_axes = eqx.tree_at(
+            ...     lambda bij: bij.loc, in_axes, 0, is_leaf=lambda x: x is None
             ...     )
-            >>> bijection = Vmap(bijection, in_axis=in_axis)
+            >>> bijection = Vmap(bijection, in_axes=in_axes)
             >>> bijection.shape
             (3,)
             >>> bijection.bijection.loc.shape
@@ -185,11 +185,11 @@ class Vmap(AbstractBijection):
         in_axes_condition: int | None = None,
     ):
         if in_axes is not None and axis_size is not None:
-            raise ValueError("Cannot specify both in_axis and axis_size.")
+            raise ValueError("Cannot specify both in_axes and axis_size.")
 
         if axis_size is None:
             if in_axes is None:
-                raise ValueError("Either axis_size or in_axis must be provided.")
+                raise ValueError("Either axis_size or in_axes must be provided.")
             _check_no_unwrappables(in_axes)
             axis_size = _infer_axis_size_from_params(
                 wrappers.unwrap(bijection), in_axes
@@ -243,8 +243,8 @@ class Vmap(AbstractBijection):
         )
 
 
-def _infer_axis_size_from_params(tree, in_axis):
-    axes = _resolve_vmapped_axes(tree, in_axis)
+def _infer_axis_size_from_params(tree, in_axes):
+    axes = _resolve_vmapped_axes(tree, in_axes)
     axis_sizes = tree_leaves(
         tree_map(
             lambda leaf, ax: leaf.shape[ax] if ax is not None else None,
@@ -253,7 +253,7 @@ def _infer_axis_size_from_params(tree, in_axis):
         ),
     )
     if len(axis_sizes) == 0:
-        raise ValueError("in_axis did not map to any leaves to vectorize.")
+        raise ValueError("in_axes did not map to any leaves to vectorize.")
     return axis_sizes[0]
 
 

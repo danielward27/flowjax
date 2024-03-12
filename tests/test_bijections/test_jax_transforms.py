@@ -12,9 +12,9 @@ def test_vmap_uneven_init():
     "Tests adding a batch dimension to a particular leaf (parameter array)."
     bijection = Affine(jnp.zeros(()), jnp.ones(()))
     bijection = eqx.tree_at(lambda bij: bij.loc, bijection, jnp.arange(3))
-    in_axis = tree_map(lambda _: None, unwrap(bijection))
-    in_axis = eqx.tree_at(lambda bij: bij.loc, in_axis, 0, is_leaf=lambda x: x is None)
-    bijection = Vmap(bijection, in_axes=in_axis)
+    in_axes = tree_map(lambda _: None, unwrap(bijection))
+    in_axes = eqx.tree_at(lambda bij: bij.loc, in_axes, 0, is_leaf=lambda x: x is None)
+    bijection = Vmap(bijection, in_axes=in_axes)
 
     assert bijection.shape == (3,)
     assert bijection.bijection.loc.shape == (3,)
@@ -27,9 +27,9 @@ def test_vmap_uneven_init():
 
 def test_vmap_error_with_unwrappable():
     bijection = Affine(jnp.zeros(1), jnp.ones(1))
-    in_axis = tree_map(eqx.is_array, bijection)
+    in_axes = tree_map(eqx.is_array, bijection)
     with pytest.raises(ValueError, match="unwrappable"):
-        bijection = Vmap(bijection, in_axes=in_axis)
+        bijection = Vmap(bijection, in_axes=in_axes)
 
 
 def test_vmap_condition_only():
@@ -44,7 +44,7 @@ def test_vmap_condition_only():
 
     with pytest.raises(
         ValueError,
-        match="Either axis_size or in_axis must be provided.",
+        match="Either axis_size or in_axes must be provided.",
     ):
         bijection = Vmap(bijection, in_axes_condition=0)
 
