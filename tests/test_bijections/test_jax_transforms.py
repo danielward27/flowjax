@@ -5,23 +5,31 @@ import pytest
 from jax.tree_util import tree_map
 
 from flowjax.bijections import Affine, MaskedAutoregressive, Vmap
+from flowjax.wrappers import unwrap
 
 
 def test_vmap_uneven_init():
     "Tests adding a batch dimension to a particular leaf (parameter array)."
     bijection = Affine(jnp.zeros(()), jnp.ones(()))
     bijection = eqx.tree_at(lambda bij: bij.loc, bijection, jnp.arange(3))
-    in_axis = tree_map(lambda _: None, bijection)
-    in_axis = eqx.tree_at(lambda bij: bij.loc, in_axis, 0, is_leaf=lambda x: x is None)
-    bijection = Vmap(bijection, in_axis=in_axis)
+    in_axes = tree_map(lambda _: None, unwrap(bijection))
+    in_axes = eqx.tree_at(lambda bij: bij.loc, in_axes, 0, is_leaf=lambda x: x is None)
+    bijection = Vmap(bijection, in_axes=in_axes)
 
     assert bijection.shape == (3,)
     assert bijection.bijection.loc.shape == (3,)
-    assert bijection.bijection.scale.shape == ()
+    assert unwrap(bijection.bijection.scale).shape == ()
 
     x = jnp.ones(3)
     expected = x + jnp.arange(3)
     assert bijection.transform(x) == pytest.approx(expected)
+
+
+def test_vmap_error_with_unwrappable():
+    bijection = Affine(jnp.zeros(1), jnp.ones(1))
+    in_axes = tree_map(eqx.is_array, bijection)
+    with pytest.raises(ValueError, match="unwrappable"):
+        bijection = Vmap(bijection, in_axes=in_axes)
 
 
 def test_vmap_condition_only():
@@ -36,11 +44,11 @@ def test_vmap_condition_only():
 
     with pytest.raises(
         ValueError,
-        match="Either axis_size or in_axis must be provided.",
+        match="Either axis_size or in_axes must be provided.",
     ):
-        bijection = Vmap(bijection, in_axis_condition=0)
+        bijection = Vmap(bijection, in_axes_condition=0)
 
-    bijection = Vmap(bijection, in_axis_condition=1, axis_size=10)
+    bijection = Vmap(bijection, in_axes_condition=1, axis_size=10)
     assert bijection.shape == (10, 3)
     assert bijection.cond_shape == (4, 10)
 

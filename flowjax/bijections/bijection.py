@@ -6,43 +6,54 @@ implement only the forward methods if an inverse is not available. The `Invert`
 bijection can be used to invert the orientation if a fast inverse is desired (e.g.
 maximum likelihood fitting of flows).
 """
+
 import functools
 from abc import abstractmethod
 
 import equinox as eqx
 from jax import Array
 
+import flowjax
 from flowjax._custom_types import ArrayLike
-from flowjax.utils import arraylike_to_array
 
 
-def _check_and_cast(method):
-    """Decorator that performs argument checking and converts arraylike to array."""
+def _unwrap_check_and_cast(method):
+    """Decorator that unwraps unwrappables, performs argument casting and checking."""
 
     @functools.wraps(method)
-    def wrapper(self, x, condition=None):
+    def wrapper(bijection, x, condition=None):
+
         def _check_condition(condition):
             if condition is not None:
-                condition = arraylike_to_array(condition, err_name="condition")
-            elif self.cond_shape is not None:
+                condition = flowjax.utils.arraylike_to_array(
+                    condition, err_name="condition"
+                )
+            elif bijection.cond_shape is not None:
                 raise ValueError("Expected condition to be provided.")
 
-            if self.cond_shape is not None and condition.shape != self.cond_shape:
+            if (
+                bijection.cond_shape is not None
+                and condition.shape != bijection.cond_shape
+            ):
                 raise ValueError(
-                    f"Expected condition.shape {self.cond_shape}; got "
+                    f"Expected condition.shape {bijection.cond_shape}; got "
                     f"{condition.shape}",
                 )
             return condition
 
         def _check_x(x):
-            x = arraylike_to_array(x)
-            if x.shape != self.shape:
-                raise ValueError(f"Expected input shape {self.shape}; got {x.shape}")
+            x = flowjax.utils.arraylike_to_array(x)
+            if x.shape != bijection.shape:
+                raise ValueError(
+                    f"Expected input shape {bijection.shape}; got {x.shape}"
+                )
             return x
 
-        return method(self, _check_x(x), _check_condition(condition))
+        return method(
+            flowjax.wrappers.unwrap(bijection), _check_x(x), _check_condition(condition)
+        )
 
-    wrapper.__check_and_cast__ = True
+    wrapper.__unwrap_check_and_cast__ = True
     return wrapper
 
 
@@ -88,8 +99,8 @@ class AbstractBijection(eqx.Module):
                 cls.__dict__[meth],
                 "__isabstractmethod__",
             ):
-                assert not hasattr(cls.__dict__[meth], "__check_and_cast__")
-                setattr(cls, meth, _check_and_cast(cls.__dict__[meth]))
+                assert not hasattr(cls.__dict__[meth], "__unwrap_check_and_cast__")
+                setattr(cls, meth, _unwrap_check_and_cast(cls.__dict__[meth]))
         return cls
 
     @abstractmethod

@@ -1,8 +1,9 @@
 """Common loss functions for training normalizing flows.
 
 The loss functions are callables, with the first two arguments being the partitioned
-distribution (see equinox.partition).
+distribution (see ``equinox.partition``).
 """
+
 from __future__ import annotations
 
 from collections.abc import Callable
@@ -15,6 +16,7 @@ from jax.scipy.special import logsumexp
 from jax.typing import ArrayLike
 
 from flowjax.distributions import AbstractDistribution
+from flowjax.wrappers import unwrap
 
 
 class MaximumLikelihoodLoss:
@@ -32,7 +34,7 @@ class MaximumLikelihoodLoss:
         condition: Array | None = None,
     ):
         """Compute the loss."""
-        dist = eqx.combine(static, params)
+        dist = unwrap(eqx.combine(static, params))
         return -dist.log_prob(x, condition).mean()
 
 
@@ -72,7 +74,7 @@ class ContrastiveLoss:
         condition: Array | None = None,
     ):
         """Compute the loss."""
-        dist = eqx.combine(params, static)
+        dist = unwrap(eqx.combine(params, static))
         contrastive = self._get_contrastive(x)
         joint_log_odds = dist.log_prob(x, condition) - self.prior.log_prob(x)
         contrastive_log_odds = dist.log_prob(

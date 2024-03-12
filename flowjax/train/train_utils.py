@@ -1,4 +1,5 @@
 """Utility functions for training."""
+
 from collections.abc import Callable, Sequence
 from functools import partial
 from typing import Any

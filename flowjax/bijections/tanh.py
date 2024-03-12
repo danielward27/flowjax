@@ -1,4 +1,5 @@
 """Tanh bijection."""
+
 import math
 from typing import ClassVar
 

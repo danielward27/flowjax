@@ -1,8 +1,7 @@
 import jax.numpy as jnp
-import jax.random as jr
 import pytest
 
-from flowjax.utils import _get_ufunc_signature, inv_cum_sum, merge_cond_shapes
+from flowjax.utils import _get_ufunc_signature, merge_cond_shapes
 
 test_cases = [
     # arrays, expected_shape
@@ -12,15 +11,6 @@ test_cases = [
     ((1.0, 1.0), (1,)),
     (((1.0),), (1,)),
 ]
-
-
-@pytest.mark.parametrize("key", jr.split(jr.PRNGKey(0), 5))
-def test_inv_cum_sum(key):
-    x = jr.uniform(key, (10,))
-    x_cumsum = jnp.cumsum(x)
-    x_recon = inv_cum_sum(x_cumsum)
-    assert pytest.approx(x, abs=1e-6) == x_recon
-
 
 test_cases = [
     # input, expected

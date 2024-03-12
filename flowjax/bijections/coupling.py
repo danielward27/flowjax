@@ -11,7 +11,7 @@ import jax.numpy as jnp
 
 from flowjax.bijections.bijection import AbstractBijection
 from flowjax.bijections.jax_transforms import Vmap
-from flowjax.utils import Array, get_ravelled_bijection_constructor
+from flowjax.utils import Array, get_ravelled_pytree_constructor
 
 
 class Coupling(AbstractBijection):
@@ -20,10 +20,11 @@ class Coupling(AbstractBijection):
     Args:
         key: Jax PRNGKey
         transformer: Unconditional bijection with shape () to be parameterised by the
-            conditioner neural netork.
+            conditioner neural netork. Parameters wrapped with ``NonTrainable``
+            are excluded from being parameterized.
         untransformed_dim: Number of untransformed conditioning variables (e.g. dim//2).
         dim: Total dimension.
-        cond_dim: Dimension of additional conditioning variables.
+        cond_dim: Dimension of additional conditioning variables. Defaults to None.
         nn_width: Neural network hidden layer width.
         nn_depth: Neural network hidden layer size.
         nn_activation: Neural network activation function. Defaults to jnn.relu.
@@ -43,7 +44,7 @@ class Coupling(AbstractBijection):
         transformer: AbstractBijection,
         untransformed_dim: int,
         dim: int,
-        cond_dim: int | None,
+        cond_dim: int | None = None,
         nn_width: int,
         nn_depth: int,
         nn_activation: Callable = jnn.relu,
@@ -53,9 +54,7 @@ class Coupling(AbstractBijection):
                 "Only unconditional transformers with shape () are supported.",
             )
 
-        constructor, transformer_init_params = get_ravelled_bijection_constructor(
-            transformer,
-        )
+        constructor, num_params = get_ravelled_pytree_constructor(transformer)
 
         self.transformer_constructor = constructor
         self.untransformed_dim = untransformed_dim
@@ -63,11 +62,9 @@ class Coupling(AbstractBijection):
         self.shape = (dim,)
         self.cond_shape = (cond_dim,) if cond_dim is not None else None
 
-        conditioner_output_size = transformer_init_params.size * (
-            dim - untransformed_dim
-        )
+        conditioner_output_size = num_params * (dim - untransformed_dim)
 
-        conditioner = eqx.nn.MLP(
+        self.conditioner = eqx.nn.MLP(
             in_size=(
                 untransformed_dim if cond_dim is None else untransformed_dim + cond_dim
             ),
@@ -76,13 +73,6 @@ class Coupling(AbstractBijection):
             depth=nn_depth,
             activation=nn_activation,
             key=key,
-        )
-
-        # Initialise last bias terms to match the provided transformer parameters
-        self.conditioner = eqx.tree_at(
-            where=lambda mlp: mlp.layers[-1].bias,
-            pytree=conditioner,
-            replace=jnp.tile(transformer_init_params, dim - untransformed_dim),
         )
 
     def transform(self, x, condition=None):
@@ -124,4 +114,4 @@ class Coupling(AbstractBijection):
         dim = self.dim - self.untransformed_dim
         transformer_params = jnp.reshape(params, (dim, -1))
         transformer = eqx.filter_vmap(self.transformer_constructor)(transformer_params)
-        return Vmap(transformer, in_axis=eqx.if_array(0))
+        return Vmap(transformer, in_axes=eqx.if_array(0))

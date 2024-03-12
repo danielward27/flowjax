@@ -20,6 +20,7 @@ from flowjax.bijections import (
     Flip,
     Identity,
     LeakyTanh,
+    Loc,
     MaskedAutoregressive,
     Partial,
     Permute,
@@ -56,13 +57,13 @@ bijections = {
     "Partial (int array)": Partial(Flip((2,)), jnp.array([0, 2]), (DIM,)),
     "Partial (slice)": Partial(Affine(jnp.zeros(2)), slice(0, 2), (DIM,)),
     "Affine": Affine(jnp.ones(DIM), jnp.full(DIM, 2)),
-    "Affine (pos and neg scales)": Affine(
-        scale=jnp.array([-1, 2, 3]),
-        scale_constraint=Identity((DIM,)),
+    "Affine (pos and neg scales)": eqx.tree_at(
+        lambda aff: aff.scale, Affine(scale=jnp.ones(3)), jnp.array([-1, 1, -2])
     ),
     "Tanh": Tanh((DIM,)),
     "LeakyTanh": LeakyTanh(1, (DIM,)),
     "LeakyTanh (broadcast max_val)": LeakyTanh(1, (2, 3)),
+    "Loc": Loc(jnp.arange(DIM)),
     "Exp": Exp((DIM,)),
     "SoftPlus": SoftPlus((DIM,)),
     "TriangularAffine (lower)": TriangularAffine(
@@ -74,15 +75,13 @@ bijections = {
         jnp.full((DIM, DIM), 0.5),
         lower=False,
     ),
-    "TriangularAffine (weight_norm)": TriangularAffine(
-        jnp.arange(DIM),
-        jnp.full((DIM, DIM), 0.5),
-        weight_normalisation=True,
-    ),
-    "TriangularAffine (pos and neg diag)": TriangularAffine(
-        jnp.arange(3),
-        jnp.diag(jnp.array([-1, 1, 2])),
-        diag_constraint=Identity((3,)),
+    "TriangularAffine (pos and neg diag)": eqx.tree_at(
+        lambda triaff: triaff.triangular,
+        TriangularAffine(
+            jnp.arange(3),
+            jnp.diag(jnp.ones(3)),
+        ),
+        jnp.diag(jnp.array([-1, 2, -3])),
     ),
     "RationalQuadraticSpline": RationalQuadraticSpline(knots=4, interval=1),
     "Coupling (unconditional)": Coupling(
@@ -90,7 +89,6 @@ bijections = {
         transformer=Affine(),
         untransformed_dim=DIM // 2,
         dim=DIM,
-        cond_dim=None,
         nn_width=5,
         nn_depth=2,
     ),
@@ -106,7 +104,6 @@ bijections = {
     "MaskedAutoregressive_Affine (unconditional)": MaskedAutoregressive(
         KEY,
         transformer=Affine(),
-        cond_dim=0,
         dim=DIM,
         nn_width=5,
         nn_depth=2,
@@ -123,14 +120,12 @@ bijections = {
         KEY,
         transformer=RationalQuadraticSpline(knots=5, interval=3),
         dim=DIM,
-        cond_dim=0,
         nn_width=10,
         nn_depth=2,
     ),
     "BlockAutoregressiveNetwork (unconditional)": BlockAutoregressiveNetwork(
         KEY,
         dim=DIM,
-        cond_dim=0,
         block_dim=3,
         depth=1,
     ),
@@ -154,9 +149,10 @@ bijections = {
     "Chain": Chain([Flip((DIM,)), Affine(jnp.ones(DIM), jnp.full(DIM, 2))]),
     "Scan": Scan(eqx.filter_vmap(Affine)(jnp.ones((2, DIM)))),
     "Scale": Scale(jnp.full(DIM, 2)),
-    "Scale (pos and neg scales)": Scale(
-        jnp.array([-1, 1, 2]),
-        scale_constraint=Identity((DIM,)),
+    "Scale (pos and neg scales)": eqx.tree_at(
+        lambda scale: scale.scale,
+        Scale(jnp.ones(3)),
+        jnp.array([-1, 2, -3]),
     ),
     "Concatenate": Concatenate([Affine(jnp.ones(DIM)), Tanh(shape=(DIM,))]),
     "ConcatenateAxis1": Concatenate(
@@ -180,7 +176,7 @@ bijections = {
     "Vmap (broadcast params)": Vmap(Affine(1, 2), axis_size=10),
     "Vmap (vectorize params)": Vmap(
         eqx.filter_vmap(Affine)(jnp.ones(3)),
-        in_axis=eqx.if_array(0),
+        in_axes=eqx.if_array(0),
     ),
     "Reshape (unconditional)": Reshape(Affine(scale=jnp.arange(1, 5)), (2, 2)),
     "Reshape (conditional)": Reshape(

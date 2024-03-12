@@ -1,8 +1,10 @@
 """Chain bijection which allows sequential application of arbitrary bijections."""
+
 from collections.abc import Sequence
 
 from flowjax.bijections.bijection import AbstractBijection
 from flowjax.utils import check_shapes_match, merge_cond_shapes
+from flowjax.wrappers import AbstractUnwrappable, unwrap
 
 
 class Chain(AbstractBijection):
@@ -15,12 +17,18 @@ class Chain(AbstractBijection):
 
     shape: tuple[int, ...]
     cond_shape: tuple[int, ...] | None
-    bijections: tuple[AbstractBijection]
+    bijections: tuple[AbstractBijection | AbstractUnwrappable[AbstractBijection]]
 
-    def __init__(self, bijections: Sequence[AbstractBijection]):
-        check_shapes_match([b.shape for b in bijections])
-        self.shape = bijections[0].shape
-        self.cond_shape = merge_cond_shapes([b.cond_shape for b in bijections])
+    def __init__(
+        self,
+        bijections: Sequence[
+            AbstractBijection | AbstractUnwrappable[AbstractBijection]
+        ],
+    ):
+        unwrapped = unwrap(bijections)
+        check_shapes_match([b.shape for b in unwrapped])
+        self.shape = unwrapped[0].shape
+        self.cond_shape = merge_cond_shapes([unwrap(b).cond_shape for b in unwrapped])
         self.bijections = tuple(bijections)
 
     def transform(self, x, condition=None):

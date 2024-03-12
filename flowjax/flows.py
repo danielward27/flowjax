@@ -9,7 +9,6 @@ All these functions return a :class:`~flowjax.distributions.Transformed` distrib
 
 from collections.abc import Callable
 from functools import partial
-from typing import ClassVar
 
 import equinox as eqx
 import jax.nn as jnn
@@ -29,6 +28,7 @@ from flowjax.bijections import (
     Flip,
     Invert,
     LeakyTanh,
+    Loc,
     MaskedAutoregressive,
     Permute,
     Planar,
@@ -39,6 +39,7 @@ from flowjax.bijections import (
     Vmap,
 )
 from flowjax.distributions import AbstractDistribution, Transformed
+from flowjax.wrappers import BijectionReparam, NonTrainable, WeightNormalization
 
 
 def coupling_flow(
@@ -69,8 +70,12 @@ def coupling_flow(
             `inverse` methods, leading to faster `log_prob`, False will prioritise
             faster `transform` methods, leading to faster `sample`. Defaults to True.
     """
-    if transformer is None:
-        transformer = Affine(scale_constraint=Chain([SoftPlus(), _PlusConst(1e-2)]))
+    if transformer is None:  # Affine with minimum scale 1e-2
+        transformer = eqx.tree_at(
+            lambda aff: aff.scale,
+            Affine(),
+            BijectionReparam(1, Chain([SoftPlus(), NonTrainable(Loc(1e-2))])),
+        )
 
     dim = base_dist.shape[-1]
 
@@ -126,7 +131,11 @@ def masked_autoregressive_flow(
             leading to faster `sample`. Defaults to True.
     """
     if transformer is None:
-        transformer = Affine(scale_constraint=Chain([SoftPlus(), _PlusConst(1e-2)]))
+        transformer = eqx.tree_at(
+            lambda aff: aff.scale,
+            Affine(),
+            BijectionReparam(1, Chain([SoftPlus(), NonTrainable(Loc(1e-2))])),
+        )
     dim = base_dist.shape[-1]
 
     def make_layer(key):  # masked autoregressive layer + permutation
@@ -172,7 +181,7 @@ def block_neural_autoregressive_flow(
     Args:
         key: Jax PRNGKey.
         base_dist: Base distribution, with ``base_dist.ndim==1``.
-        cond_dim: Dimension of conditional variables.
+        cond_dim: Dimension of conditional variables. Defaults to None.
         nn_depth: Number of hidden layers within the networks. Defaults to 1.
         nn_block_dim: Block size. Hidden layer width is dim*nn_block_dim. Defaults to 8.
         flow_layers: Number of BNAF layers. Defaults to 1.
@@ -231,7 +240,7 @@ def planar_flow(
         invert: Whether to invert the bijection. Broadly, True will prioritise a faster
             `inverse` methods, leading to faster `log_prob`, False will prioritise
             faster `transform` methods, leading to faster `sample`. Defaults to True.
-        **mlp_kwargs: Key word arguments (excluding in_size and out_size) passed to
+        **mlp_kwargs: Keyword arguments (excluding in_size and out_size) passed to
             the MLP (equinox.nn.MLP). Ignored when cond_dim is None.
     """
 
@@ -288,23 +297,21 @@ def triangular_spline_flow(
     def get_splines():
         fn = partial(RationalQuadraticSpline, knots=knots, interval=1)
         spline = eqx.filter_vmap(fn, axis_size=dim)()
-        return Vmap(spline, in_axis=eqx.if_array(0))
+        return Vmap(spline, in_axes=eqx.if_array(0))
 
     def make_layer(key):
         lt_key, perm_key, cond_key = jr.split(key, 3)
         weights = init(lt_key, (dim, dim))
         lt_weights = weights.at[jnp.diag_indices(dim)].set(1)
-        lower_tri = TriangularAffine(
-            jnp.zeros(dim),
-            lt_weights,
-            weight_normalisation=True,
+        tri_aff = TriangularAffine(jnp.zeros(dim), lt_weights)
+        tri_aff = eqx.tree_at(
+            lambda t: t.triangular, tri_aff, replace_fn=WeightNormalization
         )
-
         bijections = [
             LeakyTanh(tanh_max_val, (dim,)),
             get_splines(),
             Invert(LeakyTanh(tanh_max_val, (dim,))),
-            lower_tri,
+            tri_aff,
         ]
 
         if cond_dim is not None:
@@ -332,25 +339,3 @@ def _add_default_permute(bijection: AbstractBijection, dim: int, key: Array):
 
     perm = Permute(jr.permutation(key, jnp.arange(dim)))
     return Chain([bijection, perm]).merge_chains()
-
-
-class _PlusConst(AbstractBijection):
-    """Adds a constant."""
-
-    # We use this to add a small constant to the affine scale parameter
-    # which seems to improve stabillity masked autoregressive and coupling flows
-    const: float
-    shape: tuple[int, ...] = ()
-    cond_shape: ClassVar[None] = None
-
-    def transform(self, x, condition=None):
-        return x + self.const
-
-    def transform_and_log_det(self, x, condition=None):
-        return x + self.const, jnp.array(0)
-
-    def inverse_and_log_det(self, y, condition=None):
-        return y - self.const, jnp.array(0)
-
-    def inverse(self, y, condition=None):
-        return y - self.const

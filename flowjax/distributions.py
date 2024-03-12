@@ -11,7 +11,6 @@ import jax.numpy as jnp
 import jax.random as jr
 from equinox import AbstractVar
 from jax import Array
-from jax.lax import stop_gradient
 from jax.numpy import linalg
 from jax.scipy import stats as jstats
 
@@ -22,9 +21,11 @@ from flowjax.bijections import (
     Chain,
     Exp,
     Scale,
+    SoftPlus,
     TriangularAffine,
 )
 from flowjax.utils import _get_ufunc_signature, arraylike_to_array, merge_cond_shapes
+from flowjax.wrappers import AbstractUnwrappable, BijectionReparam, unwrap
 
 
 class AbstractDistribution(eqx.Module):
@@ -85,6 +86,7 @@ class AbstractDistribution(eqx.Module):
         Returns:
             Array: Jax array of log probabilities.
         """
+        self = unwrap(self)
         x = arraylike_to_array(x, err_name="x")
         if self.cond_shape is not None:
             condition = arraylike_to_array(condition, err_name="condition")
@@ -162,6 +164,7 @@ class AbstractDistribution(eqx.Module):
 
 
         """
+        self = unwrap(self)
         if self.cond_shape is not None:
             condition = arraylike_to_array(condition, err_name="condition")
         keys = self._get_sample_keys(key, sample_shape, condition)
@@ -185,6 +188,7 @@ class AbstractDistribution(eqx.Module):
             condition: Conditioning variables. Defaults to None.
             sample_shape: Sample shape. Defaults to ().
         """
+        self = unwrap(self)
         if self.cond_shape is not None:
             condition = arraylike_to_array(condition, err_name="condition")
         keys = self._get_sample_keys(key, sample_shape, condition)
@@ -358,6 +362,23 @@ class Transformed(AbstractTransformed):
     bijection: AbstractBijection
 
 
+class AbstractLocScaleDistribution(AbstractTransformed):
+    """Abstract distribution class for affine transformed distributions."""
+
+    base_dist: AbstractVar[AbstractDistribution]
+    bijection: AbstractVar[Affine]
+
+    @property
+    def loc(self):
+        """Location of the distribution."""
+        return self.bijection.loc
+
+    @property
+    def scale(self):
+        """Scale of the distribution."""
+        return unwrap(self.bijection.scale)
+
+
 class StandardNormal(AbstractDistribution):
     """Standard normal distribution.
 
@@ -377,7 +398,7 @@ class StandardNormal(AbstractDistribution):
         return jr.normal(key, self.shape)
 
 
-class Normal(AbstractTransformed):
+class Normal(AbstractLocScaleDistribution):
     """An independent Normal distribution with mean and std for each dimension.
 
     ``loc`` and ``scale`` should broadcast to the desired shape of the distribution.
@@ -397,18 +418,8 @@ class Normal(AbstractTransformed):
         )
         self.bijection = Affine(loc=loc, scale=scale)
 
-    @property
-    def loc(self):
-        """Location of the distribution."""
-        return self.bijection.loc
 
-    @property
-    def scale(self):
-        """Scale of the distribution."""
-        return self.bijection.scale
-
-
-class LogNormal(AbstractTransformed):
+class LogNormal(AbstractLocScaleDistribution):
     """Log normal distribution.
 
     ``loc`` and ``scale`` here refers to the underlying normal distribution.
@@ -425,16 +436,6 @@ class LogNormal(AbstractTransformed):
         shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
         self.base_dist = StandardNormal(shape)
         self.bijection = Chain([Affine(loc, scale), Exp(shape)])
-
-    @property
-    def loc(self):
-        """Location of the distribution."""
-        return self.bijection[0].loc
-
-    @property
-    def scale(self):
-        """Scale of the distribution."""
-        return self.bijection[0].scale
 
 
 class MultivariateNormal(AbstractTransformed):
@@ -464,7 +465,8 @@ class MultivariateNormal(AbstractTransformed):
     @property
     def covariance(self):
         """The covariance matrix."""
-        return self.bijection.arr @ self.bijection.arr.T
+        cholesky = unwrap(self.bijection.triangular)
+        return cholesky @ cholesky.T
 
 
 class _StandardUniform(AbstractDistribution):
@@ -480,7 +482,7 @@ class _StandardUniform(AbstractDistribution):
         return jr.uniform(key, shape=self.shape)
 
 
-class Uniform(AbstractTransformed):
+class Uniform(AbstractLocScaleDistribution):
     """Uniform distribution.
 
     ``minval`` and ``maxval`` should broadcast to the desired distribution shape.
@@ -511,7 +513,7 @@ class Uniform(AbstractTransformed):
     @property
     def maxval(self):
         """Maximum value of the uniform distribution."""
-        return self.bijection.loc + self.bijection.scale
+        return self.bijection.loc + unwrap(self.bijection.scale)
 
 
 class _StandardGumbel(AbstractDistribution):
@@ -527,7 +529,7 @@ class _StandardGumbel(AbstractDistribution):
         return jr.gumbel(key, shape=self.shape)
 
 
-class Gumbel(AbstractTransformed):
+class Gumbel(AbstractLocScaleDistribution):
     """Gumbel distribution (https://en.wikipedia.org/wiki/Gumbel_distribution).
 
     ``loc`` and ``scale`` should broadcast to the dimension of the distribution.
@@ -546,16 +548,6 @@ class Gumbel(AbstractTransformed):
         )
         self.bijection = Affine(loc, scale)
 
-    @property
-    def loc(self):
-        """Location of the distribution."""
-        return self.bijection.loc
-
-    @property
-    def scale(self):
-        """Scale of the distribution."""
-        return self.bijection.scale
-
 
 class _StandardCauchy(AbstractDistribution):
     """Implements standard cauchy distribution (loc=0, scale=1).
@@ -573,7 +565,7 @@ class _StandardCauchy(AbstractDistribution):
         return jr.cauchy(key, shape=self.shape)
 
 
-class Cauchy(AbstractTransformed):
+class Cauchy(AbstractLocScaleDistribution):
     """Cauchy distribution (https://en.wikipedia.org/wiki/Cauchy_distribution).
 
     ``loc`` and ``scale`` should broadcast to the dimension of the distribution.
@@ -592,29 +584,18 @@ class Cauchy(AbstractTransformed):
         )
         self.bijection = Affine(loc, scale)
 
-    @property
-    def loc(self):
-        """Location of the distribution."""
-        return self.bijection.loc
-
-    @property
-    def scale(self):
-        """Scale of the distribution."""
-        return self.bijection.scale
-
 
 class _StandardStudentT(AbstractDistribution):
     """Implements student T distribution with specified degrees of freedom."""
 
     shape: tuple[int, ...]
     cond_shape: ClassVar[None] = None
-    log_df: Array
+    df: Array | AbstractUnwrappable[Array]
 
     def __init__(self, df: ArrayLike):
-        if jnp.any(df <= 0):
-            raise ValueError("degrees of freedom values must be positive.")
+        df = eqx.error_if(df, df <= 0, "Degrees of freedom values must be positive.")
         self.shape = jnp.shape(df)
-        self.log_df = jnp.log(df)
+        self.df = BijectionReparam(df, SoftPlus())
 
     def _log_prob(self, x, condition=None):
         return jstats.t.logpdf(x, df=self.df).sum()
@@ -622,13 +603,8 @@ class _StandardStudentT(AbstractDistribution):
     def _sample(self, key, condition=None):
         return jr.t(key, df=self.df, shape=self.shape)
 
-    @property
-    def df(self):
-        """The degrees of freedom of the distibution."""
-        return jnp.exp(self.log_df)
 
-
-class StudentT(AbstractTransformed):
+class StudentT(AbstractLocScaleDistribution):
     """Student T distribution (https://en.wikipedia.org/wiki/Student%27s_t-distribution).
 
     ``df``, ``loc`` and ``scale`` broadcast to the dimension of the distribution.
@@ -648,19 +624,9 @@ class StudentT(AbstractTransformed):
         self.bijection = Affine(loc, scale)
 
     @property
-    def loc(self):
-        """Location of the distribution."""
-        return self.bijection.loc
-
-    @property
-    def scale(self):
-        """Scale of the distribution."""
-        return self.bijection.scale
-
-    @property
     def df(self):
         """The degrees of freedom of the distribution."""
-        return self.base_dist.df
+        return unwrap(self.base_dist.df)
 
 
 class _StandardLaplace(AbstractDistribution):
@@ -676,10 +642,10 @@ class _StandardLaplace(AbstractDistribution):
         return jr.laplace(key, shape=self.shape)
 
 
-class Laplace(AbstractTransformed):
+class Laplace(AbstractLocScaleDistribution):
     """Laplace distribution.
 
-    ``loc`` and ``scale`` should broadcast to the dimension of the distribution..
+    ``loc`` and ``scale`` should broadcast to the dimension of the distribution.
 
     Args:
         loc: Location paramter. Defaults to 0.
@@ -693,16 +659,6 @@ class Laplace(AbstractTransformed):
         shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
         self.base_dist = _StandardLaplace(shape)
         self.bijection = Affine(loc, scale)
-
-    @property
-    def loc(self):
-        """Location of the distribution."""
-        return self.bijection.loc
-
-    @property
-    def scale(self):
-        """Scale of the distribution."""
-        return self.bijection.scale
 
 
 class _StandardExponential(AbstractDistribution):
@@ -732,55 +688,4 @@ class Exponential(AbstractTransformed):
 
     @property
     def rate(self):
-        return 1 / self.bijection.scale
-
-
-class SpecializeCondition(AbstractDistribution):  # TODO check tested
-    """Specialise a distribution to a particular conditioning variable instance.
-
-    This makes the distribution act like an unconditional distribution, i.e. the
-    distribution methods implicitly will use the condition passed on instantiation
-    of the class.
-
-    Args:
-        dist: Conditional distribution to specialize.
-        condition: Instance of conditioning variable with shape matching
-            ``dist.cond_shape``. Defaults to None.
-        stop_gradient: Whether to use ``jax.lax.stop_gradient`` to prevent training of
-            the condition array. Defaults to True.
-    """
-
-    shape: tuple[int, ...]
-    cond_shape: ClassVar[None] = None
-
-    def __init__(
-        self,
-        dist: AbstractDistribution,
-        condition: ArrayLike,
-        *,
-        stop_gradient: bool = True,
-    ):
-        condition = arraylike_to_array(condition)
-        if self.dist.cond_shape != condition.shape:
-            raise ValueError(
-                f"Expected condition shape {self.dist.cond_shape}, got "
-                f"{condition.shape}",
-            )
-        self.dist = dist
-        self._condition = condition
-        self.shape = dist.shape
-        self.stop_gradient = stop_gradient
-
-    def _log_prob(self, x, condition=None):
-        return self.dist._log_prob(x, self.condition)
-
-    def _sample(self, key, condition=None):
-        return self.dist._sample(key, self.condition)
-
-    def _sample_and_log_prob(self, key, condition=None):
-        return self.dist._sample_and_log_prob(key, self.condition)
-
-    @property
-    def condition(self):
-        """The conditioning variable, possibly with stop_gradient applied."""
-        return stop_gradient(self._condition) if self.stop_gradient else self._condition
+        return 1 / unwrap(self.bijection.scale)

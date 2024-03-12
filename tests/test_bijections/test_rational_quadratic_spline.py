@@ -26,16 +26,6 @@ def test_RationalQuadraticSpline_tails():
 def test_RationalQuadraticSpline_init():
     # Test it is initialized at the identity
     x = jnp.array([-1, 0.1, 2, 1])
-    key = jr.PRNGKey(0)
     spline = RationalQuadraticSpline(knots=10, interval=3)
     y = vmap(spline.transform)(x)
     assert pytest.approx(x, abs=1e-6) == y
-
-    shape = spline.unbounded_derivatives.shape
-    spline = eqx.tree_at(
-        lambda b: b.unbounded_derivatives,
-        spline,
-        jr.normal(key, shape),
-    )
-    y = vmap(spline.transform)(x)
-    assert pytest.approx(x, abs=1e-6) != y

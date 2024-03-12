@@ -27,20 +27,19 @@ def rank_based_mask(in_ranks: Array, out_ranks: Array, *, eq: bool = False):
         if ranks.ndim != 1:
             raise ValueError(f"Expected ranks.ndim==1, got {ranks.ndim}")
     op = operator.ge if eq else operator.gt
-    return op(out_ranks[:, None], in_ranks).astype(jnp.int32)
+    return op(out_ranks[:, None], in_ranks)
 
 
 def block_diag_mask(block_shape: tuple, n_blocks: int):
     """Block diagonal mask."""
-    return block_diag(*jnp.ones((n_blocks, *block_shape), jnp.int32))
+    return block_diag(*jnp.ones((n_blocks, *block_shape), bool))
 
 
-def block_tril_mask(block_shape: tuple, n_blocks: int):
-    """Upper triangular block mask, excluding diagonal blocks."""
-    mask = jnp.zeros((block_shape[0] * n_blocks, block_shape[1] * n_blocks), jnp.int32)
+def block_tril_mask(block_shape: tuple, n_blocks: int, k: int = 0):
+    """Lower triangular block mask, with offset k."""
+    mask = jnp.zeros((block_shape[0] * n_blocks, block_shape[1] * n_blocks), bool)
     for i in range(n_blocks):
-        mask = mask.at[
-            (i + 1) * block_shape[0] :,
-            i * block_shape[1] : (i + 1) * block_shape[1],
-        ].set(1)
+        row_i = max(0, (i - k)) * block_shape[0]
+        col_i = i * block_shape[1]
+        mask = mask.at[row_i:, col_i : col_i + block_shape[1]].set(True)  # noqa
     return mask

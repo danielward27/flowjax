@@ -1,42 +1,63 @@
 """Utility functions."""
+
 from __future__ import annotations
 
 from collections.abc import Sequence
 
 import equinox as eqx
-import jax
 import jax.numpy as jnp
 from jax import Array
 from jax.flatten_util import ravel_pytree
 from jax.typing import ArrayLike
 
+import flowjax
 
-def real_to_increasing_on_interval(
-    arr: Array,
-    B: float = 1,
-    softmax_adjust: float = 1e-2,
-):
-    """Transform unconstrained vector to monotonically increasing positions on [-B, B].
+
+class _VectorizedBijection:
+    """Wrap a flowjax bijection to support vectorization.
 
     Args:
-        arr: Parameter vector.
-        B : Interval to transform output. Defaults to 1.
-        softmax_adjust : Rescales softmax output using
-            ``(widths + softmax_adjust/widths.size) / (1 + softmax_adjust)``. e.g.
-            0=no adjustment, 1=average softmax output with evenly spaced widths, >1
-            promotes more evenly spaced widths.
+        bijection: flowjax bijection to be wrapped.
     """
-    if softmax_adjust < 0:
-        raise ValueError("softmax_adjust should be >= 0.")
-    widths = jax.nn.softmax(arr)
-    widths = (widths + softmax_adjust / widths.size) / (1 + softmax_adjust)
-    widths = widths.at[0].set(widths[0] / 2)
-    return 2 * B * jnp.cumsum(widths) - B
 
+    def __init__(self, bijection: flowjax.bijections.AbstractBijection):
+        self.bijection = bijection
+        self.shape = self.bijection.shape
+        self.cond_shape = self.bijection.cond_shape
 
-def inv_cum_sum(x):
-    """Inverse of cumulative sum operation."""
-    return x - jnp.pad(x[:-1], (1, 0))
+    def transform(self, x, condition=None):
+        transform = self.vectorize(self.bijection.transform)
+        return transform(x, condition)
+
+    def inverse(self, y, condition=None):
+        inverse = self.vectorize(self.bijection.inverse)
+        return inverse(y, condition)
+
+    def transform_and_log_det(self, x, condition=None):
+        transform_and_log_det = self.vectorize(
+            self.bijection.transform_and_log_det,
+            log_det=True,
+        )
+        return transform_and_log_det(x, condition)
+
+    def inverse_and_log_det(self, x, condition=None):
+        inverse_and_log_det = self.vectorize(
+            self.bijection.inverse_and_log_det,
+            log_det=True,
+        )
+        return inverse_and_log_det(x, condition)
+
+    def vectorize(self, func, *, log_det=False):
+        in_shapes, out_shapes = [self.bijection.shape], [self.bijection.shape]
+        if log_det:
+            out_shapes.append(())
+        if self.bijection.cond_shape is not None:
+            in_shapes.append(self.bijection.cond_shape)
+            exclude = frozenset()
+        else:
+            exclude = frozenset([1])
+        sig = _get_ufunc_signature(in_shapes, out_shapes)
+        return jnp.vectorize(func, signature=sig, excluded=exclude)
 
 
 def merge_cond_shapes(shapes: Sequence[tuple[int, ...] | None]):
@@ -82,33 +103,35 @@ def _get_ufunc_signature(in_shapes: tuple[int], out_shapes: tuple[int]):
     return f"{in_shapes_str}->{out_shapes_str}"
 
 
-def get_ravelled_bijection_constructor(
-    bijection,
-    filter_spec=eqx.is_inexact_array,
-) -> tuple:
-    """Get a constructor taking ravelled parameters and the current ravelled parameters.
+def get_ravelled_pytree_constructor(tree, filter_spec=eqx.is_inexact_array) -> tuple:
+    """Get a pytree constructor taking ravelled parameters, and the number of params.
 
     The constructor takes a single argument as input, which is all the bijection
     parameters flattened into a single contiguous vector. This is useful when we wish to
-    parameterize a bijection with a neural neural network, as it allows convenient
-    construction of the bijection directly from the neural network output.
+    parameterize a pytree with a neural neural network. Calling the constructor
+    at the zero vector will return the initial pytree. Parameters warpped in
+    ``NonTrainable`` are treated as leaves during partitioning.
 
     Args:
-        bijection: Bijection to form constructor for.
+        tree: Pytree to form constructor for.
         filter_spec: Filter function to specify parameters. Defaults to
             eqx.is_inexact_array.
 
     Returns:
-        The constructor, and the current parameter vector.
+        tuple: Tuple containing the constructor, and the number of parameters.
     """
-    params, static = eqx.partition(bijection, filter_spec)
-    current, unravel = ravel_pytree(params)
+    params, static = eqx.partition(
+        tree,
+        filter_spec,
+        is_leaf=lambda leaf: isinstance(leaf, flowjax.wrappers.NonTrainable),
+    )
+    init, unravel = ravel_pytree(params)
 
     def constructor(ravelled_params: Array):
-        params = unravel(ravelled_params)
+        params = unravel(ravelled_params + init)
         return eqx.combine(params, static)
 
-    return constructor, current
+    return constructor, len(init)
 
 
 def arraylike_to_array(arr: ArrayLike, err_name: str = "input", **kwargs) -> Array:
@@ -122,7 +145,7 @@ def arraylike_to_array(arr: ArrayLike, err_name: str = "input", **kwargs) -> Arr
     Args:
         arr: Arraylike input to convert to a jax array.
         err_name: Name of the input in the error message. Defaults to "input".
-        **kwargs: Key word arguments passed to jnp.asarray.
+        **kwargs: Keyword arguments passed to jnp.asarray.
     """
     if not isinstance(arr, ArrayLike):
         raise TypeError(

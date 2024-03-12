@@ -1,5 +1,7 @@
 """Masked autoregressive network and bijection."""
 
+from __future__ import annotations
+
 from collections.abc import Callable
 from functools import partial
 
@@ -8,11 +10,13 @@ import jax
 import jax.nn as jnn
 import jax.numpy as jnp
 from jax import Array
+from jax.typing import ArrayLike
 
 from flowjax.bijections.bijection import AbstractBijection
 from flowjax.bijections.jax_transforms import Vmap
-from flowjax.nn import AutoregressiveMLP
-from flowjax.utils import get_ravelled_bijection_constructor
+from flowjax.masks import rank_based_mask
+from flowjax.utils import get_ravelled_pytree_constructor
+from flowjax.wrappers import Where
 
 
 class MaskedAutoregressive(AbstractBijection):
@@ -28,9 +32,9 @@ class MaskedAutoregressive(AbstractBijection):
     Args:
         key: Jax PRNGKey
         transformer: Bijection with shape () to be parameterised by the autoregressive
-            network.
+            network. Parameters wrapped with ``NonTrainable`` are exluded.
         dim: Dimension.
-        cond_dim: Dimension of any conditioning variables.
+        cond_dim: Dimension of any conditioning variables. Defaults to None.
         nn_width: Neural network width.
         nn_depth: Neural network depth.
         nn_activation: Neural network activation. Defaults to jnn.relu.
@@ -39,7 +43,7 @@ class MaskedAutoregressive(AbstractBijection):
     shape: tuple[int, ...]
     cond_shape: tuple[int, ...] | None
     transformer_constructor: Callable
-    autoregressive_mlp: AutoregressiveMLP
+    masked_autoregressive_mlp: eqx.nn.MLP
 
     def __init__(
         self,
@@ -47,7 +51,7 @@ class MaskedAutoregressive(AbstractBijection):
         *,
         transformer: AbstractBijection,
         dim: int,
-        cond_dim: int | None,
+        cond_dim: int | None = None,
         nn_width: int,
         nn_depth: int,
         nn_activation: Callable = jnn.relu,
@@ -57,9 +61,7 @@ class MaskedAutoregressive(AbstractBijection):
                 "Only unconditional transformers with shape () are supported.",
             )
 
-        constructor, transformer_init_params = get_ravelled_bijection_constructor(
-            transformer,
-        )
+        constructor, num_params = get_ravelled_pytree_constructor(transformer)
 
         if cond_dim is None:
             self.cond_shape = None
@@ -67,27 +69,18 @@ class MaskedAutoregressive(AbstractBijection):
         else:
             self.cond_shape = (cond_dim,)
             # we give conditioning variables rank -1 (no masking of edges to output)
-            in_ranks = jnp.hstack(
-                (jnp.arange(dim), -jnp.ones(cond_dim, dtype=jnp.int32)),
-            )
+            in_ranks = jnp.hstack((jnp.arange(dim), -jnp.ones(cond_dim)))
 
         hidden_ranks = jnp.arange(nn_width) % dim
-        out_ranks = jnp.repeat(jnp.arange(dim), transformer_init_params.size)
+        out_ranks = jnp.repeat(jnp.arange(dim), num_params)
 
-        autoregressive_mlp = AutoregressiveMLP(
+        self.masked_autoregressive_mlp = masked_autoregressive_mlp(
             in_ranks,
             hidden_ranks,
             out_ranks,
-            nn_depth,
-            nn_activation,
+            depth=nn_depth,
+            activation=nn_activation,
             key=key,
-        )
-
-        # Initialise bias terms to match the provided transformer parameters
-        self.autoregressive_mlp = eqx.tree_at(
-            where=lambda t: t.layers[-1].linear.bias,
-            pytree=autoregressive_mlp,
-            replace=jnp.tile(transformer_init_params, dim),
         )
 
         self.transformer_constructor = constructor
@@ -96,13 +89,13 @@ class MaskedAutoregressive(AbstractBijection):
 
     def transform(self, x, condition=None):
         nn_input = x if condition is None else jnp.hstack((x, condition))
-        transformer_params = self.autoregressive_mlp(nn_input)
+        transformer_params = self.masked_autoregressive_mlp(nn_input)
         transformer = self._flat_params_to_transformer(transformer_params)
         return transformer.transform(x)
 
     def transform_and_log_det(self, x, condition=None):
         nn_input = x if condition is None else jnp.hstack((x, condition))
-        transformer_params = self.autoregressive_mlp(nn_input)
+        transformer_params = self.masked_autoregressive_mlp(nn_input)
         transformer = self._flat_params_to_transformer(transformer_params)
         return transformer.transform_and_log_det(x)
 
@@ -116,7 +109,7 @@ class MaskedAutoregressive(AbstractBijection):
         """One 'step' in computing the inverse."""
         y, rank = init
         nn_input = y if condition is None else jnp.hstack((y, condition))
-        transformer_params = self.autoregressive_mlp(nn_input)
+        transformer_params = self.masked_autoregressive_mlp(nn_input)
         transformer = self._flat_params_to_transformer(transformer_params)
         x = transformer.inverse(y)
         x = y.at[rank].set(x[rank])
@@ -132,4 +125,44 @@ class MaskedAutoregressive(AbstractBijection):
         dim = self.shape[-1]
         transformer_params = jnp.reshape(params, (dim, -1))
         transformer = eqx.filter_vmap(self.transformer_constructor)(transformer_params)
-        return Vmap(transformer, in_axis=eqx.if_array(0))
+        return Vmap(transformer, in_axes=eqx.if_array(0))
+
+
+def masked_autoregressive_mlp(
+    in_ranks: ArrayLike,
+    hidden_ranks: ArrayLike,
+    out_ranks: ArrayLike,
+    **kwargs,
+) -> eqx.nn.MLP:
+    """Returns an equinox multilayer perceptron, with autoregressive masks.
+
+    The weight matrices are wrapped using :class:`~flowjax.wrappers.Where`, which
+    will apply the masking when :class:`~flowjax.wrappers.unwrap` is called on the MLP.
+    For details of how the masks are formed, see https://arxiv.org/pdf/1502.03509.pdf.
+
+    Args:
+        in_ranks: The ranks of the inputs.
+        hidden_ranks: The ranks of the hidden dimensions.
+        out_ranks: The ranks of the output dimensions.
+        **kwargs: Keyword arguments passed to equinox.nn.MLP.
+    """
+    in_ranks, hidden_ranks, out_ranks = (
+        jnp.asarray(a, jnp.int32) for a in (in_ranks, hidden_ranks, out_ranks)
+    )
+    mlp = eqx.nn.MLP(
+        in_size=len(in_ranks),
+        out_size=len(out_ranks),
+        width_size=len(hidden_ranks),
+        **kwargs,
+    )
+    ranks = [in_ranks, *[hidden_ranks] * mlp.depth, out_ranks]
+
+    masked_layers = []
+    for i, linear in enumerate(mlp.layers):
+        mask = rank_based_mask(ranks[i], ranks[i + 1], eq=i != len(mlp.layers) - 1)
+        masked_linear = eqx.tree_at(
+            lambda linear: linear.weight, linear, Where(mask, linear.weight, 0)
+        )
+        masked_layers.append(masked_linear)
+
+    return eqx.tree_at(lambda mlp: mlp.layers, mlp, replace=tuple(masked_layers))

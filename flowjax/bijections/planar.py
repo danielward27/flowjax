@@ -26,11 +26,11 @@ class Planar(AbstractBijection):
     Args:
         key: Jax random seed.
         dim: Dimension of the bijection.
-        cond_dim: Dimension of extra conditioning variables.
-            Defaults to None.
-        **mlp_kwargs: Key word arguments (excluding in_size and out_size) passed to
+        cond_dim: Dimension of extra conditioning variables. Defaults to None.
+        **mlp_kwargs: Keyword arguments (excluding in_size and out_size) passed to
             the MLP (equinox.nn.MLP). Ignored when cond_dim is None.
     """
+
     shape: tuple[int, ...]
     cond_shape: tuple[int, ...] | None
     conditioner: eqx.Module | None
