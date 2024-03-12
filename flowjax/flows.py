@@ -39,7 +39,7 @@ from flowjax.bijections import (
     Vmap,
 )
 from flowjax.distributions import AbstractDistribution, Transformed
-from flowjax.wrappers import NonTrainable, WeightNormalization
+from flowjax.wrappers import BijectionReparam, NonTrainable, WeightNormalization
 
 
 def coupling_flow(
@@ -70,9 +70,11 @@ def coupling_flow(
             `inverse` methods, leading to faster `log_prob`, False will prioritise
             faster `transform` methods, leading to faster `sample`. Defaults to True.
     """
-    if transformer is None:
-        transformer = Affine(
-            scale_constraint=Chain([SoftPlus(), NonTrainable(Loc(1e-2))])
+    if transformer is None:  # Affine with minimum scale 1e-2
+        transformer = eqx.tree_at(
+            lambda aff: aff.scale,
+            Affine(),
+            BijectionReparam(1, Chain([SoftPlus(), NonTrainable(Loc(1e-2))])),
         )
 
     dim = base_dist.shape[-1]
@@ -129,8 +131,10 @@ def masked_autoregressive_flow(
             leading to faster `sample`. Defaults to True.
     """
     if transformer is None:
-        transformer = Affine(
-            scale_constraint=Chain([SoftPlus(), NonTrainable(Loc(1e-2))])
+        transformer = eqx.tree_at(
+            lambda aff: aff.scale,
+            Affine(),
+            BijectionReparam(1, Chain([SoftPlus(), NonTrainable(Loc(1e-2))])),
         )
     dim = base_dist.shape[-1]
 

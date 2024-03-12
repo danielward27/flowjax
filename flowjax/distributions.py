@@ -11,7 +11,6 @@ import jax.numpy as jnp
 import jax.random as jr
 from equinox import AbstractVar
 from jax import Array
-from jax.lax import stop_gradient
 from jax.numpy import linalg
 from jax.scipy import stats as jstats
 
@@ -22,10 +21,11 @@ from flowjax.bijections import (
     Chain,
     Exp,
     Scale,
+    SoftPlus,
     TriangularAffine,
 )
 from flowjax.utils import _get_ufunc_signature, arraylike_to_array, merge_cond_shapes
-from flowjax.wrappers import unwrap
+from flowjax.wrappers import AbstractUnwrappable, BijectionReparam, unwrap
 
 
 class AbstractDistribution(eqx.Module):
@@ -590,24 +590,18 @@ class _StandardStudentT(AbstractDistribution):
 
     shape: tuple[int, ...]
     cond_shape: ClassVar[None] = None
-    log_df: Array
+    df: Array | AbstractUnwrappable[Array]
 
     def __init__(self, df: ArrayLike):
-        if jnp.any(df <= 0):
-            raise ValueError("degrees of freedom values must be positive.")
+        df = eqx.error_if(df, df <= 0, "Degrees of freedom values must be positive.")
         self.shape = jnp.shape(df)
-        self.log_df = jnp.log(df)
+        self.df = BijectionReparam(df, SoftPlus())
 
     def _log_prob(self, x, condition=None):
         return jstats.t.logpdf(x, df=self.df).sum()
 
     def _sample(self, key, condition=None):
         return jr.t(key, df=self.df, shape=self.shape)
-
-    @property
-    def df(self):
-        """The degrees of freedom of the distibution."""
-        return jnp.exp(self.log_df)
 
 
 class StudentT(AbstractLocScaleDistribution):
@@ -632,7 +626,7 @@ class StudentT(AbstractLocScaleDistribution):
     @property
     def df(self):
         """The degrees of freedom of the distribution."""
-        return self.base_dist.df
+        return unwrap(self.base_dist.df)
 
 
 class _StandardLaplace(AbstractDistribution):
@@ -651,7 +645,7 @@ class _StandardLaplace(AbstractDistribution):
 class Laplace(AbstractLocScaleDistribution):
     """Laplace distribution.
 
-    ``loc`` and ``scale`` should broadcast to the dimension of the distribution..
+    ``loc`` and ``scale`` should broadcast to the dimension of the distribution.
 
     Args:
         loc: Location paramter. Defaults to 0.
@@ -695,54 +689,3 @@ class Exponential(AbstractTransformed):
     @property
     def rate(self):
         return 1 / unwrap(self.bijection.scale)
-
-
-class SpecializeCondition(AbstractDistribution):  # TODO check tested
-    """Specialise a distribution to a particular conditioning variable instance.
-
-    This makes the distribution act like an unconditional distribution, i.e. the
-    distribution methods implicitly will use the condition passed on instantiation
-    of the class.
-
-    Args:
-        dist: Conditional distribution to specialize.
-        condition: Instance of conditioning variable with shape matching
-            ``dist.cond_shape``. Defaults to None.
-        stop_gradient: Whether to use ``jax.lax.stop_gradient`` to prevent training of
-            the condition array. Defaults to True.
-    """
-
-    shape: tuple[int, ...]
-    cond_shape: ClassVar[None] = None
-
-    def __init__(
-        self,
-        dist: AbstractDistribution,
-        condition: ArrayLike,
-        *,
-        stop_gradient: bool = True,
-    ):
-        condition = arraylike_to_array(condition)
-        if self.dist.cond_shape != condition.shape:
-            raise ValueError(
-                f"Expected condition shape {self.dist.cond_shape}, got "
-                f"{condition.shape}",
-            )
-        self.dist = dist
-        self._condition = condition
-        self.shape = dist.shape
-        self.stop_gradient = stop_gradient
-
-    def _log_prob(self, x, condition=None):
-        return self.dist._log_prob(x, self.condition)
-
-    def _sample(self, key, condition=None):
-        return self.dist._sample(key, self.condition)
-
-    def _sample_and_log_prob(self, key, condition=None):
-        return self.dist._sample_and_log_prob(key, self.condition)
-
-    @property
-    def condition(self):
-        """The conditioning variable, possibly with stop_gradient applied."""
-        return stop_gradient(self._condition) if self.stop_gradient else self._condition

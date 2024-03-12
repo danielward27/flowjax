@@ -57,9 +57,8 @@ bijections = {
     "Partial (int array)": Partial(Flip((2,)), jnp.array([0, 2]), (DIM,)),
     "Partial (slice)": Partial(Affine(jnp.zeros(2)), slice(0, 2), (DIM,)),
     "Affine": Affine(jnp.ones(DIM), jnp.full(DIM, 2)),
-    "Affine (pos and neg scales)": Affine(
-        scale=jnp.array([-1, 2, 3]),
-        scale_constraint=Identity((DIM,)),
+    "Affine (pos and neg scales)": eqx.tree_at(
+        lambda aff: aff.scale, Affine(scale=jnp.ones(3)), jnp.array([-1, 1, -2])
     ),
     "Tanh": Tanh((DIM,)),
     "LeakyTanh": LeakyTanh(1, (DIM,)),
@@ -76,10 +75,13 @@ bijections = {
         jnp.full((DIM, DIM), 0.5),
         lower=False,
     ),
-    "TriangularAffine (pos and neg diag)": TriangularAffine(
-        jnp.arange(3),
-        jnp.diag(jnp.array([-1, 1, 2])),
-        diag_constraint=Identity((3,)),
+    "TriangularAffine (pos and neg diag)": eqx.tree_at(
+        lambda triaff: triaff.triangular,
+        TriangularAffine(
+            jnp.arange(3),
+            jnp.diag(jnp.ones(3)),
+        ),
+        jnp.diag(jnp.array([-1, 2, -3])),
     ),
     "RationalQuadraticSpline": RationalQuadraticSpline(knots=4, interval=1),
     "Coupling (unconditional)": Coupling(
@@ -147,9 +149,10 @@ bijections = {
     "Chain": Chain([Flip((DIM,)), Affine(jnp.ones(DIM), jnp.full(DIM, 2))]),
     "Scan": Scan(eqx.filter_vmap(Affine)(jnp.ones((2, DIM)))),
     "Scale": Scale(jnp.full(DIM, 2)),
-    "Scale (pos and neg scales)": Scale(
-        jnp.array([-1, 1, 2]),
-        scale_constraint=Identity((DIM,)),
+    "Scale (pos and neg scales)": eqx.tree_at(
+        lambda scale: scale.scale,
+        Scale(jnp.ones(3)),
+        jnp.array([-1, 2, -3]),
     ),
     "Concatenate": Concatenate([Affine(jnp.ones(DIM)), Tanh(shape=(DIM,))]),
     "ConcatenateAxis1": Concatenate(

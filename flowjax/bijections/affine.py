@@ -20,14 +20,13 @@ class Affine(AbstractBijection):
     """Elementwise affine transformation ``y = a*x + b``.
 
     ``loc`` and ``scale`` should broadcast to the desired shape of the bijection.
-    Note by default, we constrain the scale parameter to be postive using ``SoftPlus``.
+    By default, we constrain the scale parameter to be postive using ``SoftPlus``, but
+    other parameterizations can be achieved by replacing the scale parameter after
+    construction e.g. using ``eqx.tree_at``.
 
     Args:
         loc: Location parameter. Defaults to 0.
         scale: Scale parameter. Defaults to 1.
-        scale_constraint: Bijection with shape broadcastable to the shape of the scale
-            parameter, used for reparameterization (with ``BijectionReparam``).
-            Defaults to :class:`~flowjax.bijections.SoftPlus`.
     """
 
     shape: tuple[int, ...]
@@ -39,14 +38,12 @@ class Affine(AbstractBijection):
         self,
         loc: ArrayLike = 0,
         scale: ArrayLike = 1,
-        scale_constraint: AbstractBijection | None = None,
     ):
-        scale_constraint = SoftPlus() if scale_constraint is None else scale_constraint
         self.loc, scale = jnp.broadcast_arrays(
             *(arraylike_to_array(a, dtype=float) for a in (loc, scale)),
         )
         self.shape = scale.shape
-        self.scale = wrappers.BijectionReparam(scale, scale_constraint)
+        self.scale = wrappers.BijectionReparam(scale, SoftPlus())
 
     def transform(self, x, condition=None):
         return x * self.scale + self.loc
@@ -94,9 +91,6 @@ class Scale(AbstractBijection):
 
     Args:
         scale: Scale parameter. Defaults to 1.
-        scale_constraint: Bijection with shape broadcastable to the shape of the scale
-            parameter, used for reparameterization. Defaults to
-            :class:`~flowjax.bijections.SoftPlus`.
     """
 
     shape: tuple[int, ...]
@@ -106,10 +100,8 @@ class Scale(AbstractBijection):
     def __init__(
         self,
         scale: ArrayLike | wrappers.AbstractUnwrappable[Array],
-        scale_constraint: AbstractBijection | None = None,
     ):
-        scale_constraint = SoftPlus() if scale_constraint is None else scale_constraint
-        self.scale = wrappers.BijectionReparam(scale, scale_constraint)
+        self.scale = wrappers.BijectionReparam(scale, SoftPlus())
         self.shape = jnp.shape(wrappers.unwrap(scale))
 
     def transform(self, x, condition=None):
@@ -129,7 +121,10 @@ class TriangularAffine(AbstractBijection):
     r"""A triangular affine transformation.
 
     Transformation has the form :math:`Ax + b`, where :math:`A` is a lower or upper
-    triangular matrix, and :math:`b` is the bias vector.
+    triangular matrix, and :math:`b` is the bias vector. We assume the diagonal
+    entries are positive, and constrain the values using SoftPlus. Other
+    parameterizations can be achieved by e.g. replacing ``self.triangular``
+    after construction.
 
     Args:
         loc: Location parameter. If this is scalar, it is broadcast to the dimension
@@ -137,9 +132,6 @@ class TriangularAffine(AbstractBijection):
         arr: Triangular matrix.
         lower: Whether the mask should select the lower or upper
             triangular matrix (other elements ignored). Defaults to True (lower).
-        diag_constraint: Bijection with shape broadcastable to the shape of the
-            bijection, used for reparameterization of the diagonal elements. Defaults to
-            :class:`~flowjax.bijections.SoftPlus`.
     """
 
     shape: tuple[int, ...]
@@ -154,9 +146,7 @@ class TriangularAffine(AbstractBijection):
         arr: ArrayLike,
         *,
         lower: bool = True,
-        diag_constraint: AbstractBijection | None = None,
     ):
-        diag_constraint = SoftPlus() if diag_constraint is None else diag_constraint
         loc, arr = (arraylike_to_array(a, dtype=float) for a in (loc, arr))
         if (arr.ndim != 2) or (arr.shape[0] != arr.shape[1]):
             raise ValueError("arr must be a square, 2-dimensional matrix.")
@@ -167,7 +157,7 @@ class TriangularAffine(AbstractBijection):
             tri = jnp.tril(arr, k=-1) if lower else jnp.triu(arr, k=1)
             return jnp.diag(diag) + tri
 
-        diag = wrappers.BijectionReparam(jnp.diag(arr), diag_constraint)
+        diag = wrappers.BijectionReparam(jnp.diag(arr), SoftPlus())
         self.triangular = wrappers.Lambda(_to_triangular, diag=diag, arr=arr)
         self.lower = lower
         self.shape = (dim,)
