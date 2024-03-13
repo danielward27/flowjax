@@ -92,7 +92,7 @@ class AbstractUnwrappable(eqx.Module, Generic[T]):
             return v_unwrap(unwrappable)
 
         flat, tree_def = eqx.tree_flatten_one_level(self)
-        tree = jax.tree.unflatten(tree_def, unwrap(flat))
+        tree = jax.tree_util.tree_unflatten(tree_def, unwrap(flat))
         return vectorized_unwrap(tree)
 
     @abstractmethod
