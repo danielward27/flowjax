@@ -94,7 +94,7 @@ def _check_no_unwrappables(pytree):
     def _is_unwrappable(leaf):
         return isinstance(leaf, wrappers.AbstractUnwrappable)
 
-    leaves = jax.tree.leaves(pytree, is_leaf=_is_unwrappable)
+    leaves = tree_leaves(pytree, is_leaf=_is_unwrappable)
     if any(_is_unwrappable(leaf) for leaf in leaves):
         raise ValueError(
             "In axes containing unwrappables is not supported. In axes must be "
