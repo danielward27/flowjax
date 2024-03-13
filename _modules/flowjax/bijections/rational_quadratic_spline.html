@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>flowjax.bijections.rational_quadratic_spline &mdash; FlowJax  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=3d3fbe02" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/style.css?v=60e24bd7" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+        <script src="../../../_static/copybutton.js?v=ccdb6887"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            FlowJax
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/unconditional.html">Unconditional density estmation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/conditional.html">Conditional density estimation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/variational_inference.html">Variational inference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/bounded.html">Bounded flows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/snpe.html">Sequential neural posterior estimation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/bijections.html">Bijections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/distributions.html">Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/experimental.html">Experimental</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/flows.html">Flows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/losses.html">Loss functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/training.html">Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/wrappers.html">Wrappers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Miscellaneous</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">FAQ</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">FlowJax</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">flowjax.bijections.rational_quadratic_spline</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for flowjax.bijections.rational_quadratic_spline</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Rational quadratic spline bijections (https://arxiv.org/abs/1906.04032).&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">partial</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">ClassVar</span>
+
+<span class="kn">import</span> <span class="nn">jax</span>
+<span class="kn">import</span> <span class="nn">jax.numpy</span> <span class="k">as</span> <span class="nn">jnp</span>
+<span class="kn">from</span> <span class="nn">jax</span> <span class="kn">import</span> <span class="n">Array</span>
+
+<span class="kn">from</span> <span class="nn">flowjax</span> <span class="kn">import</span> <span class="n">wrappers</span>
+<span class="kn">from</span> <span class="nn">flowjax.bijections.bijection</span> <span class="kn">import</span> <span class="n">AbstractBijection</span>
+
+
+<span class="k">def</span> <span class="nf">_real_to_increasing_on_interval</span><span class="p">(</span>
+    <span class="n">arr</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+    <span class="n">interval</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="n">softmax_adjust</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-2</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">pad_with_ends</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Transform unconstrained vector to monotonically increasing positions on [-B, B].</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        arr: Parameter vector.</span>
+<span class="sd">        interval: Interval to transform output. Defaults to 1.</span>
+<span class="sd">        softmax_adjust : Rescales softmax output using</span>
+<span class="sd">            ``(widths + softmax_adjust/widths.size) / (1 + softmax_adjust)``. e.g.</span>
+<span class="sd">            0=no adjustment, 1=average softmax output with evenly spaced widths, &gt;1</span>
+<span class="sd">            promotes more evenly spaced widths.</span>
+<span class="sd">        pad_with_ends: Whether to pad the with -interval and interval. Defaults to True.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">softmax_adjust</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;softmax_adjust should be &gt;= 0.&quot;</span><span class="p">)</span>
+
+    <span class="n">widths</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span>
+    <span class="n">widths</span> <span class="o">=</span> <span class="p">(</span><span class="n">widths</span> <span class="o">+</span> <span class="n">softmax_adjust</span> <span class="o">/</span> <span class="n">widths</span><span class="o">.</span><span class="n">size</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">softmax_adjust</span><span class="p">)</span>
+    <span class="n">widths</span> <span class="o">=</span> <span class="n">widths</span><span class="o">.</span><span class="n">at</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">widths</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">pos</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">interval</span> <span class="o">*</span> <span class="n">jnp</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">widths</span><span class="p">)</span> <span class="o">-</span> <span class="n">interval</span>
+
+    <span class="k">if</span> <span class="n">pad_with_ends</span><span class="p">:</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">pad</span><span class="p">(</span><span class="n">pos</span><span class="p">,</span> <span class="n">pad_width</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">constant_values</span><span class="o">=</span><span class="p">(</span><span class="o">-</span><span class="n">interval</span><span class="p">,</span> <span class="n">interval</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">pos</span>
+
+
+<div class="viewcode-block" id="RationalQuadraticSpline">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.RationalQuadraticSpline">[docs]</a>
+<span class="k">class</span> <span class="nc">RationalQuadraticSpline</span><span class="p">(</span><span class="n">AbstractBijection</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Scalar RationalQuadraticSpline transformation (https://arxiv.org/abs/1906.04032).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        knots: Number of knots.</span>
+<span class="sd">        interval: interval to transform, [-interval, interval].</span>
+<span class="sd">        min_derivative: Minimum dervivative. Defaults to 1e-3.</span>
+<span class="sd">        softmax_adjust: Controls minimum bin width and height by rescaling softmax</span>
+<span class="sd">            output, e.g. 0=no adjustment, 1=average softmax output with evenly spaced</span>
+<span class="sd">            widths, &gt;1 promotes more evenly spaced widths. See</span>
+<span class="sd">            ``real_to_increasing_on_interval``. Defaults to 1e-2.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">shape</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">tuple</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">cond_shape</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">knots</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">interval</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">softmax_adjust</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">min_derivative</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">x_pos</span><span class="p">:</span> <span class="n">Array</span>
+    <span class="n">y_pos</span><span class="p">:</span> <span class="n">Array</span>
+    <span class="n">derivatives</span><span class="p">:</span> <span class="n">Array</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">knots</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">interval</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">min_derivative</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-3</span><span class="p">,</span>
+        <span class="n">softmax_adjust</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-2</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">knots</span> <span class="o">=</span> <span class="n">knots</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interval</span> <span class="o">=</span> <span class="n">interval</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">softmax_adjust</span> <span class="o">=</span> <span class="n">softmax_adjust</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_derivative</span> <span class="o">=</span> <span class="n">min_derivative</span>
+
+        <span class="c1"># Inexact arrays</span>
+        <span class="n">pos_parameterization</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span>
+            <span class="n">_real_to_increasing_on_interval</span><span class="p">,</span>
+            <span class="n">interval</span><span class="o">=</span><span class="n">interval</span><span class="p">,</span>
+            <span class="n">softmax_adjust</span><span class="o">=</span><span class="n">softmax_adjust</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">x_pos</span> <span class="o">=</span> <span class="n">wrappers</span><span class="o">.</span><span class="n">Lambda</span><span class="p">(</span><span class="n">pos_parameterization</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">knots</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">y_pos</span> <span class="o">=</span> <span class="n">wrappers</span><span class="o">.</span><span class="n">Lambda</span><span class="p">(</span><span class="n">pos_parameterization</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">knots</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">derivatives</span> <span class="o">=</span> <span class="n">wrappers</span><span class="o">.</span><span class="n">Lambda</span><span class="p">(</span>
+            <span class="k">lambda</span> <span class="n">arr</span><span class="p">:</span> <span class="n">jax</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_derivative</span><span class="p">,</span>
+            <span class="n">jnp</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">knots</span> <span class="o">+</span> <span class="mi">2</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">min_derivative</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)),</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="RationalQuadraticSpline.transform">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.RationalQuadraticSpline.transform">[docs]</a>
+    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># Following notation from the paper</span>
+        <span class="n">x_pos</span><span class="p">,</span> <span class="n">y_pos</span><span class="p">,</span> <span class="n">derivatives</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_pos</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_pos</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">derivatives</span>
+        <span class="n">in_bounds</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">x</span> <span class="o">&gt;=</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">interval</span><span class="p">,</span> <span class="n">x</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">interval</span><span class="p">)</span>
+        <span class="n">x_robust</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">in_bounds</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># To avoid nans</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">x_pos</span><span class="p">,</span> <span class="n">x_robust</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>  <span class="c1"># k is bin number</span>
+        <span class="n">xi</span> <span class="o">=</span> <span class="p">(</span><span class="n">x_robust</span> <span class="o">-</span> <span class="n">x_pos</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="n">x_pos</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">x_pos</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+        <span class="n">sk</span> <span class="o">=</span> <span class="p">(</span><span class="n">y_pos</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">y_pos</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="n">x_pos</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">x_pos</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+        <span class="n">dk</span><span class="p">,</span> <span class="n">dk1</span><span class="p">,</span> <span class="n">yk</span><span class="p">,</span> <span class="n">yk1</span> <span class="o">=</span> <span class="n">derivatives</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">derivatives</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span> <span class="n">y_pos</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">y_pos</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="n">num</span> <span class="o">=</span> <span class="p">(</span><span class="n">yk1</span> <span class="o">-</span> <span class="n">yk</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">sk</span> <span class="o">*</span> <span class="n">xi</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">dk</span> <span class="o">*</span> <span class="n">xi</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">xi</span><span class="p">))</span>
+        <span class="n">den</span> <span class="o">=</span> <span class="n">sk</span> <span class="o">+</span> <span class="p">(</span><span class="n">dk1</span> <span class="o">+</span> <span class="n">dk</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">sk</span><span class="p">)</span> <span class="o">*</span> <span class="n">xi</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">xi</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">yk</span> <span class="o">+</span> <span class="n">num</span> <span class="o">/</span> <span class="n">den</span>  <span class="c1"># eq. 4</span>
+        <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">in_bounds</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RationalQuadraticSpline.transform_and_log_det">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.RationalQuadraticSpline.transform_and_log_det">[docs]</a>
+    <span class="k">def</span> <span class="nf">transform_and_log_det</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">derivative</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">derivative</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">y</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">derivative</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="RationalQuadraticSpline.inverse">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.RationalQuadraticSpline.inverse">[docs]</a>
+    <span class="k">def</span> <span class="nf">inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="c1"># Following notation from the paper</span>
+        <span class="n">x_pos</span><span class="p">,</span> <span class="n">y_pos</span><span class="p">,</span> <span class="n">derivatives</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_pos</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_pos</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">derivatives</span>
+        <span class="n">in_bounds</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">y</span> <span class="o">&gt;=</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">interval</span><span class="p">,</span> <span class="n">y</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">interval</span><span class="p">)</span>
+        <span class="n">y_robust</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">in_bounds</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># To avoid nans</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">y_pos</span><span class="p">,</span> <span class="n">y_robust</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">xk</span><span class="p">,</span> <span class="n">xk1</span><span class="p">,</span> <span class="n">yk</span><span class="p">,</span> <span class="n">yk1</span> <span class="o">=</span> <span class="n">x_pos</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">x_pos</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span> <span class="n">y_pos</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">y_pos</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="n">sk</span> <span class="o">=</span> <span class="p">(</span><span class="n">yk1</span> <span class="o">-</span> <span class="n">yk</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">xk1</span> <span class="o">-</span> <span class="n">xk</span><span class="p">)</span>
+        <span class="n">y_delta_s_term</span> <span class="o">=</span> <span class="p">(</span><span class="n">y_robust</span> <span class="o">-</span> <span class="n">yk</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span>
+            <span class="n">derivatives</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">derivatives</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">sk</span>
+        <span class="p">)</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="p">(</span><span class="n">yk1</span> <span class="o">-</span> <span class="n">yk</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">sk</span> <span class="o">-</span> <span class="n">derivatives</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="o">+</span> <span class="n">y_delta_s_term</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="p">(</span><span class="n">yk1</span> <span class="o">-</span> <span class="n">yk</span><span class="p">)</span> <span class="o">*</span> <span class="n">derivatives</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">-</span> <span class="n">y_delta_s_term</span>
+        <span class="n">c</span> <span class="o">=</span> <span class="o">-</span><span class="n">sk</span> <span class="o">*</span> <span class="p">(</span><span class="n">y_robust</span> <span class="o">-</span> <span class="n">yk</span><span class="p">)</span>
+        <span class="n">sqrt_term</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">b</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">a</span> <span class="o">*</span> <span class="n">c</span><span class="p">)</span>
+        <span class="n">xi</span> <span class="o">=</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">c</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="o">-</span><span class="n">b</span> <span class="o">-</span> <span class="n">sqrt_term</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">xi</span> <span class="o">*</span> <span class="p">(</span><span class="n">xk1</span> <span class="o">-</span> <span class="n">xk</span><span class="p">)</span> <span class="o">+</span> <span class="n">xk</span>
+        <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">in_bounds</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="RationalQuadraticSpline.inverse_and_log_det">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.RationalQuadraticSpline.inverse_and_log_det">[docs]</a>
+    <span class="k">def</span> <span class="nf">inverse_and_log_det</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inverse</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="n">derivative</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">derivative</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="o">-</span><span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">derivative</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="RationalQuadraticSpline.derivative">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.RationalQuadraticSpline.derivative">[docs]</a>
+    <span class="k">def</span> <span class="nf">derivative</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The derivative dy/dx of the forward transformation.&quot;&quot;&quot;</span>
+        <span class="c1"># Following notation from the paper (eq. 5)</span>
+        <span class="n">x_pos</span><span class="p">,</span> <span class="n">y_pos</span><span class="p">,</span> <span class="n">derivatives</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">x_pos</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">y_pos</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">derivatives</span>
+        <span class="n">in_bounds</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">x</span> <span class="o">&gt;=</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">interval</span><span class="p">,</span> <span class="n">x</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">interval</span><span class="p">)</span>
+        <span class="n">x_robust</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">in_bounds</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># To avoid nans</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">searchsorted</span><span class="p">(</span><span class="n">x_pos</span><span class="p">,</span> <span class="n">x_robust</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="n">xi</span> <span class="o">=</span> <span class="p">(</span><span class="n">x_robust</span> <span class="o">-</span> <span class="n">x_pos</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="n">x_pos</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">x_pos</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+        <span class="n">sk</span> <span class="o">=</span> <span class="p">(</span><span class="n">y_pos</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">y_pos</span><span class="p">[</span><span class="n">k</span><span class="p">])</span> <span class="o">/</span> <span class="p">(</span><span class="n">x_pos</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">x_pos</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
+        <span class="n">dk</span><span class="p">,</span> <span class="n">dk1</span> <span class="o">=</span> <span class="n">derivatives</span><span class="p">[</span><span class="n">k</span><span class="p">],</span> <span class="n">derivatives</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="n">num</span> <span class="o">=</span> <span class="n">sk</span><span class="o">**</span><span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">dk1</span> <span class="o">*</span> <span class="n">xi</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">sk</span> <span class="o">*</span> <span class="n">xi</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">xi</span><span class="p">)</span> <span class="o">+</span> <span class="n">dk</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">xi</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">den</span> <span class="o">=</span> <span class="p">(</span><span class="n">sk</span> <span class="o">+</span> <span class="p">(</span><span class="n">dk1</span> <span class="o">+</span> <span class="n">dk</span> <span class="o">-</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">sk</span><span class="p">)</span> <span class="o">*</span> <span class="n">xi</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">xi</span><span class="p">))</span> <span class="o">**</span> <span class="mi">2</span>
+        <span class="n">derivative</span> <span class="o">=</span> <span class="n">num</span> <span class="o">/</span> <span class="n">den</span>
+        <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">in_bounds</span><span class="p">,</span> <span class="n">derivative</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Daniel Ward.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

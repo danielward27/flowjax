@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>flowjax.wrappers &mdash; FlowJax  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=3d3fbe02" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../_static/style.css?v=60e24bd7" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="../../_static/clipboard.min.js?v=a7894cd8"></script>
+        <script src="../../_static/copybutton.js?v=ccdb6887"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            FlowJax
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/unconditional.html">Unconditional density estmation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/conditional.html">Conditional density estimation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/variational_inference.html">Variational inference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/bounded.html">Bounded flows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../examples/snpe.html">Sequential neural posterior estimation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../api/bijections.html">Bijections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/distributions.html">Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/experimental.html">Experimental</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/flows.html">Flows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/losses.html">Loss functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/training.html">Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../api/wrappers.html">Wrappers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Miscellaneous</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../faq.html">FAQ</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">FlowJax</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">flowjax.wrappers</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for flowjax.wrappers</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;:class:`AbstractUnwrappable` objects and utilities.</span>
+
+<span class="sd">These are &quot;placeholder&quot; values for specifying custom behaviour for nodes in a pytree.</span>
+<span class="sd">Many of these facilitate similar functions to pytorch parameterizations. We use this</span>
+<span class="sd">for example to apply parameter constraints, masking of parameters etc. To apply the</span>
+<span class="sd">behaviour, we use :func:`unwrap`, which will replace any :class:`AbstractUnwrappable`</span>
+<span class="sd">nodes in a pytree with the unwrapped versions.</span>
+
+<span class="sd">Unwrapping is automatically called in several places, primarily:</span>
+
+<span class="sd">* Prior to calling the bijection methods: ``transform``, ``inverse``,</span>
+<span class="sd">  ``transform_and_log_det`` and ``inverse_and_log_det``.</span>
+<span class="sd">* Prior to calling distribution methods: ``log_prob``, ``sample`` and</span>
+<span class="sd">  ``sample_and_log_prob``.</span>
+<span class="sd">* Prior to computing the loss functions.</span>
+
+<span class="sd">If implementing a custom unwrappable, bear in mind:</span>
+
+<span class="sd">* The wrapper should avoid implementing information or logic beyond what is required</span>
+<span class="sd">  for initialization and unwrapping, as this information will be lost when unwrapping.</span>
+<span class="sd">* The unwrapping should support broadcasting/vmapped initializations. Otherwise, if</span>
+<span class="sd">  the unwrappable is created within a batched context, it will fail to unwrap</span>
+<span class="sd">  correctly.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Iterable</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">TYPE_CHECKING</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">ClassVar</span><span class="p">,</span> <span class="n">Generic</span><span class="p">,</span> <span class="n">TypeVar</span>
+
+<span class="kn">import</span> <span class="nn">equinox</span> <span class="k">as</span> <span class="nn">eqx</span>
+<span class="kn">import</span> <span class="nn">jax</span>
+<span class="kn">import</span> <span class="nn">jax.numpy</span> <span class="k">as</span> <span class="nn">jnp</span>
+<span class="kn">from</span> <span class="nn">jax</span> <span class="kn">import</span> <span class="n">Array</span><span class="p">,</span> <span class="n">lax</span>
+
+<span class="kn">from</span> <span class="nn">flowjax._custom_types</span> <span class="kn">import</span> <span class="n">ArrayLike</span>
+<span class="kn">from</span> <span class="nn">flowjax.utils</span> <span class="kn">import</span> <span class="n">_VectorizedBijection</span><span class="p">,</span> <span class="n">arraylike_to_array</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="kn">from</span> <span class="nn">flowjax.bijections.bijection</span> <span class="kn">import</span> <span class="n">AbstractBijection</span>
+
+<span class="n">PyTree</span> <span class="o">=</span> <span class="n">Any</span>
+
+
+<span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="unwrap">
+<a class="viewcode-back" href="../../api/wrappers.html#flowjax.wrappers.unwrap">[docs]</a>
+<span class="k">def</span> <span class="nf">unwrap</span><span class="p">(</span><span class="n">tree</span><span class="p">:</span> <span class="n">PyTree</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Unwrap all :class:`AbstractUnwrappable` nodes within a pytree.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">jax</span><span class="o">.</span><span class="n">tree_util</span><span class="o">.</span><span class="n">tree_map</span><span class="p">(</span>
+        <span class="n">f</span><span class="o">=</span><span class="k">lambda</span> <span class="n">leaf</span><span class="p">:</span> <span class="p">(</span>
+            <span class="n">leaf</span><span class="o">.</span><span class="n">recursive_unwrap</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">leaf</span><span class="p">,</span> <span class="n">AbstractUnwrappable</span><span class="p">)</span> <span class="k">else</span> <span class="n">leaf</span>
+        <span class="p">),</span>
+        <span class="n">tree</span><span class="o">=</span><span class="n">tree</span><span class="p">,</span>
+        <span class="n">is_leaf</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">AbstractUnwrappable</span><span class="p">),</span>
+    <span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="AbstractUnwrappable">
+<a class="viewcode-back" href="../../api/wrappers.html#flowjax.wrappers.AbstractUnwrappable">[docs]</a>
+<span class="k">class</span> <span class="nc">AbstractUnwrappable</span><span class="p">(</span><span class="n">eqx</span><span class="o">.</span><span class="n">Module</span><span class="p">,</span> <span class="n">Generic</span><span class="p">[</span><span class="n">T</span><span class="p">]):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;An abstract class representing an unwrappable object.</span>
+
+<span class="sd">    Unwrappables generally replace nodes in a pytree, in order to specify some custom</span>
+<span class="sd">    behaviour to apply upon unwrapping before use. This can be used e.g. to apply</span>
+<span class="sd">    parameter constraints, such as making scale parameters postive, or applying</span>
+<span class="sd">    stop_gradient before accessing the parameters.</span>
+
+<span class="sd">    If ``_dummy`` is set to an array (must have shape ()), this is used for inferring</span>
+<span class="sd">    vmapped dimensions (and sizes) when unwrapping to automatically vecotorize the</span>
+<span class="sd">    method. In some cases this is important for supporting the case where an</span>
+<span class="sd">    ``AbstractUnwrappable`` is created within e.g. ``eqx.filter_vmap``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_dummy</span><span class="p">:</span> <span class="n">eqx</span><span class="o">.</span><span class="n">AbstractVar</span><span class="p">[</span><span class="n">Array</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">__check_init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dummy</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dummy</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;_dummy should be initialized with shape ().&quot;</span><span class="p">)</span>
+
+<div class="viewcode-block" id="AbstractUnwrappable.recursive_unwrap">
+<a class="viewcode-back" href="../../api/wrappers.html#flowjax.wrappers.AbstractUnwrappable.recursive_unwrap">[docs]</a>
+    <span class="k">def</span> <span class="nf">recursive_unwrap</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the unwrapped pytree, unwrapping subnodes as required.&quot;&quot;&quot;</span>
+
+        <span class="k">def</span> <span class="nf">vectorized_unwrap</span><span class="p">(</span><span class="n">unwrappable</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">unwrappable</span><span class="o">.</span><span class="n">_dummy</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">unwrappable</span><span class="o">.</span><span class="n">unwrap</span><span class="p">()</span>
+
+            <span class="k">def</span> <span class="nf">v_unwrap</span><span class="p">(</span><span class="n">unwrappable</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">unwrappable</span><span class="o">.</span><span class="n">unwrap</span><span class="p">()</span>
+
+            <span class="k">for</span> <span class="n">dim</span> <span class="ow">in</span> <span class="n">unwrappable</span><span class="o">.</span><span class="n">_dummy</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+                <span class="n">v_unwrap</span> <span class="o">=</span> <span class="n">eqx</span><span class="o">.</span><span class="n">filter_vmap</span><span class="p">(</span><span class="n">v_unwrap</span><span class="p">,</span> <span class="n">axis_size</span><span class="o">=</span><span class="n">dim</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">v_unwrap</span><span class="p">(</span><span class="n">unwrappable</span><span class="p">)</span>
+
+        <span class="n">flat</span><span class="p">,</span> <span class="n">tree_def</span> <span class="o">=</span> <span class="n">eqx</span><span class="o">.</span><span class="n">tree_flatten_one_level</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">tree</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">tree_util</span><span class="o">.</span><span class="n">tree_unflatten</span><span class="p">(</span><span class="n">tree_def</span><span class="p">,</span> <span class="n">unwrap</span><span class="p">(</span><span class="n">flat</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">vectorized_unwrap</span><span class="p">(</span><span class="n">tree</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AbstractUnwrappable.unwrap">
+<a class="viewcode-back" href="../../api/wrappers.html#flowjax.wrappers.AbstractUnwrappable.unwrap">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">unwrap</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns the unwrapped pytree, assuming no wrapped subnodes exist.&quot;&quot;&quot;</span>
+        <span class="k">pass</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="NonTrainable">
+<a class="viewcode-back" href="../../api/wrappers.html#flowjax.wrappers.NonTrainable">[docs]</a>
+<span class="k">class</span> <span class="nc">NonTrainable</span><span class="p">(</span><span class="n">AbstractUnwrappable</span><span class="p">[</span><span class="n">T</span><span class="p">]):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Applies stop gradient to all arraylike leaves before unwrapping.</span>
+
+<span class="sd">    Useful to mark pytrees (arrays, submodules, etc) as frozen/non-trainable. We also</span>
+<span class="sd">    filter out these modules when partitioning parameters for training, or when</span>
+<span class="sd">    parameterizing bijections in coupling/masked autoregressive flows (transformers).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">tree</span><span class="p">:</span> <span class="n">T</span>
+    <span class="n">_dummy</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="NonTrainable.unwrap">
+<a class="viewcode-back" href="../../api/wrappers.html#flowjax.wrappers.NonTrainable.unwrap">[docs]</a>
+    <span class="k">def</span> <span class="nf">unwrap</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
+        <span class="n">differentiable</span><span class="p">,</span> <span class="n">static</span> <span class="o">=</span> <span class="n">eqx</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tree</span><span class="p">,</span> <span class="n">eqx</span><span class="o">.</span><span class="n">is_array_like</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">eqx</span><span class="o">.</span><span class="n">combine</span><span class="p">(</span><span class="n">lax</span><span class="o">.</span><span class="n">stop_gradient</span><span class="p">(</span><span class="n">differentiable</span><span class="p">),</span> <span class="n">static</span><span class="p">)</span></div>
+</div>
+
+
+
+<span class="k">def</span> <span class="nf">_apply_inverse_and_check_valid</span><span class="p">(</span><span class="n">bijection</span><span class="p">,</span> <span class="n">arr</span><span class="p">):</span>
+    <span class="n">param_inv</span> <span class="o">=</span> <span class="n">_VectorizedBijection</span><span class="p">(</span><span class="n">bijection</span><span class="p">)</span><span class="o">.</span><span class="n">inverse</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">eqx</span><span class="o">.</span><span class="n">error_if</span><span class="p">(</span>
+        <span class="n">param_inv</span><span class="p">,</span>
+        <span class="n">jnp</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">arr</span><span class="p">),</span> <span class="o">~</span><span class="n">jnp</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">param_inv</span><span class="p">)),</span>
+        <span class="s2">&quot;Non-finite value(s) introduced when reparameterizing. This suggests &quot;</span>
+        <span class="s2">&quot;the parameter vector passed to BijectionReparam was incompatible with &quot;</span>
+        <span class="sa">f</span><span class="s2">&quot;the bijection used for reparmeterizing (</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">bijection</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">).&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<div class="viewcode-block" id="BijectionReparam">
+<a class="viewcode-back" href="../../api/wrappers.html#flowjax.wrappers.BijectionReparam">[docs]</a>
+<span class="k">class</span> <span class="nc">BijectionReparam</span><span class="p">(</span><span class="n">AbstractUnwrappable</span><span class="p">[</span><span class="n">Array</span><span class="p">]):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reparameterize a parameter using a bijection.</span>
+
+<span class="sd">    When applying unwrap, ``bijection.transform`` is applied. By default, the inverse</span>
+<span class="sd">    of the bijection is applied when setting the parameter values.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        arr: The parameter to reparameterize. If invert_on_init is False, then this can</span>
+<span class="sd">            be a ``AbstractUnwrappable[Array]``.</span>
+<span class="sd">        bijection: A bijection whose shape is broadcastable to ``jnp.shape(arr)``.</span>
+<span class="sd">        invert_on_init: Whether to apply the inverse transformation when initializing.</span>
+<span class="sd">            Defaults to True.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">arr</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="n">AbstractUnwrappable</span><span class="p">[</span><span class="n">Array</span><span class="p">]</span>
+    <span class="n">bijection</span><span class="p">:</span> <span class="n">AbstractBijection</span>
+    <span class="n">_dummy</span><span class="p">:</span> <span class="n">Array</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">arr</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="n">AbstractUnwrappable</span><span class="p">[</span><span class="n">Array</span><span class="p">],</span>
+        <span class="n">bijection</span><span class="p">:</span> <span class="n">AbstractBijection</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">invert_on_init</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="n">invert_on_init</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">arr</span> <span class="o">=</span> <span class="n">_apply_inverse_and_check_valid</span><span class="p">(</span><span class="n">bijection</span><span class="p">,</span> <span class="n">arr</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">AbstractUnwrappable</span><span class="p">):</span>
+                <span class="n">arr</span> <span class="o">=</span> <span class="n">arraylike_to_array</span><span class="p">(</span><span class="n">arr</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">arr</span> <span class="o">=</span> <span class="n">arr</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bijection</span> <span class="o">=</span> <span class="n">bijection</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dummy</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">empty</span><span class="p">(())</span>
+
+<div class="viewcode-block" id="BijectionReparam.unwrap">
+<a class="viewcode-back" href="../../api/wrappers.html#flowjax.wrappers.BijectionReparam.unwrap">[docs]</a>
+    <span class="k">def</span> <span class="nf">unwrap</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_VectorizedBijection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bijection</span><span class="p">)</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">arr</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Where">
+<a class="viewcode-back" href="../../api/wrappers.html#flowjax.wrappers.Where">[docs]</a>
+<span class="k">class</span> <span class="nc">Where</span><span class="p">(</span><span class="n">AbstractUnwrappable</span><span class="p">[</span><span class="n">Array</span><span class="p">]):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Applies jnp.where upon unwrapping.</span>
+
+<span class="sd">    This can be used to construct masks by setting ``cond=mask`` and ``if_false=0``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">cond</span><span class="p">:</span> <span class="n">ArrayLike</span>
+    <span class="n">if_true</span><span class="p">:</span> <span class="n">ArrayLike</span>
+    <span class="n">if_false</span><span class="p">:</span> <span class="n">ArrayLike</span>
+    <span class="n">_dummy</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="Where.unwrap">
+<a class="viewcode-back" href="../../api/wrappers.html#flowjax.wrappers.Where.unwrap">[docs]</a>
+    <span class="k">def</span> <span class="nf">unwrap</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cond</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">if_true</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">if_false</span><span class="p">)</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="WeightNormalization">
+<a class="viewcode-back" href="../../api/wrappers.html#flowjax.wrappers.WeightNormalization">[docs]</a>
+<span class="k">class</span> <span class="nc">WeightNormalization</span><span class="p">(</span><span class="n">AbstractUnwrappable</span><span class="p">[</span><span class="n">Array</span><span class="p">]):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Applies weight normalization (https://arxiv.org/abs/1602.07868).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        weight: The (possibly wrapped) weight matrix.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">weight</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="n">AbstractUnwrappable</span><span class="p">[</span><span class="n">Array</span><span class="p">]</span>
+    <span class="n">scale</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="n">AbstractUnwrappable</span><span class="p">[</span><span class="n">Array</span><span class="p">]</span> <span class="o">=</span> <span class="n">eqx</span><span class="o">.</span><span class="n">field</span><span class="p">(</span><span class="n">init</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">_dummy</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">weight</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="n">AbstractUnwrappable</span><span class="p">[</span><span class="n">Array</span><span class="p">]):</span>
+        <span class="kn">from</span> <span class="nn">flowjax.bijections</span> <span class="kn">import</span> <span class="n">SoftPlus</span>  <span class="c1"># Delayed to avoid circular import...</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">=</span> <span class="n">weight</span>
+        <span class="n">scale_init</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">jnp</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">unwrap</span><span class="p">(</span><span class="n">weight</span><span class="p">),</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="n">BijectionReparam</span><span class="p">(</span><span class="n">scale_init</span><span class="p">,</span> <span class="n">SoftPlus</span><span class="p">())</span>
+
+<div class="viewcode-block" id="WeightNormalization.unwrap">
+<a class="viewcode-back" href="../../api/wrappers.html#flowjax.wrappers.WeightNormalization.unwrap">[docs]</a>
+    <span class="k">def</span> <span class="nf">unwrap</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+        <span class="n">weight_norms</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">weight</span> <span class="o">/</span> <span class="n">weight_norms</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Lambda">
+<a class="viewcode-back" href="../../api/wrappers.html#flowjax.wrappers.Lambda">[docs]</a>
+<span class="k">class</span> <span class="nc">Lambda</span><span class="p">(</span><span class="n">AbstractUnwrappable</span><span class="p">[</span><span class="n">T</span><span class="p">]):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Unwrap an object by calling fn with (possibly trainable) args and kwargs.</span>
+
+<span class="sd">    If the Lambda is created within ``eqx.filter_vmap``, unwrapping is automatically</span>
+<span class="sd">    vectorized correctly, as long as the vmapped constructor adds leading batch</span>
+<span class="sd">    dimensions to all arrays in Lambda (the default for ``eqx.filter_vmap``).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        fn: Function to call with args, and kwargs.</span>
+<span class="sd">        *args: Positional arguments to pass to fn.</span>
+<span class="sd">        **kwargs: Keyword arguments to pass to fn.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">T</span><span class="p">]</span>
+    <span class="n">args</span><span class="p">:</span> <span class="n">Iterable</span>
+    <span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span>
+    <span class="n">_dummy</span><span class="p">:</span> <span class="n">Array</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fn</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fn</span> <span class="o">=</span> <span class="n">fn</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">args</span> <span class="o">=</span> <span class="n">args</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dummy</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">empty</span><span class="p">(())</span>
+
+<div class="viewcode-block" id="Lambda.unwrap">
+<a class="viewcode-back" href="../../api/wrappers.html#flowjax.wrappers.Lambda.unwrap">[docs]</a>
+    <span class="k">def</span> <span class="nf">unwrap</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fn</span><span class="p">(</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Daniel Ward.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

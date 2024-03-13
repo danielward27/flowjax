@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>flowjax.bijections.coupling &mdash; FlowJax  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=3d3fbe02" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/style.css?v=60e24bd7" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../../../_static/doctools.js?v=888ff710"></script>
+        <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+        <script src="../../../_static/copybutton.js?v=ccdb6887"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            FlowJax
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/unconditional.html">Unconditional density estmation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/conditional.html">Conditional density estimation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/variational_inference.html">Variational inference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/bounded.html">Bounded flows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/snpe.html">Sequential neural posterior estimation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/bijections.html">Bijections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/distributions.html">Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/experimental.html">Experimental</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/flows.html">Flows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/losses.html">Loss functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/training.html">Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/wrappers.html">Wrappers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Miscellaneous</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">FAQ</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">FlowJax</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">flowjax.bijections.coupling</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for flowjax.bijections.coupling</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Implemenetation of Coupling flow layer with arbitrary transformer.</span>
+
+<span class="sd">Ref: https://arxiv.org/abs/1605.08803.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Callable</span>
+
+<span class="kn">import</span> <span class="nn">equinox</span> <span class="k">as</span> <span class="nn">eqx</span>
+<span class="kn">import</span> <span class="nn">jax.nn</span> <span class="k">as</span> <span class="nn">jnn</span>
+<span class="kn">import</span> <span class="nn">jax.numpy</span> <span class="k">as</span> <span class="nn">jnp</span>
+
+<span class="kn">from</span> <span class="nn">flowjax.bijections.bijection</span> <span class="kn">import</span> <span class="n">AbstractBijection</span>
+<span class="kn">from</span> <span class="nn">flowjax.bijections.jax_transforms</span> <span class="kn">import</span> <span class="n">Vmap</span>
+<span class="kn">from</span> <span class="nn">flowjax.utils</span> <span class="kn">import</span> <span class="n">Array</span><span class="p">,</span> <span class="n">get_ravelled_pytree_constructor</span>
+
+
+<div class="viewcode-block" id="Coupling">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.Coupling">[docs]</a>
+<span class="k">class</span> <span class="nc">Coupling</span><span class="p">(</span><span class="n">AbstractBijection</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Coupling layer implementation (https://arxiv.org/abs/1605.08803).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        key: Jax PRNGKey</span>
+<span class="sd">        transformer: Unconditional bijection with shape () to be parameterised by the</span>
+<span class="sd">            conditioner neural netork. Parameters wrapped with ``NonTrainable``</span>
+<span class="sd">            are excluded from being parameterized.</span>
+<span class="sd">        untransformed_dim: Number of untransformed conditioning variables (e.g. dim//2).</span>
+<span class="sd">        dim: Total dimension.</span>
+<span class="sd">        cond_dim: Dimension of additional conditioning variables. Defaults to None.</span>
+<span class="sd">        nn_width: Neural network hidden layer width.</span>
+<span class="sd">        nn_depth: Neural network hidden layer size.</span>
+<span class="sd">        nn_activation: Neural network activation function. Defaults to jnn.relu.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">shape</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+    <span class="n">cond_shape</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">untransformed_dim</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">dim</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">transformer_constructor</span><span class="p">:</span> <span class="n">Callable</span>
+    <span class="n">conditioner</span><span class="p">:</span> <span class="n">eqx</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">MLP</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">key</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">transformer</span><span class="p">:</span> <span class="n">AbstractBijection</span><span class="p">,</span>
+        <span class="n">untransformed_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">cond_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">nn_width</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">nn_depth</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">nn_activation</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">=</span> <span class="n">jnn</span><span class="o">.</span><span class="n">relu</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="k">if</span> <span class="n">transformer</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">()</span> <span class="ow">or</span> <span class="n">transformer</span><span class="o">.</span><span class="n">cond_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Only unconditional transformers with shape () are supported.&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">constructor</span><span class="p">,</span> <span class="n">num_params</span> <span class="o">=</span> <span class="n">get_ravelled_pytree_constructor</span><span class="p">(</span><span class="n">transformer</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">transformer_constructor</span> <span class="o">=</span> <span class="n">constructor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">untransformed_dim</span> <span class="o">=</span> <span class="n">untransformed_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="n">dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">dim</span><span class="p">,)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cond_shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">cond_dim</span><span class="p">,)</span> <span class="k">if</span> <span class="n">cond_dim</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+
+        <span class="n">conditioner_output_size</span> <span class="o">=</span> <span class="n">num_params</span> <span class="o">*</span> <span class="p">(</span><span class="n">dim</span> <span class="o">-</span> <span class="n">untransformed_dim</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">conditioner</span> <span class="o">=</span> <span class="n">eqx</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">MLP</span><span class="p">(</span>
+            <span class="n">in_size</span><span class="o">=</span><span class="p">(</span>
+                <span class="n">untransformed_dim</span> <span class="k">if</span> <span class="n">cond_dim</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">untransformed_dim</span> <span class="o">+</span> <span class="n">cond_dim</span>
+            <span class="p">),</span>
+            <span class="n">out_size</span><span class="o">=</span><span class="n">conditioner_output_size</span><span class="p">,</span>
+            <span class="n">width_size</span><span class="o">=</span><span class="n">nn_width</span><span class="p">,</span>
+            <span class="n">depth</span><span class="o">=</span><span class="n">nn_depth</span><span class="p">,</span>
+            <span class="n">activation</span><span class="o">=</span><span class="n">nn_activation</span><span class="p">,</span>
+            <span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">,</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="Coupling.transform">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.Coupling.transform">[docs]</a>
+    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">x_cond</span><span class="p">,</span> <span class="n">x_trans</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:</span> <span class="bp">self</span><span class="o">.</span><span class="n">untransformed_dim</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">untransformed_dim</span> <span class="p">:]</span>
+        <span class="n">nn_input</span> <span class="o">=</span> <span class="n">x_cond</span> <span class="k">if</span> <span class="n">condition</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">jnp</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">x_cond</span><span class="p">,</span> <span class="n">condition</span><span class="p">))</span>
+        <span class="n">transformer_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conditioner</span><span class="p">(</span><span class="n">nn_input</span><span class="p">)</span>
+        <span class="n">transformer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flat_params_to_transformer</span><span class="p">(</span><span class="n">transformer_params</span><span class="p">)</span>
+        <span class="n">y_trans</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">x_trans</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">x_cond</span><span class="p">,</span> <span class="n">y_trans</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="Coupling.transform_and_log_det">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.Coupling.transform_and_log_det">[docs]</a>
+    <span class="k">def</span> <span class="nf">transform_and_log_det</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">x_cond</span><span class="p">,</span> <span class="n">x_trans</span> <span class="o">=</span> <span class="n">x</span><span class="p">[:</span> <span class="bp">self</span><span class="o">.</span><span class="n">untransformed_dim</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">untransformed_dim</span> <span class="p">:]</span>
+        <span class="n">nn_input</span> <span class="o">=</span> <span class="n">x_cond</span> <span class="k">if</span> <span class="n">condition</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">jnp</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">x_cond</span><span class="p">,</span> <span class="n">condition</span><span class="p">))</span>
+        <span class="n">transformer_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conditioner</span><span class="p">(</span><span class="n">nn_input</span><span class="p">)</span>
+        <span class="n">transformer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flat_params_to_transformer</span><span class="p">(</span><span class="n">transformer_params</span><span class="p">)</span>
+        <span class="n">y_trans</span><span class="p">,</span> <span class="n">log_det</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">transform_and_log_det</span><span class="p">(</span><span class="n">x_trans</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">x_cond</span><span class="p">,</span> <span class="n">y_trans</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">y</span><span class="p">,</span> <span class="n">log_det</span></div>
+
+
+<div class="viewcode-block" id="Coupling.inverse">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.Coupling.inverse">[docs]</a>
+    <span class="k">def</span> <span class="nf">inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">x_cond</span><span class="p">,</span> <span class="n">y_trans</span> <span class="o">=</span> <span class="n">y</span><span class="p">[:</span> <span class="bp">self</span><span class="o">.</span><span class="n">untransformed_dim</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">untransformed_dim</span> <span class="p">:]</span>
+        <span class="n">nn_input</span> <span class="o">=</span> <span class="n">x_cond</span> <span class="k">if</span> <span class="n">condition</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">x_cond</span><span class="p">,</span> <span class="n">condition</span><span class="p">))</span>
+        <span class="n">transformer_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conditioner</span><span class="p">(</span><span class="n">nn_input</span><span class="p">)</span>
+        <span class="n">transformer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flat_params_to_transformer</span><span class="p">(</span><span class="n">transformer_params</span><span class="p">)</span>
+        <span class="n">x_trans</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">inverse</span><span class="p">(</span><span class="n">y_trans</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">x_cond</span><span class="p">,</span> <span class="n">x_trans</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="Coupling.inverse_and_log_det">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.Coupling.inverse_and_log_det">[docs]</a>
+    <span class="k">def</span> <span class="nf">inverse_and_log_det</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">x_cond</span><span class="p">,</span> <span class="n">y_trans</span> <span class="o">=</span> <span class="n">y</span><span class="p">[:</span> <span class="bp">self</span><span class="o">.</span><span class="n">untransformed_dim</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">untransformed_dim</span> <span class="p">:]</span>
+        <span class="n">nn_input</span> <span class="o">=</span> <span class="n">x_cond</span> <span class="k">if</span> <span class="n">condition</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">jnp</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">x_cond</span><span class="p">,</span> <span class="n">condition</span><span class="p">))</span>
+        <span class="n">transformer_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conditioner</span><span class="p">(</span><span class="n">nn_input</span><span class="p">)</span>
+        <span class="n">transformer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_flat_params_to_transformer</span><span class="p">(</span><span class="n">transformer_params</span><span class="p">)</span>
+        <span class="n">x_trans</span><span class="p">,</span> <span class="n">log_det</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">inverse_and_log_det</span><span class="p">(</span><span class="n">y_trans</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">hstack</span><span class="p">((</span><span class="n">x_cond</span><span class="p">,</span> <span class="n">x_trans</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">log_det</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_flat_params_to_transformer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Array</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Reshape to dim X params_per_dim, then vmap.&quot;&quot;&quot;</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">untransformed_dim</span>
+        <span class="n">transformer_params</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">transformer</span> <span class="o">=</span> <span class="n">eqx</span><span class="o">.</span><span class="n">filter_vmap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">transformer_constructor</span><span class="p">)(</span><span class="n">transformer_params</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">Vmap</span><span class="p">(</span><span class="n">transformer</span><span class="p">,</span> <span class="n">in_axes</span><span class="o">=</span><span class="n">eqx</span><span class="o">.</span><span class="n">if_array</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Daniel Ward.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

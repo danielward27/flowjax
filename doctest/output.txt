@@ -1,0 +1,41 @@
+Results of doctest builder run on 2024-03-13 21:02:01
+=====================================================
+
+Document: api/distributions
+---------------------------
+1 items passed all tests:
+  16 tests in default
+16 tests in 1 items.
+16 passed and 0 failed.
+Test passed.
+
+Document: api/experimental
+--------------------------
+1 items passed all tests:
+  11 tests in default
+11 tests in 1 items.
+11 passed and 0 failed.
+Test passed.
+
+Document: api/bijections
+------------------------
+1 items passed all tests:
+  40 tests in default
+40 tests in 1 items.
+40 passed and 0 failed.
+Test passed.
+
+Document: faq
+-------------
+1 items passed all tests:
+  17 tests in default
+17 tests in 1 items.
+17 passed and 0 failed.
+Test passed.
+
+Doctest summary
+===============
+   84 tests
+    0 failures in tests
+    0 failures in setup code
+    0 failures in cleanup code

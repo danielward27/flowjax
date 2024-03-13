@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flows &mdash; FlowJax  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=3d3fbe02" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/style.css?v=60e24bd7" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../_static/doctools.js?v=888ff710"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+        <script src="../_static/copybutton.js?v=ccdb6887"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Loss functions" href="losses.html" />
+    <link rel="prev" title="Experimental" href="experimental.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            FlowJax
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../examples/unconditional.html">Unconditional density estmation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/conditional.html">Conditional density estimation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/variational_inference.html">Variational inference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/bounded.html">Bounded flows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/snpe.html">Sequential neural posterior estimation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="bijections.html">Bijections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="distributions.html">Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="experimental.html">Experimental</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Flows</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.flows.block_neural_autoregressive_flow"><code class="docutils literal notranslate"><span class="pre">block_neural_autoregressive_flow()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.flows.coupling_flow"><code class="docutils literal notranslate"><span class="pre">coupling_flow()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.flows.masked_autoregressive_flow"><code class="docutils literal notranslate"><span class="pre">masked_autoregressive_flow()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.flows.planar_flow"><code class="docutils literal notranslate"><span class="pre">planar_flow()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.flows.triangular_spline_flow"><code class="docutils literal notranslate"><span class="pre">triangular_spline_flow()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="losses.html">Loss functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="training.html">Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="wrappers.html">Wrappers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Miscellaneous</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">FlowJax</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Flows</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/flows.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-flowjax.flows">
+<span id="flows"></span><h1>Flows<a class="headerlink" href="#module-flowjax.flows" title="Link to this heading"></a></h1>
+<p>Premade versions of common flow architetctures from <code class="docutils literal notranslate"><span class="pre">flowjax.flows</span></code>.</p>
+<p>All these functions return a <a class="reference internal" href="distributions.html#flowjax.distributions.Transformed" title="flowjax.distributions.Transformed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Transformed</span></code></a> distribution.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="flowjax.flows.block_neural_autoregressive_flow">
+<span class="sig-name descname"><span class="pre">block_neural_autoregressive_flow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_dist</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond_dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nn_depth</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nn_block_dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flow_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">invert</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">activation</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inverter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/flows.html#block_neural_autoregressive_flow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.flows.block_neural_autoregressive_flow" title="Link to this definition"></a></dt>
+<dd><p>Block neural autoregressive flow (BNAF) (<a class="reference external" href="https://arxiv.org/abs/1904.04676">https://arxiv.org/abs/1904.04676</a>).</p>
+<p>Each flow layer contains a
+<a class="reference internal" href="bijections.html#flowjax.bijections.BlockAutoregressiveNetwork" title="flowjax.bijections.block_autoregressive_network.BlockAutoregressiveNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">BlockAutoregressiveNetwork</span></code></a>
+bijection. The bijection does not have an analytic inverse, so must be inverted
+using numerical methods (by default a bisection search). Note that this means
+that only one of <code class="docutils literal notranslate"><span class="pre">log_prob</span></code> or <code class="docutils literal notranslate"><span class="pre">sample{_and_log_prob}</span></code> can be efficient,
+controlled by the <code class="docutils literal notranslate"><span class="pre">invert</span></code> argument.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://jax.readthedocs.io/en/latest/_autosummary/jax.Array.html#jax.Array" title="(in JAX)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a></span>) – Jax PRNGKey.</p></li>
+<li><p><strong>base_dist</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="distributions.html#flowjax.distributions.AbstractDistribution" title="flowjax.distributions.AbstractDistribution"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDistribution</span></code></a></span>) – Base distribution, with <code class="docutils literal notranslate"><span class="pre">base_dist.ndim==1</span></code>.</p></li>
+<li><p><strong>cond_dim</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Dimension of conditional variables. Defaults to None.</p></li>
+<li><p><strong>nn_depth</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Number of hidden layers within the networks. Defaults to 1.</p></li>
+<li><p><strong>nn_block_dim</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Block size. Hidden layer width is dim*nn_block_dim. Defaults to 8.</p></li>
+<li><p><strong>flow_layers</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Number of BNAF layers. Defaults to 1.</p></li>
+<li><p><strong>invert</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Use <cite>True</cite> for efficient <code class="docutils literal notranslate"><span class="pre">log_prob</span></code> (e.g. when fitting by maximum
+likelihood), and <cite>False</cite> for efficient <code class="docutils literal notranslate"><span class="pre">sample</span></code> and
+<code class="docutils literal notranslate"><span class="pre">sample_and_log_prob</span></code> methods (e.g. for fitting variationally).</p></li>
+<li><p><strong>activation</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="bijections.html#flowjax.bijections.AbstractBijection" title="flowjax.bijections.bijection.AbstractBijection"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractBijection</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Activation function used within block neural autoregressive
+networks. Note this should be bijective and in some use cases should map
+real -&gt; real. For more information, see
+<a class="reference internal" href="bijections.html#flowjax.bijections.BlockAutoregressiveNetwork" title="flowjax.bijections.block_autoregressive_network.BlockAutoregressiveNetwork"><code class="xref py py-class docutils literal notranslate"><span class="pre">BlockAutoregressiveNetwork</span></code></a>.
+Defaults to <a class="reference internal" href="bijections.html#flowjax.bijections.LeakyTanh" title="flowjax.bijections.tanh.LeakyTanh"><code class="xref py py-class docutils literal notranslate"><span class="pre">LeakyTanh</span></code></a>.</p></li>
+<li><p><strong>inverter</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Callable that implements the required numerical method to invert the
+<code class="docutils literal notranslate"><span class="pre">BlockAutoregressiveNetwork</span></code> bijection. Must have the signature
+<code class="docutils literal notranslate"><span class="pre">inverter(bijection,</span> <span class="pre">y,</span> <span class="pre">condition=None)</span></code>. Defaults to using a bisection
+search via <code class="docutils literal notranslate"><span class="pre">AutoregressiveBisectionInverter</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="distributions.html#flowjax.distributions.Transformed" title="flowjax.distributions.Transformed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Transformed</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="flowjax.flows.coupling_flow">
+<span class="sig-name descname"><span class="pre">coupling_flow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_dist</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transformer=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond_dim=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flow_layers=8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nn_width=50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nn_depth=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nn_activation=&lt;jax._src.custom_derivatives.custom_jvp</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">invert=True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/flows.html#coupling_flow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.flows.coupling_flow" title="Link to this definition"></a></dt>
+<dd><p>Create a coupling flow (<a class="reference external" href="https://arxiv.org/abs/1605.08803">https://arxiv.org/abs/1605.08803</a>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://jax.readthedocs.io/en/latest/_autosummary/jax.Array.html#jax.Array" title="(in JAX)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a></span>) – Jax random number generator key.</p></li>
+<li><p><strong>base_dist</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="distributions.html#flowjax.distributions.AbstractDistribution" title="flowjax.distributions.AbstractDistribution"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDistribution</span></code></a></span>) – Base distribution, with <code class="docutils literal notranslate"><span class="pre">base_dist.ndim==1</span></code>.</p></li>
+<li><p><strong>transformer</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="bijections.html#flowjax.bijections.AbstractBijection" title="flowjax.bijections.bijection.AbstractBijection"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractBijection</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Bijection to be parameterised by conditioner. Defaults to
+affine.</p></li>
+<li><p><strong>cond_dim</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Dimension of conditioning variables. Defaults to None.</p></li>
+<li><p><strong>flow_layers</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Number of coupling layers. Defaults to 8.</p></li>
+<li><p><strong>nn_width</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Conditioner hidden layer size. Defaults to 50.</p></li>
+<li><p><strong>nn_depth</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Conditioner depth. Defaults to 1.</p></li>
+<li><p><strong>nn_activation</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code></a></span>) – Conditioner activation function. Defaults to jnn.relu.</p></li>
+<li><p><strong>invert</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Whether to invert the bijection. Broadly, True will prioritise a faster
+<cite>inverse</cite> methods, leading to faster <cite>log_prob</cite>, False will prioritise
+faster <cite>transform</cite> methods, leading to faster <cite>sample</cite>. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="distributions.html#flowjax.distributions.Transformed" title="flowjax.distributions.Transformed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Transformed</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="flowjax.flows.masked_autoregressive_flow">
+<span class="sig-name descname"><span class="pre">masked_autoregressive_flow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_dist</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">transformer=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond_dim=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flow_layers=8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nn_width=50</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nn_depth=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nn_activation=&lt;jax._src.custom_derivatives.custom_jvp</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">invert=True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/flows.html#masked_autoregressive_flow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.flows.masked_autoregressive_flow" title="Link to this definition"></a></dt>
+<dd><p>Masked autoregressive flow.</p>
+<p>Parameterises a transformer bijection with an autoregressive neural network.
+Refs: <a class="reference external" href="https://arxiv.org/abs/1606.04934">https://arxiv.org/abs/1606.04934</a>; <a class="reference external" href="https://arxiv.org/abs/1705.07057v4">https://arxiv.org/abs/1705.07057v4</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://jax.readthedocs.io/en/latest/_autosummary/jax.Array.html#jax.Array" title="(in JAX)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a></span>) – Random seed.</p></li>
+<li><p><strong>base_dist</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="distributions.html#flowjax.distributions.AbstractDistribution" title="flowjax.distributions.AbstractDistribution"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDistribution</span></code></a></span>) – Base distribution, with <code class="docutils literal notranslate"><span class="pre">base_dist.ndim==1</span></code>.</p></li>
+<li><p><strong>transformer</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="bijections.html#flowjax.bijections.AbstractBijection" title="flowjax.bijections.bijection.AbstractBijection"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractBijection</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Bijection parameterised by autoregressive network. Defaults to
+affine.</p></li>
+<li><p><strong>cond_dim</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Dimension of the conditioning variable. Defaults to None.</p></li>
+<li><p><strong>flow_layers</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Number of flow layers. Defaults to 8.</p></li>
+<li><p><strong>nn_width</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Number of hidden layers in neural network. Defaults to 50.</p></li>
+<li><p><strong>nn_depth</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Depth of neural network. Defaults to 1.</p></li>
+<li><p><strong>nn_activation</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code></a></span>) – _description_. Defaults to jnn.relu.</p></li>
+<li><p><strong>invert</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Whether to invert the bijection. Broadly, True will prioritise a faster
+inverse, leading to faster <cite>log_prob</cite>, False will prioritise faster forward,
+leading to faster <cite>sample</cite>. Defaults to True.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="distributions.html#flowjax.distributions.Transformed" title="flowjax.distributions.Transformed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Transformed</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="flowjax.flows.planar_flow">
+<span class="sig-name descname"><span class="pre">planar_flow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_dist</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond_dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flow_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">invert</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">mlp_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/flows.html#planar_flow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.flows.planar_flow" title="Link to this definition"></a></dt>
+<dd><p>Planar flow as introduced in <a class="reference external" href="https://arxiv.org/pdf/1505.05770.pdf">https://arxiv.org/pdf/1505.05770.pdf</a>.</p>
+<p>This alternates between <a class="reference internal" href="bijections.html#flowjax.bijections.Planar" title="flowjax.bijections.planar.Planar"><code class="xref py py-class docutils literal notranslate"><span class="pre">Planar</span></code></a> layers and
+permutations. Note the definition here is inverted compared to the original paper.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://jax.readthedocs.io/en/latest/_autosummary/jax.Array.html#jax.Array" title="(in JAX)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a></span>) – Jax PRNGKey.</p></li>
+<li><p><strong>base_dist</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="distributions.html#flowjax.distributions.AbstractDistribution" title="flowjax.distributions.AbstractDistribution"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDistribution</span></code></a></span>) – Base distribution, with <code class="docutils literal notranslate"><span class="pre">base_dist.ndim==1</span></code>.</p></li>
+<li><p><strong>cond_dim</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Dimension of conditioning variables. Defaults to None.</p></li>
+<li><p><strong>flow_layers</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Number of flow layers. Defaults to 8.</p></li>
+<li><p><strong>invert</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Whether to invert the bijection. Broadly, True will prioritise a faster
+<cite>inverse</cite> methods, leading to faster <cite>log_prob</cite>, False will prioritise
+faster <cite>transform</cite> methods, leading to faster <cite>sample</cite>. Defaults to True.</p></li>
+<li><p><strong>**mlp_kwargs</strong> – Keyword arguments (excluding in_size and out_size) passed to
+the MLP (equinox.nn.MLP). Ignored when cond_dim is None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="distributions.html#flowjax.distributions.Transformed" title="flowjax.distributions.Transformed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Transformed</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="flowjax.flows.triangular_spline_flow">
+<span class="sig-name descname"><span class="pre">triangular_spline_flow</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">base_dist</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cond_dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">flow_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">knots</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">8</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tanh_max_val</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">invert</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">init</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/flows.html#triangular_spline_flow"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.flows.triangular_spline_flow" title="Link to this definition"></a></dt>
+<dd><p>Triangular spline flow.</p>
+<p>A single layer consists where each layer consists of a triangular affine
+transformation with weight normalisation, and an elementwise rational quadratic
+spline. Tanh is used to constrain to the input to [-1, 1] before spline
+transformations.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://jax.readthedocs.io/en/latest/_autosummary/jax.Array.html#jax.Array" title="(in JAX)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></a></span>) – Jax random seed.</p></li>
+<li><p><strong>base_dist</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="distributions.html#flowjax.distributions.AbstractDistribution" title="flowjax.distributions.AbstractDistribution"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDistribution</span></code></a></span>) – Base distribution, with <code class="docutils literal notranslate"><span class="pre">base_dist.ndim==1</span></code>.</p></li>
+<li><p><strong>cond_dim</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – The number of conditioning features. Defaults to None.</p></li>
+<li><p><strong>flow_layers</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Number of flow layers. Defaults to 8.</p></li>
+<li><p><strong>knots</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Number of knots in the splines. Defaults to 8.</p></li>
+<li><p><strong>tanh_max_val</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code></a></span>) – Maximum absolute value beyond which we use linear “tails” in the
+tanh function. Defaults to 3.0.</p></li>
+<li><p><strong>invert</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Whether to invert the bijection before transforming the base
+distribution. Defaults to True.</p></li>
+<li><p><strong>init</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code></a> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Initialisation method for the lower triangular weights.
+Defaults to glorot_uniform().</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="distributions.html#flowjax.distributions.Transformed" title="flowjax.distributions.Transformed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Transformed</span></code></a></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="experimental.html" class="btn btn-neutral float-left" title="Experimental" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="losses.html" class="btn btn-neutral float-right" title="Loss functions" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Daniel Ward.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
