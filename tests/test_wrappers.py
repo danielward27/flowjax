@@ -1,11 +1,18 @@
 import equinox as eqx
 import jax
 import jax.numpy as jnp
+import jax.random as jr
 import pytest
 
 from flowjax.bijections import Exp, Scale
 from flowjax.distributions import Normal
-from flowjax.wrappers import BijectionReparam, Lambda, NonTrainable, unwrap
+from flowjax.wrappers import (
+    BijectionReparam,
+    Lambda,
+    NonTrainable,
+    WeightNormalization,
+    unwrap,
+)
 
 
 def test_BijectionReparam():
@@ -47,3 +54,22 @@ def test_NonTrainable():
 
     grad = eqx.filter_grad(loss)(dist, 1)
     assert pytest.approx(0) == jax.flatten_util.ravel_pytree(grad)[0]
+
+
+def test_WeightNormalization():
+    arr = jr.normal(jr.PRNGKey(0), (10, 3))
+    weight_norm = WeightNormalization(arr)
+
+    # Unwrapped norms should match weightnorm scale parameter
+    expected = unwrap(weight_norm.scale)
+    assert pytest.approx(expected) == jnp.linalg.norm(
+        unwrap(weight_norm), axis=-1, keepdims=True
+    )
+
+    # Test under vmap
+    arr = jr.normal(jr.PRNGKey(0), (5, 10, 3))
+    weight_norm = eqx.filter_vmap(WeightNormalization)(arr)
+    expected = unwrap(weight_norm.scale)
+    assert pytest.approx(expected) == eqx.filter_vmap(
+        lambda arr: jnp.linalg.norm(arr, axis=1, keepdims=True)
+    )(unwrap(weight_norm))
