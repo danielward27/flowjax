@@ -34,7 +34,7 @@ class MaximumLikelihoodLoss:
         condition: Array | None = None,
     ):
         """Compute the loss."""
-        dist = unwrap(eqx.combine(static, params))
+        dist = unwrap(eqx.combine(params, static))
         return -dist.log_prob(x, condition).mean()
 
 
