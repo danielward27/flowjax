@@ -105,6 +105,9 @@ class RationalQuadraticSpline(AbstractBijection):
         num = (yk1 - yk) * (sk * xi**2 + dk * xi * (1 - xi))
         den = sk + (dk1 + dk - 2 * sk) * xi * (1 - xi)
         y = yk + num / den  # eq. 4
+
+        # avoid numerical precision issues transforming from in -> out of bounds
+        y = jnp.clip(y, -self.interval, self.interval)
         return jnp.where(in_bounds, y, x)
 
     def transform_and_log_det(self, x, condition=None):
@@ -129,6 +132,9 @@ class RationalQuadraticSpline(AbstractBijection):
         sqrt_term = jnp.sqrt(b**2 - 4 * a * c)
         xi = (2 * c) / (-b - sqrt_term)
         x = xi * (xk1 - xk) + xk
+
+        # avoid numerical precision issues transforming from in -> out of bounds
+        x = jnp.clip(x, -self.interval, self.interval)
         return jnp.where(in_bounds, x, y)
 
     def inverse_and_log_det(self, y, condition=None):
