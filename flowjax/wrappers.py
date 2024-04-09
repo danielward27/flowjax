@@ -23,22 +23,18 @@ If implementing a custom unwrappable, bear in mind:
   correctly.
 """
 
-from __future__ import annotations
-
 from abc import abstractmethod
 from collections.abc import Callable, Iterable
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, TypeVar
+from typing import Any, ClassVar, Generic, TypeVar
 
 import equinox as eqx
 import jax
 import jax.numpy as jnp
 from jax import Array, lax
+from jaxtyping import ArrayLike
 
-from flowjax._custom_types import ArrayLike
+from flowjax.bijections.bijection import AbstractBijection
 from flowjax.utils import _VectorizedBijection, arraylike_to_array
-
-if TYPE_CHECKING:
-    from flowjax.bijections.bijection import AbstractBijection
 
 PyTree = Any
 

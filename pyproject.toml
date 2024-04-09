@@ -9,7 +9,7 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Information Analysis",
   "Topic :: Scientific/Engineering :: Mathematics",
 ]
-dependencies = ["jax", "equinox>=0.10", "tqdm", "optax"]
+dependencies = ["jax", "equinox>=0.10", "jaxtyping", "tqdm", "optax"]
 description = "Easy to use distributions, bijections and normalizing flows in JAX."
 keywords = ["jax", "neural-networks", "equinox"]
 license = { file = "LICENSE" }

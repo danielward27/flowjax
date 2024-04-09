@@ -4,8 +4,6 @@ The loss functions are callables, with the first two arguments being the partiti
 distribution (see ``equinox.partition``).
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable
 
 import equinox as eqx
@@ -13,7 +11,7 @@ import jax.numpy as jnp
 from jax import Array, vmap
 from jax.lax import stop_gradient
 from jax.scipy.special import logsumexp
-from jax.typing import ArrayLike
+from jaxtyping import ArrayLike
 
 from flowjax.distributions import AbstractDistribution
 from flowjax.wrappers import unwrap

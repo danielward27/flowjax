@@ -1,16 +1,20 @@
 """Utility functions."""
 
-from __future__ import annotations
+from __future__ import annotations  # Avoid circular import from type hint
 
 from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 import equinox as eqx
 import jax.numpy as jnp
 from jax import Array
 from jax.flatten_util import ravel_pytree
-from jax.typing import ArrayLike
+from jaxtyping import ArrayLike
 
 import flowjax
+
+if TYPE_CHECKING:
+    from flowjax.bijections import AbstractBijection
 
 
 class _VectorizedBijection:
@@ -20,7 +24,7 @@ class _VectorizedBijection:
         bijection: flowjax bijection to be wrapped.
     """
 
-    def __init__(self, bijection: flowjax.bijections.AbstractBijection):
+    def __init__(self, bijection: AbstractBijection):
         self.bijection = bijection
         self.shape = self.bijection.shape
         self.cond_shape = self.bijection.cond_shape

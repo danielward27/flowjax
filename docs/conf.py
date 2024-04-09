@@ -1,12 +1,12 @@
 """Configuration file for the Sphinx documentation builder."""
 
-import builtins
 import sys
+import typing
 from pathlib import Path
 
-builtins.GENERATING_DOCUMENTATION = True  # For processing ArrayLike
+# tag used in jaxtyping prevent expanding cumbersome type aliases such as ArrayLike
+typing.GENERATING_DOCUMENTATION = True
 
-import jax  # noqa Required to avoid circular import
 
 sys.path.insert(0, Path("..").resolve())
 
@@ -54,7 +54,6 @@ html_css_files = [
     "style.css",
 ]
 
-
 html_theme_options = {
     "navigation_depth": 2,
 }
@@ -67,5 +66,4 @@ copybutton_prompt_is_regexp = True
 napolean_use_rtype = False
 napoleon_attr_annotations = True
 
-autodoc_type_aliases = {"ArrayLike": "ArrayLike"}
 add_module_names = False

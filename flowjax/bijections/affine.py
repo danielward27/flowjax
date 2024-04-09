@@ -1,14 +1,12 @@
 """Affine bijections."""
 
-from __future__ import annotations
-
 from collections.abc import Callable
 from typing import ClassVar
 
 import jax.numpy as jnp
 from jax import Array
 from jax.scipy.linalg import solve_triangular
-from jax.typing import ArrayLike
+from jaxtyping import ArrayLike
 
 from flowjax import wrappers
 from flowjax.bijections.bijection import AbstractBijection
@@ -99,7 +97,7 @@ class Scale(AbstractBijection):
 
     def __init__(
         self,
-        scale: ArrayLike | wrappers.AbstractUnwrappable[Array],
+        scale: ArrayLike,
     ):
         self.scale = wrappers.BijectionReparam(scale, SoftPlus())
         self.shape = jnp.shape(wrappers.unwrap(scale))

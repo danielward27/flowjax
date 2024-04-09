@@ -1,12 +1,11 @@
 """Example tasks."""
-from __future__ import annotations
 
 import equinox as eqx
 import jax
 import jax.numpy as jnp
 import jax.random as jr
 from jax import Array
-from jax.typing import ArrayLike
+from jaxtyping import ArrayLike
 
 from flowjax.distributions import Uniform
 from flowjax.utils import arraylike_to_array

@@ -1,7 +1,5 @@
 """Function to fit flows to samples from a distribution."""
 
-from __future__ import annotations
-
 from collections.abc import Callable
 from typing import Any
 
@@ -10,7 +8,7 @@ import jax.numpy as jnp
 import jax.random as jr
 import optax
 from jax import Array
-from jax.typing import ArrayLike
+from jaxtyping import ArrayLike
 from tqdm import tqdm
 
 from flowjax import wrappers

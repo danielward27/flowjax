@@ -12,9 +12,9 @@ from abc import abstractmethod
 
 import equinox as eqx
 from jax import Array
+from jaxtyping import ArrayLike
 
 import flowjax
-from flowjax._custom_types import ArrayLike
 
 
 def _unwrap_check_and_cast(method):

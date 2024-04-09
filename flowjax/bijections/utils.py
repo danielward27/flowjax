@@ -1,7 +1,5 @@
 """Utility bijections (embedding network, permutations, inversion etc.)."""
 
-from __future__ import annotations
-
 from collections.abc import Callable
 from math import prod
 from typing import ClassVar
@@ -9,7 +7,7 @@ from typing import ClassVar
 import equinox as eqx
 import jax.numpy as jnp
 from jax import Array
-from jax.typing import ArrayLike
+from jaxtyping import ArrayLike
 
 from flowjax.bijections.bijection import AbstractBijection
 from flowjax.utils import arraylike_to_array

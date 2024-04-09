@@ -4,14 +4,12 @@ Note these utilities require `numpyro <https://github.com/pyro-ppl/numpyro>`_ to
 installed.
 """
 
-from __future__ import annotations
-
 from typing import Any
 
 import equinox as eqx
 import jax
 from jax import Array
-from jax.typing import ArrayLike
+from jaxtyping import ArrayLike
 
 from flowjax import wrappers
 from flowjax.bijections import AbstractBijection

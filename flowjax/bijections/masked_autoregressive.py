@@ -1,7 +1,5 @@
 """Masked autoregressive network and bijection."""
 
-from __future__ import annotations
-
 from collections.abc import Callable
 from functools import partial
 
@@ -10,7 +8,7 @@ import jax
 import jax.nn as jnn
 import jax.numpy as jnp
 from jax import Array
-from jax.typing import ArrayLike
+from jaxtyping import ArrayLike
 
 from flowjax.bijections.bijection import AbstractBijection
 from flowjax.bijections.jax_transforms import Vmap
