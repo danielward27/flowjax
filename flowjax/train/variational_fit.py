@@ -6,7 +6,7 @@ from typing import Any
 import equinox as eqx
 import jax.random as jr
 import optax
-from jax import Array
+from jaxtyping import PRNGKeyArray
 from tqdm import tqdm
 
 from flowjax import wrappers
@@ -17,7 +17,7 @@ PyTree = Any
 
 
 def fit_to_variational_target(
-    key: Array,
+    key: PRNGKeyArray,
     dist: AbstractDistribution,
     loss_fn: Callable,
     *,

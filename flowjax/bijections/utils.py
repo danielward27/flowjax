@@ -6,8 +6,7 @@ from typing import ClassVar
 
 import equinox as eqx
 import jax.numpy as jnp
-from jax import Array
-from jaxtyping import ArrayLike
+from jaxtyping import Array, ArrayLike
 
 from flowjax.bijections.bijection import AbstractBijection
 from flowjax.utils import arraylike_to_array

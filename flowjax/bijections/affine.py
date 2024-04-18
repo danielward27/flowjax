@@ -4,9 +4,8 @@ from collections.abc import Callable
 from typing import ClassVar
 
 import jax.numpy as jnp
-from jax import Array
 from jax.scipy.linalg import solve_triangular
-from jaxtyping import ArrayLike
+from jaxtyping import Array, ArrayLike
 
 from flowjax import wrappers
 from flowjax.bijections.bijection import AbstractBijection

@@ -7,8 +7,7 @@ import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
 import optax
-from jax import Array
-from jaxtyping import ArrayLike
+from jaxtyping import ArrayLike, PRNGKeyArray
 from tqdm import tqdm
 
 from flowjax import wrappers
@@ -24,7 +23,7 @@ PyTree = Any
 
 
 def fit_to_data(
-    key: Array,
+    key: PRNGKeyArray,
     dist: PyTree,
     x: ArrayLike,
     *,

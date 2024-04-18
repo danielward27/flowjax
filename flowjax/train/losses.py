@@ -8,10 +8,10 @@ from collections.abc import Callable
 
 import equinox as eqx
 import jax.numpy as jnp
-from jax import Array, vmap
+from jax import vmap
 from jax.lax import stop_gradient
 from jax.scipy.special import logsumexp
-from jaxtyping import ArrayLike
+from jaxtyping import Array, ArrayLike, PRNGKeyArray
 
 from flowjax.distributions import AbstractDistribution
 from flowjax.wrappers import unwrap
@@ -129,7 +129,7 @@ class ElboLoss:
         self,
         params: AbstractDistribution,
         static: AbstractDistribution,
-        key: Array,
+        key: PRNGKeyArray,
     ):
         """Compute the ELBO loss.
 

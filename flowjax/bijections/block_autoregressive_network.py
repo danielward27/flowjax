@@ -8,7 +8,8 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 import jax.random as jr
-from jax import Array, random
+from jax import random
+from jaxtyping import PRNGKeyArray
 
 from flowjax import masks
 from flowjax.bijections.bijection import AbstractBijection
@@ -82,7 +83,7 @@ class BlockAutoregressiveNetwork(AbstractBijection):
 
     def __init__(
         self,
-        key: Array,
+        key: PRNGKeyArray,
         *,
         dim: int,
         cond_dim: int | None = None,
@@ -150,7 +151,8 @@ class BlockAutoregressiveNetwork(AbstractBijection):
     def transform(self, x, condition=None):
         for i, (layer, _) in enumerate(self.layers[:-1]):
             x = layer(x)
-            if i == 0 and self.cond_linear is not None:
+            if i == 0 and condition is not None:
+                assert self.cond_linear is not None
                 x += self.cond_linear(condition)
             x = eqx.filter_vmap(self.activation.transform)(x)
         return self.layers[-1][0](x)
@@ -159,7 +161,8 @@ class BlockAutoregressiveNetwork(AbstractBijection):
         log_dets_3ds = []
         for i, (linear, log_jacobian_fn) in enumerate(self.layers[:-1]):
             x = linear(x)
-            if i == 0 and self.cond_linear is not None:
+            if i == 0 and condition is not None:
+                assert self.cond_linear is not None
                 x += self.cond_linear(condition)
             log_dets_3ds.append(log_jacobian_fn(linear))
             x, log_det_3d = self._activation_and_log_jacobian_3d(x)
@@ -194,11 +197,11 @@ class BlockAutoregressiveNetwork(AbstractBijection):
 
 
 def block_autoregressive_linear(
-    key: Array,
+    key: PRNGKeyArray,
     *,
     n_blocks: int,
     block_shape: tuple,
-) -> tuple[eqx.nn.Linear, Array]:
+) -> tuple[eqx.nn.Linear, Callable]:
     """Block autoregressive linear layer (https://arxiv.org/abs/1904.04676).
 
     Returns:

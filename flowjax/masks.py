@@ -8,8 +8,8 @@ calculations.
 import operator
 
 import jax.numpy as jnp
-from jax import Array
 from jax.scipy.linalg import block_diag
+from jaxtyping import Array
 
 
 def rank_based_mask(in_ranks: Array, out_ranks: Array, *, eq: bool = False):

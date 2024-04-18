@@ -5,7 +5,7 @@ from typing import ClassVar
 
 import jax
 import jax.numpy as jnp
-from jax import Array
+from jaxtyping import Array
 
 from flowjax import wrappers
 from flowjax.bijections.bijection import AbstractBijection
@@ -13,7 +13,7 @@ from flowjax.bijections.bijection import AbstractBijection
 
 def _real_to_increasing_on_interval(
     arr: Array,
-    interval: float = 1,
+    interval: float | int = 1,
     softmax_adjust: float = 1e-2,
     *,
     pad_with_ends: bool = True,
@@ -59,8 +59,8 @@ class RationalQuadraticSpline(AbstractBijection):
     shape: ClassVar[tuple] = ()
     cond_shape: ClassVar[None] = None
     knots: int
-    interval: float
-    softmax_adjust: float
+    interval: float | int
+    softmax_adjust: float | int
     min_derivative: float
     x_pos: Array
     y_pos: Array
@@ -70,9 +70,9 @@ class RationalQuadraticSpline(AbstractBijection):
         self,
         *,
         knots: int,
-        interval: float,
+        interval: float | int,
         min_derivative: float = 1e-3,
-        softmax_adjust: float = 1e-2,
+        softmax_adjust: float | int = 1e-2,
     ):
         self.knots = knots
         self.interval = interval

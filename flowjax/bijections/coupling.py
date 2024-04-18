@@ -8,6 +8,7 @@ from collections.abc import Callable
 import equinox as eqx
 import jax.nn as jnn
 import jax.numpy as jnp
+from jaxtyping import PRNGKeyArray
 
 from flowjax.bijections.bijection import AbstractBijection
 from flowjax.bijections.jax_transforms import Vmap
@@ -39,7 +40,7 @@ class Coupling(AbstractBijection):
 
     def __init__(
         self,
-        key: Array,
+        key: PRNGKeyArray,
         *,
         transformer: AbstractBijection,
         untransformed_dim: int,

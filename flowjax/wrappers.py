@@ -25,16 +25,19 @@ If implementing a custom unwrappable, bear in mind:
 
 from abc import abstractmethod
 from collections.abc import Callable, Iterable
-from typing import Any, ClassVar, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, TypeVar
 
 import equinox as eqx
-import jax
 import jax.numpy as jnp
-from jax import Array, lax
-from jaxtyping import ArrayLike
 
-from flowjax.bijections.bijection import AbstractBijection
-from flowjax.utils import _VectorizedBijection, arraylike_to_array
+from flowjax.utils import arraylike_to_array
+
+if TYPE_CHECKING:
+    from flowjax.bijections import AbstractBijection
+
+import jax
+from jax import lax
+from jaxtyping import Array, ArrayLike
 
 PyTree = Any
 
@@ -114,7 +117,7 @@ class NonTrainable(AbstractUnwrappable[T]):
 
 
 def _apply_inverse_and_check_valid(bijection, arr):
-    param_inv = _VectorizedBijection(bijection).inverse(arr)
+    param_inv = bijection._vectorize.inverse(arr)
     return eqx.error_if(
         param_inv,
         jnp.logical_and(jnp.isfinite(arr), ~jnp.isfinite(param_inv)),
@@ -139,13 +142,13 @@ class BijectionReparam(AbstractUnwrappable[Array]):
     """
 
     arr: Array | AbstractUnwrappable[Array]
-    bijection: AbstractBijection
+    bijection: "AbstractBijection"
     _dummy: Array
 
     def __init__(
         self,
         arr: Array | AbstractUnwrappable[Array],
-        bijection: AbstractBijection,
+        bijection: "AbstractBijection",
         *,
         invert_on_init: bool = True,
     ):
@@ -159,7 +162,7 @@ class BijectionReparam(AbstractUnwrappable[Array]):
         self._dummy = jnp.empty(())
 
     def unwrap(self) -> Array:
-        return _VectorizedBijection(self.bijection).transform(self.arr)
+        return self.bijection._vectorize.transform(self.arr)
 
 
 class Where(AbstractUnwrappable[Array]):
@@ -169,8 +172,8 @@ class Where(AbstractUnwrappable[Array]):
     """
 
     cond: ArrayLike
-    if_true: ArrayLike
-    if_false: ArrayLike
+    if_true: ArrayLike | AbstractUnwrappable[Array]
+    if_false: ArrayLike | AbstractUnwrappable[Array]
     _dummy: ClassVar[None] = None
 
     def unwrap(self):

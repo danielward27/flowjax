@@ -8,13 +8,12 @@ from typing import Any
 
 import equinox as eqx
 import jax
-from jax import Array
-from jaxtyping import ArrayLike
+from jaxtyping import Array, ArrayLike
 
 from flowjax import wrappers
 from flowjax.bijections import AbstractBijection
 from flowjax.distributions import AbstractDistribution, AbstractTransformed
-from flowjax.utils import _VectorizedBijection, arraylike_to_array
+from flowjax.utils import arraylike_to_array
 
 try:
     import numpyro
@@ -193,26 +192,22 @@ class _BijectionToNumpyro(numpyro.distributions.transforms.Transform):
         self._argcheck_domains()
 
     def __call__(self, x):
-        return self.vbijection.transform(x, self.condition)
+        return self.bijection._vectorize.transform(x, self.condition)
 
     def _inverse(self, y):
-        return self.vbijection.inverse(y, self.condition)
+        return self.bijection._vectorize.inverse(y, self.condition)
 
     def log_abs_det_jacobian(self, x, y, intermediates=None):
         if intermediates is not None:
             return intermediates  # Logdet calculated with forward transformation
-        return self.vbijection.transform_and_log_det(x, self.condition)[1]
+        return self.bijection._vectorize.transform_and_log_det(x, self.condition)[1]
 
     def call_with_intermediates(self, x):
-        return self.vbijection.transform_and_log_det(x, self.condition)
+        return self.bijection._vectorize.transform_and_log_det(x, self.condition)
 
     @property
     def condition(self):
         return jax.lax.stop_gradient(self._condition)
-
-    @property
-    def vbijection(self):
-        return _VectorizedBijection(self.bijection)
 
     def tree_flatten(self):
         raise NotImplementedError()

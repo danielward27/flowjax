@@ -1,67 +1,13 @@
 """Utility functions."""
 
-from __future__ import annotations  # Avoid circular import from type hint
-
 from collections.abc import Sequence
-from typing import TYPE_CHECKING
 
 import equinox as eqx
 import jax.numpy as jnp
-from jax import Array
 from jax.flatten_util import ravel_pytree
-from jaxtyping import ArrayLike
+from jaxtyping import Array, ArrayLike
 
 import flowjax
-
-if TYPE_CHECKING:
-    from flowjax.bijections import AbstractBijection
-
-
-class _VectorizedBijection:
-    """Wrap a flowjax bijection to support vectorization.
-
-    Args:
-        bijection: flowjax bijection to be wrapped.
-    """
-
-    def __init__(self, bijection: AbstractBijection):
-        self.bijection = bijection
-        self.shape = self.bijection.shape
-        self.cond_shape = self.bijection.cond_shape
-
-    def transform(self, x, condition=None):
-        transform = self.vectorize(self.bijection.transform)
-        return transform(x, condition)
-
-    def inverse(self, y, condition=None):
-        inverse = self.vectorize(self.bijection.inverse)
-        return inverse(y, condition)
-
-    def transform_and_log_det(self, x, condition=None):
-        transform_and_log_det = self.vectorize(
-            self.bijection.transform_and_log_det,
-            log_det=True,
-        )
-        return transform_and_log_det(x, condition)
-
-    def inverse_and_log_det(self, x, condition=None):
-        inverse_and_log_det = self.vectorize(
-            self.bijection.inverse_and_log_det,
-            log_det=True,
-        )
-        return inverse_and_log_det(x, condition)
-
-    def vectorize(self, func, *, log_det=False):
-        in_shapes, out_shapes = [self.bijection.shape], [self.bijection.shape]
-        if log_det:
-            out_shapes.append(())
-        if self.bijection.cond_shape is not None:
-            in_shapes.append(self.bijection.cond_shape)
-            exclude = frozenset()
-        else:
-            exclude = frozenset([1])
-        sig = _get_ufunc_signature(in_shapes, out_shapes)
-        return jnp.vectorize(func, signature=sig, excluded=exclude)
 
 
 def merge_cond_shapes(shapes: Sequence[tuple[int, ...] | None]):
@@ -90,7 +36,10 @@ def check_shapes_match(shapes: Sequence[tuple[int, ...]]):
             )
 
 
-def _get_ufunc_signature(in_shapes: tuple[int], out_shapes: tuple[int]):
+def _get_ufunc_signature(
+    in_shapes: Sequence[tuple[int, ...]],
+    out_shapes: Sequence[tuple[int, ...]],
+):
     """Convert a sequence of in_shapes and out_shapes to a universal function signature.
 
     Example:
@@ -138,7 +87,9 @@ def get_ravelled_pytree_constructor(tree, filter_spec=eqx.is_inexact_array) -> t
     return constructor, len(init)
 
 
-def arraylike_to_array(arr: ArrayLike, err_name: str = "input", **kwargs) -> Array:
+def arraylike_to_array(
+    arr: ArrayLike | None, err_name: str = "input", **kwargs
+) -> Array:
     """Check the input is arraylike and convert to a jax Array with ``jnp.asarray``.
 
     Combines ``jnp.asarray``, with an isinstance(arr, ArrayLike) check. This

@@ -11,23 +11,26 @@ import functools
 from abc import abstractmethod
 
 import equinox as eqx
-from jax import Array
-from jaxtyping import ArrayLike
+import jax.numpy as jnp
+from jaxtyping import Array, ArrayLike
 
 import flowjax
+from flowjax.utils import _get_ufunc_signature, arraylike_to_array
 
 
 def _unwrap_check_and_cast(method):
     """Decorator that unwraps unwrappables, performs argument casting and checking."""
 
     @functools.wraps(method)
-    def wrapper(bijection, x, condition=None):
+    def wrapper(
+        bijection: AbstractBijection,
+        x: ArrayLike,
+        condition: ArrayLike | None = None,
+    ):
 
         def _check_condition(condition):
             if condition is not None:
-                condition = flowjax.utils.arraylike_to_array(
-                    condition, err_name="condition"
-                )
+                condition = arraylike_to_array(condition, err_name="condition")
             elif bijection.cond_shape is not None:
                 raise ValueError("Expected condition to be provided.")
 
@@ -42,7 +45,7 @@ def _unwrap_check_and_cast(method):
             return condition
 
         def _check_x(x):
-            x = flowjax.utils.arraylike_to_array(x)
+            x = arraylike_to_array(x)
             if x.shape != bijection.shape:
                 raise ValueError(
                     f"Expected input shape {bijection.shape}; got {x.shape}"
@@ -53,7 +56,6 @@ def _unwrap_check_and_cast(method):
             flowjax.wrappers.unwrap(bijection), _check_x(x), _check_condition(condition)
         )
 
-    wrapper.__unwrap_check_and_cast__ = True
     return wrapper
 
 
@@ -99,12 +101,10 @@ class AbstractBijection(eqx.Module):
                 cls.__dict__[meth],
                 "__isabstractmethod__",
             ):
-                assert not hasattr(cls.__dict__[meth], "__unwrap_check_and_cast__")
                 setattr(cls, meth, _unwrap_check_and_cast(cls.__dict__[meth]))
-        return cls
 
     @abstractmethod
-    def transform(self, x: ArrayLike, condition: ArrayLike | None = None) -> Array:
+    def transform(self, x: Array, condition: Array | None = None) -> Array:
         """Apply the forward transformation.
 
         Args:
@@ -117,8 +117,8 @@ class AbstractBijection(eqx.Module):
     @abstractmethod
     def transform_and_log_det(
         self,
-        x: ArrayLike,
-        condition: ArrayLike | None = None,
+        x: Array,
+        condition: Array | None = None,
     ) -> tuple[Array, Array]:
         """Apply transformation and compute the log absolute Jacobian determinant.
 
@@ -128,7 +128,7 @@ class AbstractBijection(eqx.Module):
         """
 
     @abstractmethod
-    def inverse(self, y: ArrayLike, condition: ArrayLike | None = None) -> Array:
+    def inverse(self, y: Array, condition: Array | None = None) -> Array:
         """Compute the inverse transformation.
 
         Args:
@@ -140,8 +140,8 @@ class AbstractBijection(eqx.Module):
     @abstractmethod
     def inverse_and_log_det(
         self,
-        y: ArrayLike,
-        condition: ArrayLike | None = None,
+        y: Array,
+        condition: Array | None = None,
     ) -> tuple[Array, Array]:
         """Inverse transformation and corresponding log absolute jacobian determinant.
 
@@ -150,3 +150,51 @@ class AbstractBijection(eqx.Module):
             condition: Condition array with shape matching bijection.cond_shape.
                 Required for conditional bijections. Defaults to None.
         """
+
+    @property
+    def _vectorize(self):
+        # TODO Private for now: perhaps could be made public?
+        return _VectorizedBijection(self)
+
+
+class _VectorizedBijection(eqx.Module):
+    """Wrap a flowjax bijection to support vectorization.
+
+    Args:
+        bijection: flowjax bijection to be wrapped.
+    """
+
+    bijection: AbstractBijection
+
+    def __init__(self, bijection: AbstractBijection):
+        self.bijection = bijection
+
+    def transform(self, x, condition=None):
+        return self.vectorize(self.bijection.transform)(x, condition)
+
+    def inverse(self, y, condition=None):
+        return self.vectorize(self.bijection.inverse)(y, condition)
+
+    def transform_and_log_det(self, x, condition=None):
+        return self.vectorize(
+            self.bijection.transform_and_log_det,
+            log_det=True,
+        )(x, condition)
+
+    def inverse_and_log_det(self, x, condition=None):
+        return self.vectorize(
+            self.bijection.inverse_and_log_det,
+            log_det=True,
+        )(x, condition)
+
+    def vectorize(self, func, *, log_det=False):
+        in_shapes, out_shapes = [self.bijection.shape], [self.bijection.shape]
+        if log_det:
+            out_shapes.append(())
+        if self.bijection.cond_shape is not None:
+            in_shapes.append(self.bijection.cond_shape)
+            exclude = frozenset()
+        else:
+            exclude = frozenset([1])
+        sig = _get_ufunc_signature(in_shapes, out_shapes)
+        return jnp.vectorize(func, signature=sig, excluded=exclude)

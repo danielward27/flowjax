@@ -7,8 +7,7 @@ import equinox as eqx
 import jax
 import jax.nn as jnn
 import jax.numpy as jnp
-from jax import Array
-from jaxtyping import ArrayLike
+from jaxtyping import Array, ArrayLike, PRNGKeyArray
 
 from flowjax.bijections.bijection import AbstractBijection
 from flowjax.bijections.jax_transforms import Vmap
@@ -45,7 +44,7 @@ class MaskedAutoregressive(AbstractBijection):
 
     def __init__(
         self,
-        key: Array,
+        key: PRNGKeyArray,
         *,
         transformer: AbstractBijection,
         dim: int,

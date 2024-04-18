@@ -8,7 +8,8 @@ import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
 import optax
-from jax import Array, jit
+from jax import jit
+from jaxtyping import Array, PRNGKeyArray, Scalar, Shaped
 
 PyTree = Any
 
@@ -20,7 +21,7 @@ def step(
     *args,
     optimizer: optax.GradientTransformation,
     opt_state: PyTree,
-    loss_fn: Callable,
+    loss_fn: Callable[[PyTree, PyTree], Scalar],
 ):
     """Carry out a training step.
 
@@ -42,7 +43,9 @@ def step(
     return params, opt_state, loss_val
 
 
-def train_val_split(key: Array, arrays: Sequence[Array], val_prop: float = 0.1):
+def train_val_split(
+    key: PRNGKeyArray, arrays: Sequence[Shaped[Array, "a ..."]], val_prop: float = 0.1
+):
     """Random train validation split for a sequence of arrays.
 
     Args:
