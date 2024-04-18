@@ -46,23 +46,24 @@ make_coupling_layer = partial(
     nn_depth=3,
 )
 
-
-params = jnp.ones((NUM_LAYERS, DIM))
-affine_chain = Chain([Affine(p) for p in params])
-affine_scan = Scan(eqx.filter_vmap(Affine)(params))
-
-coupling_chain = Chain([make_coupling_layer(k) for k in keys])
-coupling_scan = Scan(eqx.filter_vmap(make_coupling_layer)(keys))
+affine_params = jnp.ones((NUM_LAYERS, DIM))
 
 test_cases = {
-    "Affine": (affine_scan, affine_chain),
-    "Coupling": (coupling_scan, coupling_chain),
+    "Affine": lambda: (
+        Chain([Affine(p) for p in affine_params]),
+        Scan(eqx.filter_vmap(Affine)(affine_params)),
+    ),
+    "Coupling": lambda: (
+        Chain([make_coupling_layer(k) for k in keys]),
+        Scan(eqx.filter_vmap(make_coupling_layer)(keys)),
+    ),
 }
 
 
-@pytest.mark.parametrize(("scan", "chain"), test_cases.values(), ids=test_cases.keys())
-def test_scan(scan, chain):
+@pytest.mark.parametrize("name", test_cases.keys())
+def test_scan(name):
     "Check Chain and Scan give consistent results."
+    chain, scan = test_cases[name]()
     x = jnp.ones(DIM)
     condition = jnp.ones(chain.cond_shape) if chain.cond_shape is not None else None
     expected = pytest.approx(chain.transform(x, condition))

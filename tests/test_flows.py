@@ -19,73 +19,40 @@ KWARGS = {
     "flow_layers": 2,
 }
 
+
 testcases = {
-    "BNAF": block_neural_autoregressive_flow(**KWARGS),
-    "triangular_spline_flow": triangular_spline_flow(**KWARGS),
-    "Affine_Coupling": coupling_flow(transformer=Affine(), **KWARGS),
-    "Spline_Coupling": coupling_flow(
+    "BNAF": lambda c: block_neural_autoregressive_flow(**KWARGS, cond_dim=c),
+    "triangular_spline_flow": lambda c: triangular_spline_flow(**KWARGS, cond_dim=c),
+    "affine_coupling": lambda c: coupling_flow(
+        transformer=Affine(), **KWARGS, cond_dim=c
+    ),
+    "spline_coupling": lambda c: coupling_flow(
         transformer=RationalQuadraticSpline(knots=3, interval=2),
+        cond_dim=c,
         **KWARGS,
     ),
-    "Affine_MaskedAutoregessive": masked_autoregressive_flow(
-        transformer=Affine(),
-        **KWARGS,
+    "affine_masked_autoregessive": lambda c: masked_autoregressive_flow(
+        transformer=Affine(), **KWARGS, cond_dim=c
     ),
-    "Planar": planar_flow(**KWARGS),
+    "planar": lambda c: planar_flow(**KWARGS, cond_dim=c, width_size=5, depth=1),
 }
 
 
-@pytest.mark.parametrize("flow", testcases.values(), ids=testcases.keys())
-def test_unconditional_flow_sample(flow):
-    try:
-        assert flow._sample(KEY).shape == flow.shape
-    except NotImplementedError:
-        pass
-
-
-@pytest.mark.parametrize("flow", testcases.values(), ids=testcases.keys())
-def test_unconditional_flow_log_prob(flow):
-    x = jr.normal(KEY, flow.shape)
-    assert flow._log_prob(x).shape == ()
-
-
-conditional_testcases = {
-    "BNAF": block_neural_autoregressive_flow(**KWARGS, cond_dim=2),
-    "triangular_spline_flow": triangular_spline_flow(**KWARGS, cond_dim=2),
-    "Affine_Coupling": coupling_flow(transformer=Affine(), **KWARGS, cond_dim=2),
-    "Spline_Coupling": coupling_flow(
-        transformer=RationalQuadraticSpline(knots=3, interval=2),
-        **KWARGS,
-        cond_dim=2,
-    ),
-    "Affine_MaskedAutoregessive": masked_autoregressive_flow(
-        transformer=Affine(),
-        **KWARGS,
-        cond_dim=2,
-    ),
-    "Planar": planar_flow(**KWARGS, cond_dim=2, width_size=3, depth=1),
-}
-
-
-@pytest.mark.parametrize(
-    "flow",
-    conditional_testcases.values(),
-    ids=conditional_testcases.keys(),
-)
-def test_conditional_flow_sample(flow):
-    cond = jr.normal(KEY, flow.cond_shape)
+@pytest.mark.parametrize("flowname", testcases.keys())
+@pytest.mark.parametrize("cond_dim", [None, 2])
+def test_flow_sample(flowname, cond_dim):
+    flow = testcases[flowname](cond_dim)
+    cond = None if flow.cond_shape is None else jr.normal(KEY, flow.cond_shape)
     try:
         assert flow._sample(KEY, cond).shape == flow.shape
     except NotImplementedError:
         pass
 
 
-@pytest.mark.parametrize(
-    "flow",
-    conditional_testcases.values(),
-    ids=conditional_testcases.keys(),
-)
-def test_conditional_flow_log_prob(flow):
+@pytest.mark.parametrize("flowname", testcases.keys())
+@pytest.mark.parametrize("cond_dim", [None, 2])
+def test_flow_log_prob(flowname, cond_dim):
+    flow = testcases[flowname](cond_dim)
     x = jr.normal(KEY, flow.shape)
-    cond = jr.normal(KEY, flow.cond_shape)
+    cond = None if flow.cond_shape is None else jr.normal(KEY, flow.cond_shape)
     assert flow._log_prob(x, cond).shape == ()

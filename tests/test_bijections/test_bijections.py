@@ -42,40 +42,40 @@ KEY = jr.PRNGKey(0)
 
 
 bijections = {
-    "Identity": Identity((DIM,)),
-    "Flip": Flip((DIM,)),
-    "Permute": Permute(jnp.flip(jnp.arange(DIM))),
-    "Permute (3D)": Permute(
+    "Identity": lambda: Identity((DIM,)),
+    "Flip": lambda: Flip((DIM,)),
+    "Permute": lambda: Permute(jnp.flip(jnp.arange(DIM))),
+    "Permute (3D)": lambda: Permute(
         jnp.reshape(jr.permutation(KEY, jnp.arange(2 * 3 * 4)), (2, 3, 4)),
     ),
-    "Partial (int)": Partial(Affine(jnp.array(2), jnp.array(2)), 0, (DIM,)),
-    "Partial (bool array)": Partial(
+    "Partial (int)": lambda: Partial(Affine(jnp.array(2), jnp.array(2)), 0, (DIM,)),
+    "Partial (bool array)": lambda: Partial(
         Flip((2,)),
         jnp.array([True, False, True]),
         (DIM,),
     ),
-    "Partial (int array)": Partial(Flip((2,)), jnp.array([0, 2]), (DIM,)),
-    "Partial (slice)": Partial(Affine(jnp.zeros(2)), slice(0, 2), (DIM,)),
-    "Affine": Affine(jnp.ones(DIM), jnp.full(DIM, 2)),
-    "Affine (pos and neg scales)": eqx.tree_at(
+    "Partial (int array)": lambda: Partial(Flip((2,)), jnp.array([0, 2]), (DIM,)),
+    "Partial (slice)": lambda: Partial(Affine(jnp.zeros(2)), slice(0, 2), (DIM,)),
+    "Affine": lambda: Affine(jnp.ones(DIM), jnp.full(DIM, 2)),
+    "Affine (pos and neg scales)": lambda: eqx.tree_at(
         lambda aff: aff.scale, Affine(scale=jnp.ones(3)), jnp.array([-1, 1, -2])
     ),
-    "Tanh": Tanh((DIM,)),
-    "LeakyTanh": LeakyTanh(1, (DIM,)),
-    "LeakyTanh (broadcast max_val)": LeakyTanh(1, (2, 3)),
-    "Loc": Loc(jnp.arange(DIM)),
-    "Exp": Exp((DIM,)),
-    "SoftPlus": SoftPlus((DIM,)),
-    "TriangularAffine (lower)": TriangularAffine(
+    "Tanh": lambda: Tanh((DIM,)),
+    "LeakyTanh": lambda: LeakyTanh(1, (DIM,)),
+    "LeakyTanh (broadcast max_val)": lambda: LeakyTanh(1, (2, 3)),
+    "Loc": lambda: Loc(jnp.arange(DIM)),
+    "Exp": lambda: Exp((DIM,)),
+    "SoftPlus": lambda: SoftPlus((DIM,)),
+    "TriangularAffine (lower)": lambda: TriangularAffine(
         jnp.arange(DIM),
         jnp.full((DIM, DIM), 0.5),
     ),
-    "TriangularAffine (upper)": TriangularAffine(
+    "TriangularAffine (upper)": lambda: TriangularAffine(
         jnp.arange(DIM),
         jnp.full((DIM, DIM), 0.5),
         lower=False,
     ),
-    "TriangularAffine (pos and neg diag)": eqx.tree_at(
+    "TriangularAffine (pos and neg diag)": lambda: eqx.tree_at(
         lambda triaff: triaff.triangular,
         TriangularAffine(
             jnp.arange(3),
@@ -83,8 +83,8 @@ bijections = {
         ),
         jnp.diag(jnp.array([-1, 2, -3])),
     ),
-    "RationalQuadraticSpline": RationalQuadraticSpline(knots=4, interval=1),
-    "Coupling (unconditional)": Coupling(
+    "RationalQuadraticSpline": lambda: RationalQuadraticSpline(knots=4, interval=1),
+    "Coupling (unconditional)": lambda: Coupling(
         KEY,
         transformer=Affine(),
         untransformed_dim=DIM // 2,
@@ -92,7 +92,7 @@ bijections = {
         nn_width=5,
         nn_depth=2,
     ),
-    "Coupling (conditional)": Coupling(
+    "Coupling (conditional)": lambda: Coupling(
         KEY,
         transformer=Affine(),
         untransformed_dim=DIM // 2,
@@ -101,14 +101,14 @@ bijections = {
         nn_width=5,
         nn_depth=2,
     ),
-    "MaskedAutoregressive_Affine (unconditional)": MaskedAutoregressive(
+    "MaskedAutoregressive_Affine (unconditional)": lambda: MaskedAutoregressive(
         KEY,
         transformer=Affine(),
         dim=DIM,
         nn_width=5,
         nn_depth=2,
     ),
-    "MaskedAutoregressive_Affine (conditional)": MaskedAutoregressive(
+    "MaskedAutoregressive_Affine (conditional)": lambda: MaskedAutoregressive(
         KEY,
         transformer=Affine(),
         cond_dim=COND_DIM,
@@ -116,70 +116,72 @@ bijections = {
         nn_width=5,
         nn_depth=2,
     ),
-    "MaskedAutoregressiveRationalQuadraticSpline (unconditional)": MaskedAutoregressive(
-        KEY,
-        transformer=RationalQuadraticSpline(knots=5, interval=3),
-        dim=DIM,
-        nn_width=10,
-        nn_depth=2,
+    "MaskedAutoregressiveRationalQuadraticSpline (unconditional)": (
+        lambda: MaskedAutoregressive(
+            KEY,
+            transformer=RationalQuadraticSpline(knots=5, interval=3),
+            dim=DIM,
+            nn_width=10,
+            nn_depth=2,
+        )
     ),
-    "BlockAutoregressiveNetwork (unconditional)": BlockAutoregressiveNetwork(
+    "BlockAutoregressiveNetwork (unconditional)": lambda: BlockAutoregressiveNetwork(
         KEY,
         dim=DIM,
         block_dim=3,
         depth=1,
     ),
-    "BlockAutoregressiveNetwork (conditional)": BlockAutoregressiveNetwork(
+    "BlockAutoregressiveNetwork (conditional)": lambda: BlockAutoregressiveNetwork(
         KEY,
         dim=DIM,
         cond_dim=COND_DIM,
         block_dim=3,
         depth=1,
     ),
-    "AdditiveCondtition": AdditiveCondition(
+    "AdditiveCondtition": lambda: AdditiveCondition(
         lambda condition: jnp.arange(DIM) * jnp.sum(condition),
         (DIM,),
         (COND_DIM,),
     ),
-    "EmbedCondition": EmbedCondition(
+    "EmbedCondition": lambda: EmbedCondition(
         BlockAutoregressiveNetwork(KEY, dim=DIM, cond_dim=1, block_dim=3, depth=1),
         eqx.nn.MLP(2, 1, 3, 1, key=KEY),
         (COND_DIM,),  # Raw
     ),
-    "Chain": Chain([Flip((DIM,)), Affine(jnp.ones(DIM), jnp.full(DIM, 2))]),
-    "Scan": Scan(eqx.filter_vmap(Affine)(jnp.ones((2, DIM)))),
-    "Scale": Scale(jnp.full(DIM, 2)),
-    "Scale (pos and neg scales)": eqx.tree_at(
+    "Chain": lambda: Chain([Flip((DIM,)), Affine(jnp.ones(DIM), jnp.full(DIM, 2))]),
+    "Scan": lambda: Scan(eqx.filter_vmap(Affine)(jnp.ones((2, DIM)))),
+    "Scale": lambda: Scale(jnp.full(DIM, 2)),
+    "Scale (pos and neg scales)": lambda: eqx.tree_at(
         lambda scale: scale.scale,
         Scale(jnp.ones(3)),
         jnp.array([-1, 2, -3]),
     ),
-    "Concatenate": Concatenate([Affine(jnp.ones(DIM)), Tanh(shape=(DIM,))]),
-    "ConcatenateAxis1": Concatenate(
+    "Concatenate": lambda: Concatenate([Affine(jnp.ones(DIM)), Tanh(shape=(DIM,))]),
+    "ConcatenateAxis1": lambda: Concatenate(
         [Affine(jnp.ones((3, 3))), Tanh(shape=((3, 3)))],
         axis=1,
     ),
-    "ConcatenateAxis-1": Concatenate(
+    "ConcatenateAxis-1": lambda: Concatenate(
         [Affine(jnp.ones((3, 3))), Tanh(shape=((3, 3)))],
         axis=-1,
     ),
-    "Stack": Stack([Tanh(()), Affine(), Tanh(())]),
-    "StackAxis1": Stack([Tanh((2,)), Affine(jnp.ones(2)), Tanh((2,))], axis=1),
-    "StackAxis-1": Stack(
+    "Stack": lambda: Stack([Tanh(()), Affine(), Tanh(())]),
+    "StackAxis1": lambda: Stack([Tanh((2,)), Affine(jnp.ones(2)), Tanh((2,))], axis=1),
+    "StackAxis-1": lambda: Stack(
         [Affine(jr.uniform(k, (1, 2, 3))) for k in jr.split(KEY, 3)],
         axis=-1,
     ),
-    "Planar": Planar(
+    "Planar": lambda: Planar(
         KEY,
         dim=DIM,
     ),
-    "Vmap (broadcast params)": Vmap(Affine(1, 2), axis_size=10),
-    "Vmap (vectorize params)": Vmap(
+    "Vmap (broadcast params)": lambda: Vmap(Affine(1, 2), axis_size=10),
+    "Vmap (vectorize params)": lambda: Vmap(
         eqx.filter_vmap(Affine)(jnp.ones(3)),
         in_axes=eqx.if_array(0),
     ),
-    "Reshape (unconditional)": Reshape(Affine(scale=jnp.arange(1, 5)), (2, 2)),
-    "Reshape (conditional)": Reshape(
+    "Reshape (unconditional)": lambda: Reshape(Affine(scale=jnp.arange(1, 5)), (2, 2)),
+    "Reshape (conditional)": lambda: Reshape(
         MaskedAutoregressive(
             KEY,
             transformer=Affine(),
@@ -194,9 +196,10 @@ bijections = {
 }
 
 
-@pytest.mark.parametrize("bijection", bijections.values(), ids=bijections.keys())
-def test_transform_inverse(bijection):
+@pytest.mark.parametrize("bijection_name", bijections.keys())
+def test_transform_inverse(bijection_name):
     """Tests transform and inverse methods."""
+    bijection = bijections[bijection_name]()
     shape = bijection.shape if bijection.shape is not None else (DIM,)
     x = jr.normal(jr.PRNGKey(0), shape)
     if bijection.cond_shape is not None:
@@ -211,12 +214,13 @@ def test_transform_inverse(bijection):
         pass
 
 
-@pytest.mark.parametrize("bijection", bijections.values(), ids=bijections.keys())
-def test_transform_inverse_and_log_dets(bijection):
+@pytest.mark.parametrize("bijection_name", bijections.keys())
+def test_transform_inverse_and_log_dets(bijection_name):
     """Tests the transform_and_log_det and inverse_and_log_det methods,
     by 1) checking invertibility and 2) comparing log dets to those obtained with
     automatic differentiation.
     """
+    bijection = bijections[bijection_name]()
     shape = bijection.shape if bijection.shape is not None else (DIM,)
     x = jr.normal(jr.PRNGKey(0), shape)
 

@@ -24,9 +24,9 @@ def test_train_val_split():
 
 
 def test_count_fruitless():
-    assert count_fruitless([12, 2, 3, 4]) == 2
-    assert count_fruitless([0]) == 0
-    assert count_fruitless([0, 12]) == 1
+    assert count_fruitless([12.0, 2.0, 3.0, 4.0]) == 2
+    assert count_fruitless([0.0]) == 0.0
+    assert count_fruitless([0.0, 12.0]) == 1
 
 
 def test_get_batches():

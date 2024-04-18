@@ -8,8 +8,8 @@ import numpyro
 import numpyro.distributions as ndist
 import pytest
 from equinox.nn import Linear
-from jax import Array
 from jax.flatten_util import ravel_pytree
+from jaxtyping import Array
 from numpyro import handlers
 from numpyro.distributions.transforms import AffineTransform
 from numpyro.infer import MCMC, NUTS, SVI, Trace_ELBO
