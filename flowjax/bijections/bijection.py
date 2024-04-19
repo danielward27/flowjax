@@ -28,7 +28,7 @@ def _unwrap_check_and_cast(method):
         x: ArrayLike,
         condition: ArrayLike | None = None,
     ):
-
+        # TODO This can be simplified significantly if we use beartype
         def _check_condition(condition):
             if condition is not None:
                 condition = arraylike_to_array(condition, err_name="condition")

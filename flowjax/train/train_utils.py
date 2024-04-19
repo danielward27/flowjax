@@ -41,7 +41,9 @@ def step(
 
 
 def train_val_split(
-    key: PRNGKeyArray, arrays: Sequence[Shaped[Array, "a ..."]], val_prop: float = 0.1
+    key: PRNGKeyArray,
+    arrays: Sequence[Shaped[Array, "batch ..."]],
+    val_prop: float = 0.1,
 ):
     """Random train validation split for a sequence of arrays.
 
@@ -57,7 +59,7 @@ def train_val_split(
         raise ValueError("val_prop should be between 0 and 1.")
 
     num_samples = arrays[0].shape[0]
-    if not all(arr.shape[0] == num_samples for arr in arrays):
+    if not all(isinstance(a, Shaped[Array, " dim ..."]) for a in arrays):
         raise ValueError("Array dimensions must match along axis 0.")
 
     n_train = num_samples - round(val_prop * num_samples)

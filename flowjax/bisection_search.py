@@ -9,7 +9,7 @@ from typing import NamedTuple
 import equinox as eqx
 import jax.numpy as jnp
 from jax import lax
-from jaxtyping import Int, Scalar, ScalarLike
+from jaxtyping import Array, Int, Real
 
 
 class AutoregressiveBisectionInverter(eqx.Module):
@@ -26,8 +26,12 @@ class AutoregressiveBisectionInverter(eqx.Module):
         max_iter: Maximum number of iterations to use.
     """
 
-    lower: ScalarLike = -10.0
-    upper: ScalarLike = 10.0
+    lower: Real[Array, ""] = eqx.field(
+        default_factory=lambda: -10.0, converter=jnp.asarray
+    )
+    upper: Real[Array, ""] = eqx.field(
+        default_factory=lambda: 10.0, converter=jnp.asarray
+    )
     tol: float = 1e-7
     max_iter: int = 200
 
@@ -56,8 +60,8 @@ class AutoregressiveBisectionInverter(eqx.Module):
 def _autoregressive_bisection_search(
     autoregressive_fn: Callable,
     *,
-    lower: ScalarLike,
-    upper: ScalarLike,
+    lower: Real[Array, ""],
+    upper: Real[Array, ""],
     tol: float,
     length: int,
     max_iter: int,
@@ -106,8 +110,8 @@ def _autoregressive_bisection_search(
 def _bisection_search(
     func: Callable,
     *,
-    lower: ScalarLike,
-    upper: ScalarLike,
+    lower: Real[Array, ""],
+    upper: Real[Array, ""],
     tol: float,
     max_iter: int,
 ):
@@ -164,9 +168,9 @@ def _bisection_search(
 def _adapt_interval_to_include_root(
     func,
     *,
-    lower: ScalarLike,
-    upper: ScalarLike,
-    expand_factor: ScalarLike = 2.0,
+    lower: Real[Array, ""],
+    upper: Real[Array, ""],
+    expand_factor: float = 2.0,
 ):
     """Dyamically adjust the interval to include the root of an increasing function.
 
@@ -186,12 +190,12 @@ def _adapt_interval_to_include_root(
     fn_lower, fn_upper = func(lower), func(upper)
 
     class _State(NamedTuple):
-        lower: ScalarLike
-        upper: ScalarLike
-        expand_by: ScalarLike
-        lower_fn_sign: ScalarLike
-        upper_fn_sign: ScalarLike
-        iteration: Int[Scalar, ""] = jnp.array(0)
+        lower: Real[Array, ""]
+        upper: Real[Array, ""]
+        expand_by: Real[Array, ""]
+        lower_fn_sign: Real[Array, ""]
+        upper_fn_sign: Real[Array, ""]
+        iteration: Int[Array, ""] = jnp.array(0)
 
     def cond_fn(state):
         return state.lower_fn_sign == state.upper_fn_sign

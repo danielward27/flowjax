@@ -9,10 +9,15 @@ import operator
 
 import jax.numpy as jnp
 from jax.scipy.linalg import block_diag
-from jaxtyping import Array
+from jaxtyping import Array, Bool, Int
 
 
-def rank_based_mask(in_ranks: Array, out_ranks: Array, *, eq: bool = False):
+def rank_based_mask(
+    in_ranks: Int[Array, " a"],
+    out_ranks: Int[Array, " b"],
+    *,
+    eq: bool = False,
+) -> Bool[Array, "b a"]:
     """Forms mask matrix, with 1s where the out_ranks > or >= in_ranks.
 
     Args:
@@ -30,12 +35,14 @@ def rank_based_mask(in_ranks: Array, out_ranks: Array, *, eq: bool = False):
     return op(out_ranks[:, None], in_ranks)
 
 
-def block_diag_mask(block_shape: tuple, n_blocks: int):
+def block_diag_mask(block_shape: tuple, n_blocks: int) -> Bool[Array, "dim1 dim2"]:
     """Block diagonal mask."""
     return block_diag(*jnp.ones((n_blocks, *block_shape), bool))
 
 
-def block_tril_mask(block_shape: tuple, n_blocks: int, k: int = 0):
+def block_tril_mask(
+    block_shape: tuple, n_blocks: int, k: int = 0
+) -> Bool[Array, "dim1 dim2"]:
     """Lower triangular block mask, with offset k."""
     mask = jnp.zeros((block_shape[0] * n_blocks, block_shape[1] * n_blocks), bool)
     for i in range(n_blocks):

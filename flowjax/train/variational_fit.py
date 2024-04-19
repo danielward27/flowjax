@@ -14,7 +14,7 @@ from flowjax.train.train_utils import step
 
 def fit_to_variational_target(
     key: PRNGKeyArray,
-    dist: PyTree,
+    dist: PyTree,  # Custom losses may support broader types than AbstractDistribution
     loss_fn: Callable,
     *,
     steps: int = 100,

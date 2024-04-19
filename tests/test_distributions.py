@@ -225,13 +225,6 @@ test_cases = [
         match="Expected condition to be arraylike",
     ),
     _TestCase(
-        name="missing x log prob",
-        method=_TestDist((), None).log_prob,
-        args=("",),
-        error=TypeError,
-        match="Expected x to be arraylike",
-    ),
-    _TestCase(
         name="wrong x shape log prob",
         method=_TestDist((2,), None).log_prob,
         args=(jnp.ones((3, 3)), None),
@@ -253,4 +246,5 @@ def test_method_errors(test_case):
     # Need to disable the beartype errors so tests are reached
 
     with pytest.raises(test_case.error, match=test_case.match):
+
         test_case.method(*test_case.args)

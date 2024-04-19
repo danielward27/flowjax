@@ -5,7 +5,7 @@ from typing import ClassVar
 
 import jax.numpy as jnp
 from jax.scipy.linalg import solve_triangular
-from jaxtyping import Array, ArrayLike
+from jaxtyping import Array, ArrayLike, Shaped
 
 from flowjax import wrappers
 from flowjax.bijections.bijection import AbstractBijection
@@ -139,13 +139,15 @@ class TriangularAffine(AbstractBijection):
 
     def __init__(
         self,
-        loc: ArrayLike,
-        arr: ArrayLike,
+        loc: Shaped[Array, " dim"],
+        arr: Shaped[Array, "dim dim"],
         *,
         lower: bool = True,
     ):
         loc, arr = (arraylike_to_array(a, dtype=float) for a in (loc, arr))
-        if (arr.ndim != 2) or (arr.shape[0] != arr.shape[1]):
+        if (arr.ndim != 2) or (
+            arr.shape[0] != arr.shape[1]
+        ):  # TODO unnecersary if beartype enabled
             raise ValueError("arr must be a square, 2-dimensional matrix.")
 
         dim = arr.shape[0]

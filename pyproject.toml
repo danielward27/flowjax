@@ -25,6 +25,7 @@ documentation = "https://danielward27.github.io/flowjax/index.html"
 [project.optional-dependencies]
 dev = [
   "pytest",
+  "beartype",
   "ruff",
   "sphinx",
   "sphinx-rtd-theme",
@@ -41,7 +42,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
-
+addopts = "--jaxtyping-packages=flowjax,beartype.beartype(conf=beartype.BeartypeConf(strategy=beartype.BeartypeStrategy.On))"
 
 [tool.ruff]
 include = ["*.py", "*.pyi", "**/pyproject.toml", "*.ipynb"]
@@ -49,7 +50,6 @@ include = ["*.py", "*.pyi", "**/pyproject.toml", "*.ipynb"]
 [tool.ruff.lint]
 select = ["E", "F", "B", "D", "COM", "I", "UP", "TRY004", "RET", "PT", "FBT"]
 ignore = ["D102", "D105", "D107", "B028", "COM812", "F722"]
-
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

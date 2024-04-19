@@ -16,15 +16,15 @@ def target_function(x):
 def test_adapt_interval_to_include_root():
     lower, upper, _ = _adapt_interval_to_include_root(
         target_function,
-        lower=1.1,
-        upper=1.2,
+        lower=jnp.array(1.1),
+        upper=jnp.array(1.2),
     )
 
     assert lower < -4
     assert upper < 1.1  # Upper should improve too
 
     # If already includes root, shouldn't change anything
-    init_lower, init_upper = -10, 10
+    init_lower, init_upper = jnp.array(-10), jnp.array(10)
     lower, upper, iterations = _adapt_interval_to_include_root(
         target_function,
         lower=init_lower,
@@ -52,8 +52,8 @@ def test_adapt_interval_to_include_root_exact(lower, upper, expected_iterations)
     # Tests cases where the exact root is found
     lower, upper, iterations = _adapt_interval_to_include_root(
         target_function,
-        lower=lower,
-        upper=upper,
+        lower=jnp.array(lower),
+        upper=jnp.array(upper),
     )
     assert lower == true_root
     assert upper == true_root
@@ -66,8 +66,8 @@ def test_bisection_search():
 
     root, adapt_iterations, iterations = _bisection_search(
         target_function,
-        lower=-10,
-        upper=10,
+        lower=jnp.array(-10),
+        upper=jnp.array(10),
         tol=tol,
         max_iter=max_iter,
     )
@@ -79,8 +79,8 @@ def test_bisection_search():
     # Check max_iter terminates loop
     root, adapt_iterations, iterations = _bisection_search(
         target_function,
-        lower=-10,
-        upper=10,
+        lower=jnp.array(-10),
+        upper=jnp.array(10),
         tol=tol,
         max_iter=0,
     )
@@ -89,8 +89,8 @@ def test_bisection_search():
     # Check can adapt interval if needed
     root, adapt_iterations, iterations = _bisection_search(
         target_function,
-        lower=3,
-        upper=4,
+        lower=jnp.array(3),
+        upper=jnp.array(4),
         tol=tol,
         max_iter=200,
     )
@@ -102,8 +102,8 @@ def test_bisection_search_exact():
     # Tests cases where the exact root is found
     root, _, iterations = _bisection_search(
         target_function,
-        lower=true_root - 2,
-        upper=true_root + 2,
+        lower=jnp.array(true_root - 2),
+        upper=jnp.array(true_root + 2),
         tol=0.1,
         max_iter=200,
     )
@@ -119,8 +119,8 @@ def test_autoregressive_bisection_search():
     result = _autoregressive_bisection_search(
         autoregressive_fn=autoregressive_func,
         tol=tol,
-        lower=-10,
-        upper=10,
+        lower=jnp.array(-10),
+        upper=jnp.array(10),
         length=3,
         max_iter=200,
     )

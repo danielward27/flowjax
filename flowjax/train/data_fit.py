@@ -21,7 +21,7 @@ from flowjax.train.train_utils import (
 
 def fit_to_data(
     key: PRNGKeyArray,
-    dist: PyTree,
+    dist: PyTree,  # Custom losses may support broader types than AbstractDistribution
     x: ArrayLike,
     *,
     condition: ArrayLike | None = None,

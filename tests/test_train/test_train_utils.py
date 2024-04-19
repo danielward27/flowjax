@@ -8,13 +8,22 @@ from flowjax.train.train_utils import count_fruitless, get_batches, train_val_sp
 
 def test_train_val_split():
     key = jr.PRNGKey(0)
-    arrays = [jnp.arange(10).reshape(5, 2) for _ in range(3)]
+    arrays = [jnp.ones(5), jnp.ones((5, 2)), jnp.ones((5, 3, 3))]
 
     train, val = train_val_split(key, arrays, val_prop=0.2)
 
+    expected_train = [(4,), (4, 2), (4, 3, 3)]
+    expected_val = [(1,) + s[1:] for s in expected_train]
+
     # Check shapes
-    assert all(train_arr.shape == (4, 2) for train_arr in train)
-    assert all(val_arr.shape == (1, 2) for val_arr in val)
+    assert all(
+        train_arr.shape == expected
+        for train_arr, expected in zip(train, expected_train, strict=True)
+    )
+    assert all(
+        val_arr.shape == expected
+        for val_arr, expected in zip(val, expected_val, strict=True)
+    )
 
     arrays = [jnp.ones((5, 2)), jnp.ones((3, 5))]
 

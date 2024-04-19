@@ -5,14 +5,14 @@ from typing import ClassVar
 
 import jax
 import jax.numpy as jnp
-from jaxtyping import Array
+from jaxtyping import Array, Float
 
 from flowjax import wrappers
 from flowjax.bijections.bijection import AbstractBijection
 
 
 def _real_to_increasing_on_interval(
-    arr: Array,
+    arr: Float[Array, " dim"],
     interval: float | int = 1,
     softmax_adjust: float = 1e-2,
     *,
