@@ -12,10 +12,11 @@ from abc import abstractmethod
 
 import equinox as eqx
 import jax.numpy as jnp
+from equinox import AbstractVar
 from jaxtyping import Array, ArrayLike
 
-import flowjax
 from flowjax.utils import _get_ufunc_signature, arraylike_to_array
+from flowjax.wrappers import unwrap
 
 
 def _unwrap_check_and_cast(method):
@@ -52,9 +53,7 @@ def _unwrap_check_and_cast(method):
                 )
             return x
 
-        return method(
-            flowjax.wrappers.unwrap(bijection), _check_x(x), _check_condition(condition)
-        )
+        return method(unwrap(bijection), _check_x(x), _check_condition(condition))
 
     return wrapper
 
@@ -85,8 +84,8 @@ class AbstractBijection(eqx.Module):
             for ``condition``.
     """
 
-    shape: eqx.AbstractVar[tuple[int, ...]]
-    cond_shape: eqx.AbstractVar[tuple[int, ...] | None]
+    shape: AbstractVar[tuple[int, ...]]
+    cond_shape: AbstractVar[tuple[int, ...] | None]
 
     def __init_subclass__(cls) -> None:
         # We wrap the class methods with argument checking

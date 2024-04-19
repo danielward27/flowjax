@@ -120,7 +120,7 @@ class _TestDist(AbstractDistribution):
         return jnp.zeros(self.shape)
 
     def _sample_and_log_prob(self, key, condition=None):
-        return jnp.zeros(self.shape), np.zeros(())
+        return jnp.zeros(self.shape), jnp.zeros(())
 
 
 def test_multivariate_normal():
@@ -212,7 +212,7 @@ class _TestCase(NamedTuple):
     name: str
     method: Callable
     args: tuple
-    error: Exception
+    error: type
     match: str
 
 
@@ -250,5 +250,7 @@ test_cases = [
 
 @pytest.mark.parametrize("test_case", test_cases, ids=[t.name for t in test_cases])
 def test_method_errors(test_case):
+    # Need to disable the beartype errors so tests are reached
+
     with pytest.raises(test_case.error, match=test_case.match):
         test_case.method(*test_case.args)

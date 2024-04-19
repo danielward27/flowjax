@@ -56,15 +56,15 @@ class RationalQuadraticSpline(AbstractBijection):
             ``real_to_increasing_on_interval``. Defaults to 1e-2.
     """
 
-    shape: ClassVar[tuple] = ()
-    cond_shape: ClassVar[None] = None
     knots: int
     interval: float | int
     softmax_adjust: float | int
     min_derivative: float
-    x_pos: Array
-    y_pos: Array
-    derivatives: Array
+    x_pos: Array | wrappers.AbstractUnwrappable[Array]
+    y_pos: Array | wrappers.AbstractUnwrappable[Array]
+    derivatives: Array | wrappers.AbstractUnwrappable[Array]
+    shape: ClassVar[tuple] = ()
+    cond_shape: ClassVar[None] = None
 
     def __init__(
         self,

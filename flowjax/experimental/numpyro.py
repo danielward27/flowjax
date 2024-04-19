@@ -24,13 +24,12 @@ except ImportError as e:
     )
     raise
 
+from jaxtyping import PyTree
 from numpyro.distributions.constraints import (
     _IndependentConstraint,
     _Real,
 )
 from numpyro.distributions.transforms import IndependentTransform, biject_to
-
-PyTree = Any
 
 
 class _RealNdim(_IndependentConstraint):
@@ -118,7 +117,7 @@ class _DistributionToNumpyro(numpyro.distributions.Distribution):
     """
 
     dist: AbstractDistribution
-    _condition: Array
+    _condition: Array | None
 
     def __init__(
         self,
@@ -176,7 +175,7 @@ class _BijectionToNumpyro(numpyro.distributions.transforms.Transform):
     def __init__(
         self,
         bijection: AbstractBijection,
-        condition: Array = None,
+        condition: Array | None = None,
         domain=None,
         codomain=None,
     ):

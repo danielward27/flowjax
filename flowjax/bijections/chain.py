@@ -17,7 +17,7 @@ class Chain(AbstractBijection):
 
     shape: tuple[int, ...]
     cond_shape: tuple[int, ...] | None
-    bijections: tuple[AbstractBijection | AbstractUnwrappable[AbstractBijection]]
+    bijections: tuple[AbstractBijection | AbstractUnwrappable[AbstractBijection], ...]
 
     def __init__(
         self,

@@ -2,16 +2,13 @@
 
 from collections.abc import Callable, Sequence
 from functools import partial
-from typing import Any
 
 import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
 import optax
 from jax import jit
-from jaxtyping import Array, PRNGKeyArray, Scalar, Shaped
-
-PyTree = Any
+from jaxtyping import Array, PRNGKeyArray, PyTree, Scalar, Shaped
 
 
 @eqx.filter_jit

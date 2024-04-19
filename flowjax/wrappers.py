@@ -25,7 +25,7 @@ If implementing a custom unwrappable, bear in mind:
 
 from abc import abstractmethod
 from collections.abc import Callable, Iterable
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, TypeVar
+from typing import TYPE_CHECKING, ClassVar, Generic, TypeVar
 
 import equinox as eqx
 import jax.numpy as jnp
@@ -37,10 +37,7 @@ if TYPE_CHECKING:
 
 import jax
 from jax import lax
-from jaxtyping import Array, ArrayLike
-
-PyTree = Any
-
+from jaxtyping import Array, ArrayLike, PyTree
 
 T = TypeVar("T")
 

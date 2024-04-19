@@ -1,24 +1,20 @@
 """Basic training script for fitting a flow using variational inference."""
 
 from collections.abc import Callable
-from typing import Any
 
 import equinox as eqx
 import jax.random as jr
 import optax
-from jaxtyping import PRNGKeyArray
+from jaxtyping import PRNGKeyArray, PyTree
 from tqdm import tqdm
 
 from flowjax import wrappers
-from flowjax.distributions import AbstractDistribution
 from flowjax.train.train_utils import step
-
-PyTree = Any
 
 
 def fit_to_variational_target(
     key: PRNGKeyArray,
-    dist: AbstractDistribution,
+    dist: PyTree,
     loss_fn: Callable,
     *,
     steps: int = 100,
@@ -26,7 +22,7 @@ def fit_to_variational_target(
     optimizer: optax.GradientTransformation | None = None,
     return_best: bool = True,
     show_progress: bool = True,
-) -> tuple[AbstractDistribution, list]:
+) -> tuple[PyTree, list]:
     """Train a distribution (e.g. a flow) by variational inference.
 
     Args:
