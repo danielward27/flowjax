@@ -1,7 +1,5 @@
 """Masked autoregressive network and bijection."""
 
-from __future__ import annotations
-
 from collections.abc import Callable
 from functools import partial
 
@@ -9,8 +7,7 @@ import equinox as eqx
 import jax
 import jax.nn as jnn
 import jax.numpy as jnp
-from jax import Array
-from jax.typing import ArrayLike
+from jaxtyping import Array, Int, PRNGKeyArray
 
 from flowjax.bijections.bijection import AbstractBijection
 from flowjax.bijections.jax_transforms import Vmap
@@ -47,7 +44,7 @@ class MaskedAutoregressive(AbstractBijection):
 
     def __init__(
         self,
-        key: Array,
+        key: PRNGKeyArray,
         *,
         transformer: AbstractBijection,
         dim: int,
@@ -69,7 +66,7 @@ class MaskedAutoregressive(AbstractBijection):
         else:
             self.cond_shape = (cond_dim,)
             # we give conditioning variables rank -1 (no masking of edges to output)
-            in_ranks = jnp.hstack((jnp.arange(dim), -jnp.ones(cond_dim)))
+            in_ranks = jnp.hstack((jnp.arange(dim), -jnp.ones(cond_dim, int)))
 
         hidden_ranks = jnp.arange(nn_width) % dim
         out_ranks = jnp.repeat(jnp.arange(dim), num_params)
@@ -129,9 +126,9 @@ class MaskedAutoregressive(AbstractBijection):
 
 
 def masked_autoregressive_mlp(
-    in_ranks: ArrayLike,
-    hidden_ranks: ArrayLike,
-    out_ranks: ArrayLike,
+    in_ranks: Int[Array, " in_size"],
+    hidden_ranks: Int[Array, " hidden_size"],
+    out_ranks: Int[Array, " out_size"],
     **kwargs,
 ) -> eqx.nn.MLP:
     """Returns an equinox multilayer perceptron, with autoregressive masks.
@@ -148,7 +145,7 @@ def masked_autoregressive_mlp(
     """
     in_ranks, hidden_ranks, out_ranks = (
         jnp.asarray(a, jnp.int32) for a in (in_ranks, hidden_ranks, out_ranks)
-    )
+    )  # TODO remove if using beartype
     mlp = eqx.nn.MLP(
         in_size=len(in_ranks),
         out_size=len(out_ranks),

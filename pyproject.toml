@@ -9,14 +9,14 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Information Analysis",
   "Topic :: Scientific/Engineering :: Mathematics",
 ]
-dependencies = ["jax", "equinox>=0.10", "tqdm", "optax"]
+dependencies = ["jax", "equinox>=0.10", "jaxtyping", "tqdm", "optax"]
 description = "Easy to use distributions, bijections and normalizing flows in JAX."
 keywords = ["jax", "neural-networks", "equinox"]
 license = { file = "LICENSE" }
 name = "flowjax"
 readme = "README.md"
 requires-python = ">=3.10"
-version = "12.0.1"
+version = "12.1.1"
 
 [project.urls]
 repository = "https://github.com/danielward27/flowjax"
@@ -25,6 +25,7 @@ documentation = "https://danielward27.github.io/flowjax/index.html"
 [project.optional-dependencies]
 dev = [
   "pytest",
+  "beartype",
   "ruff",
   "sphinx",
   "sphinx-rtd-theme",
@@ -41,15 +42,14 @@ build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
-
+addopts = "--jaxtyping-packages=flowjax,beartype.beartype(conf=beartype.BeartypeConf(strategy=beartype.BeartypeStrategy.On))"
 
 [tool.ruff]
 include = ["*.py", "*.pyi", "**/pyproject.toml", "*.ipynb"]
 
 [tool.ruff.lint]
 select = ["E", "F", "B", "D", "COM", "I", "UP", "TRY004", "RET", "PT", "FBT"]
-ignore = ["D102", "D105", "D107", "B028", "COM812"]
-
+ignore = ["D102", "D105", "D107", "B028", "COM812", "F722"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"

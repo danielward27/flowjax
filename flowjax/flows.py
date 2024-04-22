@@ -6,7 +6,6 @@ All these functions return a :class:`~flowjax.distributions.Transformed` distrib
 # Note that here although we could chain arbitrary bijections using `Chain`, here,
 # we generally opt to use `Scan`, which avoids excessive compilation
 # when the flow layers share the same structure.
-
 from collections.abc import Callable
 from functools import partial
 
@@ -15,8 +14,8 @@ import jax.nn as jnn
 import jax.numpy as jnp
 import jax.random as jr
 from equinox.nn import Linear
-from jax import Array
 from jax.nn.initializers import glorot_uniform
+from jaxtyping import PRNGKeyArray
 
 from flowjax.bijections import (
     AbstractBijection,
@@ -42,8 +41,17 @@ from flowjax.distributions import AbstractDistribution, Transformed
 from flowjax.wrappers import BijectionReparam, NonTrainable, WeightNormalization
 
 
+def _affine_with_min_scale(min_scale: float = 1e-2) -> Affine:
+    scale_reparam = Chain([SoftPlus(), NonTrainable(Loc(min_scale))])
+    return eqx.tree_at(
+        where=lambda aff: aff.scale,
+        pytree=Affine(),
+        replace=BijectionReparam(jnp.array(1), scale_reparam),
+    )
+
+
 def coupling_flow(
-    key: Array,
+    key: PRNGKeyArray,
     *,
     base_dist: AbstractDistribution,
     transformer: AbstractBijection | None = None,
@@ -70,12 +78,8 @@ def coupling_flow(
             `inverse` methods, leading to faster `log_prob`, False will prioritise
             faster `transform` methods, leading to faster `sample`. Defaults to True.
     """
-    if transformer is None:  # Affine with minimum scale 1e-2
-        transformer = eqx.tree_at(
-            lambda aff: aff.scale,
-            Affine(),
-            BijectionReparam(1, Chain([SoftPlus(), NonTrainable(Loc(1e-2))])),
-        )
+    if transformer is None:
+        transformer = _affine_with_min_scale()
 
     dim = base_dist.shape[-1]
 
@@ -100,7 +104,7 @@ def coupling_flow(
 
 
 def masked_autoregressive_flow(
-    key: Array,
+    key: PRNGKeyArray,
     *,
     base_dist: AbstractDistribution,
     transformer: AbstractBijection | None = None,
@@ -131,11 +135,8 @@ def masked_autoregressive_flow(
             leading to faster `sample`. Defaults to True.
     """
     if transformer is None:
-        transformer = eqx.tree_at(
-            lambda aff: aff.scale,
-            Affine(),
-            BijectionReparam(1, Chain([SoftPlus(), NonTrainable(Loc(1e-2))])),
-        )
+        transformer = _affine_with_min_scale()
+
     dim = base_dist.shape[-1]
 
     def make_layer(key):  # masked autoregressive layer + permutation
@@ -158,7 +159,7 @@ def masked_autoregressive_flow(
 
 
 def block_neural_autoregressive_flow(
-    key: Array,
+    key: PRNGKeyArray,
     *,
     base_dist: AbstractDistribution,
     cond_dim: int | None = None,
@@ -219,7 +220,7 @@ def block_neural_autoregressive_flow(
 
 
 def planar_flow(
-    key: Array,
+    key: PRNGKeyArray,
     *,
     base_dist: AbstractDistribution,
     cond_dim: int | None = None,
@@ -261,13 +262,13 @@ def planar_flow(
 
 
 def triangular_spline_flow(
-    key: Array,
+    key: PRNGKeyArray,
     *,
     base_dist: AbstractDistribution,
     cond_dim: int | None = None,
     flow_layers: int = 8,
     knots: int = 8,
-    tanh_max_val: float = 3.0,
+    tanh_max_val: float | int = 3.0,
     invert: bool = True,
     init: Callable | None = None,
 ) -> Transformed:
@@ -331,7 +332,7 @@ def triangular_spline_flow(
     return Transformed(base_dist, bijection)
 
 
-def _add_default_permute(bijection: AbstractBijection, dim: int, key: Array):
+def _add_default_permute(bijection: AbstractBijection, dim: int, key: PRNGKeyArray):
     if dim == 1:
         return bijection
     if dim == 2:

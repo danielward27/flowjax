@@ -1,16 +1,12 @@
 """Function to fit flows to samples from a distribution."""
 
-from __future__ import annotations
-
 from collections.abc import Callable
-from typing import Any
 
 import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
 import optax
-from jax import Array
-from jax.typing import ArrayLike
+from jaxtyping import ArrayLike, PRNGKeyArray, PyTree
 from tqdm import tqdm
 
 from flowjax import wrappers
@@ -22,12 +18,10 @@ from flowjax.train.train_utils import (
     train_val_split,
 )
 
-PyTree = Any
-
 
 def fit_to_data(
-    key: Array,
-    dist: PyTree,
+    key: PRNGKeyArray,
+    dist: PyTree,  # Custom losses may support broader types than AbstractDistribution
     x: ArrayLike,
     *,
     condition: ArrayLike | None = None,

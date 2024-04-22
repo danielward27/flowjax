@@ -2,6 +2,7 @@
 
 import inspect
 from abc import abstractmethod
+from collections.abc import Callable
 from functools import wraps
 from math import prod
 from typing import ClassVar
@@ -10,11 +11,10 @@ import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
 from equinox import AbstractVar
-from jax import Array
 from jax.numpy import linalg
 from jax.scipy import stats as jstats
+from jaxtyping import Array, ArrayLike, PRNGKeyArray
 
-from flowjax._custom_types import ArrayLike
 from flowjax.bijections import (
     AbstractBijection,
     Affine,
@@ -62,14 +62,14 @@ class AbstractDistribution(eqx.Module):
         """
 
     @abstractmethod
-    def _sample(self, key: Array, condition: Array | None = None) -> Array:
+    def _sample(self, key: PRNGKeyArray, condition: Array | None = None) -> Array:
         """Sample a point from the distribution.
 
         This method should return a single sample with shape matching
         ``distribution.shape``.
         """
 
-    def _sample_and_log_prob(self, key, condition=None):
+    def _sample_and_log_prob(self, key: PRNGKeyArray, condition: Array | None = None):
         """Sample a point from the distribution, and return its log probability."""
         x = self._sample(key, condition)
         return x, self._log_prob(x, condition)
@@ -95,7 +95,7 @@ class AbstractDistribution(eqx.Module):
 
     def sample(
         self,
-        key: Array,
+        key: PRNGKeyArray,
         sample_shape: tuple[int, ...] = (),
         condition: ArrayLike | None = None,
     ) -> Array:
@@ -172,10 +172,10 @@ class AbstractDistribution(eqx.Module):
 
     def sample_and_log_prob(
         self,
-        key: Array,
+        key: PRNGKeyArray,
         sample_shape: tuple[int, ...] = (),
         condition: ArrayLike | None = None,
-    ):
+    ) -> tuple[Array, Array]:
         """Sample the distribution and return the samples with their log probabilities.
 
         For transformed distributions (especially flows), this will generally be more
@@ -195,16 +195,16 @@ class AbstractDistribution(eqx.Module):
         return self._vectorize(self._sample_and_log_prob)(keys, condition)
 
     @property
-    def ndim(self):
+    def ndim(self) -> int:
         """Number of dimensions in the distribution (the length of the shape)."""
         return len(self.shape)
 
     @property
-    def cond_ndim(self):
+    def cond_ndim(self) -> None | int:
         """Number of dimensions of the conditioning variable (length of cond_shape)."""
         return None if self.cond_shape is None else len(self.cond_shape)
 
-    def _vectorize(self, method: callable) -> callable:
+    def _vectorize(self, method: Callable) -> Callable:
         """Returns a vectorized version of the distribution method."""
         # Get shapes without broadcasting - note the (2, ) corresponds to key arrays.
         maybe_cond = [] if self.cond_shape is None else [self.cond_shape]
@@ -243,8 +243,13 @@ class AbstractDistribution(eqx.Module):
         ex = frozenset([1]) if self.cond_shape is None else frozenset()
         return jnp.vectorize(_check_shapes(method), signature=signature, excluded=ex)
 
-    def _get_sample_keys(self, key, sample_shape, condition):
-        if self.cond_shape is not None:
+    def _get_sample_keys(
+        self,
+        key: PRNGKeyArray,
+        sample_shape: tuple[int, ...],
+        condition,
+    ):
+        if self.cond_ndim is not None:
             leading_cond_shape = condition.shape[: -self.cond_ndim or None]
         else:
             leading_cond_shape = ()
@@ -282,7 +287,7 @@ class AbstractTransformed(AbstractDistribution):
 
     def _sample_and_log_prob(
         self,
-        key: Array,
+        key: PRNGKeyArray,
         condition: Array | None = None,
     ):  # TODO add overide decorator when python>=3.12 is common
         # We override to avoid computing the inverse transformation.
@@ -325,11 +330,11 @@ class AbstractTransformed(AbstractDistribution):
         return Transformed(base_dist, bijection)
 
     @property
-    def shape(self):
+    def shape(self) -> tuple[int, ...]:
         return self.base_dist.shape
 
     @property
-    def cond_shape(self):
+    def cond_shape(self) -> tuple[int, ...] | None:
         return merge_cond_shapes((self.bijection.cond_shape, self.base_dist.cond_shape))
 
 
@@ -410,7 +415,6 @@ class Normal(AbstractLocScaleDistribution):
 
     base_dist: StandardNormal
     bijection: Affine
-    cond_shape: ClassVar[None] = None
 
     def __init__(self, loc: ArrayLike = 0, scale: ArrayLike = 1):
         self.base_dist = StandardNormal(
@@ -419,7 +423,7 @@ class Normal(AbstractLocScaleDistribution):
         self.bijection = Affine(loc=loc, scale=scale)
 
 
-class LogNormal(AbstractLocScaleDistribution):
+class LogNormal(AbstractTransformed):
     """Log normal distribution.
 
     ``loc`` and ``scale`` here refers to the underlying normal distribution.
@@ -497,12 +501,11 @@ class Uniform(AbstractLocScaleDistribution):
 
     def __init__(self, minval: ArrayLike, maxval: ArrayLike):
         minval, maxval = arraylike_to_array(minval), arraylike_to_array(maxval)
+        shape = jnp.broadcast_shapes(minval.shape, maxval.shape)
         minval, maxval = eqx.error_if(
             (minval, maxval), maxval <= minval, "minval must be less than the maxval."
         )
-        self.base_dist = _StandardUniform(
-            jnp.broadcast_shapes(minval.shape, maxval.shape),
-        )
+        self.base_dist = _StandardUniform(shape)
         self.bijection = Affine(loc=minval, scale=maxval - minval)
 
     @property
@@ -593,6 +596,7 @@ class _StandardStudentT(AbstractDistribution):
     df: Array | AbstractUnwrappable[Array]
 
     def __init__(self, df: ArrayLike):
+        df = arraylike_to_array(df)
         df = eqx.error_if(df, df <= 0, "Degrees of freedom values must be positive.")
         self.shape = jnp.shape(df)
         self.df = BijectionReparam(df, SoftPlus())

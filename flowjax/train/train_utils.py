@@ -2,15 +2,13 @@
 
 from collections.abc import Callable, Sequence
 from functools import partial
-from typing import Any
 
 import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
 import optax
-from jax import Array, jit
-
-PyTree = Any
+from jax import jit
+from jaxtyping import Array, PRNGKeyArray, PyTree, Scalar, Shaped
 
 
 @eqx.filter_jit
@@ -20,7 +18,7 @@ def step(
     *args,
     optimizer: optax.GradientTransformation,
     opt_state: PyTree,
-    loss_fn: Callable,
+    loss_fn: Callable[[PyTree, PyTree], Scalar],
 ):
     """Carry out a training step.
 
@@ -42,7 +40,11 @@ def step(
     return params, opt_state, loss_val
 
 
-def train_val_split(key: Array, arrays: Sequence[Array], val_prop: float = 0.1):
+def train_val_split(
+    key: PRNGKeyArray,
+    arrays: Sequence[Shaped[Array, "batch ..."]],
+    val_prop: float = 0.1,
+):
     """Random train validation split for a sequence of arrays.
 
     Args:
@@ -57,7 +59,7 @@ def train_val_split(key: Array, arrays: Sequence[Array], val_prop: float = 0.1):
         raise ValueError("val_prop should be between 0 and 1.")
 
     num_samples = arrays[0].shape[0]
-    if not all(arr.shape[0] == num_samples for arr in arrays):
+    if not all(isinstance(a, Shaped[Array, " dim ..."]) for a in arrays):
         raise ValueError("Array dimensions must match along axis 0.")
 
     n_train = num_samples - round(val_prop * num_samples)

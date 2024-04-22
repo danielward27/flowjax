@@ -4,7 +4,7 @@ from collections.abc import Sequence
 from itertools import accumulate
 
 import jax.numpy as jnp
-from jax import Array
+from jaxtyping import Array
 
 from flowjax.bijections.bijection import AbstractBijection
 from flowjax.utils import check_shapes_match, merge_cond_shapes

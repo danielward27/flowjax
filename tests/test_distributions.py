@@ -120,7 +120,7 @@ class _TestDist(AbstractDistribution):
         return jnp.zeros(self.shape)
 
     def _sample_and_log_prob(self, key, condition=None):
-        return jnp.zeros(self.shape), np.zeros(())
+        return jnp.zeros(self.shape), jnp.zeros(())
 
 
 def test_multivariate_normal():
@@ -212,7 +212,7 @@ class _TestCase(NamedTuple):
     name: str
     method: Callable
     args: tuple
-    error: Exception
+    error: type
     match: str
 
 
@@ -223,13 +223,6 @@ test_cases = [
         args=(jr.PRNGKey(0),),
         error=TypeError,
         match="Expected condition to be arraylike",
-    ),
-    _TestCase(
-        name="missing x log prob",
-        method=_TestDist((), None).log_prob,
-        args=("",),
-        error=TypeError,
-        match="Expected x to be arraylike",
     ),
     _TestCase(
         name="wrong x shape log prob",

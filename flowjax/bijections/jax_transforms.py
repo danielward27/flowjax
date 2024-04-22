@@ -3,10 +3,10 @@
 from collections.abc import Callable
 
 import equinox as eqx
-import jax
 import jax.numpy as jnp
 from jax.lax import scan
 from jax.tree_util import tree_leaves, tree_map
+from jaxtyping import PyTree
 
 from flowjax import wrappers
 from flowjax.bijections.bijection import AbstractBijection
@@ -172,7 +172,7 @@ class Vmap(AbstractBijection):
     """
 
     bijection: AbstractBijection
-    in_axes: list
+    in_axes: tuple
     axis_size: int
     cond_shape: tuple[int, ...] | None
 
@@ -180,7 +180,7 @@ class Vmap(AbstractBijection):
         self,
         bijection: AbstractBijection,
         *,
-        in_axes: int | None | Callable = None,
+        in_axes: PyTree | None | int | Callable = None,
         axis_size: int | None = None,
         in_axes_condition: int | None = None,
     ):
@@ -243,7 +243,7 @@ class Vmap(AbstractBijection):
         )
 
 
-def _infer_axis_size_from_params(tree, in_axes):
+def _infer_axis_size_from_params(tree: PyTree, in_axes) -> int:
     axes = _resolve_vmapped_axes(tree, in_axes)
     axis_sizes = tree_leaves(
         tree_map(

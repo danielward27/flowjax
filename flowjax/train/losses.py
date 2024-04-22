@@ -4,16 +4,14 @@ The loss functions are callables, with the first two arguments being the partiti
 distribution (see ``equinox.partition``).
 """
 
-from __future__ import annotations
-
 from collections.abc import Callable
 
 import equinox as eqx
 import jax.numpy as jnp
-from jax import Array, vmap
+from jax import vmap
 from jax.lax import stop_gradient
 from jax.scipy.special import logsumexp
-from jax.typing import ArrayLike
+from jaxtyping import Array, ArrayLike, Float, PRNGKeyArray
 
 from flowjax.distributions import AbstractDistribution
 from flowjax.wrappers import unwrap
@@ -32,7 +30,7 @@ class MaximumLikelihoodLoss:
         static: AbstractDistribution,
         x: Array,
         condition: Array | None = None,
-    ):
+    ) -> Float[Array, ""]:
         """Compute the loss."""
         dist = unwrap(eqx.combine(params, static))
         return -dist.log_prob(x, condition).mean()
@@ -70,9 +68,9 @@ class ContrastiveLoss:
         self,
         params: AbstractDistribution,
         static: AbstractDistribution,
-        x: Array,
+        x: Float[Array, "..."],
         condition: Array | None = None,
-    ):
+    ) -> Float[Array, ""]:
         """Compute the loss."""
         dist = unwrap(eqx.combine(params, static))
         contrastive = self._get_contrastive(x)
@@ -81,7 +79,9 @@ class ContrastiveLoss:
             contrastive,
             condition,
         ) - self.prior.log_prob(contrastive)
-        contrastive_log_odds = jnp.clip(contrastive_log_odds, -5)  # Clip for stability
+        contrastive_log_odds = jnp.clip(
+            contrastive_log_odds, -5
+        )  # TODO Clip for stability - this maybe should reconsidered
         return -(joint_log_odds - logsumexp(contrastive_log_odds, axis=0)).mean()
 
     def _get_contrastive(self, theta):
@@ -131,8 +131,8 @@ class ElboLoss:
         self,
         params: AbstractDistribution,
         static: AbstractDistribution,
-        key: Array,
-    ):
+        key: PRNGKeyArray,
+    ) -> Float[Array, ""]:
         """Compute the ELBO loss.
 
         Args:

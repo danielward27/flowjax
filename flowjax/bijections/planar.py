@@ -3,14 +3,15 @@
 A layer in a planar flow introduced in https://arxiv.org/pdf/1505.05770.pdf.
 """
 
+from collections.abc import Callable
 from typing import ClassVar
 
 import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
-from jax import Array
 from jax.nn import softplus
 from jax.numpy.linalg import norm
+from jaxtyping import Array, PRNGKeyArray
 
 from flowjax.bijections.bijection import AbstractBijection
 
@@ -33,12 +34,12 @@ class Planar(AbstractBijection):
 
     shape: tuple[int, ...]
     cond_shape: tuple[int, ...] | None
-    conditioner: eqx.Module | None
+    conditioner: Callable | None
     params: Array | None
 
     def __init__(
         self,
-        key: Array,
+        key: PRNGKeyArray,
         *,
         dim: int,
         cond_dim: int | None = None,
@@ -74,6 +75,7 @@ class Planar(AbstractBijection):
         else:
             params = self.params
         dim = self.shape[0]
+        assert params is not None
         w, u, bias = params[:dim], params[dim : 2 * dim], params[-1]
         return _UnconditionalPlanar(w, u, bias)
 

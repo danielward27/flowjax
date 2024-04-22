@@ -2,7 +2,8 @@ import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
 import pytest
-from jax import tree_map, vmap
+from jax import vmap
+from jax.tree_util import tree_map
 
 from flowjax.bijections import RationalQuadraticSpline
 

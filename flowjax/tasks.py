@@ -1,18 +1,16 @@
 """Example tasks."""
-from __future__ import annotations
 
 import equinox as eqx
 import jax
 import jax.numpy as jnp
 import jax.random as jr
-from jax import Array
-from jax.typing import ArrayLike
+from jaxtyping import ArrayLike, PRNGKeyArray
 
 from flowjax.distributions import Uniform
 from flowjax.utils import arraylike_to_array
 
 
-def two_moons(key: Array, n_samples, noise_std=0.2):
+def two_moons(key: PRNGKeyArray, n_samples, noise_std=0.2):
     """Two moon distribution."""
     angle_key, noise_key = jr.split(key)
     angle = jr.uniform(angle_key, (n_samples,)) * 2 * jnp.pi
@@ -34,13 +32,13 @@ class GaussianMixtureSimulator:
         x | \theta \sim 0.5 \cdot N(\theta,\ I_2) + 0.5 \cdot N(\theta,\ 0.1^2\odot I_2)
     """
 
-    def __init__(self, dim: int = 2, prior_bound: float = 10.0) -> None:
+    def __init__(self, dim: int = 2, prior_bound: float | int = 10.0) -> None:
         self.dim = dim
         self.prior_bound = prior_bound
         self.prior = Uniform(-jnp.full(dim, prior_bound), jnp.full(dim, prior_bound))
 
     @eqx.filter_jit
-    def simulator(self, key: Array, theta: ArrayLike):
+    def simulator(self, key: PRNGKeyArray, theta: ArrayLike):
         """Carry out simulations."""
         theta = jnp.atleast_2d(arraylike_to_array(theta))
         key, subkey = jr.split(key)
@@ -52,7 +50,7 @@ class GaussianMixtureSimulator:
 
     def sample_reference_posterior(
         self,
-        key: Array,
+        key: PRNGKeyArray,
         observation: ArrayLike,
         num_samples: int,
     ):

@@ -1,4 +1,5 @@
 """SoftPlus bijection."""
+
 from typing import ClassVar
 
 import jax.numpy as jnp
@@ -9,6 +10,7 @@ from flowjax.bijections.bijection import AbstractBijection
 
 class SoftPlus(AbstractBijection):
     r"""Transforms to positive domain using softplus :math:`y = \log(1 + \exp(x))`."""
+
     shape: tuple[int, ...] = ()
     cond_shape: ClassVar[None] = None
 
