@@ -243,8 +243,5 @@ test_cases = [
 
 @pytest.mark.parametrize("test_case", test_cases, ids=[t.name for t in test_cases])
 def test_method_errors(test_case):
-    # Need to disable the beartype errors so tests are reached
-
     with pytest.raises(test_case.error, match=test_case.match):
-
         test_case.method(*test_case.args)
