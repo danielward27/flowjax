@@ -21,7 +21,7 @@ avoid training the base distribution of a transformed distribution:
 If you wish to avoid training e.g. a specific type, it may be easier to use
 ``jax.tree_map`` to apply the NonTrainable wrapper as required. 
 
-Standardising variables
+Standardizing variables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 In general you should consider the form and scales of the target samples. For example, you could define a bijection to carry out the preprocessing, then to transform the flow with the inverse, to "undo" the preprocessing, e.g.
 
@@ -81,3 +81,33 @@ The methods of distributions and bijections are not jitted by default. For examp
     ...     x = eqx.filter_jit(flow.sample)(batch_key, (batch_size,))
     ...     results.append(x)
     
+
+Serialization
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+As the distributions and bijections are equinox modules, we can serialize/deserialize
+them using the same method outlined in the
+`equinox documentation <https://docs.kidger.site/equinox/api/serialisation/>`_.
+
+
+Runtime type checking
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+If you want to enable runtime type checking we can use
+`jaxtyping <https://github.com/patrick-kidger/jaxtyping>`_ and a typechecker such as
+`beartype <https://github.com/beartype/beartype>`_. Below is an example using
+jaxtypings import hook
+
+.. doctest::
+    
+    >>> from jaxtyping import install_import_hook
+
+    >>> with install_import_hook("flowjax", "beartype.beartype"):
+    ...    from flowjax import bijections as bij
+
+    >>> bij.Exp(shape=2)  # Accidentally provide an integer shape instead of tuple
+    jaxtyping.TypeCheckError: Type-check error whilst checking the parameters of Exp.
+    The problem arose whilst typechecking parameter 'shape'.
+    Actual value: 2
+    Expected type: tuple[int, ...].
+    ----------------------
+    Called with parameters: {'self': Exp(...), 'shape': 2}
+    Parameter annotations: (self: Any, shape: tuple[int, ...]).
