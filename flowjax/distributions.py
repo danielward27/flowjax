@@ -254,7 +254,7 @@ class AbstractDistribution(eqx.Module):
         else:
             leading_cond_shape = ()
         key_shape = sample_shape + leading_cond_shape
-        key_size: int = max(1, prod(key_shape))  # Still need 1 key for scalar sample
+        key_size = max(1, prod(key_shape))  # Still need 1 key for scalar sample
         return jnp.reshape(jr.split(key, key_size), (*key_shape, 2))
 
 
