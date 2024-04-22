@@ -87,3 +87,27 @@ Serialization
 As the distributions and bijections are equinox modules, we can serialize/deserialize
 them using the same method outlined in the
 `equinox documentation <https://docs.kidger.site/equinox/api/serialisation/>`_.
+
+
+Runtime type checking
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+If you want to enable runtime type checking we can use
+`jaxtyping <https://github.com/patrick-kidger/jaxtyping>`_ and a typechecker such as
+`beartype <https://github.com/beartype/beartype>`_. Below is an example using
+jaxtypings import hook
+
+.. doctest::
+    
+    >>> from jaxtyping import install_import_hook
+
+    >>> with install_import_hook("flowjax", "beartype.beartype"):
+    ...    from flowjax import bijections as bij
+
+    >>> bij.Exp(shape=2)  # Accidentally provide an integer shape instead of tuple
+    jaxtyping.TypeCheckError: Type-check error whilst checking the parameters of Exp.
+    The problem arose whilst typechecking parameter 'shape'.
+    Actual value: 2
+    Expected type: tuple[int, ...].
+    ----------------------
+    Called with parameters: {'self': Exp(...), 'shape': 2}
+    Parameter annotations: (self: Any, shape: tuple[int, ...]).
