@@ -209,7 +209,10 @@ class _BijectionToNumpyro(numpyro.distributions.transforms.Transform):
         return jax.lax.stop_gradient(self._condition)
 
     def tree_flatten(self):
-        raise NotImplementedError()
+        return (self.bijection, self._condition, self.domain, self.codomain), (
+            ("bijection", "_condition", "domain", "codomain"),
+            {},
+        )
 
     def _argcheck_domains(self):
         for k, v in {"domain": self.domain, "codomain": self.codomain}.items():
