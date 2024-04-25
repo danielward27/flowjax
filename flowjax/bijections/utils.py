@@ -6,7 +6,8 @@ from typing import ClassVar
 
 import equinox as eqx
 import jax.numpy as jnp
-from jaxtyping import Array, ArrayLike
+import numpy as np
+from jaxtyping import Array, Int
 
 from flowjax.bijections.bijection import AbstractBijection
 from flowjax.utils import arraylike_to_array
@@ -63,11 +64,11 @@ class Permute(AbstractBijection):
     permutation: tuple[Array, ...]
     inverse_permutation: tuple[Array, ...]
 
-    def __init__(self, permutation: ArrayLike):
-        permutation = arraylike_to_array(permutation)
+    def __init__(self, permutation: Int[Array | np.ndarray, "..."]):
+        permutation = arraylike_to_array(permutation, dtype=int)
         permutation = eqx.error_if(
             permutation,
-            permutation.ravel().sort() != jnp.arange(permutation.size),
+            permutation.ravel().sort() != jnp.arange(permutation.size, dtype=int),
             "Invalid permutation array provided.",
         )
         self.shape = permutation.shape

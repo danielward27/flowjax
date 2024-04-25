@@ -500,7 +500,9 @@ class Uniform(AbstractLocScaleDistribution):
     bijection: Affine
 
     def __init__(self, minval: ArrayLike, maxval: ArrayLike):
-        minval, maxval = arraylike_to_array(minval), arraylike_to_array(maxval)
+        minval, maxval = (
+            arraylike_to_array(arr, dtype=float) for arr in (minval, maxval)
+        )
         shape = jnp.broadcast_shapes(minval.shape, maxval.shape)
         minval, maxval = eqx.error_if(
             (minval, maxval), maxval <= minval, "minval must be less than the maxval."

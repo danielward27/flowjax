@@ -67,7 +67,7 @@ class Loc(AbstractBijection):
     cond_shape: ClassVar[None] = None
 
     def __init__(self, loc: ArrayLike):
-        self.loc = arraylike_to_array(loc)
+        self.loc = arraylike_to_array(loc, dtype=float)
         self.shape = self.loc.shape
 
     def transform(self, x, condition=None):
@@ -98,6 +98,7 @@ class Scale(AbstractBijection):
         self,
         scale: ArrayLike,
     ):
+        scale = arraylike_to_array(scale, "scale", dtype=float)
         self.scale = wrappers.BijectionReparam(scale, SoftPlus())
         self.shape = jnp.shape(wrappers.unwrap(scale))
 
