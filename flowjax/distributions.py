@@ -500,10 +500,7 @@ class Uniform(AbstractLocScaleDistribution):
     bijection: Affine
 
     def __init__(self, minval: ArrayLike, maxval: ArrayLike):
-        minval, maxval = (
-            arraylike_to_array(arr, dtype=float) for arr in (minval, maxval)
-        )
-        shape = jnp.broadcast_shapes(minval.shape, maxval.shape)
+        shape = jnp.broadcast_shapes(jnp.shape(minval), jnp.shape(maxval))
         minval, maxval = eqx.error_if(
             (minval, maxval), maxval <= minval, "minval must be less than the maxval."
         )
@@ -598,7 +595,7 @@ class _StandardStudentT(AbstractDistribution):
     df: Array | AbstractUnwrappable[Array]
 
     def __init__(self, df: ArrayLike):
-        df = arraylike_to_array(df)
+        df = arraylike_to_array(df, dtype=float)
         df = eqx.error_if(df, df <= 0, "Degrees of freedom values must be positive.")
         self.shape = jnp.shape(df)
         self.df = BijectionReparam(df, SoftPlus())
