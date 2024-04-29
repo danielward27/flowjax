@@ -717,7 +717,6 @@ class Logistic(AbstractLocScaleDistribution):
     Args:
         loc: Means. Defaults to 0.
         scale: Standard deviations. Defaults to 1.
-
     """
 
     base_dist: _StandardLogistic
