@@ -409,7 +409,7 @@ class Normal(AbstractLocScaleDistribution):
     ``loc`` and ``scale`` should broadcast to the desired shape of the distribution.
 
     Args:
-        loc: Means. Defaults to 0.
+        loc: Means. Defaults to 0. Defaults to 0.
         scale: Standard deviations. Defaults to 1.
     """
 
@@ -541,7 +541,7 @@ class Gumbel(AbstractLocScaleDistribution):
     ``loc`` and ``scale`` should broadcast to the dimension of the distribution.
 
     Args:
-        loc: Location paramter.
+        loc: Location paramter. Defaults to 0.
         scale: Scale parameter. Defaults to 1.
     """
 
@@ -577,7 +577,7 @@ class Cauchy(AbstractLocScaleDistribution):
     ``loc`` and ``scale`` should broadcast to the dimension of the distribution.
 
     Args:
-        loc: Location paramter.
+        loc: Location paramter. Defaults to 0.
         scale: Scale parameter. Defaults to 1.
     """
 
@@ -689,7 +689,7 @@ class Exponential(AbstractTransformed):
     base_dist: _StandardExponential
     bijection: Scale
 
-    def __init__(self, rate: ArrayLike):
+    def __init__(self, rate: ArrayLike = 1):
         self.base_dist = _StandardExponential(jnp.shape(rate))
         self.bijection = Scale(1 / rate)
 
@@ -715,8 +715,8 @@ class Logistic(AbstractLocScaleDistribution):
     ``loc`` and ``scale`` should broadcast to the shape of the distribution.
 
     Args:
-        loc: Means. Defaults to 0.
-        scale: Standard deviations. Defaults to 1.
+        loc: Location parameter. Defaults to 0.
+        scale: Scale parameter. Defaults to 1.
     """
 
     base_dist: _StandardLogistic
