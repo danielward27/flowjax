@@ -140,7 +140,7 @@ class TriangularAffine(AbstractBijection):
 
     def __init__(
         self,
-        loc: Shaped[Array, " dim"],
+        loc: Shaped[ArrayLike, " #dim"],
         arr: Shaped[Array, "dim dim"],
         *,
         lower: bool = True,
@@ -150,7 +150,6 @@ class TriangularAffine(AbstractBijection):
             arr.shape[0] != arr.shape[1]
         ):  # TODO unnecersary if beartype enabled
             raise ValueError("arr must be a square, 2-dimensional matrix.")
-
         dim = arr.shape[0]
 
         def _to_triangular(diag, arr):

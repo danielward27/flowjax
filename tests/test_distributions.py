@@ -15,6 +15,7 @@ from flowjax.distributions import (
     Exponential,
     Gumbel,
     Laplace,
+    Logistic,
     LogNormal,
     MultivariateNormal,
     Normal,
@@ -25,6 +26,7 @@ from flowjax.distributions import (
     _StandardCauchy,
     _StandardGumbel,
     _StandardLaplace,
+    _StandardLogistic,
     _StandardStudentT,
     _StandardUniform,
 )
@@ -50,6 +52,8 @@ _test_distributions = {
     "_StandardLaplace": _StandardLaplace,
     "Laplace": lambda shape: Laplace(jnp.ones(shape)),
     "Exponential": lambda shape: Exponential(jnp.ones(shape)),
+    "_StandardLogistic": _StandardLogistic,
+    "Logistic": lambda shape: Logistic(jnp.ones(shape)),
 }
 
 

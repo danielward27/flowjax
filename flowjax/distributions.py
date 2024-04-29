@@ -13,7 +13,7 @@ import jax.random as jr
 from equinox import AbstractVar
 from jax.numpy import linalg
 from jax.scipy import stats as jstats
-from jaxtyping import Array, ArrayLike, PRNGKeyArray
+from jaxtyping import Array, ArrayLike, PRNGKeyArray, Shaped
 
 from flowjax.bijections import (
     AbstractBijection,
@@ -409,7 +409,7 @@ class Normal(AbstractLocScaleDistribution):
     ``loc`` and ``scale`` should broadcast to the desired shape of the distribution.
 
     Args:
-        loc: Means. Defaults to 0.
+        loc: Means. Defaults to 0. Defaults to 0.
         scale: Standard deviations. Defaults to 1.
     """
 
@@ -457,7 +457,11 @@ class MultivariateNormal(AbstractTransformed):
     base_dist: StandardNormal
     bijection: TriangularAffine
 
-    def __init__(self, loc: ArrayLike, covariance: ArrayLike):
+    def __init__(
+        self,
+        loc: Shaped[ArrayLike, "#dim"],
+        covariance: Shaped[Array, "dim dim"],
+    ):
         self.bijection = TriangularAffine(loc, linalg.cholesky(covariance))
         self.base_dist = StandardNormal(self.bijection.shape)
 
@@ -537,7 +541,7 @@ class Gumbel(AbstractLocScaleDistribution):
     ``loc`` and ``scale`` should broadcast to the dimension of the distribution.
 
     Args:
-        loc: Location paramter.
+        loc: Location paramter. Defaults to 0.
         scale: Scale parameter. Defaults to 1.
     """
 
@@ -573,7 +577,7 @@ class Cauchy(AbstractLocScaleDistribution):
     ``loc`` and ``scale`` should broadcast to the dimension of the distribution.
 
     Args:
-        loc: Location paramter.
+        loc: Location paramter. Defaults to 0.
         scale: Scale parameter. Defaults to 1.
     """
 
@@ -685,10 +689,41 @@ class Exponential(AbstractTransformed):
     base_dist: _StandardExponential
     bijection: Scale
 
-    def __init__(self, rate: Array):
-        self.base_dist = _StandardExponential(rate.shape)
+    def __init__(self, rate: ArrayLike = 1):
+        self.base_dist = _StandardExponential(jnp.shape(rate))
         self.bijection = Scale(1 / rate)
 
     @property
     def rate(self):
         return 1 / unwrap(self.bijection.scale)
+
+
+class _StandardLogistic(AbstractDistribution):
+    shape: tuple[int, ...] = ()
+    cond_shape: ClassVar[None] = None
+
+    def _sample(self, key, condition=None):
+        return jr.logistic(key, self.shape)
+
+    def _log_prob(self, x, condition=None):
+        return jstats.logistic.logpdf(x).sum()
+
+
+class Logistic(AbstractLocScaleDistribution):
+    """Logistic distribution.
+
+    ``loc`` and ``scale`` should broadcast to the shape of the distribution.
+
+    Args:
+        loc: Location parameter. Defaults to 0.
+        scale: Scale parameter. Defaults to 1.
+    """
+
+    base_dist: _StandardLogistic
+    bijection: Affine
+
+    def __init__(self, loc: ArrayLike = 0, scale: ArrayLike = 1):
+        self.base_dist = _StandardLogistic(
+            shape=jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale)),
+        )
+        self.bijection = Affine(loc=loc, scale=scale)
