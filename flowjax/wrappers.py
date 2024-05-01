@@ -80,7 +80,7 @@ class AbstractUnwrappable(eqx.Module, Generic[T]):
             def v_unwrap(unwrappable):
                 return unwrappable.unwrap()
 
-            for dim in unwrappable._dummy.shape:
+            for dim in reversed(unwrappable._dummy.shape):
                 v_unwrap = eqx.filter_vmap(v_unwrap, axis_size=dim)
             return v_unwrap(unwrappable)
 
