@@ -29,6 +29,7 @@ from typing import TYPE_CHECKING, ClassVar, Generic, TypeVar
 
 import equinox as eqx
 import jax.numpy as jnp
+from jaxtyping import Int, Scalar
 
 from flowjax.utils import arraylike_to_array
 
@@ -62,16 +63,12 @@ class AbstractUnwrappable(eqx.Module, Generic[T]):
     stop_gradient before accessing the parameters.
 
     If ``_dummy`` is set to an array (must have shape ()), this is used for inferring
-    vmapped dimensions (and sizes) when unwrapping to automatically vecotorize the
-    method. In some cases this is important for supporting the case where an
+    vmapped dimensions (and sizes) when calling ``unwrap`` to automatically vecotorize
+    the method. In some cases this is important for supporting the case where an
     ``AbstractUnwrappable`` is created within e.g. ``eqx.filter_vmap``.
     """
 
-    _dummy: eqx.AbstractVar[Array | None]
-
-    def __check_init__(self):
-        if self._dummy is not None and self._dummy.shape != ():
-            raise ValueError("_dummy should be initialized with shape ().")
+    _dummy: eqx.AbstractVar[Int[Scalar, ""] | None]
 
     def recursive_unwrap(self) -> T:
         """Returns the unwrapped pytree, unwrapping subnodes as required."""
@@ -83,7 +80,7 @@ class AbstractUnwrappable(eqx.Module, Generic[T]):
             def v_unwrap(unwrappable):
                 return unwrappable.unwrap()
 
-            for dim in unwrappable._dummy.shape:
+            for dim in reversed(unwrappable._dummy.shape):
                 v_unwrap = eqx.filter_vmap(v_unwrap, axis_size=dim)
             return v_unwrap(unwrappable)
 
@@ -140,7 +137,7 @@ class BijectionReparam(AbstractUnwrappable[Array]):
 
     arr: Array | AbstractUnwrappable[Array]
     bijection: "AbstractBijection"
-    _dummy: Array
+    _dummy: Int[Scalar, ""]
 
     def __init__(
         self,
@@ -156,7 +153,7 @@ class BijectionReparam(AbstractUnwrappable[Array]):
                 arr = arraylike_to_array(arr)
             self.arr = arr
         self.bijection = bijection
-        self._dummy = jnp.empty(())
+        self._dummy = jnp.empty((), int)
 
     def unwrap(self) -> Array:
         return self.bijection._vectorize.transform(self.arr)
@@ -216,13 +213,13 @@ class Lambda(AbstractUnwrappable[T]):
     fn: Callable[..., T]
     args: Iterable
     kwargs: dict
-    _dummy: Array
+    _dummy: Int[Scalar, ""]
 
     def __init__(self, fn, *args, **kwargs):
         self.fn = fn
         self.args = args
         self.kwargs = kwargs
-        self._dummy = jnp.empty(())
+        self._dummy = jnp.empty((), int)
 
     def unwrap(self) -> T:
         return self.fn(*self.args, **self.kwargs)
