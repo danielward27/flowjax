@@ -49,6 +49,12 @@ def test_Lambda():
     expected = eqx.filter_vmap(eqx.filter_vmap(jnp.eye, axis_size=4), axis_size=5)(3)
     assert pytest.approx(expected) == unwrap(v_diag)
 
+    # Test works when no arrays present (in which case axis_size is relied on)
+    unwrappable = eqx.filter_vmap(eqx.filter_vmap(Lambda, axis_size=2), axis_size=3)(
+        lambda: jnp.zeros(())
+    )
+    assert pytest.approx(unwrap(unwrappable)) == jnp.zeros((3, 2))
+
 
 def test_NonTrainable():
     dist = Normal()
