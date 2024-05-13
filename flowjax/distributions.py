@@ -11,8 +11,11 @@ import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
 from equinox import AbstractVar
+from jax.nn import log_softmax
 from jax.numpy import linalg
 from jax.scipy import stats as jstats
+from jax.scipy.special import logsumexp
+from jax.tree_util import tree_map
 from jaxtyping import Array, ArrayLike, PRNGKeyArray, Shaped
 
 from flowjax.bijections import (
@@ -24,8 +27,12 @@ from flowjax.bijections import (
     SoftPlus,
     TriangularAffine,
 )
-from flowjax.utils import _get_ufunc_signature, arraylike_to_array, merge_cond_shapes
-from flowjax.wrappers import AbstractUnwrappable, BijectionReparam, unwrap
+from flowjax.utils import (
+    _get_ufunc_signature,
+    arraylike_to_array,
+    merge_cond_shapes,
+)
+from flowjax.wrappers import AbstractUnwrappable, BijectionReparam, Lambda, unwrap
 
 
 class AbstractDistribution(eqx.Module):
@@ -727,3 +734,47 @@ class Logistic(AbstractLocScaleDistribution):
             shape=jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale)),
         )
         self.bijection = Affine(loc=loc, scale=scale)
+
+
+class VmapMixture(AbstractDistribution):
+    """Create a mixture distribution.
+
+    Given a distribution in which the arrays have a leading dimension with size
+    matching the number of components and to the components, and a set of weights,
+    create a mixture distribution.
+
+    Args:
+        dist: Distribution with a leading dimension in arrays with size equal to the
+            number of mixture components. Often it is convenient to construct this with
+            with a pattern like ``eqx.filter_vmap(MyDistribution)(my_params)``.
+        weights: The (positive) component weights.
+    """
+
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
+    log_normalized_weights: Array | AbstractUnwrappable[Array]
+    dist: AbstractDistribution
+
+    def __init__(
+        self,
+        dist: AbstractDistribution,
+        weights: ArrayLike,
+    ):
+        weights = eqx.error_if(weights, weights <= 0, "Weights must be positive.")
+        self.dist = dist
+        self.log_normalized_weights = Lambda(lambda w: log_softmax(w), jnp.log(weights))
+        self.shape = dist.shape
+        self.cond_shape = dist.cond_shape
+
+    def _log_prob(self, x, condition=None):
+        log_probs = eqx.filter_vmap(lambda d: d._log_prob(x, condition))(self.dist)
+        return logsumexp(log_probs + self.log_normalized_weights)
+
+    def _sample(self, key, condition=None):
+        key1, key2 = jr.split(key)
+        component = jr.categorical(key1, self.log_normalized_weights)
+        component_dist = tree_map(
+            lambda leaf: leaf[component] if isinstance(leaf, Array) else leaf,
+            tree=self.dist,
+        )
+        return component_dist._sample(key2, condition)
