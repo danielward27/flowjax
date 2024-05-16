@@ -1,6 +1,8 @@
 from collections.abc import Callable
+from math import prod
 from typing import NamedTuple
 
+import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
 import numpy as np
@@ -23,6 +25,7 @@ from flowjax.distributions import (
     StudentT,
     Transformed,
     Uniform,
+    VmapMixture,
     _StandardCauchy,
     _StandardGumbel,
     _StandardLaplace,
@@ -35,7 +38,6 @@ from flowjax.distributions import (
 # the generic API of Distribution classes.
 # Note we do not test the private "Standard" distributions, assuming they are
 # sufficiently tested by their loc, scale public counterparts.
-
 _test_distributions = {
     # flowjax.distributions
     "StandardNormal": StandardNormal,
@@ -54,6 +56,10 @@ _test_distributions = {
     "Exponential": lambda shape: Exponential(jnp.ones(shape)),
     "_StandardLogistic": _StandardLogistic,
     "Logistic": lambda shape: Logistic(jnp.ones(shape)),
+    "VmapMixture": lambda shape: VmapMixture(
+        eqx.filter_vmap(Normal)(jnp.arange(3 * prod(shape)).reshape(3, *shape)),
+        weights=jnp.arange(3) + 1,
+    ),
 }
 
 
@@ -249,3 +255,18 @@ test_cases = [
 def test_method_errors(test_case):
     with pytest.raises(test_case.error, match=test_case.match):
         test_case.method(*test_case.args)
+
+
+@pytest.mark.parametrize("weights", [jnp.array([0.25, 0.75]), jnp.array([1.0, 3])])
+def test_vmap_mixture(weights):
+    x = 3
+    gaussian_mixture = VmapMixture(
+        eqx.filter_vmap(Normal)(jnp.arange(2)),
+        weights=weights,
+    )
+    normalized_weights = weights / weights.sum()
+    expected = jnp.log(
+        normalized_weights[0] * jnp.exp(Normal(0).log_prob(x))
+        + normalized_weights[1] * jnp.exp(Normal(1).log_prob(x))
+    )
+    assert pytest.approx(expected) == gaussian_mixture.log_prob(x)
