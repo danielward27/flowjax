@@ -63,12 +63,14 @@ class MaskedAutoregressive(AbstractBijection):
         if cond_dim is None:
             self.cond_shape = None
             in_ranks = jnp.arange(dim)
+            # If dim=1, hidden ranks all zero -> all weights masked out in final layer
+            hidden_ranks = jnp.arange(nn_width) % (dim - 1)
         else:
             self.cond_shape = (cond_dim,)
             # we give conditioning variables rank -1 (no masking of edges to output)
             in_ranks = jnp.hstack((jnp.arange(dim), -jnp.ones(cond_dim, int)))
-
-        hidden_ranks = jnp.arange(nn_width) % dim
+            # If dim=1, hidden ranks all -1 -> all outputs only depend on condition
+            hidden_ranks = (jnp.arange(nn_width) % dim) - 1
         out_ranks = jnp.repeat(jnp.arange(dim), num_params)
 
         self.masked_autoregressive_mlp = masked_autoregressive_mlp(

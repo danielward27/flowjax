@@ -87,9 +87,9 @@ class AbstractDistribution(eqx.Module):
             Array: Jax array of log probabilities.
         """
         self = unwrap(self)
-        x = arraylike_to_array(x, err_name="x")
+        x = arraylike_to_array(x, err_name="x", dtype=float)
         if self.cond_shape is not None:
-            condition = arraylike_to_array(condition, err_name="condition")
+            condition = arraylike_to_array(condition, err_name="condition", dtype=float)
         lps = self._vectorize(self._log_prob)(x, condition)
         return jnp.where(jnp.isnan(lps), -jnp.inf, lps)
 
