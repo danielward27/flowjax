@@ -739,15 +739,14 @@ class Logistic(AbstractLocScaleDistribution):
 class VmapMixture(AbstractDistribution):
     """Create a mixture distribution.
 
-    Given a distribution in which the arrays have a leading dimension with size
-    matching the number of components and to the components, and a set of weights,
-    create a mixture distribution.
+    Given a distribution in which the arrays have a leading dimension with size matching
+    the number of components, and a set of weights, create a mixture distribution.
 
     Args:
         dist: Distribution with a leading dimension in arrays with size equal to the
             number of mixture components. Often it is convenient to construct this with
             with a pattern like ``eqx.filter_vmap(MyDistribution)(my_params)``.
-        weights: The (positive) component weights.
+        weights: The positive, but possibly unnormalized component weights.
     """
 
     shape: tuple[int, ...]
