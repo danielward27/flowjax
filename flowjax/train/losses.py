@@ -36,6 +36,27 @@ class MaximumLikelihoodLoss:
         return -dist.log_prob(x, condition).mean()
 
 
+class WeightedMaximumLikelihoodLoss:
+    """Loss for fitting a flow with maximum likelihood (negative log likelihood)
+    for weighted samples.
+
+    This loss can be used to learn either conditional or unconditional distributions.
+    """
+    @eqx.filter_jit
+    def __call__(
+        self,
+        params: AbstractDistribution,
+        static: AbstractDistribution,
+        x: Array,
+        weights: Array, 
+        condition: Array | None = None,
+    ) -> Float[Array, ""]:
+        """Compute the loss."""
+        dist = unwrap(eqx.combine(params, static))
+        evl = -dist.log_prob(x, condition)
+        return (evl*weights).sum()/len(evl)
+
+
 class ContrastiveLoss:
     r"""Loss function for use in a sequential neural posterior estimation algorithm.
 

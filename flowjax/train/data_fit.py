@@ -11,6 +11,7 @@ from tqdm import tqdm
 
 from flowjax import wrappers
 from flowjax.train.losses import MaximumLikelihoodLoss
+from flowjax.train.losses import WeightedMaximumLikelihoodLoss
 from flowjax.train.train_utils import (
     count_fruitless,
     get_batches,
@@ -23,6 +24,7 @@ def fit_to_data(
     key: PRNGKeyArray,
     dist: PyTree,  # Custom losses may support broader types than AbstractDistribution
     x: ArrayLike,
+    weights: ArrayLike | None = None,
     *,
     condition: ArrayLike | None = None,
     loss_fn: Callable | None = None,
@@ -46,6 +48,7 @@ def fit_to_data(
         key: Jax random seed.
         dist: The distribution to train.
         x: Samples from target distribution.
+        weights: Weights of the target distribution samples. Defaults to None.
         condition: Conditioning variables. Defaults to None.
         loss_fn: Loss function. Defaults to MaximumLikelihoodLoss.
         max_epochs: Maximum number of epochs. Defaults to 100.
@@ -65,13 +68,19 @@ def fit_to_data(
         A tuple containing the trained distribution and the losses.
     """
     data = (x,) if condition is None else (x, condition)
-    data = tuple(jnp.asarray(a) for a in data)
+    if weights is None:
+        data = tuple(jnp.asarray(a) for a in data)
+    else:
+        data = tuple(jnp.asarray(a) for a in (jnp.c_[x, weights],))
 
     if optimizer is None:
         optimizer = optax.adam(learning_rate)
 
     if loss_fn is None:
-        loss_fn = MaximumLikelihoodLoss()
+        if weights is None:
+            loss_fn = MaximumLikelihoodLoss()
+        else:
+            loss_fn = WeightedMaximumLikelihoodLoss()
 
     params, static = eqx.partition(
         dist,
@@ -97,21 +106,34 @@ def fit_to_data(
         # Train epoch
         batch_losses = []
         for batch in zip(*get_batches(train_data, batch_size), strict=True):
-            params, opt_state, loss_i = step(
-                params,
-                static,
-                *batch,
-                optimizer=optimizer,
-                opt_state=opt_state,
-                loss_fn=loss_fn,
-            )
+            if weights is None:
+                params, opt_state, loss_i = step(
+                    params,
+                    static,
+                    *batch,
+                    optimizer=optimizer,
+                    opt_state=opt_state,
+                    loss_fn=loss_fn,
+                )
+            else:
+                params, opt_state, loss_i = step(
+                    params,
+                    static,
+                    batch[0][:,:-1],batch[0][:,-1],
+                    optimizer=optimizer,
+                    opt_state=opt_state,
+                    loss_fn=loss_fn,
+                )
             batch_losses.append(loss_i)
         losses["train"].append(sum(batch_losses) / len(batch_losses))
 
         # Val epoch
         batch_losses = []
         for batch in zip(*get_batches(val_data, batch_size), strict=True):
-            loss_i = loss_fn(params, static, *batch)
+            if weights is None:
+                loss_i = loss_fn(params, static, *batch)
+            else:
+                loss_i = loss_fn(params, static, batch[0][:,:-1],batch[0][:,-1])
             batch_losses.append(loss_i)
         losses["val"].append(sum(batch_losses) / len(batch_losses))
 
