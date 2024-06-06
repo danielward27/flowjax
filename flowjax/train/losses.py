@@ -72,28 +72,27 @@ class ContrastiveLoss:
         condition: Array | None = None,
     ) -> Float[Array, ""]:
         """Compute the loss."""
-        dist = unwrap(eqx.combine(params, static))
-        contrastive = self._get_contrastive(x)
-        joint_log_odds = dist.log_prob(x, condition) - self.prior.log_prob(x)
-        contrastive_log_odds = dist.log_prob(
-            contrastive,
-            condition,
-        ) - self.prior.log_prob(contrastive)
-        contrastive_log_odds = jnp.clip(
-            contrastive_log_odds, -5
-        )  # TODO Clip for stability - this maybe should reconsidered
-        return -(joint_log_odds - logsumexp(contrastive_log_odds, axis=0)).mean()
-
-    def _get_contrastive(self, theta):
-        if theta.shape[0] <= self.n_contrastive:
+        if x.shape[0] <= self.n_contrastive:
             raise ValueError(
                 f"Number of contrastive samples {self.n_contrastive} must be less than "
-                f"the size of theta {theta.shape}.",
+                f"the size of x {x.shape}.",
             )
-        # Rolling window over theta batch to create contrastive samples.
-        idx = jnp.arange(len(theta))[:, None] + jnp.arange(self.n_contrastive)[None, :]
-        contrastive = jnp.roll(theta[idx], -1, axis=0)  # Ensure mismatch with condition
-        return jnp.swapaxes(contrastive, 0, 1)  # (contrastive, batch_size, dim)
+        dist = unwrap(eqx.combine(params, static))
+
+        def single_x_loss(x_i, condition_i, idx):
+            positive_logit = dist.log_prob(x_i, condition_i) - self.prior.log_prob(x_i)
+            contrastive = jnp.delete(x, idx, assume_unique_indices=True, axis=0)[
+                : self.n_contrastive
+            ]
+            contrastive_logits = dist.log_prob(
+                contrastive, condition_i
+            ) - self.prior.log_prob(contrastive)
+            normalizer = logsumexp(jnp.append(contrastive_logits, positive_logit))
+            return -(positive_logit - normalizer)
+
+        return eqx.filter_vmap(single_x_loss)(
+            x, condition, jnp.arange(x.shape[0], dtype=int)
+        ).mean()
 
 
 class ElboLoss:
