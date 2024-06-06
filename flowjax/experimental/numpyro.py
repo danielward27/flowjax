@@ -25,11 +25,59 @@ except ImportError as e:
     raise
 
 from jaxtyping import PyTree
+from numpyro.distributions import TransformedDistribution
 from numpyro.distributions.constraints import (
     _IndependentConstraint,
     _Real,
 )
 from numpyro.distributions.transforms import IndependentTransform, biject_to
+from numpyro.distributions.util import sum_rightmost
+
+from flowjax.bijections import Invert
+
+
+class _BetterTransformedDistribution(TransformedDistribution):
+    # In numpyro, the log_prob method seperately computes the inverse and the log
+    # jacobian of the forward transformation. This becomes inefficient (or causes
+    # errors) when the inverse computation and the forward log det share computations.
+    # This class avoids this for flowjax bijections.
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def log_prob(self, value, intermediates=None):
+        event_dim = len(self.event_shape)
+        log_prob = 0.0
+        y = value
+
+        for i, transform in enumerate(reversed(self.transforms)):
+
+            if isinstance(transform, _BijectionToNumpyro) and intermediates is None:
+                # Compute inv and log det in one
+                inv_transform = _BijectionToNumpyro(
+                    Invert(transform.bijection),
+                    transform.condition,
+                    domain=transform.inv.domain,
+                    codomain=transform.inv.codomain,
+                )
+                x, t_log_det = inv_transform.call_with_intermediates(y)
+                t_log_det = -t_log_det
+            else:
+                if intermediates is None:
+                    x = transform.inv(y)
+                    t_inter = None
+                else:
+                    x = intermediates[-i - 1][0]
+                    t_inter = intermediates[-i - 1][1]
+                t_log_det = transform.log_abs_det_jacobian(x, y, t_inter)
+            batch_ndim = event_dim - transform.codomain.event_dim
+            log_prob = log_prob - sum_rightmost(t_log_det, batch_ndim)
+            event_dim = transform.domain.event_dim + batch_ndim
+            y = x
+
+        return log_prob + sum_rightmost(
+            self.base_dist.log_prob(y), event_dim - len(self.base_dist.event_shape)
+        )
 
 
 class _RealNdim(_IndependentConstraint):
@@ -158,7 +206,7 @@ def _transformed_to_numpyro(dist, condition=None):
         base_dist = _DistributionToNumpyro(dist.base_dist).expand(batch_shape)
 
     transform = _BijectionToNumpyro(dist.bijection, condition)
-    return numpyro.distributions.TransformedDistribution(base_dist, transform)
+    return _BetterTransformedDistribution(base_dist, transform)
 
 
 def _get_batch_shape(condition, cond_shape):

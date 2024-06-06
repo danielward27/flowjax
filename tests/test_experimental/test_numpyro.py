@@ -1,4 +1,5 @@
 from functools import partial
+from typing import ClassVar
 
 import equinox as eqx
 import jax
@@ -15,7 +16,7 @@ from numpyro.distributions.transforms import AffineTransform
 from numpyro.infer import MCMC, NUTS, SVI, Trace_ELBO
 from numpyro.optim import Adam
 
-from flowjax.bijections import AdditiveCondition, Affine
+from flowjax.bijections import AbstractBijection, AdditiveCondition, Affine, Invert
 from flowjax.distributions import (
     LogNormal,
     Normal,
@@ -391,3 +392,38 @@ def test_transformed_reparam():
     assert "x_base" in trace.keys()
     expected_x = log_norm.bijection.transform(trace["x_base"]["value"])
     assert pytest.approx(expected_x) == trace["x"]["value"]
+
+
+class _ForwardOnly(AbstractBijection):
+    shape: tuple[int, ...] = ()
+    cond_shape: ClassVar[None] = None
+
+    def transform(self, x, condition=None):
+        return x
+
+    def transform_and_log_det(self, x, condition=None):
+        return x, jnp.zeros(())
+
+    def inverse(self, y, condition=None):
+        raise NotImplementedError()
+
+    def inverse_and_log_det(self, y, condition=None):
+        raise NotImplementedError()
+
+
+def test_sampling_forward_only():
+    dist = Transformed(
+        StandardNormal(),
+        _ForwardOnly(),
+    )
+    dist = distribution_to_numpyro(dist)
+    dist.sample(jr.PRNGKey(0))
+
+
+def test_log_prob_inverse_only():
+    dist = Transformed(
+        StandardNormal(),
+        Invert(_ForwardOnly()),
+    )
+    dist = distribution_to_numpyro(dist)
+    dist.log_prob(0)
