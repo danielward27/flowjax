@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Distributions &mdash; FlowJax  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=3d3fbe02" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/style.css?v=60e24bd7" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+        <script src="../_static/copybutton.js?v=ccdb6887"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Experimental" href="experimental.html" />
+    <link rel="prev" title="Bijections" href="bijections.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            FlowJax
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../examples/unconditional.html">Unconditional density estmation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/conditional.html">Conditional density estimation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/variational_inference.html">Variational inference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/bounded.html">Bounded flows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/snpe.html">Sequential neural posterior estimation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="bijections.html">Bijections</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Distributions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.distributions.AbstractDistribution"><code class="docutils literal notranslate"><span class="pre">AbstractDistribution</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.distributions.AbstractLocScaleDistribution"><code class="docutils literal notranslate"><span class="pre">AbstractLocScaleDistribution</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.distributions.AbstractTransformed"><code class="docutils literal notranslate"><span class="pre">AbstractTransformed</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.distributions.Cauchy"><code class="docutils literal notranslate"><span class="pre">Cauchy</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.distributions.Exponential"><code class="docutils literal notranslate"><span class="pre">Exponential</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.distributions.Gumbel"><code class="docutils literal notranslate"><span class="pre">Gumbel</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.distributions.Laplace"><code class="docutils literal notranslate"><span class="pre">Laplace</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.distributions.LogNormal"><code class="docutils literal notranslate"><span class="pre">LogNormal</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.distributions.Logistic"><code class="docutils literal notranslate"><span class="pre">Logistic</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.distributions.MultivariateNormal"><code class="docutils literal notranslate"><span class="pre">MultivariateNormal</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.distributions.Normal"><code class="docutils literal notranslate"><span class="pre">Normal</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.distributions.StandardNormal"><code class="docutils literal notranslate"><span class="pre">StandardNormal</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.distributions.StudentT"><code class="docutils literal notranslate"><span class="pre">StudentT</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.distributions.Transformed"><code class="docutils literal notranslate"><span class="pre">Transformed</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.distributions.Uniform"><code class="docutils literal notranslate"><span class="pre">Uniform</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.distributions.VmapMixture"><code class="docutils literal notranslate"><span class="pre">VmapMixture</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="experimental.html">Experimental</a></li>
+<li class="toctree-l1"><a class="reference internal" href="flows.html">Flows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="losses.html">Loss functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="training.html">Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="wrappers.html">Wrappers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Miscellaneous</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">FlowJax</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Distributions</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/distributions.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="distributions">
+<h1>Distributions<a class="headerlink" href="#distributions" title="Link to this heading"></a></h1>
+<p>Distributions from <code class="docutils literal notranslate"><span class="pre">flowjax.distributions</span></code>.</p>
+<p id="module-flowjax.distributions">Distributions, including the abstract and concrete classes.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="flowjax.distributions.AbstractDistribution">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">AbstractDistribution</span></span><a class="reference internal" href="../_modules/flowjax/distributions.html#AbstractDistribution"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.distributions.AbstractDistribution" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code></p>
+<p>Abstract distribution class.</p>
+<p>Distributions are registered as jax PyTrees (as they are equinox modules), and as
+such they are compatible with normal jax operations.</p>
+<dl class="simple">
+<dt>Concrete subclasses can be implemented as follows:</dt><dd><ol class="arabic simple">
+<li><p>Inherit from <a class="reference internal" href="#flowjax.distributions.AbstractDistribution" title="flowjax.distributions.AbstractDistribution"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDistribution</span></code></a>.</p></li>
+<li><p>Define the abstract attributes <code class="docutils literal notranslate"><span class="pre">shape</span></code> and <code class="docutils literal notranslate"><span class="pre">cond_shape</span></code>.
+<code class="docutils literal notranslate"><span class="pre">cond_shape</span></code> should be <code class="docutils literal notranslate"><span class="pre">None</span></code> for unconditional distributions.</p></li>
+<li><p>Define the abstract methods <cite>_sample</cite> and <cite>_log_prob</cite>.</p></li>
+</ol>
+</dd>
+</dl>
+<p>See the source code for <a class="reference internal" href="#flowjax.distributions.StandardNormal" title="flowjax.distributions.StandardNormal"><code class="xref py py-class docutils literal notranslate"><span class="pre">StandardNormal</span></code></a> for a simple concrete example.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flowjax.distributions.AbstractDistribution.shape">
+<span class="sig-name descname"><span class="pre">shape</span></span><a class="headerlink" href="#flowjax.distributions.AbstractDistribution.shape" title="Link to this definition"></a></dt>
+<dd><p>Tuple denoting the shape of a single sample from the distribution.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flowjax.distributions.AbstractDistribution.cond_shape">
+<span class="sig-name descname"><span class="pre">cond_shape</span></span><a class="headerlink" href="#flowjax.distributions.AbstractDistribution.cond_shape" title="Link to this definition"></a></dt>
+<dd><p>Tuple denoting the shape of an instance of the conditioning
+variable. This should be None for unconditional distributions.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="flowjax.distributions.AbstractDistribution.log_prob">
+<span class="sig-name descname"><span class="pre">log_prob</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">x</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">condition</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/distributions.html#AbstractDistribution.log_prob"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.distributions.AbstractDistribution.log_prob" title="Link to this definition"></a></dt>
+<dd><p>Evaluate the log probability.</p>
+<p>Uses numpy-like broadcasting if additional leading dimensions are passed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>x</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayLike</span></code></span>) – Points at which to evaluate density.</p></li>
+<li><p><strong>condition</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayLike</span></code> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Conditioning variables. Defaults to None.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p>Jax array of log probabilities.</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>Array</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="flowjax.distributions.AbstractDistribution.sample">
+<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">condition</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/distributions.html#AbstractDistribution.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.distributions.AbstractDistribution.sample" title="Link to this definition"></a></dt>
+<dd><p>Sample from the distribution.</p>
+<p>For unconditional distributions, the output will be of shape
+<code class="docutils literal notranslate"><span class="pre">sample_shape</span> <span class="pre">+</span> <span class="pre">dist.shape</span></code>. For conditional distributions, a batch dimension
+in the condition is supported, and the output shape will be
+<code class="docutils literal notranslate"><span class="pre">sample_shape</span> <span class="pre">+</span> <span class="pre">condition_batch_shape</span> <span class="pre">+</span> <span class="pre">dist.shape</span></code>.
+See the example for more information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">PRNGKeyArray</span></code></span>) – Jax random key.</p></li>
+<li><p><strong>condition</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayLike</span></code> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Conditioning variables. Defaults to None.</p></li>
+<li><p><strong>sample_shape</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/constants.html#Ellipsis" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code></a>]</span>) – Sample shape. Defaults to ().</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></span></p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<p>The below example shows the behaviour of sampling, for an unconditional
+and a conditional distribution.</p>
+<p>For an unconditional distribution:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">dist</span><span class="o">.</span><span class="n">shape</span>
+<span class="go">(2,)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">samples</span> <span class="o">=</span> <span class="n">dist</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">samples</span><span class="o">.</span><span class="n">shape</span>
+<span class="go">(10, 2)</span>
+</pre></div>
+</div>
+<p>For a conditional distribution:</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">cond_dist</span><span class="o">.</span><span class="n">shape</span>
+<span class="go">(2,)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">cond_dist</span><span class="o">.</span><span class="n">cond_shape</span>
+<span class="go">(3,)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Sample 10 times for a particular condition</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">samples</span> <span class="o">=</span> <span class="n">cond_dist</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="mi">10</span><span class="p">,),</span> <span class="n">condition</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">3</span><span class="p">))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">samples</span><span class="o">.</span><span class="n">shape</span>
+<span class="go">(10, 2)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Sampling, batching over a condition</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">samples</span> <span class="o">=</span> <span class="n">cond_dist</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">)))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">samples</span><span class="o">.</span><span class="n">shape</span>
+<span class="go">(5, 2)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Sample 10 times for each of 5 conditioning variables</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">samples</span> <span class="o">=</span> <span class="n">cond_dist</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="mi">10</span><span class="p">,),</span> <span class="n">condition</span><span class="o">=</span><span class="n">jnp</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">)))</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">samples</span><span class="o">.</span><span class="n">shape</span>
+<span class="go">(10, 5, 2)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="flowjax.distributions.AbstractDistribution.sample_and_log_prob">
+<span class="sig-name descname"><span class="pre">sample_and_log_prob</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">key</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">condition</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/distributions.html#AbstractDistribution.sample_and_log_prob"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.distributions.AbstractDistribution.sample_and_log_prob" title="Link to this definition"></a></dt>
+<dd><p>Sample the distribution and return the samples with their log probabilities.</p>
+<p>For transformed distributions (especially flows), this will generally be more
+efficient than calling the methods seperately. Refer to the
+<a class="reference internal" href="#flowjax.distributions.AbstractDistribution.sample" title="flowjax.distributions.AbstractDistribution.sample"><code class="xref py py-meth docutils literal notranslate"><span class="pre">sample()</span></code></a> documentation for
+more information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>key</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">PRNGKeyArray</span></code></span>) – Jax random key.</p></li>
+<li><p><strong>condition</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayLike</span></code> | <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></a></span>) – Conditioning variables. Defaults to None.</p></li>
+<li><p><strong>sample_shape</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/constants.html#Ellipsis" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code></a>]</span>) – Sample shape. Defaults to ().</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type<span class="colon">:</span></dt>
+<dd class="field-even"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code>]</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="flowjax.distributions.AbstractDistribution.cond_ndim">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">cond_ndim</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.12)"><span class="pre">None</span></a><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></em><a class="headerlink" href="#flowjax.distributions.AbstractDistribution.cond_ndim" title="Link to this definition"></a></dt>
+<dd><p>Number of dimensions of the conditioning variable (length of cond_shape).</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="flowjax.distributions.AbstractDistribution.ndim">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ndim</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><span class="pre">int</span></a></em><a class="headerlink" href="#flowjax.distributions.AbstractDistribution.ndim" title="Link to this definition"></a></dt>
+<dd><p>Number of dimensions in the distribution (the length of the shape).</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flowjax.distributions.AbstractLocScaleDistribution">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">AbstractLocScaleDistribution</span></span><a class="reference internal" href="../_modules/flowjax/distributions.html#AbstractLocScaleDistribution"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.distributions.AbstractLocScaleDistribution" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flowjax.distributions.AbstractTransformed" title="flowjax.distributions.AbstractTransformed"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractTransformed</span></code></a></p>
+<p>Abstract distribution class for affine transformed distributions.</p>
+<dl class="py property">
+<dt class="sig sig-object py" id="flowjax.distributions.AbstractLocScaleDistribution.loc">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">loc</span></span><a class="headerlink" href="#flowjax.distributions.AbstractLocScaleDistribution.loc" title="Link to this definition"></a></dt>
+<dd><p>Location of the distribution.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="flowjax.distributions.AbstractLocScaleDistribution.scale">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">scale</span></span><a class="headerlink" href="#flowjax.distributions.AbstractLocScaleDistribution.scale" title="Link to this definition"></a></dt>
+<dd><p>Scale of the distribution.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flowjax.distributions.AbstractTransformed">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">AbstractTransformed</span></span><a class="reference internal" href="../_modules/flowjax/distributions.html#AbstractTransformed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.distributions.AbstractTransformed" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flowjax.distributions.AbstractDistribution" title="flowjax.distributions.AbstractDistribution"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDistribution</span></code></a></p>
+<p>Abstract class respresenting transformed distributions.</p>
+<p>We take the forward bijection for use in sampling, and the inverse for use in
+density evaluation. See also <a class="reference internal" href="#flowjax.distributions.Transformed" title="flowjax.distributions.Transformed"><code class="xref py py-class docutils literal notranslate"><span class="pre">Transformed</span></code></a>.</p>
+<p>Concete implementations should subclass <a class="reference internal" href="#flowjax.distributions.AbstractTransformed" title="flowjax.distributions.AbstractTransformed"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractTransformed</span></code></a>, and
+define the abstract attributes <code class="docutils literal notranslate"><span class="pre">base_dist</span></code> and <code class="docutils literal notranslate"><span class="pre">bijection</span></code>. See the source code
+for <a class="reference internal" href="#flowjax.distributions.Normal" title="flowjax.distributions.Normal"><code class="xref py py-class docutils literal notranslate"><span class="pre">Normal</span></code></a> as a simple example.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flowjax.distributions.AbstractTransformed.base_dist">
+<span class="sig-name descname"><span class="pre">base_dist</span></span><a class="headerlink" href="#flowjax.distributions.AbstractTransformed.base_dist" title="Link to this definition"></a></dt>
+<dd><p>The base distribution.</p>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flowjax.distributions.AbstractTransformed.bijection">
+<span class="sig-name descname"><span class="pre">bijection</span></span><a class="headerlink" href="#flowjax.distributions.AbstractTransformed.bijection" title="Link to this definition"></a></dt>
+<dd><p>The transformation to apply.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="flowjax.distributions.AbstractTransformed.merge_transforms">
+<span class="sig-name descname"><span class="pre">merge_transforms</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/distributions.html#AbstractTransformed.merge_transforms"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.distributions.AbstractTransformed.merge_transforms" title="Link to this definition"></a></dt>
+<dd><p>Unnests nested transformed distributions.</p>
+<p>Returns an equivilent distribution, but ravelling nested
+<a class="reference internal" href="#flowjax.distributions.AbstractTransformed" title="flowjax.distributions.AbstractTransformed"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractTransformed</span></code></a> distributions such that the returned distribution
+has a base distribution that is not an <a class="reference internal" href="#flowjax.distributions.AbstractTransformed" title="flowjax.distributions.AbstractTransformed"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractTransformed</span></code></a> instance.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flowjax.distributions.Cauchy">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Cauchy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/distributions.html#Cauchy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.distributions.Cauchy" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flowjax.distributions.AbstractLocScaleDistribution" title="flowjax.distributions.AbstractLocScaleDistribution"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractLocScaleDistribution</span></code></a></p>
+<p>Cauchy distribution (<a class="reference external" href="https://en.wikipedia.org/wiki/Cauchy_distribution">https://en.wikipedia.org/wiki/Cauchy_distribution</a>).</p>
+<p><code class="docutils literal notranslate"><span class="pre">loc</span></code> and <code class="docutils literal notranslate"><span class="pre">scale</span></code> should broadcast to the dimension of the distribution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>loc</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayLike</span></code></span>) – Location paramter. Defaults to 0.</p></li>
+<li><p><strong>scale</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayLike</span></code></span>) – Scale parameter. Defaults to 1.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flowjax.distributions.Exponential">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Exponential</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/distributions.html#Exponential"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.distributions.Exponential" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flowjax.distributions.AbstractTransformed" title="flowjax.distributions.AbstractTransformed"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractTransformed</span></code></a></p>
+<p>Exponential distribution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>rate</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayLike</span></code></span>) – The rate parameter (1 / scale).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flowjax.distributions.Gumbel">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Gumbel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/distributions.html#Gumbel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.distributions.Gumbel" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flowjax.distributions.AbstractLocScaleDistribution" title="flowjax.distributions.AbstractLocScaleDistribution"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractLocScaleDistribution</span></code></a></p>
+<p>Gumbel distribution (<a class="reference external" href="https://en.wikipedia.org/wiki/Gumbel_distribution">https://en.wikipedia.org/wiki/Gumbel_distribution</a>).</p>
+<p><code class="docutils literal notranslate"><span class="pre">loc</span></code> and <code class="docutils literal notranslate"><span class="pre">scale</span></code> should broadcast to the dimension of the distribution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>loc</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayLike</span></code></span>) – Location paramter. Defaults to 0.</p></li>
+<li><p><strong>scale</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayLike</span></code></span>) – Scale parameter. Defaults to 1.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flowjax.distributions.Laplace">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Laplace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/distributions.html#Laplace"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.distributions.Laplace" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flowjax.distributions.AbstractLocScaleDistribution" title="flowjax.distributions.AbstractLocScaleDistribution"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractLocScaleDistribution</span></code></a></p>
+<p>Laplace distribution.</p>
+<p><code class="docutils literal notranslate"><span class="pre">loc</span></code> and <code class="docutils literal notranslate"><span class="pre">scale</span></code> should broadcast to the dimension of the distribution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>loc</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayLike</span></code></span>) – Location paramter. Defaults to 0.</p></li>
+<li><p><strong>scale</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayLike</span></code></span>) – Scale parameter. Defaults to 1.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flowjax.distributions.LogNormal">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">LogNormal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/distributions.html#LogNormal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.distributions.LogNormal" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flowjax.distributions.AbstractTransformed" title="flowjax.distributions.AbstractTransformed"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractTransformed</span></code></a></p>
+<p>Log normal distribution.</p>
+<p><code class="docutils literal notranslate"><span class="pre">loc</span></code> and <code class="docutils literal notranslate"><span class="pre">scale</span></code> here refers to the underlying normal distribution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>loc</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayLike</span></code></span>) – Location paramter. Defaults to 0.</p></li>
+<li><p><strong>scale</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayLike</span></code></span>) – Scale parameter. Defaults to 1.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flowjax.distributions.Logistic">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Logistic</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/distributions.html#Logistic"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.distributions.Logistic" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flowjax.distributions.AbstractLocScaleDistribution" title="flowjax.distributions.AbstractLocScaleDistribution"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractLocScaleDistribution</span></code></a></p>
+<p>Logistic distribution.</p>
+<p><code class="docutils literal notranslate"><span class="pre">loc</span></code> and <code class="docutils literal notranslate"><span class="pre">scale</span></code> should broadcast to the shape of the distribution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>loc</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayLike</span></code></span>) – Location parameter. Defaults to 0.</p></li>
+<li><p><strong>scale</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayLike</span></code></span>) – Scale parameter. Defaults to 1.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flowjax.distributions.MultivariateNormal">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">MultivariateNormal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loc</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariance</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/distributions.html#MultivariateNormal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.distributions.MultivariateNormal" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flowjax.distributions.AbstractTransformed" title="flowjax.distributions.AbstractTransformed"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractTransformed</span></code></a></p>
+<p>Multivariate normal distribution.</p>
+<p>Internally this is parameterised using the Cholesky decomposition of the covariance
+matrix.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>loc</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Shaped[ArrayLike,</span> <span class="pre">'#dim']</span></code></span>) – The location/mean parameter vector. If this is scalar it is broadcast to
+the dimension implied by the covariance matrix.</p></li>
+<li><p><strong>covariance</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Shaped[Array,</span> <span class="pre">'dim</span> <span class="pre">dim']</span></code></span>) – Covariance matrix.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="flowjax.distributions.MultivariateNormal.covariance">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">covariance</span></span><a class="headerlink" href="#flowjax.distributions.MultivariateNormal.covariance" title="Link to this definition"></a></dt>
+<dd><p>The covariance matrix.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="flowjax.distributions.MultivariateNormal.loc">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">loc</span></span><a class="headerlink" href="#flowjax.distributions.MultivariateNormal.loc" title="Link to this definition"></a></dt>
+<dd><p>Location (mean) of the distribution.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flowjax.distributions.Normal">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Normal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/distributions.html#Normal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.distributions.Normal" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flowjax.distributions.AbstractLocScaleDistribution" title="flowjax.distributions.AbstractLocScaleDistribution"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractLocScaleDistribution</span></code></a></p>
+<p>An independent Normal distribution with mean and std for each dimension.</p>
+<p><code class="docutils literal notranslate"><span class="pre">loc</span></code> and <code class="docutils literal notranslate"><span class="pre">scale</span></code> should broadcast to the desired shape of the distribution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>loc</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayLike</span></code></span>) – Means. Defaults to 0. Defaults to 0.</p></li>
+<li><p><strong>scale</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayLike</span></code></span>) – Standard deviations. Defaults to 1.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flowjax.distributions.StandardNormal">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">StandardNormal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shape</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">()</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/distributions.html#StandardNormal"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.distributions.StandardNormal" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flowjax.distributions.AbstractDistribution" title="flowjax.distributions.AbstractDistribution"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDistribution</span></code></a></p>
+<p>Standard normal distribution.</p>
+<p>Note unlike <a class="reference internal" href="#flowjax.distributions.Normal" title="flowjax.distributions.Normal"><code class="xref py py-class docutils literal notranslate"><span class="pre">Normal</span></code></a>, this has no trainable parameters.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>shape</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>[<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/constants.html#Ellipsis" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code></a>]</span>) – The shape of the distribution. Defaults to ().</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flowjax.distributions.StudentT">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">StudentT</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loc</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scale</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/distributions.html#StudentT"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.distributions.StudentT" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flowjax.distributions.AbstractLocScaleDistribution" title="flowjax.distributions.AbstractLocScaleDistribution"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractLocScaleDistribution</span></code></a></p>
+<p>Student T distribution (<a class="reference external" href="https://en.wikipedia.org/wiki/Student%27s_t-distribution">https://en.wikipedia.org/wiki/Student%27s_t-distribution</a>).</p>
+<p><code class="docutils literal notranslate"><span class="pre">df</span></code>, <code class="docutils literal notranslate"><span class="pre">loc</span></code> and <code class="docutils literal notranslate"><span class="pre">scale</span></code> broadcast to the dimension of the distribution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>df</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayLike</span></code></span>) – The degrees of freedom.</p></li>
+<li><p><strong>loc</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayLike</span></code></span>) – Location parameter. Defaults to 0.</p></li>
+<li><p><strong>scale</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayLike</span></code></span>) – Scale parameter. Defaults to 1.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="flowjax.distributions.StudentT.df">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">df</span></span><a class="headerlink" href="#flowjax.distributions.StudentT.df" title="Link to this definition"></a></dt>
+<dd><p>The degrees of freedom of the distribution.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flowjax.distributions.Transformed">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Transformed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_dist</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bijection</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/distributions.html#Transformed"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.distributions.Transformed" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flowjax.distributions.AbstractTransformed" title="flowjax.distributions.AbstractTransformed"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractTransformed</span></code></a></p>
+<p>Form a distribution like object using a base distribution and a bijection.</p>
+<p>We take the forward bijection for use in sampling, and the inverse
+bijection for use in density evaluation.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>It is the currently the users responsibility to ensure the bijection is
+valid across the entire support of the distribution. Failure to do so may
+lead to to unexpected results.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>base_dist</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#flowjax.distributions.AbstractDistribution" title="flowjax.distributions.AbstractDistribution"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDistribution</span></code></a></span>) – Base distribution.</p></li>
+<li><p><strong>bijection</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="bijections.html#flowjax.bijections.AbstractBijection" title="flowjax.bijections.bijection.AbstractBijection"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractBijection</span></code></a></span>) – Bijection to transform distribution.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<div class="highlight-pycon notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">flowjax.distributions</span> <span class="kn">import</span> <span class="n">StandardNormal</span><span class="p">,</span> <span class="n">Transformed</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">flowjax.bijections</span> <span class="kn">import</span> <span class="n">Affine</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">normal</span> <span class="o">=</span> <span class="n">StandardNormal</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">bijection</span> <span class="o">=</span> <span class="n">Affine</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">transformed</span> <span class="o">=</span> <span class="n">Transformed</span><span class="p">(</span><span class="n">normal</span><span class="p">,</span> <span class="n">bijection</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flowjax.distributions.Uniform">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Uniform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">minval</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxval</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/distributions.html#Uniform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.distributions.Uniform" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flowjax.distributions.AbstractLocScaleDistribution" title="flowjax.distributions.AbstractLocScaleDistribution"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractLocScaleDistribution</span></code></a></p>
+<p>Uniform distribution.</p>
+<p><code class="docutils literal notranslate"><span class="pre">minval</span></code> and <code class="docutils literal notranslate"><span class="pre">maxval</span></code> should broadcast to the desired distribution shape.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>minval</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayLike</span></code></span>) – Minimum values.</p></li>
+<li><p><strong>maxval</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayLike</span></code></span>) – Maximum values.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="flowjax.distributions.Uniform.maxval">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">maxval</span></span><a class="headerlink" href="#flowjax.distributions.Uniform.maxval" title="Link to this definition"></a></dt>
+<dd><p>Maximum value of the uniform distribution.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="flowjax.distributions.Uniform.minval">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">minval</span></span><a class="headerlink" href="#flowjax.distributions.Uniform.minval" title="Link to this definition"></a></dt>
+<dd><p>Minimum value of the uniform distribution.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flowjax.distributions.VmapMixture">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">VmapMixture</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dist</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weights</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/distributions.html#VmapMixture"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.distributions.VmapMixture" title="Link to this definition"></a></dt>
+<dd><p>Bases: <a class="reference internal" href="#flowjax.distributions.AbstractDistribution" title="flowjax.distributions.AbstractDistribution"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDistribution</span></code></a></p>
+<p>Create a mixture distribution.</p>
+<p>Given a distribution in which the arrays have a leading dimension with size matching
+the number of components, and a set of weights, create a mixture distribution.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dist</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="#flowjax.distributions.AbstractDistribution" title="flowjax.distributions.AbstractDistribution"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDistribution</span></code></a></span>) – Distribution with a leading dimension in arrays with size equal to the
+number of mixture components. Often it is convenient to construct this with
+with a pattern like <code class="docutils literal notranslate"><span class="pre">eqx.filter_vmap(MyDistribution)(my_params)</span></code>.</p></li>
+<li><p><strong>weights</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayLike</span></code></span>) – The positive, but possibly unnormalized component weights.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="bijections.html" class="btn btn-neutral float-left" title="Bijections" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="experimental.html" class="btn btn-neutral float-right" title="Experimental" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Daniel Ward.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

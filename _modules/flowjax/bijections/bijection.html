@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>flowjax.bijections.bijection &mdash; FlowJax  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=3d3fbe02" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/style.css?v=60e24bd7" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+        <script src="../../../_static/copybutton.js?v=ccdb6887"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            FlowJax
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/unconditional.html">Unconditional density estmation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/conditional.html">Conditional density estimation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/variational_inference.html">Variational inference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/bounded.html">Bounded flows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/snpe.html">Sequential neural posterior estimation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/bijections.html">Bijections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/distributions.html">Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/experimental.html">Experimental</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/flows.html">Flows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/losses.html">Loss functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/training.html">Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/wrappers.html">Wrappers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Miscellaneous</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">FAQ</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">FlowJax</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">flowjax.bijections.bijection</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for flowjax.bijections.bijection</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Abstact base classes for the `Bijection` and `Bijection` types.</span>
+
+<span class="sd">Note when implementing bijections, by convention we try to i) implement the &quot;transform&quot;</span>
+<span class="sd">methods as the faster/more intuitive approach (compared to the inverse methods); and ii)</span>
+<span class="sd">implement only the forward methods if an inverse is not available. The `Invert`</span>
+<span class="sd">bijection can be used to invert the orientation if a fast inverse is desired (e.g.</span>
+<span class="sd">maximum likelihood fitting of flows).</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">functools</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">abstractmethod</span>
+
+<span class="kn">import</span> <span class="nn">equinox</span> <span class="k">as</span> <span class="nn">eqx</span>
+<span class="kn">import</span> <span class="nn">jax.numpy</span> <span class="k">as</span> <span class="nn">jnp</span>
+<span class="kn">from</span> <span class="nn">equinox</span> <span class="kn">import</span> <span class="n">AbstractVar</span>
+<span class="kn">from</span> <span class="nn">jaxtyping</span> <span class="kn">import</span> <span class="n">Array</span><span class="p">,</span> <span class="n">ArrayLike</span>
+
+<span class="kn">from</span> <span class="nn">flowjax.utils</span> <span class="kn">import</span> <span class="n">_get_ufunc_signature</span><span class="p">,</span> <span class="n">arraylike_to_array</span>
+<span class="kn">from</span> <span class="nn">flowjax.wrappers</span> <span class="kn">import</span> <span class="n">unwrap</span>
+
+
+<span class="k">def</span> <span class="nf">_unwrap_check_and_cast</span><span class="p">(</span><span class="n">method</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Decorator that unwraps unwrappables, performs argument casting and checking.&quot;&quot;&quot;</span>
+
+    <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">method</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span>
+        <span class="n">bijection</span><span class="p">:</span> <span class="n">AbstractBijection</span><span class="p">,</span>
+        <span class="n">x</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">condition</span><span class="p">:</span> <span class="n">ArrayLike</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="c1"># TODO This can be simplified significantly if we use beartype</span>
+        <span class="k">def</span> <span class="nf">_check_condition</span><span class="p">(</span><span class="n">condition</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">condition</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">condition</span> <span class="o">=</span> <span class="n">arraylike_to_array</span><span class="p">(</span><span class="n">condition</span><span class="p">,</span> <span class="n">err_name</span><span class="o">=</span><span class="s2">&quot;condition&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">bijection</span><span class="o">.</span><span class="n">cond_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Expected condition to be provided.&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="n">bijection</span><span class="o">.</span><span class="n">cond_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="ow">and</span> <span class="n">condition</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">bijection</span><span class="o">.</span><span class="n">cond_shape</span>
+            <span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Expected condition.shape </span><span class="si">{</span><span class="n">bijection</span><span class="o">.</span><span class="n">cond_shape</span><span class="si">}</span><span class="s2">; got &quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">condition</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">return</span> <span class="n">condition</span>
+
+        <span class="k">def</span> <span class="nf">_check_x</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">arraylike_to_array</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="n">bijection</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Expected input shape </span><span class="si">{</span><span class="n">bijection</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">; got </span><span class="si">{</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+            <span class="k">return</span> <span class="n">x</span>
+
+        <span class="k">return</span> <span class="n">method</span><span class="p">(</span><span class="n">unwrap</span><span class="p">(</span><span class="n">bijection</span><span class="p">),</span> <span class="n">_check_x</span><span class="p">(</span><span class="n">x</span><span class="p">),</span> <span class="n">_check_condition</span><span class="p">(</span><span class="n">condition</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">wrapper</span>
+
+
+<div class="viewcode-block" id="AbstractBijection">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.AbstractBijection">[docs]</a>
+<span class="k">class</span> <span class="nc">AbstractBijection</span><span class="p">(</span><span class="n">eqx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Bijection abstract class.</span>
+
+<span class="sd">    Similar to :py:class:`~flowjax.distributions.AbstractDistribution`, bijections have</span>
+<span class="sd">    a ``shape`` and a ``cond_shape`` attribute. To allow easy composing of bijections,</span>
+<span class="sd">    all bijections support passing of conditioning variables (even if ignored).</span>
+
+<span class="sd">    The methods of bijections do not generally support passing of additional batch</span>
+<span class="sd">    dimensions, however, ``jax.vmap`` or ``eqx.filter_vmap`` can be used to vmap</span>
+<span class="sd">    specific methods if desired, and a bijection can be explicitly vectorised using the</span>
+<span class="sd">    :class:`~flowjax.bijections.jax_transforms.Vmap` bijection.</span>
+
+<span class="sd">    Bijections are registered as Jax PyTrees (as they are equinox modules), so are</span>
+<span class="sd">    compatible with normal jax operations.</span>
+
+<span class="sd">    **Implementing a bijection**</span>
+
+<span class="sd">        (1) Inherit from ``AbstractBijection``.</span>
+<span class="sd">        (2) Define the attributes ``shape`` and ``cond_shape``. A ``cond_shape`` of</span>
+<span class="sd">            ``None`` is used to represent unconditional bijections.</span>
+<span class="sd">        (3) Implement the abstract methods ``transform``, ``transform_and_log_det``,</span>
+<span class="sd">            ``inverse`` and ``inverse_and_log_det``. These should act on</span>
+<span class="sd">            inputs compatible with the shapes ``shape`` for ``x``, and ``cond_shape``</span>
+<span class="sd">            for ``condition``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">shape</span><span class="p">:</span> <span class="n">AbstractVar</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]]</span>
+    <span class="n">cond_shape</span><span class="p">:</span> <span class="n">AbstractVar</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">__init_subclass__</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># We wrap the class methods with argument checking</span>
+        <span class="n">wrap_methods</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s2">&quot;transform&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;transform_and_log_det&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;inverse&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;inverse_and_log_det&quot;</span><span class="p">,</span>
+        <span class="p">]</span>
+        <span class="k">for</span> <span class="n">meth</span> <span class="ow">in</span> <span class="n">wrap_methods</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">meth</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__dict__</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span>
+                <span class="bp">cls</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="n">meth</span><span class="p">],</span>
+                <span class="s2">&quot;__isabstractmethod__&quot;</span><span class="p">,</span>
+            <span class="p">):</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">meth</span><span class="p">,</span> <span class="n">_unwrap_check_and_cast</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="n">meth</span><span class="p">]))</span>
+
+<div class="viewcode-block" id="AbstractBijection.transform">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.AbstractBijection.transform">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">condition</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply the forward transformation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x: Input with shape matching ``bijections.shape``.</span>
+<span class="sd">            condition: Condition, with shape matching ``bijection.cond_shape``, required</span>
+<span class="sd">                for conditional bijections and ignored for unconditional bijections.</span>
+<span class="sd">                Defaults to None.</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="AbstractBijection.transform_and_log_det">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.AbstractBijection.transform_and_log_det">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">transform_and_log_det</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">x</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+        <span class="n">condition</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="n">Array</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Apply transformation and compute the log absolute Jacobian determinant.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            x: Input with shape matching the bijections shape</span>
+<span class="sd">            condition: . Defaults to None.</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="AbstractBijection.inverse">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.AbstractBijection.inverse">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span> <span class="n">condition</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Array</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute the inverse transformation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            y: Input array with shape matching bijection.shape</span>
+<span class="sd">            condition: Condition array with shape matching bijection.cond_shape.</span>
+<span class="sd">                Required for conditional bijections. Defaults to None.</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+
+<div class="viewcode-block" id="AbstractBijection.inverse_and_log_det">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.AbstractBijection.inverse_and_log_det">[docs]</a>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">inverse_and_log_det</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">y</span><span class="p">:</span> <span class="n">Array</span><span class="p">,</span>
+        <span class="n">condition</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="n">Array</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Inverse transformation and corresponding log absolute jacobian determinant.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            y: Input array with shape matching bijection.shape.</span>
+<span class="sd">            condition: Condition array with shape matching bijection.cond_shape.</span>
+<span class="sd">                Required for conditional bijections. Defaults to None.</span>
+<span class="sd">        &quot;&quot;&quot;</span></div>
+
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">_vectorize</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># TODO Private for now: perhaps could be made public?</span>
+        <span class="k">return</span> <span class="n">_VectorizedBijection</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span></div>
+
+
+
+<span class="k">class</span> <span class="nc">_VectorizedBijection</span><span class="p">(</span><span class="n">eqx</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Wrap a flowjax bijection to support vectorization.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        bijection: flowjax bijection to be wrapped.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">bijection</span><span class="p">:</span> <span class="n">AbstractBijection</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bijection</span><span class="p">:</span> <span class="n">AbstractBijection</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">bijection</span> <span class="o">=</span> <span class="n">bijection</span>
+
+    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vectorize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bijection</span><span class="o">.</span><span class="n">transform</span><span class="p">)(</span><span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vectorize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bijection</span><span class="o">.</span><span class="n">inverse</span><span class="p">)(</span><span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">transform_and_log_det</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vectorize</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bijection</span><span class="o">.</span><span class="n">transform_and_log_det</span><span class="p">,</span>
+            <span class="n">log_det</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)(</span><span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">inverse_and_log_det</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vectorize</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">bijection</span><span class="o">.</span><span class="n">inverse_and_log_det</span><span class="p">,</span>
+            <span class="n">log_det</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)(</span><span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">vectorize</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">log_det</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+        <span class="n">in_shapes</span><span class="p">,</span> <span class="n">out_shapes</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">bijection</span><span class="o">.</span><span class="n">shape</span><span class="p">],</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">bijection</span><span class="o">.</span><span class="n">shape</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">log_det</span><span class="p">:</span>
+            <span class="n">out_shapes</span><span class="o">.</span><span class="n">append</span><span class="p">(())</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">bijection</span><span class="o">.</span><span class="n">cond_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">in_shapes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">bijection</span><span class="o">.</span><span class="n">cond_shape</span><span class="p">)</span>
+            <span class="n">exclude</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">exclude</span> <span class="o">=</span> <span class="nb">frozenset</span><span class="p">([</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">sig</span> <span class="o">=</span> <span class="n">_get_ufunc_signature</span><span class="p">(</span><span class="n">in_shapes</span><span class="p">,</span> <span class="n">out_shapes</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">vectorize</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">signature</span><span class="o">=</span><span class="n">sig</span><span class="p">,</span> <span class="n">excluded</span><span class="o">=</span><span class="n">exclude</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Daniel Ward.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

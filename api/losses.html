@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Loss functions &mdash; FlowJax  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=3d3fbe02" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/style.css?v=60e24bd7" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+        <script src="../_static/copybutton.js?v=ccdb6887"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+        <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Training" href="training.html" />
+    <link rel="prev" title="Flows" href="flows.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            FlowJax
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../examples/unconditional.html">Unconditional density estmation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/conditional.html">Conditional density estimation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/variational_inference.html">Variational inference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/bounded.html">Bounded flows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/snpe.html">Sequential neural posterior estimation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="bijections.html">Bijections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="distributions.html">Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="experimental.html">Experimental</a></li>
+<li class="toctree-l1"><a class="reference internal" href="flows.html">Flows</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Loss functions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.train.losses.ContrastiveLoss"><code class="docutils literal notranslate"><span class="pre">ContrastiveLoss</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.train.losses.ElboLoss"><code class="docutils literal notranslate"><span class="pre">ElboLoss</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.train.losses.MaximumLikelihoodLoss"><code class="docutils literal notranslate"><span class="pre">MaximumLikelihoodLoss</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="training.html">Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="wrappers.html">Wrappers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Miscellaneous</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">FlowJax</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Loss functions</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/losses.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="loss-functions">
+<h1>Loss functions<a class="headerlink" href="#loss-functions" title="Link to this heading"></a></h1>
+<p>Loss functions from <code class="docutils literal notranslate"><span class="pre">flowjax.train.losses</span></code>.</p>
+<p id="module-flowjax.train.losses">Common loss functions for training normalizing flows.</p>
+<p>The loss functions are callables, with the first two arguments being the partitioned
+distribution (see <code class="docutils literal notranslate"><span class="pre">equinox.partition</span></code>).</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="flowjax.train.losses.ContrastiveLoss">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ContrastiveLoss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_contrastive</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/train/losses.html#ContrastiveLoss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.train.losses.ContrastiveLoss" title="Link to this definition"></a></dt>
+<dd><p>Loss function for use in a sequential neural posterior estimation algorithm.</p>
+<p>Learns a posterior <code class="docutils literal notranslate"><span class="pre">p(x|condition)</span></code>. Contrastive samples for each <code class="docutils literal notranslate"><span class="pre">x</span></code> are
+generated from other x samples in the batch.</p>
+<p>Note, that in a simulation based inference context, often <span class="math notranslate nohighlight">\(x\)</span> is used to
+denote simulations, and <span class="math notranslate nohighlight">\(\theta\)</span> for simulation parameters. However, for
+consistency with the rest of the package, we use <code class="docutils literal notranslate"><span class="pre">x</span></code> to represent the target
+variable (the simulator parameters), and <code class="docutils literal notranslate"><span class="pre">condition</span></code> for the conditioning variable
+(the simulator output/oberved data).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>prior</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="distributions.html#flowjax.distributions.AbstractDistribution" title="flowjax.distributions.AbstractDistribution"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractDistribution</span></code></a></span>) – The prior distribution over x (the target
+variable).</p></li>
+<li><p><strong>n_contrastive</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – The number of contrastive samples/atoms to use when
+computing the loss.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://arxiv.org/abs/1905.07488">https://arxiv.org/abs/1905.07488</a></p></li>
+<li><p><a class="reference external" href="https://arxiv.org/abs/2002.03712">https://arxiv.org/abs/2002.03712</a></p></li>
+</ul>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flowjax.train.losses.ElboLoss">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ElboLoss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stick_the_landing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/train/losses.html#ElboLoss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.train.losses.ElboLoss" title="Link to this definition"></a></dt>
+<dd><p>The negative evidence lower bound (ELBO), approximated using samples.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num_samples</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></span>) – Number of samples to use in the ELBO approximation.</p></li>
+<li><p><strong>target</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code></a>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayLike</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code>]</span>) – The target, i.e. log posterior density up to an additive constant / the
+negative of the potential function, evaluated for a single point.</p></li>
+<li><p><strong>stick_the_landing</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Whether to use the (often) lower variance ELBO gradient
+estimator introduced in <a class="reference external" href="https://arxiv.org/pdf/1703.09194.pdf">https://arxiv.org/pdf/1703.09194.pdf</a>. Note for flows
+this requires evaluating the flow in both directions (running the forward
+and inverse transformation). For some flow architectures, this may be
+computationally expensive due to assymetrical computational complexity
+between the forward and inverse transformation. Defaults to False.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flowjax.train.losses.ElboLoss.num_samples">
+<span class="sig-name descname"><span class="pre">num_samples</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></a></em><a class="headerlink" href="#flowjax.train.losses.ElboLoss.num_samples" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flowjax.train.losses.ElboLoss.stick_the_landing">
+<span class="sig-name descname"><span class="pre">stick_the_landing</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></em><a class="headerlink" href="#flowjax.train.losses.ElboLoss.stick_the_landing" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flowjax.train.losses.ElboLoss.target">
+<span class="sig-name descname"><span class="pre">target</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code></a><span class="pre">[[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayLike</span></code><span class="pre">],</span> <code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code><span class="pre">]</span></em><a class="headerlink" href="#flowjax.train.losses.ElboLoss.target" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flowjax.train.losses.MaximumLikelihoodLoss">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">MaximumLikelihoodLoss</span></span><a class="reference internal" href="../_modules/flowjax/train/losses.html#MaximumLikelihoodLoss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.train.losses.MaximumLikelihoodLoss" title="Link to this definition"></a></dt>
+<dd><p>Loss for fitting a flow with maximum likelihood (negative log likelihood).</p>
+<p>This loss can be used to learn either conditional or unconditional distributions.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="flows.html" class="btn btn-neutral float-left" title="Flows" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="training.html" class="btn btn-neutral float-right" title="Training" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Daniel Ward.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
