@@ -4,22 +4,21 @@ FAQ
 Freezing parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Often it is useful to not train particular parameters. The easiest way to achieve this
-is to use the :class:`flowjax.wrappers.NonTrainable` wrapper class. For example, to
-avoid training the base distribution of a transformed distribution:
-
-.. testsetup::
-
-    from flowjax.distributions import Normal    
-    flow = Normal()
+is to use :func:`flowjax.wrappers.non_trainable`. This will wrap the inexact array
+leaves with :class:`flowjax.wrappers.NonTrainable`, which will apply ``stop_gradient``
+when unwrapping the parameters. For commonly used distribution and bijection methods,
+unwrapping is applied automatically. For example
 
 .. doctest::
+    
+    >>> from flowjax.distributions import Normal
+    >>> from flowjax.wrappers import non_trainable
+    >>> dist = Normal()
+    >>> dist = non_trainable(dist)
 
-    >>> import equinox as eqx
-    >>> from flowjax.wrappers import NonTrainable
-    >>> flow = eqx.tree_at(lambda flow: flow.base_dist, flow, replace_fn=NonTrainable)
+To mark part of a tree as frozen, use ``non_trainable`` with e.g. 
+``equinox.tree_at`` or ``jax.tree_map``.
 
-If you wish to avoid training e.g. a specific type, it may be easier to use
-``jax.tree_map`` to apply the NonTrainable wrapper as required. 
 
 Standardizing variables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

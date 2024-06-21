@@ -11,6 +11,7 @@ from flowjax.wrappers import (
     Lambda,
     NonTrainable,
     WeightNormalization,
+    non_trainable,
     unwrap,
 )
 
@@ -56,15 +57,16 @@ def test_Lambda():
     assert pytest.approx(unwrap(unwrappable)) == jnp.zeros((3, 2))
 
 
-def test_NonTrainable():
-    dist = Normal()
-    dist = eqx.tree_at(lambda dist: dist.bijection, dist, replace_fn=NonTrainable)
+def test_NonTrainable_and_non_trainable():
+    dist1 = eqx.tree_at(lambda dist: dist.bijection, Normal(), replace_fn=NonTrainable)
+    dist2 = non_trainable(Normal())
 
     def loss(dist, x):
         return dist.log_prob(x)
 
-    grad = eqx.filter_grad(loss)(dist, 1)
-    assert pytest.approx(0) == jax.flatten_util.ravel_pytree(grad)[0]
+    for dist in [dist1, dist2]:
+        grad = eqx.filter_grad(loss)(dist, 1)
+        assert pytest.approx(0) == jax.flatten_util.ravel_pytree(grad)[0]
 
 
 def test_WeightNormalization():
