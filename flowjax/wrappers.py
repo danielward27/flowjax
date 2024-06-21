@@ -97,8 +97,11 @@ class AbstractUnwrappable(eqx.Module, Generic[T]):
 class NonTrainable(AbstractUnwrappable[T]):
     """Applies stop gradient to all arraylike leaves before unwrapping.
 
+    See also ``non_trainable``, which is probably a generally prefereable way to achieve
+    similar behaviour, which wraps the arraylike leaves directly, rather than the tree.
+
     Useful to mark pytrees (arrays, submodules, etc) as frozen/non-trainable. We also
-    filter out these modules when partitioning parameters for training, or when
+    filter out NonTrainable nodes when partitioning parameters for training, or when
     parameterizing bijections in coupling/masked autoregressive flows (transformers).
     """
 
@@ -108,6 +111,26 @@ class NonTrainable(AbstractUnwrappable[T]):
     def unwrap(self) -> T:
         differentiable, static = eqx.partition(self.tree, eqx.is_array_like)
         return eqx.combine(lax.stop_gradient(differentiable), static)
+
+
+def non_trainable(tree: PyTree):
+    """Freezes parameters by wrapping inexact array leaves with ``NonTrainable``.
+
+    Wrapping the arrays rather than the entire tree is often preferable, allowing easier
+    access to attributes, compared to wrapping the entire tree.
+
+    Args:
+        tree: The pytree.
+    """
+
+    def _map_fn(leaf):
+        return NonTrainable(leaf) if eqx.is_inexact_array(leaf) else leaf
+
+    return jax.tree_util.tree_map(
+        f=_map_fn,
+        tree=tree,
+        is_leaf=lambda x: isinstance(x, NonTrainable),
+    )
 
 
 def _apply_inverse_and_check_valid(bijection, arr):
