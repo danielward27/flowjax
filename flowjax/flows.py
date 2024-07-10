@@ -38,11 +38,11 @@ from flowjax.bijections import (
     Vmap,
 )
 from flowjax.distributions import AbstractDistribution, Transformed
-from flowjax.wrappers import BijectionReparam, NonTrainable, WeightNormalization
+from flowjax.wrappers import BijectionReparam, WeightNormalization, non_trainable
 
 
 def _affine_with_min_scale(min_scale: float = 1e-2) -> Affine:
-    scale_reparam = Chain([SoftPlus(), NonTrainable(Loc(min_scale))])
+    scale_reparam = Chain([SoftPlus(), non_trainable(Loc(min_scale))])
     return eqx.tree_at(
         where=lambda aff: aff.scale,
         pytree=Affine(),
