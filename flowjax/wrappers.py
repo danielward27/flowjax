@@ -140,7 +140,7 @@ def _apply_inverse_and_check_valid(bijection, arr):
         jnp.logical_and(jnp.isfinite(arr), ~jnp.isfinite(param_inv)),
         "Non-finite value(s) introduced when reparameterizing. This suggests "
         "the parameter vector passed to BijectionReparam was incompatible with "
-        f"the bijection used for reparmeterizing ({type(bijection).__name__}).",
+        f"the bijection used for reparameterizing ({type(bijection).__name__}).",
     )
 
 
