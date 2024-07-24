@@ -63,9 +63,9 @@ class AbstractUnwrappable(eqx.Module, Generic[T]):
     stop_gradient before accessing the parameters.
 
     If ``_dummy`` is set to an array (must have shape ()), this is used for inferring
-    vmapped dimensions (and sizes) when calling ``unwrap`` to automatically vecotorize
-    the method. In some cases this is important for supporting the case where an
-    ``AbstractUnwrappable`` is created within e.g. ``eqx.filter_vmap``.
+    vmapped dimensions (and sizes) when calling :func:`unwrap` to automatically
+    vecotorize the method. In some cases this is important for supporting the case where
+    an :class:`AbstractUnwrappable` is created within e.g. ``eqx.filter_vmap``.
     """
 
     _dummy: eqx.AbstractVar[Int[Scalar, ""] | None]
@@ -97,8 +97,9 @@ class AbstractUnwrappable(eqx.Module, Generic[T]):
 class NonTrainable(AbstractUnwrappable[T]):
     """Applies stop gradient to all arraylike leaves before unwrapping.
 
-    See also ``non_trainable``, which is probably a generally prefereable way to achieve
-    similar behaviour, which wraps the arraylike leaves directly, rather than the tree.
+    See also :func:`non_trainable`, which is probably a generally prefereable way to
+    achieve similar behaviour, which wraps the arraylike leaves directly, rather than
+    the tree.
 
     Useful to mark pytrees (arrays, submodules, etc) as frozen/non-trainable. We also
     filter out NonTrainable nodes when partitioning parameters for training, or when
@@ -114,7 +115,7 @@ class NonTrainable(AbstractUnwrappable[T]):
 
 
 def non_trainable(tree: PyTree):
-    """Freezes parameters by wrapping inexact array leaves with ``NonTrainable``.
+    """Freezes parameters by wrapping inexact array leaves with :class:``NonTrainable``.
 
     Wrapping the arrays rather than the entire tree is often preferable, allowing easier
     access to attributes, compared to wrapping the entire tree.
