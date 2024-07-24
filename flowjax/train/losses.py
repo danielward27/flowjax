@@ -103,12 +103,12 @@ class ContrastiveLoss:
 def _get_contrastive_idxs(key: PRNGKeyArray, batch_size: int, n_contrastive: int):
 
     @eqx.filter_vmap
-    def get_contrastive_idxs(key, idx, batch_size, n_contrastive):
+    def _get_idxs(key, idx, batch_size, n_contrastive):
         choices = jnp.delete(jnp.arange(batch_size), idx, assume_unique_indices=True)
         return jr.choice(key, choices, (n_contrastive,), replace=False)
 
     keys = jr.split(key, batch_size)
-    return get_contrastive_idxs(keys, jnp.arange(batch_size), batch_size, n_contrastive)
+    return _get_idxs(keys, jnp.arange(batch_size), batch_size, n_contrastive)
 
 
 class ElboLoss:
