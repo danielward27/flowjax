@@ -19,6 +19,7 @@ def step(
     optimizer: optax.GradientTransformation,
     opt_state: PyTree,
     loss_fn: Callable[[PyTree, PyTree], Scalar],
+    **kwargs,
 ):
     """Carry out a training step.
 
@@ -30,11 +31,17 @@ def step(
         opt_state: Optimizer state.
         loss_fn: The loss function. This should take params and static as the first two
             arguments.
+        **kwargs: Key word arguments passed to the loss function.
 
     Returns:
         tuple: (params, opt_state, loss_val)
     """
-    loss_val, grads = eqx.filter_value_and_grad(loss_fn)(params, static, *args)
+    loss_val, grads = eqx.filter_value_and_grad(loss_fn)(
+        params,
+        static,
+        *args,
+        **kwargs,
+    )
     updates, opt_state = optimizer.update(grads, opt_state, params=params)
     params = eqx.apply_updates(params, updates)
     return params, opt_state, loss_val

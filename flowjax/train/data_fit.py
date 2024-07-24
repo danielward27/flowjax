@@ -97,6 +97,7 @@ def fit_to_data(
         # Train epoch
         batch_losses = []
         for batch in zip(*get_batches(train_data, batch_size), strict=True):
+            key, subkey = jr.split(key)
             params, opt_state, loss_i = step(
                 params,
                 static,
@@ -104,6 +105,7 @@ def fit_to_data(
                 optimizer=optimizer,
                 opt_state=opt_state,
                 loss_fn=loss_fn,
+                key=subkey,
             )
             batch_losses.append(loss_i)
         losses["train"].append(sum(batch_losses) / len(batch_losses))
@@ -111,7 +113,8 @@ def fit_to_data(
         # Val epoch
         batch_losses = []
         for batch in zip(*get_batches(val_data, batch_size), strict=True):
-            loss_i = loss_fn(params, static, *batch)
+            key, subkey = jr.split(key)
+            loss_i = loss_fn(params, static, *batch, key=subkey)
             batch_losses.append(loss_i)
         losses["val"].append(sum(batch_losses) / len(batch_losses))
 
