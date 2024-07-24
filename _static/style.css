@@ -1,0 +1,37 @@
+@import url("theme.css");
+
+.wy-side-nav-search,
+.wy-nav-top {
+    background: #fff;
+}
+
+.wy-nav-side {
+    background: #fff;
+    outline-style: solid;
+    outline-color: #d6d6d6;
+    outline-width: thin;
+}
+
+.wy-menu-vertical a {
+    color: #2f2f2f;
+}
+
+.wy-menu-vertical a:hover {
+    background-color: #c8c8c8;
+}
+
+a.icon.icon-home {
+    color: black;
+}
+
+section.wy-nav-content-wrap {
+    background-color: white;
+}
+
+div.wy-nav-content {
+    background-color: white;
+}
+
+em {
+    font-style: normal;
+}

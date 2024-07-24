@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>flowjax.bijections.affine &mdash; FlowJax  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=3d3fbe02" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/style.css?v=60e24bd7" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+        <script src="../../../_static/copybutton.js?v=ccdb6887"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            FlowJax
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/unconditional.html">Unconditional density estmation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/conditional.html">Conditional density estimation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/variational_inference.html">Variational inference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/bounded.html">Bounded flows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/snpe.html">Sequential neural posterior estimation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/bijections.html">Bijections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/distributions.html">Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/experimental.html">Experimental</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/flows.html">Flows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/losses.html">Loss functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/training.html">Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/wrappers.html">Wrappers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Miscellaneous</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">FAQ</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">FlowJax</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">flowjax.bijections.affine</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for flowjax.bijections.affine</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Affine bijections.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Callable</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">ClassVar</span>
+
+<span class="kn">import</span> <span class="nn">jax.numpy</span> <span class="k">as</span> <span class="nn">jnp</span>
+<span class="kn">from</span> <span class="nn">jax.scipy.linalg</span> <span class="kn">import</span> <span class="n">solve_triangular</span>
+<span class="kn">from</span> <span class="nn">jaxtyping</span> <span class="kn">import</span> <span class="n">Array</span><span class="p">,</span> <span class="n">ArrayLike</span><span class="p">,</span> <span class="n">Shaped</span>
+
+<span class="kn">from</span> <span class="nn">flowjax</span> <span class="kn">import</span> <span class="n">wrappers</span>
+<span class="kn">from</span> <span class="nn">flowjax.bijections.bijection</span> <span class="kn">import</span> <span class="n">AbstractBijection</span>
+<span class="kn">from</span> <span class="nn">flowjax.bijections.softplus</span> <span class="kn">import</span> <span class="n">SoftPlus</span>
+<span class="kn">from</span> <span class="nn">flowjax.utils</span> <span class="kn">import</span> <span class="n">arraylike_to_array</span>
+
+
+<div class="viewcode-block" id="Affine">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.Affine">[docs]</a>
+<span class="k">class</span> <span class="nc">Affine</span><span class="p">(</span><span class="n">AbstractBijection</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Elementwise affine transformation ``y = a*x + b``.</span>
+
+<span class="sd">    ``loc`` and ``scale`` should broadcast to the desired shape of the bijection.</span>
+<span class="sd">    By default, we constrain the scale parameter to be postive using ``SoftPlus``, but</span>
+<span class="sd">    other parameterizations can be achieved by replacing the scale parameter after</span>
+<span class="sd">    construction e.g. using ``eqx.tree_at``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        loc: Location parameter. Defaults to 0.</span>
+<span class="sd">        scale: Scale parameter. Defaults to 1.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">shape</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+    <span class="n">cond_shape</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">loc</span><span class="p">:</span> <span class="n">Array</span>
+    <span class="n">scale</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="n">wrappers</span><span class="o">.</span><span class="n">AbstractUnwrappable</span><span class="p">[</span><span class="n">Array</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">loc</span><span class="p">:</span> <span class="n">ArrayLike</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">scale</span><span class="p">:</span> <span class="n">ArrayLike</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loc</span><span class="p">,</span> <span class="n">scale</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">broadcast_arrays</span><span class="p">(</span>
+            <span class="o">*</span><span class="p">(</span><span class="n">arraylike_to_array</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">scale</span><span class="p">)),</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="n">scale</span><span class="o">.</span><span class="n">shape</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="n">wrappers</span><span class="o">.</span><span class="n">BijectionReparam</span><span class="p">(</span><span class="n">scale</span><span class="p">,</span> <span class="n">SoftPlus</span><span class="p">())</span>
+
+<div class="viewcode-block" id="Affine.transform">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.Affine.transform">[docs]</a>
+    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">x</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">loc</span></div>
+
+
+<div class="viewcode-block" id="Affine.transform_and_log_det">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.Affine.transform_and_log_det">[docs]</a>
+    <span class="k">def</span> <span class="nf">transform_and_log_det</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">x</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">loc</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="Affine.inverse">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.Affine.inverse">[docs]</a>
+    <span class="k">def</span> <span class="nf">inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">loc</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span></div>
+
+
+<div class="viewcode-block" id="Affine.inverse_and_log_det">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.Affine.inverse_and_log_det">[docs]</a>
+    <span class="k">def</span> <span class="nf">inverse_and_log_det</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">loc</span><span class="p">)</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span> <span class="o">-</span><span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Loc">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.Loc">[docs]</a>
+<span class="k">class</span> <span class="nc">Loc</span><span class="p">(</span><span class="n">AbstractBijection</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Location transformation ``y = x + c``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        loc: Scale parameter. Defaults to 1.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">loc</span><span class="p">:</span> <span class="n">Array</span>
+    <span class="n">shape</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+    <span class="n">cond_shape</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">loc</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loc</span> <span class="o">=</span> <span class="n">arraylike_to_array</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">loc</span><span class="o">.</span><span class="n">shape</span>
+
+<div class="viewcode-block" id="Loc.transform">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.Loc.transform">[docs]</a>
+    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">loc</span></div>
+
+
+<div class="viewcode-block" id="Loc.transform_and_log_det">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.Loc.transform_and_log_det">[docs]</a>
+    <span class="k">def</span> <span class="nf">transform_and_log_det</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">loc</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(())</span></div>
+
+
+<div class="viewcode-block" id="Loc.inverse">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.Loc.inverse">[docs]</a>
+    <span class="k">def</span> <span class="nf">inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">y</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">loc</span></div>
+
+
+<div class="viewcode-block" id="Loc.inverse_and_log_det">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.Loc.inverse_and_log_det">[docs]</a>
+    <span class="k">def</span> <span class="nf">inverse_and_log_det</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">y</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">loc</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">zeros</span><span class="p">(())</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="Scale">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.Scale">[docs]</a>
+<span class="k">class</span> <span class="nc">Scale</span><span class="p">(</span><span class="n">AbstractBijection</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Scale transformation ``y = a*x``.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        scale: Scale parameter. Defaults to 1.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">shape</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+    <span class="n">cond_shape</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">scale</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="n">wrappers</span><span class="o">.</span><span class="n">AbstractUnwrappable</span><span class="p">[</span><span class="n">Array</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">scale</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">scale</span> <span class="o">=</span> <span class="n">arraylike_to_array</span><span class="p">(</span><span class="n">scale</span><span class="p">,</span> <span class="s2">&quot;scale&quot;</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scale</span> <span class="o">=</span> <span class="n">wrappers</span><span class="o">.</span><span class="n">BijectionReparam</span><span class="p">(</span><span class="n">scale</span><span class="p">,</span> <span class="n">SoftPlus</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">wrappers</span><span class="o">.</span><span class="n">unwrap</span><span class="p">(</span><span class="n">scale</span><span class="p">))</span>
+
+<div class="viewcode-block" id="Scale.transform">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.Scale.transform">[docs]</a>
+    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">x</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span></div>
+
+
+<div class="viewcode-block" id="Scale.transform_and_log_det">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.Scale.transform_and_log_det">[docs]</a>
+    <span class="k">def</span> <span class="nf">transform_and_log_det</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">x</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="Scale.inverse">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.Scale.inverse">[docs]</a>
+    <span class="k">def</span> <span class="nf">inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">y</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span></div>
+
+
+<div class="viewcode-block" id="Scale.inverse_and_log_det">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.Scale.inverse_and_log_det">[docs]</a>
+    <span class="k">def</span> <span class="nf">inverse_and_log_det</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">y</span> <span class="o">/</span> <span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">,</span> <span class="o">-</span><span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">scale</span><span class="p">))</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="TriangularAffine">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.TriangularAffine">[docs]</a>
+<span class="k">class</span> <span class="nc">TriangularAffine</span><span class="p">(</span><span class="n">AbstractBijection</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;A triangular affine transformation.</span>
+
+<span class="sd">    Transformation has the form :math:`Ax + b`, where :math:`A` is a lower or upper</span>
+<span class="sd">    triangular matrix, and :math:`b` is the bias vector. We assume the diagonal</span>
+<span class="sd">    entries are positive, and constrain the values using SoftPlus. Other</span>
+<span class="sd">    parameterizations can be achieved by e.g. replacing ``self.triangular``</span>
+<span class="sd">    after construction.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        loc: Location parameter. If this is scalar, it is broadcast to the dimension</span>
+<span class="sd">            inferred from arr.</span>
+<span class="sd">        arr: Triangular matrix.</span>
+<span class="sd">        lower: Whether the mask should select the lower or upper</span>
+<span class="sd">            triangular matrix (other elements ignored). Defaults to True (lower).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">shape</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+    <span class="n">cond_shape</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">loc</span><span class="p">:</span> <span class="n">Array</span>
+    <span class="n">triangular</span><span class="p">:</span> <span class="n">Array</span> <span class="o">|</span> <span class="n">wrappers</span><span class="o">.</span><span class="n">AbstractUnwrappable</span><span class="p">[</span><span class="n">Array</span><span class="p">]</span>
+    <span class="n">lower</span><span class="p">:</span> <span class="nb">bool</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">loc</span><span class="p">:</span> <span class="n">Shaped</span><span class="p">[</span><span class="n">ArrayLike</span><span class="p">,</span> <span class="s2">&quot; #dim&quot;</span><span class="p">],</span>
+        <span class="n">arr</span><span class="p">:</span> <span class="n">Shaped</span><span class="p">[</span><span class="n">Array</span><span class="p">,</span> <span class="s2">&quot;dim dim&quot;</span><span class="p">],</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">lower</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">loc</span><span class="p">,</span> <span class="n">arr</span> <span class="o">=</span> <span class="p">(</span><span class="n">arraylike_to_array</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="n">arr</span><span class="p">))</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span>
+            <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="p">):</span>  <span class="c1"># TODO unnecersary if beartype enabled</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;arr must be a square, 2-dimensional matrix.&quot;</span><span class="p">)</span>
+        <span class="n">dim</span> <span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">def</span> <span class="nf">_to_triangular</span><span class="p">(</span><span class="n">diag</span><span class="p">,</span> <span class="n">arr</span><span class="p">):</span>
+            <span class="n">tri</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">tril</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">k</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="n">lower</span> <span class="k">else</span> <span class="n">jnp</span><span class="o">.</span><span class="n">triu</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">diag</span><span class="p">)</span> <span class="o">+</span> <span class="n">tri</span>
+
+        <span class="n">diag</span> <span class="o">=</span> <span class="n">wrappers</span><span class="o">.</span><span class="n">BijectionReparam</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">arr</span><span class="p">),</span> <span class="n">SoftPlus</span><span class="p">())</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">triangular</span> <span class="o">=</span> <span class="n">wrappers</span><span class="o">.</span><span class="n">Lambda</span><span class="p">(</span><span class="n">_to_triangular</span><span class="p">,</span> <span class="n">diag</span><span class="o">=</span><span class="n">diag</span><span class="p">,</span> <span class="n">arr</span><span class="o">=</span><span class="n">arr</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lower</span> <span class="o">=</span> <span class="n">lower</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">dim</span><span class="p">,)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loc</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span> <span class="p">(</span><span class="n">dim</span><span class="p">,))</span>
+
+<div class="viewcode-block" id="TriangularAffine.transform">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.TriangularAffine.transform">[docs]</a>
+    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">triangular</span> <span class="o">@</span> <span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">loc</span></div>
+
+
+<div class="viewcode-block" id="TriangularAffine.transform_and_log_det">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.TriangularAffine.transform_and_log_det">[docs]</a>
+    <span class="k">def</span> <span class="nf">transform_and_log_det</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">triangular</span> <span class="o">@</span> <span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">loc</span>
+        <span class="k">return</span> <span class="n">y</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangular</span><span class="p">)))</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="TriangularAffine.inverse">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.TriangularAffine.inverse">[docs]</a>
+    <span class="k">def</span> <span class="nf">inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">solve_triangular</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangular</span><span class="p">,</span> <span class="n">y</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">loc</span><span class="p">,</span> <span class="n">lower</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lower</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TriangularAffine.inverse_and_log_det">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.TriangularAffine.inverse_and_log_det">[docs]</a>
+    <span class="k">def</span> <span class="nf">inverse_and_log_det</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">solve_triangular</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangular</span><span class="p">,</span> <span class="n">y</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">loc</span><span class="p">,</span> <span class="n">lower</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lower</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="o">-</span><span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">triangular</span><span class="p">)))</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span></div>
+</div>
+
+
+
+<div class="viewcode-block" id="AdditiveCondition">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.AdditiveCondition">[docs]</a>
+<span class="k">class</span> <span class="nc">AdditiveCondition</span><span class="p">(</span><span class="n">AbstractBijection</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Given a callable ``f``, carries out the transformation ``y = x + f(condition)``.</span>
+
+<span class="sd">    If used to transform a distribution, this allows the &quot;location&quot; to be changed as a</span>
+<span class="sd">    function of the conditioning variables. Note that the callable can be a callable</span>
+<span class="sd">    module with trainable parameters.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        module: A callable (e.g. a function or callable module) that maps array with</span>
+<span class="sd">            shape cond_shape, to a shape that is broadcastable with the shape of the</span>
+<span class="sd">            bijection.</span>
+<span class="sd">        shape: The shape of the bijection.</span>
+<span class="sd">        cond_shape: The condition shape of the bijection.</span>
+
+<span class="sd">    Example:</span>
+<span class="sd">        Conditioning using a linear transformation</span>
+
+<span class="sd">        .. doctest::</span>
+
+<span class="sd">            &gt;&gt;&gt; from flowjax.bijections import AdditiveCondition</span>
+<span class="sd">            &gt;&gt;&gt; from equinox.nn import Linear</span>
+<span class="sd">            &gt;&gt;&gt; import jax.numpy as jnp</span>
+<span class="sd">            &gt;&gt;&gt; import jax.random as jr</span>
+<span class="sd">            &gt;&gt;&gt; bijection = AdditiveCondition(</span>
+<span class="sd">            ...     Linear(2, 3, key=jr.PRNGKey(0)), shape=(3,), cond_shape=(2,)</span>
+<span class="sd">            ...     )</span>
+<span class="sd">            &gt;&gt;&gt; bijection.transform(jnp.ones(3), condition=jnp.ones(2))</span>
+<span class="sd">            Array([1.9670618, 0.8156546, 1.7763454], dtype=float32)</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">shape</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+    <span class="n">cond_shape</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+    <span class="n">module</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">ArrayLike</span><span class="p">],</span> <span class="n">ArrayLike</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">module</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">ArrayLike</span><span class="p">],</span> <span class="n">ArrayLike</span><span class="p">],</span>
+        <span class="n">shape</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+        <span class="n">cond_shape</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">module</span> <span class="o">=</span> <span class="n">module</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="n">shape</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cond_shape</span> <span class="o">=</span> <span class="n">cond_shape</span>
+
+<div class="viewcode-block" id="AdditiveCondition.transform">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.AdditiveCondition.transform">[docs]</a>
+    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">x</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="p">(</span><span class="n">condition</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AdditiveCondition.transform_and_log_det">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.AdditiveCondition.transform_and_log_det">[docs]</a>
+    <span class="k">def</span> <span class="nf">transform_and_log_det</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="p">),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AdditiveCondition.inverse">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.AdditiveCondition.inverse">[docs]</a>
+    <span class="k">def</span> <span class="nf">inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">y</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">module</span><span class="p">(</span><span class="n">condition</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="AdditiveCondition.inverse_and_log_det">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.AdditiveCondition.inverse_and_log_det">[docs]</a>
+    <span class="k">def</span> <span class="nf">inverse_and_log_det</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">inverse</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="p">),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span></div>
+</div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Daniel Ward.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

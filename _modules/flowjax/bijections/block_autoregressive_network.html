@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>flowjax.bijections.block_autoregressive_network &mdash; FlowJax  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=3d3fbe02" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/style.css?v=60e24bd7" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../../../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../../../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="../../../_static/clipboard.min.js?v=a7894cd8"></script>
+        <script src="../../../_static/copybutton.js?v=ccdb6887"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            FlowJax
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/unconditional.html">Unconditional density estmation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/conditional.html">Conditional density estimation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/variational_inference.html">Variational inference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/bounded.html">Bounded flows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/snpe.html">Sequential neural posterior estimation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/bijections.html">Bijections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/distributions.html">Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/experimental.html">Experimental</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/flows.html">Flows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/losses.html">Loss functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/training.html">Training</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/wrappers.html">Wrappers</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Miscellaneous</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">FAQ</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">FlowJax</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">flowjax.bijections.block_autoregressive_network</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for flowjax.bijections.block_autoregressive_network</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Block Neural Autoregressive bijection implementation.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Callable</span>
+<span class="kn">from</span> <span class="nn">math</span> <span class="kn">import</span> <span class="n">prod</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">ClassVar</span>
+
+<span class="kn">import</span> <span class="nn">equinox</span> <span class="k">as</span> <span class="nn">eqx</span>
+<span class="kn">import</span> <span class="nn">jax</span>
+<span class="kn">import</span> <span class="nn">jax.numpy</span> <span class="k">as</span> <span class="nn">jnp</span>
+<span class="kn">import</span> <span class="nn">jax.random</span> <span class="k">as</span> <span class="nn">jr</span>
+<span class="kn">from</span> <span class="nn">jax</span> <span class="kn">import</span> <span class="n">random</span>
+<span class="kn">from</span> <span class="nn">jaxtyping</span> <span class="kn">import</span> <span class="n">PRNGKeyArray</span>
+
+<span class="kn">from</span> <span class="nn">flowjax</span> <span class="kn">import</span> <span class="n">masks</span>
+<span class="kn">from</span> <span class="nn">flowjax.bijections.bijection</span> <span class="kn">import</span> <span class="n">AbstractBijection</span>
+<span class="kn">from</span> <span class="nn">flowjax.bijections.softplus</span> <span class="kn">import</span> <span class="n">SoftPlus</span>
+<span class="kn">from</span> <span class="nn">flowjax.bijections.tanh</span> <span class="kn">import</span> <span class="n">LeakyTanh</span>
+<span class="kn">from</span> <span class="nn">flowjax.bisection_search</span> <span class="kn">import</span> <span class="n">AutoregressiveBisectionInverter</span>
+<span class="kn">from</span> <span class="nn">flowjax.wrappers</span> <span class="kn">import</span> <span class="n">BijectionReparam</span><span class="p">,</span> <span class="n">WeightNormalization</span><span class="p">,</span> <span class="n">Where</span>
+
+
+<span class="k">class</span> <span class="nc">_CallableToBijection</span><span class="p">(</span><span class="n">AbstractBijection</span><span class="p">):</span>
+    <span class="c1"># Wrap a callable e.g. a function or a callable module. We assume the callable acts</span>
+    <span class="c1"># on scalar values and log_det can be computed in a stable manner with jax.grad.</span>
+
+    <span class="n">fn</span><span class="p">:</span> <span class="n">Callable</span>
+    <span class="n">shape</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="nb">tuple</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="n">cond_shape</span><span class="p">:</span> <span class="n">ClassVar</span><span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">callable</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected callable, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fn</span> <span class="o">=</span> <span class="n">fn</span>
+
+    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">transform_and_log_det</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">y</span><span class="p">,</span> <span class="n">grad</span> <span class="o">=</span> <span class="n">eqx</span><span class="o">.</span><span class="n">filter_value_and_grad</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fn</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">y</span><span class="p">,</span> <span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">grad</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+    <span class="k">def</span> <span class="nf">inverse_and_log_det</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+
+<div class="viewcode-block" id="BlockAutoregressiveNetwork">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.BlockAutoregressiveNetwork">[docs]</a>
+<span class="k">class</span> <span class="nc">BlockAutoregressiveNetwork</span><span class="p">(</span><span class="n">AbstractBijection</span><span class="p">):</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Block Autoregressive Network (https://arxiv.org/abs/1904.04676).</span>
+
+<span class="sd">    Note that in contrast to the original paper which uses tanh activations, by default</span>
+<span class="sd">    we use :class:`~flowjax.bijections.tanh.LeakyTanh`. This ensures the codomain of the</span>
+<span class="sd">    activation is the set of real values, which will ensure properly normalised</span>
+<span class="sd">    densities (see https://github.com/danielward27/flowjax/issues/102).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        key: Jax PRNGKey</span>
+<span class="sd">        dim: Dimension of the distribution.</span>
+<span class="sd">        cond_dim: Dimension of conditioning variables. Defaults to None.</span>
+<span class="sd">        depth: Number of hidden layers in the network.</span>
+<span class="sd">        block_dim: Block dimension (hidden layer size is `dim*block_dim`).</span>
+<span class="sd">        activation: Activation function, either a scalar bijection or a callable that</span>
+<span class="sd">            computes the activation for a scalar value. Note that the activation should</span>
+<span class="sd">            be bijective to ensure invertibility of the network and in general should</span>
+<span class="sd">            map real -&gt; real to ensure that when transforming a distribution (either</span>
+<span class="sd">            with the forward or inverse), the map is defined across the support of</span>
+<span class="sd">            the base distribution. Defaults to ``LeakyTanh(3)``.</span>
+<span class="sd">        inverter: Callable that implements the required numerical method to invert the</span>
+<span class="sd">            ``BlockAutoregressiveNetwork`` bijection. Must have the signature</span>
+<span class="sd">            ``inverter(bijection, y, condition=None)``. Defaults to</span>
+<span class="sd">            ``AutoregressiveBisectionInverter``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">shape</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+    <span class="n">cond_shape</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">depth</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">layers</span><span class="p">:</span> <span class="nb">list</span>
+    <span class="n">cond_linear</span><span class="p">:</span> <span class="n">eqx</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span> <span class="o">|</span> <span class="kc">None</span>
+    <span class="n">block_dim</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">activation</span><span class="p">:</span> <span class="n">AbstractBijection</span>
+    <span class="n">inverter</span><span class="p">:</span> <span class="n">Callable</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">key</span><span class="p">:</span> <span class="n">PRNGKeyArray</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">cond_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">depth</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">block_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">activation</span><span class="p">:</span> <span class="n">AbstractBijection</span> <span class="o">|</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">inverter</span><span class="p">:</span> <span class="n">Callable</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">key</span><span class="p">,</span> <span class="n">subkey</span> <span class="o">=</span> <span class="n">jr</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">activation</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">activation</span> <span class="o">=</span> <span class="n">LeakyTanh</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">activation</span><span class="p">,</span> <span class="n">AbstractBijection</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">activation</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">()</span> <span class="ow">or</span> <span class="n">activation</span><span class="o">.</span><span class="n">cond_shape</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Bijection must be unconditional with shape ().&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">activation</span> <span class="o">=</span> <span class="n">_CallableToBijection</span><span class="p">(</span><span class="n">activation</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">inverter</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">AutoregressiveBisectionInverter</span><span class="p">()</span> <span class="k">if</span> <span class="n">inverter</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">inverter</span>
+        <span class="p">)</span>
+
+        <span class="n">layers_and_log_jac_fns</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">depth</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">layers_and_log_jac_fns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">block_autoregressive_linear</span><span class="p">(</span>
+                    <span class="n">key</span><span class="p">,</span>
+                    <span class="n">n_blocks</span><span class="o">=</span><span class="n">dim</span><span class="p">,</span>
+                    <span class="n">block_shape</span><span class="o">=</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">depth</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+
+            <span class="n">block_shapes</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">(</span><span class="n">block_dim</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                <span class="o">*</span><span class="p">[(</span><span class="n">block_dim</span><span class="p">,</span> <span class="n">block_dim</span><span class="p">)]</span> <span class="o">*</span> <span class="p">(</span><span class="n">depth</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span>
+                <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">block_dim</span><span class="p">),</span>
+            <span class="p">]</span>
+
+            <span class="k">for</span> <span class="n">layer_key</span><span class="p">,</span> <span class="n">block_shape</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">block_shapes</span><span class="p">,</span> <span class="n">strict</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+                <span class="n">layers_and_log_jac_fns</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">block_autoregressive_linear</span><span class="p">(</span>
+                        <span class="n">layer_key</span><span class="p">,</span>
+                        <span class="n">n_blocks</span><span class="o">=</span><span class="n">dim</span><span class="p">,</span>
+                        <span class="n">block_shape</span><span class="o">=</span><span class="n">block_shape</span><span class="p">,</span>
+                    <span class="p">),</span>
+                <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">cond_dim</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">layer0_out_dim</span> <span class="o">=</span> <span class="n">layers_and_log_jac_fns</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">out_features</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cond_linear</span> <span class="o">=</span> <span class="n">eqx</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span>
+                <span class="n">cond_dim</span><span class="p">,</span> <span class="n">layer0_out_dim</span><span class="p">,</span> <span class="n">use_bias</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">subkey</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cond_linear</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">depth</span> <span class="o">=</span> <span class="n">depth</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layers</span> <span class="o">=</span> <span class="n">layers_and_log_jac_fns</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">block_dim</span> <span class="o">=</span> <span class="n">block_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="n">dim</span><span class="p">,)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cond_shape</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="n">cond_dim</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="p">(</span><span class="n">cond_dim</span><span class="p">,)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">activation</span> <span class="o">=</span> <span class="n">activation</span>
+
+<div class="viewcode-block" id="BlockAutoregressiveNetwork.transform">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.BlockAutoregressiveNetwork.transform">[docs]</a>
+    <span class="k">def</span> <span class="nf">transform</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">layer</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">layer</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">condition</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_linear</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="n">x</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_linear</span><span class="p">(</span><span class="n">condition</span><span class="p">)</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">eqx</span><span class="o">.</span><span class="n">filter_vmap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">activation</span><span class="o">.</span><span class="n">transform</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="mi">0</span><span class="p">](</span><span class="n">x</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BlockAutoregressiveNetwork.transform_and_log_det">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.BlockAutoregressiveNetwork.transform_and_log_det">[docs]</a>
+    <span class="k">def</span> <span class="nf">transform_and_log_det</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">log_dets_3ds</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">linear</span><span class="p">,</span> <span class="n">log_jacobian_fn</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">linear</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">condition</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">assert</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_linear</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="n">x</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cond_linear</span><span class="p">(</span><span class="n">condition</span><span class="p">)</span>
+            <span class="n">log_dets_3ds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">log_jacobian_fn</span><span class="p">(</span><span class="n">linear</span><span class="p">))</span>
+            <span class="n">x</span><span class="p">,</span> <span class="n">log_det_3d</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_activation_and_log_jacobian_3d</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="n">log_dets_3ds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">log_det_3d</span><span class="p">)</span>
+
+        <span class="n">linear</span><span class="p">,</span> <span class="n">log_jacobian_fn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">linear</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">log_dets_3ds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">log_jacobian_fn</span><span class="p">(</span><span class="n">linear</span><span class="p">))</span>
+
+        <span class="n">log_det</span> <span class="o">=</span> <span class="n">log_dets_3ds</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">log_jacobian</span> <span class="ow">in</span> <span class="nb">reversed</span><span class="p">(</span><span class="n">log_dets_3ds</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="n">log_det</span> <span class="o">=</span> <span class="n">logmatmulexp</span><span class="p">(</span><span class="n">log_det</span><span class="p">,</span> <span class="n">log_jacobian</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">log_det</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="BlockAutoregressiveNetwork.inverse">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.BlockAutoregressiveNetwork.inverse">[docs]</a>
+    <span class="k">def</span> <span class="nf">inverse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">inverter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="BlockAutoregressiveNetwork.inverse_and_log_det">
+<a class="viewcode-back" href="../../../api/bijections.html#flowjax.bijections.BlockAutoregressiveNetwork.inverse_and_log_det">[docs]</a>
+    <span class="k">def</span> <span class="nf">inverse_and_log_det</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">inverter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">condition</span><span class="p">)</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">forward_log_det</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">transform_and_log_det</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">condition</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="o">-</span><span class="n">forward_log_det</span></div>
+
+
+    <span class="k">def</span> <span class="nf">_activation_and_log_jacobian_3d</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute activation and the log determinant (blocks, block_dim, block_dim).&quot;&quot;&quot;</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">log_abs_grads</span> <span class="o">=</span> <span class="n">eqx</span><span class="o">.</span><span class="n">filter_vmap</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">activation</span><span class="o">.</span><span class="n">transform_and_log_det</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">log_det_3d</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">full</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">block_dim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">block_dim</span><span class="p">),</span> <span class="o">-</span><span class="n">jnp</span><span class="o">.</span><span class="n">inf</span><span class="p">)</span>
+        <span class="n">diag_idxs</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">block_dim</span><span class="p">)</span>
+        <span class="n">log_det_3d</span> <span class="o">=</span> <span class="n">log_det_3d</span><span class="o">.</span><span class="n">at</span><span class="p">[:,</span> <span class="n">diag_idxs</span><span class="p">,</span> <span class="n">diag_idxs</span><span class="p">]</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
+            <span class="n">log_abs_grads</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">block_dim</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">x</span><span class="p">,</span> <span class="n">log_det_3d</span></div>
+
+
+
+<span class="k">def</span> <span class="nf">block_autoregressive_linear</span><span class="p">(</span>
+    <span class="n">key</span><span class="p">:</span> <span class="n">PRNGKeyArray</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">n_blocks</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">block_shape</span><span class="p">:</span> <span class="nb">tuple</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="n">eqx</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">,</span> <span class="n">Callable</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Block autoregressive linear layer (https://arxiv.org/abs/1904.04676).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Tuple containing 1) an equinox.nn.Linear layer, with the weights wrapped</span>
+<span class="sd">        in order to provide a block lower triangular mask and weight normalisation.</span>
+<span class="sd">        2) callable taking the linear layer, returning the log block diagonal weights.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        key: Random key.</span>
+<span class="sd">        n_blocks: Number of diagonal blocks (dimension of original input).</span>
+<span class="sd">        block_shape: The shape of the blocks.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">out_features</span><span class="p">,</span> <span class="n">in_features</span> <span class="o">=</span> <span class="p">(</span><span class="n">b</span> <span class="o">*</span> <span class="n">n_blocks</span> <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">block_shape</span><span class="p">)</span>
+    <span class="n">linear</span> <span class="o">=</span> <span class="n">eqx</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">in_features</span><span class="p">,</span> <span class="n">out_features</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="n">key</span><span class="p">)</span>
+    <span class="n">block_diag_mask</span> <span class="o">=</span> <span class="n">masks</span><span class="o">.</span><span class="n">block_diag_mask</span><span class="p">(</span><span class="n">block_shape</span><span class="p">,</span> <span class="n">n_blocks</span><span class="p">)</span>
+    <span class="n">block_tril_mask</span> <span class="o">=</span> <span class="n">masks</span><span class="o">.</span><span class="n">block_tril_mask</span><span class="p">(</span><span class="n">block_shape</span><span class="p">,</span> <span class="n">n_blocks</span><span class="p">)</span>
+
+    <span class="n">weight</span> <span class="o">=</span> <span class="n">Where</span><span class="p">(</span><span class="n">block_tril_mask</span><span class="p">,</span> <span class="n">linear</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">weight</span> <span class="o">=</span> <span class="n">Where</span><span class="p">(</span>
+        <span class="n">block_diag_mask</span><span class="p">,</span>
+        <span class="n">BijectionReparam</span><span class="p">(</span><span class="n">weight</span><span class="p">,</span> <span class="n">SoftPlus</span><span class="p">(),</span> <span class="n">invert_on_init</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+        <span class="n">weight</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">weight</span> <span class="o">=</span> <span class="n">WeightNormalization</span><span class="p">(</span><span class="n">weight</span><span class="p">)</span>
+    <span class="n">linear</span> <span class="o">=</span> <span class="n">eqx</span><span class="o">.</span><span class="n">tree_at</span><span class="p">(</span><span class="k">lambda</span> <span class="n">linear</span><span class="p">:</span> <span class="n">linear</span><span class="o">.</span><span class="n">weight</span><span class="p">,</span> <span class="n">linear</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="n">weight</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">linear_to_log_block_diagonal</span><span class="p">(</span><span class="n">linear</span><span class="p">:</span> <span class="n">eqx</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">):</span>
+        <span class="n">idxs</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">block_diag_mask</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">prod</span><span class="p">(</span><span class="n">block_shape</span><span class="p">)</span> <span class="o">*</span> <span class="n">n_blocks</span><span class="p">)</span>
+        <span class="n">jac_3d</span> <span class="o">=</span> <span class="n">linear</span><span class="o">.</span><span class="n">weight</span><span class="p">[</span><span class="n">idxs</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">n_blocks</span><span class="p">,</span> <span class="o">*</span><span class="n">block_shape</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">jac_3d</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">linear</span><span class="p">,</span> <span class="n">linear_to_log_block_diagonal</span>
+
+
+<span class="k">def</span> <span class="nf">logmatmulexp</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Numerically stable version of ``(x.log() @ y.log()).exp()``.</span>
+
+<span class="sd">    From numpyro https://github.com/pyro-ppl/numpyro/blob/</span>
+<span class="sd">    f2ff89a3a7147617e185eb51148eb15d56d44661/numpyro/distributions/util.py#L387.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">x_shift</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">stop_gradient</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+    <span class="n">y_shift</span> <span class="o">=</span> <span class="n">jax</span><span class="o">.</span><span class="n">lax</span><span class="o">.</span><span class="n">stop_gradient</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">amax</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="o">-</span><span class="mi">2</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
+    <span class="n">xy</span> <span class="o">=</span> <span class="n">jnp</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">x_shift</span><span class="p">),</span> <span class="n">jnp</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">y_shift</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">xy</span> <span class="o">+</span> <span class="n">x_shift</span> <span class="o">+</span> <span class="n">y_shift</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Daniel Ward.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Wrappers &mdash; FlowJax  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=3d3fbe02" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="../_static/copybutton.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="../_static/style.css?v=60e24bd7" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../_static/jquery.js?v=5d32c60e"></script>
+        <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+        <script src="../_static/documentation_options.js?v=5929fcd5"></script>
+        <script src="../_static/doctools.js?v=9a2dae69"></script>
+        <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+        <script src="../_static/clipboard.min.js?v=a7894cd8"></script>
+        <script src="../_static/copybutton.js?v=ccdb6887"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="FAQ" href="../faq.html" />
+    <link rel="prev" title="Training" href="training.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            FlowJax
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../examples/unconditional.html">Unconditional density estmation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/conditional.html">Conditional density estimation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/variational_inference.html">Variational inference</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/bounded.html">Bounded flows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/snpe.html">Sequential neural posterior estimation</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">API</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="bijections.html">Bijections</a></li>
+<li class="toctree-l1"><a class="reference internal" href="distributions.html">Distributions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="experimental.html">Experimental</a></li>
+<li class="toctree-l1"><a class="reference internal" href="flows.html">Flows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="losses.html">Loss functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="training.html">Training</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Wrappers</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.wrappers.AbstractUnwrappable"><code class="docutils literal notranslate"><span class="pre">AbstractUnwrappable</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.wrappers.BijectionReparam"><code class="docutils literal notranslate"><span class="pre">BijectionReparam</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.wrappers.Lambda"><code class="docutils literal notranslate"><span class="pre">Lambda</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.wrappers.NonTrainable"><code class="docutils literal notranslate"><span class="pre">NonTrainable</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.wrappers.WeightNormalization"><code class="docutils literal notranslate"><span class="pre">WeightNormalization</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.wrappers.Where"><code class="docutils literal notranslate"><span class="pre">Where</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.wrappers.non_trainable"><code class="docutils literal notranslate"><span class="pre">non_trainable()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#flowjax.wrappers.unwrap"><code class="docutils literal notranslate"><span class="pre">unwrap()</span></code></a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Miscellaneous</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../faq.html">FAQ</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">FlowJax</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Wrappers</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/api/wrappers.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-flowjax.wrappers">
+<span id="wrappers"></span><h1>Wrappers<a class="headerlink" href="#module-flowjax.wrappers" title="Link to this heading"></a></h1>
+<p><a class="reference internal" href="#flowjax.wrappers.AbstractUnwrappable" title="flowjax.wrappers.AbstractUnwrappable"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractUnwrappable</span></code></a> objects and utilities.</p>
+<p>These are “placeholder” values for specifying custom behaviour for nodes in a pytree.
+Many of these facilitate similar functions to pytorch parameterizations. We use this
+for example to apply parameter constraints, masking of parameters etc. To apply the
+behaviour, we use <a class="reference internal" href="#flowjax.wrappers.unwrap" title="flowjax.wrappers.unwrap"><code class="xref py py-func docutils literal notranslate"><span class="pre">unwrap()</span></code></a>, which will replace any <a class="reference internal" href="#flowjax.wrappers.AbstractUnwrappable" title="flowjax.wrappers.AbstractUnwrappable"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractUnwrappable</span></code></a>
+nodes in a pytree with the unwrapped versions.</p>
+<p>Unwrapping is automatically called in several places, primarily:</p>
+<ul class="simple">
+<li><p>Prior to calling the bijection methods: <code class="docutils literal notranslate"><span class="pre">transform</span></code>, <code class="docutils literal notranslate"><span class="pre">inverse</span></code>,
+<code class="docutils literal notranslate"><span class="pre">transform_and_log_det</span></code> and <code class="docutils literal notranslate"><span class="pre">inverse_and_log_det</span></code>.</p></li>
+<li><p>Prior to calling distribution methods: <code class="docutils literal notranslate"><span class="pre">log_prob</span></code>, <code class="docutils literal notranslate"><span class="pre">sample</span></code> and
+<code class="docutils literal notranslate"><span class="pre">sample_and_log_prob</span></code>.</p></li>
+<li><p>Prior to computing the loss functions.</p></li>
+</ul>
+<p>If implementing a custom unwrappable, bear in mind:</p>
+<ul class="simple">
+<li><p>The wrapper should avoid implementing information or logic beyond what is required
+for initialization and unwrapping, as this information will be lost when unwrapping.</p></li>
+<li><p>The unwrapping should support broadcasting/vmapped initializations. Otherwise, if
+the unwrappable is created within a batched context, it will fail to unwrap
+correctly.</p></li>
+</ul>
+<dl class="py class">
+<dt class="sig sig-object py" id="flowjax.wrappers.AbstractUnwrappable">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">AbstractUnwrappable</span></span><a class="reference internal" href="../_modules/flowjax/wrappers.html#AbstractUnwrappable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.wrappers.AbstractUnwrappable" title="Link to this definition"></a></dt>
+<dd><p>An abstract class representing an unwrappable object.</p>
+<p>Unwrappables generally replace nodes in a pytree, in order to specify some custom
+behaviour to apply upon unwrapping before use. This can be used e.g. to apply
+parameter constraints, such as making scale parameters postive, or applying
+stop_gradient before accessing the parameters.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">_dummy</span></code> is set to an array (must have shape ()), this is used for inferring
+vmapped dimensions (and sizes) when calling <a class="reference internal" href="#flowjax.wrappers.unwrap" title="flowjax.wrappers.unwrap"><code class="xref py py-func docutils literal notranslate"><span class="pre">unwrap()</span></code></a> to automatically
+vecotorize the method. In some cases this is important for supporting the case where
+an <a class="reference internal" href="#flowjax.wrappers.AbstractUnwrappable" title="flowjax.wrappers.AbstractUnwrappable"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractUnwrappable</span></code></a> is created within e.g. <code class="docutils literal notranslate"><span class="pre">eqx.filter_vmap</span></code>.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="flowjax.wrappers.AbstractUnwrappable.recursive_unwrap">
+<span class="sig-name descname"><span class="pre">recursive_unwrap</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/wrappers.html#AbstractUnwrappable.recursive_unwrap"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.wrappers.AbstractUnwrappable.recursive_unwrap" title="Link to this definition"></a></dt>
+<dd><p>Returns the unwrapped pytree, unwrapping subnodes as required.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypeVar" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a>(<code class="docutils literal notranslate"><span class="pre">T</span></code>)</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="flowjax.wrappers.AbstractUnwrappable.unwrap">
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">unwrap</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/wrappers.html#AbstractUnwrappable.unwrap"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.wrappers.AbstractUnwrappable.unwrap" title="Link to this definition"></a></dt>
+<dd><p>Returns the unwrapped pytree, assuming no wrapped subnodes exist.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypeVar" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a>(<code class="docutils literal notranslate"><span class="pre">T</span></code>)</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flowjax.wrappers.BijectionReparam">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">BijectionReparam</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bijection</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">invert_on_init</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/wrappers.html#BijectionReparam"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.wrappers.BijectionReparam" title="Link to this definition"></a></dt>
+<dd><p>Reparameterize a parameter using a bijection.</p>
+<p>When applying unwrap, <code class="docutils literal notranslate"><span class="pre">bijection.transform</span></code> is applied. By default, the inverse
+of the bijection is applied when setting the parameter values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arr</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code>, <a class="reference internal" href="#flowjax.wrappers.AbstractUnwrappable" title="flowjax.wrappers.AbstractUnwrappable"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractUnwrappable</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code>]]</span>) – The parameter to reparameterize. If invert_on_init is False, then this can
+be a <code class="docutils literal notranslate"><span class="pre">AbstractUnwrappable[Array]</span></code>.</p></li>
+<li><p><strong>bijection</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference internal" href="bijections.html#flowjax.bijections.AbstractBijection" title="flowjax.bijections.bijection.AbstractBijection"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractBijection</span></code></a></span>) – A bijection whose shape is broadcastable to <code class="docutils literal notranslate"><span class="pre">jnp.shape(arr)</span></code>.</p></li>
+<li><p><strong>invert_on_init</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></a></span>) – Whether to apply the inverse transformation when initializing.
+Defaults to True.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flowjax.wrappers.BijectionReparam.arr">
+<span class="sig-name descname"><span class="pre">arr</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code><span class="pre">,</span> <a class="reference internal" href="#flowjax.wrappers.AbstractUnwrappable" title="flowjax.wrappers.AbstractUnwrappable"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractUnwrappable</span></code></a><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code><span class="pre">]]</span></em><a class="headerlink" href="#flowjax.wrappers.BijectionReparam.arr" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flowjax.wrappers.BijectionReparam.bijection">
+<span class="sig-name descname"><span class="pre">bijection</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="bijections.html#flowjax.bijections.AbstractBijection" title="flowjax.bijections.bijection.AbstractBijection"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractBijection</span></code></a></em><a class="headerlink" href="#flowjax.wrappers.BijectionReparam.bijection" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="flowjax.wrappers.BijectionReparam.unwrap">
+<span class="sig-name descname"><span class="pre">unwrap</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/wrappers.html#BijectionReparam.unwrap"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.wrappers.BijectionReparam.unwrap" title="Link to this definition"></a></dt>
+<dd><p>Returns the unwrapped pytree, assuming no wrapped subnodes exist.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flowjax.wrappers.Lambda">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Lambda</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fn</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/wrappers.html#Lambda"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.wrappers.Lambda" title="Link to this definition"></a></dt>
+<dd><p>Unwrap an object by calling fn with (possibly trainable) args and kwargs.</p>
+<p>If the Lambda is created within <code class="docutils literal notranslate"><span class="pre">eqx.filter_vmap</span></code>, unwrapping is automatically
+vectorized correctly, as long as the vmapped constructor adds leading batch
+dimensions to all arrays in Lambda (the default for <code class="docutils literal notranslate"><span class="pre">eqx.filter_vmap</span></code>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>fn</strong> – Function to call with args, and kwargs.</p></li>
+<li><p><strong>*args</strong> – Positional arguments to pass to fn.</p></li>
+<li><p><strong>**kwargs</strong> – Keyword arguments to pass to fn.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flowjax.wrappers.Lambda.args">
+<span class="sig-name descname"><span class="pre">args</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Iterable" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Iterable</span></code></a></em><a class="headerlink" href="#flowjax.wrappers.Lambda.args" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flowjax.wrappers.Lambda.fn">
+<span class="sig-name descname"><span class="pre">fn</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Callable" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Callable</span></code></a><span class="pre">[</span><a class="reference external" href="https://docs.python.org/3/library/constants.html#Ellipsis" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">...</span></code></a><span class="pre">,</span> <a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypeVar" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a><span class="pre">(</span><code class="docutils literal notranslate"><span class="pre">T</span></code><span class="pre">)]</span></em><a class="headerlink" href="#flowjax.wrappers.Lambda.fn" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flowjax.wrappers.Lambda.kwargs">
+<span class="sig-name descname"><span class="pre">kwargs</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></a></em><a class="headerlink" href="#flowjax.wrappers.Lambda.kwargs" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="flowjax.wrappers.Lambda.unwrap">
+<span class="sig-name descname"><span class="pre">unwrap</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/wrappers.html#Lambda.unwrap"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.wrappers.Lambda.unwrap" title="Link to this definition"></a></dt>
+<dd><p>Returns the unwrapped pytree, assuming no wrapped subnodes exist.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypeVar" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a>(<code class="docutils literal notranslate"><span class="pre">T</span></code>)</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flowjax.wrappers.NonTrainable">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">NonTrainable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tree</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/wrappers.html#NonTrainable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.wrappers.NonTrainable" title="Link to this definition"></a></dt>
+<dd><p>Applies stop gradient to all arraylike leaves before unwrapping.</p>
+<p>See also <a class="reference internal" href="#flowjax.wrappers.non_trainable" title="flowjax.wrappers.non_trainable"><code class="xref py py-func docutils literal notranslate"><span class="pre">non_trainable()</span></code></a>, which is probably a generally prefereable way to
+achieve similar behaviour, which wraps the arraylike leaves directly, rather than
+the tree.</p>
+<p>Useful to mark pytrees (arrays, submodules, etc) as frozen/non-trainable. We also
+filter out NonTrainable nodes when partitioning parameters for training, or when
+parameterizing bijections in coupling/masked autoregressive flows (transformers).</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flowjax.wrappers.NonTrainable.tree">
+<span class="sig-name descname"><span class="pre">tree</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypeVar" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a><span class="pre">(</span><code class="docutils literal notranslate"><span class="pre">T</span></code><span class="pre">)</span></em><a class="headerlink" href="#flowjax.wrappers.NonTrainable.tree" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="flowjax.wrappers.NonTrainable.unwrap">
+<span class="sig-name descname"><span class="pre">unwrap</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/wrappers.html#NonTrainable.unwrap"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.wrappers.NonTrainable.unwrap" title="Link to this definition"></a></dt>
+<dd><p>Returns the unwrapped pytree, assuming no wrapped subnodes exist.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.TypeVar" title="(in Python v3.12)"><code class="xref py py-class docutils literal notranslate"><span class="pre">TypeVar</span></code></a>(<code class="docutils literal notranslate"><span class="pre">T</span></code>)</span></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flowjax.wrappers.WeightNormalization">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">WeightNormalization</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">weight</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/wrappers.html#WeightNormalization"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.wrappers.WeightNormalization" title="Link to this definition"></a></dt>
+<dd><p>Applies weight normalization (<a class="reference external" href="https://arxiv.org/abs/1602.07868">https://arxiv.org/abs/1602.07868</a>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>weight</strong> (<span class="sphinx_autodoc_typehints-type"><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code>, <a class="reference internal" href="#flowjax.wrappers.AbstractUnwrappable" title="flowjax.wrappers.AbstractUnwrappable"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractUnwrappable</span></code></a>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code>]]</span>) – The (possibly wrapped) weight matrix.</p>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flowjax.wrappers.WeightNormalization.scale">
+<span class="sig-name descname"><span class="pre">scale</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code><span class="pre">,</span> <a class="reference internal" href="#flowjax.wrappers.AbstractUnwrappable" title="flowjax.wrappers.AbstractUnwrappable"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractUnwrappable</span></code></a><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code><span class="pre">]]</span></em><a class="headerlink" href="#flowjax.wrappers.WeightNormalization.scale" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="flowjax.wrappers.WeightNormalization.unwrap">
+<span class="sig-name descname"><span class="pre">unwrap</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/wrappers.html#WeightNormalization.unwrap"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.wrappers.WeightNormalization.unwrap" title="Link to this definition"></a></dt>
+<dd><p>Returns the unwrapped pytree, assuming no wrapped subnodes exist.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p><span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code></span></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flowjax.wrappers.WeightNormalization.weight">
+<span class="sig-name descname"><span class="pre">weight</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code><span class="pre">,</span> <a class="reference internal" href="#flowjax.wrappers.AbstractUnwrappable" title="flowjax.wrappers.AbstractUnwrappable"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractUnwrappable</span></code></a><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code><span class="pre">]]</span></em><a class="headerlink" href="#flowjax.wrappers.WeightNormalization.weight" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="flowjax.wrappers.Where">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Where</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">cond</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">if_true</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">if_false</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/wrappers.html#Where"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.wrappers.Where" title="Link to this definition"></a></dt>
+<dd><p>Applies jnp.where upon unwrapping.</p>
+<p>This can be used to construct masks by setting <code class="docutils literal notranslate"><span class="pre">cond=mask</span></code> and <code class="docutils literal notranslate"><span class="pre">if_false=0</span></code>.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flowjax.wrappers.Where.cond">
+<span class="sig-name descname"><span class="pre">cond</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayLike</span></code></em><a class="headerlink" href="#flowjax.wrappers.Where.cond" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flowjax.wrappers.Where.if_false">
+<span class="sig-name descname"><span class="pre">if_false</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayLike</span></code><span class="pre">,</span> <a class="reference internal" href="#flowjax.wrappers.AbstractUnwrappable" title="flowjax.wrappers.AbstractUnwrappable"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractUnwrappable</span></code></a><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code><span class="pre">]]</span></em><a class="headerlink" href="#flowjax.wrappers.Where.if_false" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="flowjax.wrappers.Where.if_true">
+<span class="sig-name descname"><span class="pre">if_true</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Union" title="(in Python v3.12)"><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code></a><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">ArrayLike</span></code><span class="pre">,</span> <a class="reference internal" href="#flowjax.wrappers.AbstractUnwrappable" title="flowjax.wrappers.AbstractUnwrappable"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractUnwrappable</span></code></a><span class="pre">[</span><code class="xref py py-class docutils literal notranslate"><span class="pre">Array</span></code><span class="pre">]]</span></em><a class="headerlink" href="#flowjax.wrappers.Where.if_true" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="flowjax.wrappers.Where.unwrap">
+<span class="sig-name descname"><span class="pre">unwrap</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/wrappers.html#Where.unwrap"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.wrappers.Where.unwrap" title="Link to this definition"></a></dt>
+<dd><p>Returns the unwrapped pytree, assuming no wrapped subnodes exist.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="flowjax.wrappers.non_trainable">
+<span class="sig-name descname"><span class="pre">non_trainable</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tree</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/wrappers.html#non_trainable"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.wrappers.non_trainable" title="Link to this definition"></a></dt>
+<dd><p>Freezes parameters by wrapping inexact array leaves with :class:<code class="docutils literal notranslate"><span class="pre">NonTrainable</span></code>.</p>
+<p>Wrapping the arrays rather than the entire tree is often preferable, allowing easier
+access to attributes, compared to wrapping the entire tree.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>tree</strong> (<span class="sphinx_autodoc_typehints-type"><code class="xref py py-class docutils literal notranslate"><span class="pre">PyTree</span></code></span>) – The pytree.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="flowjax.wrappers.unwrap">
+<span class="sig-name descname"><span class="pre">unwrap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">tree</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/flowjax/wrappers.html#unwrap"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#flowjax.wrappers.unwrap" title="Link to this definition"></a></dt>
+<dd><p>Unwrap all <a class="reference internal" href="#flowjax.wrappers.AbstractUnwrappable" title="flowjax.wrappers.AbstractUnwrappable"><code class="xref py py-class docutils literal notranslate"><span class="pre">AbstractUnwrappable</span></code></a> nodes within a pytree.</p>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="training.html" class="btn btn-neutral float-left" title="Training" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../faq.html" class="btn btn-neutral float-right" title="FAQ" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2022, Daniel Ward.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
