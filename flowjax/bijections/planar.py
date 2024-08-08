@@ -185,7 +185,6 @@ class _UnconditionalPlanar(AbstractBijection):
         relu_slope = jnp.where(numerator < 0, self.negative_slope, 1)
         us = self.get_act_scale() * relu_slope
         denominator = 1 + self.weight @ us
-        psi = relu_slope * self.weight
-        log_det = -jnp.log(jnp.abs(1 + us @ psi))
+        log_det = -jnp.log(jnp.abs(1 + us @ self.weight))
         x = y - us * (numerator / denominator)
         return x, log_det

@@ -172,9 +172,14 @@ bijections = {
         [Affine(jr.uniform(k, (1, 2, 3))) for k in jr.split(KEY, 3)],
         axis=-1,
     ),
-    "_UnconditionalPlanar (leaky_relu activation)": lambda: _UnconditionalPlanar(
+    "_UnconditionalPlanar (leaky_relu +ve bias)": lambda: _UnconditionalPlanar(
         *jnp.split(jr.normal(KEY, (8,)), 2),
-        bias=jnp.array(2.0),
+        bias=jnp.array(100.0),  # leads to evaluation in +ve relu portion
+        negative_slope=0.1,
+    ),
+    "_UnconditionalPlanar (leaky_relu -ve bias)": lambda: _UnconditionalPlanar(
+        *jnp.split(jr.normal(KEY, (8,)), 2),
+        bias=-jnp.array(100.0),  # leads to evaluation in -ve relu portion
         negative_slope=0.1,
     ),
     "Planar": lambda: Planar(
