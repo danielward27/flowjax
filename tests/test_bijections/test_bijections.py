@@ -35,6 +35,7 @@ from flowjax.bijections import (
     TriangularAffine,
     Vmap,
 )
+from flowjax.bijections.planar import _UnconditionalPlanar
 
 DIM = 3
 COND_DIM = 2
@@ -171,6 +172,16 @@ bijections = {
         [Affine(jr.uniform(k, (1, 2, 3))) for k in jr.split(KEY, 3)],
         axis=-1,
     ),
+    "_UnconditionalPlanar (leaky_relu +ve bias)": lambda: _UnconditionalPlanar(
+        *jnp.split(jr.normal(KEY, (8,)), 2),
+        bias=jnp.array(100.0),  # leads to evaluation in +ve relu portion
+        negative_slope=0.1,
+    ),
+    "_UnconditionalPlanar (leaky_relu -ve bias)": lambda: _UnconditionalPlanar(
+        *jnp.split(jr.normal(KEY, (8,)), 2),
+        bias=-jnp.array(100.0),  # leads to evaluation in -ve relu portion
+        negative_slope=0.1,
+    ),
     "Planar": lambda: Planar(
         KEY,
         dim=DIM,
@@ -209,7 +220,7 @@ def test_transform_inverse(bijection_name):
     y = bijection.transform(x, cond)
     try:
         x_reconstructed = bijection.inverse(y, cond)
-        assert x == pytest.approx(x_reconstructed, abs=1e-4)
+        assert x_reconstructed == pytest.approx(x, abs=1e-4)
     except NotImplementedError:
         pass
 
