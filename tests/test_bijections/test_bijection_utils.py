@@ -1,6 +1,6 @@
-import jax
 import jax.numpy as jnp
 import pytest
+from equinox import EquinoxRuntimeError
 
 from flowjax.bijections import Affine, Partial, Permute
 
@@ -30,5 +30,5 @@ def test_partial(idx, expected):
 
 
 def test_Permute_argcheck():
-    with pytest.raises(jax.lib.xla_extension.XlaRuntimeError):
+    with pytest.raises(EquinoxRuntimeError):
         Permute(jnp.array([0, 0]))

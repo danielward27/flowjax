@@ -18,7 +18,7 @@ from flowjax.wrappers import (
 
 def test_BijectionReparam():
 
-    with pytest.raises(jax.lib.xla_extension.XlaRuntimeError, match="Exp"):
+    with pytest.raises(eqx.EquinoxRuntimeError, match="Exp"):
         BijectionReparam(-jnp.ones(3), Exp())
 
     param = jnp.array([jnp.inf, 1, 2])
