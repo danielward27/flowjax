@@ -7,8 +7,9 @@ import jax
 import jax.numpy as jnp
 from jaxtyping import Array, Float
 
-from flowjax import wrappers
 from flowjax.bijections.bijection import AbstractBijection
+from flowjax.utils import inv_softplus
+from flowjax.wrappers import AbstractUnwrappable, Parameterize
 
 
 def _real_to_increasing_on_interval(
@@ -62,9 +63,9 @@ class RationalQuadraticSpline(AbstractBijection):
     interval: tuple[int | float, int | float]
     softmax_adjust: float | int
     min_derivative: float
-    x_pos: Array | wrappers.AbstractUnwrappable[Array]
-    y_pos: Array | wrappers.AbstractUnwrappable[Array]
-    derivatives: Array | wrappers.AbstractUnwrappable[Array]
+    x_pos: Array | AbstractUnwrappable[Array]
+    y_pos: Array | AbstractUnwrappable[Array]
+    derivatives: Array | AbstractUnwrappable[Array]
     shape: ClassVar[tuple] = ()
     cond_shape: ClassVar[None] = None
 
@@ -89,11 +90,11 @@ class RationalQuadraticSpline(AbstractBijection):
             softmax_adjust=softmax_adjust,
         )
 
-        self.x_pos = wrappers.Lambda(pos_parameterization, jnp.zeros(knots))
-        self.y_pos = wrappers.Lambda(pos_parameterization, jnp.zeros(knots))
-        self.derivatives = wrappers.Lambda(
+        self.x_pos = Parameterize(pos_parameterization, jnp.zeros(knots))
+        self.y_pos = Parameterize(pos_parameterization, jnp.zeros(knots))
+        self.derivatives = Parameterize(
             lambda arr: jax.nn.softplus(arr) + self.min_derivative,
-            jnp.full(knots + 2, jnp.log(jnp.exp(1 - min_derivative) - 1)),
+            jnp.full(knots + 2, inv_softplus(1 - min_derivative)),
         )
 
     def transform(self, x, condition=None):

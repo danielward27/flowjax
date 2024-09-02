@@ -14,6 +14,7 @@ import jax.nn as jnn
 import jax.numpy as jnp
 import jax.random as jr
 from equinox.nn import Linear
+from jax.nn import softplus
 from jax.nn.initializers import glorot_uniform
 from jaxtyping import PRNGKeyArray
 
@@ -27,27 +28,22 @@ from flowjax.bijections import (
     Flip,
     Invert,
     LeakyTanh,
-    Loc,
     MaskedAutoregressive,
     Permute,
     Planar,
     RationalQuadraticSpline,
     Scan,
-    SoftPlus,
     TriangularAffine,
     Vmap,
 )
 from flowjax.distributions import AbstractDistribution, Transformed
-from flowjax.wrappers import BijectionReparam, WeightNormalization, non_trainable
+from flowjax.utils import inv_softplus
+from flowjax.wrappers import Parameterize, WeightNormalization
 
 
 def _affine_with_min_scale(min_scale: float = 1e-2) -> Affine:
-    scale_reparam = Chain([SoftPlus(), non_trainable(Loc(min_scale))])
-    return eqx.tree_at(
-        where=lambda aff: aff.scale,
-        pytree=Affine(),
-        replace=BijectionReparam(jnp.array(1), scale_reparam),
-    )
+    scale = Parameterize(lambda x: softplus(x) + min_scale, inv_softplus(1 - min_scale))
+    return eqx.tree_at(where=lambda aff: aff.scale, pytree=Affine(), replace=scale)
 
 
 def coupling_flow(
