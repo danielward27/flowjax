@@ -15,9 +15,8 @@ def test_masked_autoregressive_mlp():
 
     # Extract masks before unwrapping
     mlp = masked_autoregressive_mlp(in_ranks, hidden_ranks, out_ranks, depth=3, key=key)
-    masks = [layer.weight.cond for layer in mlp.layers]
-
     mlp = unwrap(mlp)
+    masks = [layer.weight != 0 for layer in mlp.layers]
     x = jnp.ones(in_size)
     y = mlp(x)
     assert y.shape == out_ranks.shape

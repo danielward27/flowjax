@@ -9,14 +9,14 @@ import jax
 import jax.numpy as jnp
 import jax.random as jr
 from jax import random
+from jax.nn import softplus
 from jaxtyping import PRNGKeyArray
 
 from flowjax import masks
 from flowjax.bijections.bijection import AbstractBijection
-from flowjax.bijections.softplus import SoftPlus
 from flowjax.bijections.tanh import LeakyTanh
 from flowjax.bisection_search import AutoregressiveBisectionInverter
-from flowjax.wrappers import BijectionReparam, WeightNormalization, Where
+from flowjax.wrappers import Parameterize, WeightNormalization
 
 
 class _CallableToBijection(AbstractBijection):
@@ -219,13 +219,11 @@ def block_autoregressive_linear(
     block_diag_mask = masks.block_diag_mask(block_shape, n_blocks)
     block_tril_mask = masks.block_tril_mask(block_shape, n_blocks)
 
-    weight = Where(block_tril_mask, linear.weight, 0)
-    weight = Where(
-        block_diag_mask,
-        BijectionReparam(weight, SoftPlus(), invert_on_init=False),
-        weight,
-    )
-    weight = WeightNormalization(weight)
+    def apply_mask(weight):
+        weight = jnp.where(block_tril_mask, weight, 0)
+        return jnp.where(block_diag_mask, softplus(weight), weight)
+
+    weight = WeightNormalization(Parameterize(apply_mask, linear.weight))
     linear = eqx.tree_at(lambda linear: linear.weight, linear, replace=weight)
 
     def linear_to_log_block_diagonal(linear: eqx.nn.Linear):

@@ -4,13 +4,13 @@ from collections.abc import Callable
 from typing import ClassVar
 
 import jax.numpy as jnp
+from jax.nn import softplus
 from jax.scipy.linalg import solve_triangular
 from jaxtyping import Array, ArrayLike, Shaped
 
-from flowjax import wrappers
 from flowjax.bijections.bijection import AbstractBijection
-from flowjax.bijections.softplus import SoftPlus
-from flowjax.utils import arraylike_to_array
+from flowjax.utils import arraylike_to_array, inv_softplus
+from flowjax.wrappers import AbstractUnwrappable, Parameterize, unwrap
 
 
 class Affine(AbstractBijection):
@@ -29,7 +29,7 @@ class Affine(AbstractBijection):
     shape: tuple[int, ...]
     cond_shape: ClassVar[None] = None
     loc: Array
-    scale: Array | wrappers.AbstractUnwrappable[Array]
+    scale: Array | AbstractUnwrappable[Array]
 
     def __init__(
         self,
@@ -40,7 +40,7 @@ class Affine(AbstractBijection):
             *(arraylike_to_array(a, dtype=float) for a in (loc, scale)),
         )
         self.shape = scale.shape
-        self.scale = wrappers.BijectionReparam(scale, SoftPlus())
+        self.scale = Parameterize(softplus, inv_softplus(scale))
 
     def transform(self, x, condition=None):
         return x * self.scale + self.loc
@@ -92,15 +92,15 @@ class Scale(AbstractBijection):
 
     shape: tuple[int, ...]
     cond_shape: ClassVar[None] = None
-    scale: Array | wrappers.AbstractUnwrappable[Array]
+    scale: Array | AbstractUnwrappable[Array]
 
     def __init__(
         self,
         scale: ArrayLike,
     ):
         scale = arraylike_to_array(scale, "scale", dtype=float)
-        self.scale = wrappers.BijectionReparam(scale, SoftPlus())
-        self.shape = jnp.shape(wrappers.unwrap(scale))
+        self.scale = Parameterize(softplus, inv_softplus(scale))
+        self.shape = jnp.shape(unwrap(scale))
 
     def transform(self, x, condition=None):
         return x * self.scale
@@ -120,7 +120,7 @@ class TriangularAffine(AbstractBijection):
 
     Transformation has the form :math:`Ax + b`, where :math:`A` is a lower or upper
     triangular matrix, and :math:`b` is the bias vector. We assume the diagonal
-    entries are positive, and constrain the values using SoftPlus. Other
+    entries are positive, and constrain the values using softplus. Other
     parameterizations can be achieved by e.g. replacing ``self.triangular``
     after construction.
 
@@ -135,7 +135,7 @@ class TriangularAffine(AbstractBijection):
     shape: tuple[int, ...]
     cond_shape: ClassVar[None] = None
     loc: Array
-    triangular: Array | wrappers.AbstractUnwrappable[Array]
+    triangular: Array | AbstractUnwrappable[Array]
     lower: bool
 
     def __init__(
@@ -152,12 +152,12 @@ class TriangularAffine(AbstractBijection):
             raise ValueError("arr must be a square, 2-dimensional matrix.")
         dim = arr.shape[0]
 
-        def _to_triangular(diag, arr):
-            tri = jnp.tril(arr, k=-1) if lower else jnp.triu(arr, k=1)
-            return jnp.diag(diag) + tri
+        def _to_triangular(arr):
+            tri = jnp.tril(arr) if lower else jnp.triu(arr)
+            return jnp.fill_diagonal(tri, softplus(jnp.diag(tri)), inplace=False)
 
-        diag = wrappers.BijectionReparam(jnp.diag(arr), SoftPlus())
-        self.triangular = wrappers.Lambda(_to_triangular, diag=diag, arr=arr)
+        arr = jnp.fill_diagonal(arr, inv_softplus(jnp.diag(arr)), inplace=False)
+        self.triangular = Parameterize(_to_triangular, arr)
         self.lower = lower
         self.shape = (dim,)
         self.loc = jnp.broadcast_to(loc, (dim,))

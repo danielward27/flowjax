@@ -25,20 +25,16 @@ If implementing a custom unwrappable, bear in mind:
 
 from abc import abstractmethod
 from collections.abc import Callable, Iterable
-from typing import TYPE_CHECKING, ClassVar, Generic, TypeVar
+from typing import Any, ClassVar, Generic, TypeVar
 
 import equinox as eqx
-import jax.numpy as jnp
-from jaxtyping import Int, Scalar
-
-from flowjax.utils import arraylike_to_array
-
-if TYPE_CHECKING:
-    from flowjax.bijections import AbstractBijection
-
 import jax
+import jax.numpy as jnp
 from jax import lax
-from jaxtyping import Array, ArrayLike, PyTree
+from jax.nn import softplus
+from jaxtyping import Array, Int, PyTree, Scalar
+
+from flowjax.utils import inv_softplus
 
 T = TypeVar("T")
 
@@ -134,68 +130,33 @@ def non_trainable(tree: PyTree):
     )
 
 
-def _apply_inverse_and_check_valid(bijection, arr):
-    param_inv = bijection._vectorize.inverse(arr)
-    return eqx.error_if(
-        param_inv,
-        jnp.logical_and(jnp.isfinite(arr), ~jnp.isfinite(param_inv)),
-        "Non-finite value(s) introduced when reparameterizing. This suggests "
-        "the parameter vector passed to BijectionReparam was incompatible with "
-        f"the bijection used for reparameterizing ({type(bijection).__name__}).",
-    )
+class Parameterize(AbstractUnwrappable[T]):
+    """Unwrap an object by calling fn with args and kwargs.
 
-
-class BijectionReparam(AbstractUnwrappable[Array]):
-    """Reparameterize a parameter using a bijection.
-
-    When applying unwrap, ``bijection.transform`` is applied. By default, the inverse
-    of the bijection is applied when setting the parameter values.
+    All of fn, args and kwargs may contain trainable parameters. If the Parameterize is
+    created within ``eqx.filter_vmap``, unwrapping is automatically vectorized
+    correctly, as long as the vmapped constructor adds leading batch
+    dimensions to all arrays (the default for ``eqx.filter_vmap``).
 
     Args:
-        arr: The parameter to reparameterize. If invert_on_init is False, then this can
-            be a ``AbstractUnwrappable[Array]``.
-        bijection: A bijection whose shape is broadcastable to ``jnp.shape(arr)``.
-        invert_on_init: Whether to apply the inverse transformation when initializing.
-            Defaults to True.
+        fn: Callable to call with args, and kwargs.
+        *args: Positional arguments to pass to fn.
+        **kwargs: Keyword arguments to pass to fn.
     """
 
-    arr: Array | AbstractUnwrappable[Array]
-    bijection: "AbstractBijection"
+    fn: Callable[..., T]
+    args: Iterable
+    kwargs: dict[str, Any]
     _dummy: Int[Scalar, ""]
 
-    def __init__(
-        self,
-        arr: Array | AbstractUnwrappable[Array],
-        bijection: "AbstractBijection",
-        *,
-        invert_on_init: bool = True,
-    ):
-        if invert_on_init:
-            self.arr = _apply_inverse_and_check_valid(bijection, arr)
-        else:
-            if not isinstance(arr, AbstractUnwrappable):
-                arr = arraylike_to_array(arr)
-            self.arr = arr
-        self.bijection = bijection
+    def __init__(self, fn: Callable, *args, **kwargs):
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
         self._dummy = jnp.empty((), int)
 
-    def unwrap(self) -> Array:
-        return self.bijection._vectorize.transform(self.arr)
-
-
-class Where(AbstractUnwrappable[Array]):
-    """Applies jnp.where upon unwrapping.
-
-    This can be used to construct masks by setting ``cond=mask`` and ``if_false=0``.
-    """
-
-    cond: ArrayLike
-    if_true: ArrayLike | AbstractUnwrappable[Array]
-    if_false: ArrayLike | AbstractUnwrappable[Array]
-    _dummy: ClassVar[None] = None
-
-    def unwrap(self):
-        return jnp.where(self.cond, self.if_true, self.if_false)
+    def unwrap(self) -> T:
+        return self.fn(*self.args, **self.kwargs)
 
 
 class WeightNormalization(AbstractUnwrappable[Array]):
@@ -210,40 +171,10 @@ class WeightNormalization(AbstractUnwrappable[Array]):
     _dummy: ClassVar[None] = None
 
     def __init__(self, weight: Array | AbstractUnwrappable[Array]):
-        from flowjax.bijections import SoftPlus  # Delayed to avoid circular import...
-
         self.weight = weight
         scale_init = 1 / jnp.linalg.norm(unwrap(weight), axis=-1, keepdims=True)
-        self.scale = BijectionReparam(scale_init, SoftPlus())
+        self.scale = Parameterize(softplus, inv_softplus(scale_init))
 
     def unwrap(self) -> Array:
         weight_norms = jnp.linalg.norm(self.weight, axis=-1, keepdims=True)
         return self.scale * self.weight / weight_norms
-
-
-class Lambda(AbstractUnwrappable[T]):
-    """Unwrap an object by calling fn with (possibly trainable) args and kwargs.
-
-    If the Lambda is created within ``eqx.filter_vmap``, unwrapping is automatically
-    vectorized correctly, as long as the vmapped constructor adds leading batch
-    dimensions to all arrays in Lambda (the default for ``eqx.filter_vmap``).
-
-    Args:
-        fn: Function to call with args, and kwargs.
-        *args: Positional arguments to pass to fn.
-        **kwargs: Keyword arguments to pass to fn.
-    """
-
-    fn: Callable[..., T]
-    args: Iterable
-    kwargs: dict
-    _dummy: Int[Scalar, ""]
-
-    def __init__(self, fn, *args, **kwargs):
-        self.fn = fn
-        self.args = args
-        self.kwargs = kwargs
-        self._dummy = jnp.empty((), int)
-
-    def unwrap(self) -> T:
-        return self.fn(*self.args, **self.kwargs)

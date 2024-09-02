@@ -4,57 +4,45 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytest
 
-from flowjax.bijections import Exp, Scale
 from flowjax.distributions import Normal
 from flowjax.wrappers import (
-    BijectionReparam,
-    Lambda,
     NonTrainable,
+    Parameterize,
     WeightNormalization,
     non_trainable,
     unwrap,
 )
 
 
-def test_BijectionReparam():
-
-    with pytest.raises(eqx.EquinoxRuntimeError, match="Exp"):
-        BijectionReparam(-jnp.ones(3), Exp())
-
-    param = jnp.array([jnp.inf, 1, 2])
-    wrapped = BijectionReparam(param, Exp())
-    assert pytest.approx(unwrap(wrapped)) == param
-    assert pytest.approx(wrapped.arr) == jnp.log(param)
-
-    # Test with vmapped constructor
-
-    def _get_param(arr):
-        return BijectionReparam(arr, Scale(jnp.full(3, fill_value=2)))
-
-    init_param = jnp.ones((1, 2, 3))
-    param = eqx.filter_vmap(eqx.filter_vmap(_get_param))(init_param)
-    assert pytest.approx(init_param) == unwrap(param)
-
-
-def test_Lambda():
-    diag = Lambda(jnp.diag, jnp.ones(3))
+def test_Parameterize():
+    diag = Parameterize(jnp.diag, jnp.ones(3))
     assert pytest.approx(jnp.eye(3)) == unwrap(diag)
 
     # Test works when vmapped (note diag does not follow standard vectorization rules)
-    v_diag = eqx.filter_vmap(Lambda)(jnp.diag, jnp.ones((4, 3)))
+    v_diag = eqx.filter_vmap(Parameterize)(jnp.diag, jnp.ones((4, 3)))
     expected = eqx.filter_vmap(jnp.eye, axis_size=4)(3)
     assert pytest.approx(expected) == unwrap(v_diag)
 
     # Test works when double vmapped
-    v_diag = eqx.filter_vmap(eqx.filter_vmap(Lambda))(jnp.diag, jnp.ones((5, 4, 3)))
+    v_diag = eqx.filter_vmap(eqx.filter_vmap(Parameterize))(
+        jnp.diag, jnp.ones((5, 4, 3))
+    )
     expected = eqx.filter_vmap(eqx.filter_vmap(jnp.eye, axis_size=4), axis_size=5)(3)
     assert pytest.approx(expected) == unwrap(v_diag)
 
     # Test works when no arrays present (in which case axis_size is relied on)
-    unwrappable = eqx.filter_vmap(eqx.filter_vmap(Lambda, axis_size=2), axis_size=3)(
-        lambda: jnp.zeros(())
-    )
+    unwrappable = eqx.filter_vmap(
+        eqx.filter_vmap(Parameterize, axis_size=2), axis_size=3
+    )(lambda: jnp.zeros(()))
     assert pytest.approx(unwrap(unwrappable)) == jnp.zeros((3, 2))
+
+
+def test_nested_Parameterized():
+    param = Parameterize(
+        jnp.square,
+        Parameterize(jnp.square, Parameterize(jnp.square, 2)),
+    )
+    assert unwrap(param) == jnp.square(jnp.square(jnp.square(2)))
 
 
 def test_NonTrainable_and_non_trainable():

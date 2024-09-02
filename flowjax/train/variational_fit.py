@@ -61,7 +61,7 @@ def fit_to_variational_target(
         params, opt_state, loss = step(
             params,
             static,
-            key,
+            key=key,
             optimizer=optimizer,
             opt_state=opt_state,
             loss_fn=loss_fn,

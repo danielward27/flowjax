@@ -11,7 +11,7 @@ import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
 from equinox import AbstractVar
-from jax.nn import log_softmax
+from jax.nn import log_softmax, softplus
 from jax.numpy import linalg
 from jax.scipy import stats as jstats
 from jax.scipy.special import logsumexp
@@ -24,15 +24,15 @@ from flowjax.bijections import (
     Chain,
     Exp,
     Scale,
-    SoftPlus,
     TriangularAffine,
 )
 from flowjax.utils import (
     _get_ufunc_signature,
     arraylike_to_array,
+    inv_softplus,
     merge_cond_shapes,
 )
-from flowjax.wrappers import AbstractUnwrappable, BijectionReparam, Lambda, unwrap
+from flowjax.wrappers import AbstractUnwrappable, Parameterize, unwrap
 
 
 class AbstractDistribution(eqx.Module):
@@ -609,7 +609,7 @@ class _StandardStudentT(AbstractDistribution):
         df = arraylike_to_array(df, dtype=float)
         df = eqx.error_if(df, df <= 0, "Degrees of freedom values must be positive.")
         self.shape = jnp.shape(df)
-        self.df = BijectionReparam(df, SoftPlus())
+        self.df = Parameterize(softplus, inv_softplus(df))
 
     def _log_prob(self, x, condition=None):
         return jstats.t.logpdf(x, df=self.df).sum()
@@ -761,7 +761,7 @@ class VmapMixture(AbstractDistribution):
     ):
         weights = eqx.error_if(weights, weights <= 0, "Weights must be positive.")
         self.dist = dist
-        self.log_normalized_weights = Lambda(lambda w: log_softmax(w), jnp.log(weights))
+        self.log_normalized_weights = Parameterize(log_softmax, jnp.log(weights))
         self.shape = dist.shape
         self.cond_shape = dist.cond_shape
 
