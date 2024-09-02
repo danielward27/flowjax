@@ -37,6 +37,14 @@ def test_Parameterize():
     assert pytest.approx(unwrap(unwrappable)) == jnp.zeros((3, 2))
 
 
+def test_nested_Parameterized():
+    param = Parameterize(
+        jnp.square,
+        Parameterize(jnp.square, Parameterize(jnp.square, 2)),
+    )
+    assert unwrap(param) == jnp.square(jnp.square(jnp.square(2)))
+
+
 def test_NonTrainable_and_non_trainable():
     dist1 = eqx.tree_at(lambda dist: dist.bijection, Normal(), replace_fn=NonTrainable)
     dist2 = non_trainable(Normal())
