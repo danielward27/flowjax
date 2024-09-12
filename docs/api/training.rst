@@ -10,3 +10,8 @@ Alternatively, we can use ``fit_to_variational_target`` to fit the flow to a fun
 using variational inference.
 
 .. autofunction:: flowjax.train.fit_to_variational_target
+
+Finally, for more control over the training script, you may still find the ``step``
+function useful.
+
+.. autofunction:: flowjax.train.step
