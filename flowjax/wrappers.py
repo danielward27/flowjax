@@ -46,12 +46,12 @@ def unwrap(tree: PyTree):
     This leaves all other nodes unchanged. If nested, the innermost
     ``AbstractUnwrappable`` nodes are unwrapped first.
 
-    >>> from flowjax.wrappers import Parameterize, unwrap
-    >>> import jax.numpy as jnp
-    >>> params = Parameterize(jnp.exp, jnp.zeros(3))
-    >>> unwrap(("abc", 1, params))
-    ("abc", 1, Array([1., 1., 1.], dtype=float32))
-
+    Example:
+        >>> from flowjax.wrappers import Parameterize, unwrap
+        >>> import jax.numpy as jnp
+        >>> params = Parameterize(jnp.exp, jnp.zeros(3))
+        >>> unwrap(("abc", 1, params))
+        ("abc", 1, Array([1., 1., 1.], dtype=float32))
     """
 
     def _map_fn(leaf):
@@ -92,8 +92,7 @@ class Parameterize(AbstractUnwrappable[T]):
     correctly, as long as the vmapped constructor adds leading batch
     dimensions to all arrays (the default for ``eqx.filter_vmap``).
 
-    .. example
-
+    Example:
         >>> from flowjax.wrappers import Parameterize, unwrap
         >>> import jax.numpy as jnp
         >>> positive = Parameterize(jnp.exp, jnp.zeros(3))
