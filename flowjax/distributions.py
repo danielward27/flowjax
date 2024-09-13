@@ -45,7 +45,7 @@ class AbstractDistribution(eqx.Module):
         (1) Inherit from :class:`AbstractDistribution`.
         (2) Define the abstract attributes ``shape`` and ``cond_shape``.
             ``cond_shape`` should be ``None`` for unconditional distributions.
-        (3) Define the abstract methods `_sample` and `_log_prob`.
+        (3) Define the abstract methods ``_sample`` and ``_log_prob``.
 
     See the source code for :class:`StandardNormal` for a simple concrete example.
 

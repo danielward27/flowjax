@@ -28,7 +28,7 @@ dev = [
   "beartype",
   "ruff",
   "sphinx",
-  "sphinx-rtd-theme",
+  "sphinx-book-theme",
   "sphinx-copybutton",
   "sphinx-autodoc-typehints",
   "nbsphinx",
