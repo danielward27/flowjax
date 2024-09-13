@@ -14,18 +14,19 @@ Unwrapping is automatically called in several places, primarily:
   ``sample_and_log_prob``.
 * Prior to computing the loss functions.
 
-If implementing a custom unwrappable, bear in mind:
 
-* The wrapper should avoid implementing information or logic beyond what is required
-  for initialization and unwrapping, as this information will be lost when unwrapping.
-* The unwrapping should support broadcasting/vmapped initializations. Otherwise, if
-  the unwrappable is created within a batched context, it will fail to unwrap
-  correctly.
+.. note::
+    
+    If creating a custom unwrappable, remember that unwrapping will generally occur
+    after initialization of the model. Because of this, we recommend ensuring that
+    the ``unwrap`` method supports unwrapping if the model is constructed in a
+    vectorized context, such as ``eqx.filter_vmap``, e.g. through broadcasting or
+    vectorization.
 """
 
 from abc import abstractmethod
 from collections.abc import Callable, Iterable
-from typing import Any, ClassVar, Generic, TypeVar
+from typing import Any, Generic, TypeVar
 
 import equinox as eqx
 import jax
@@ -40,11 +41,29 @@ T = TypeVar("T")
 
 
 def unwrap(tree: PyTree):
-    """Unwrap all :class:`AbstractUnwrappable` nodes within a pytree."""
+    """Recursively unwraps all :class:`AbstractUnwrappable` nodes within a pytree.
+
+    This leaves all other nodes unchanged. If nested, the innermost
+    ``AbstractUnwrappable`` nodes are unwrapped first.
+
+    Example:
+        >>> from flowjax.wrappers import Parameterize, unwrap
+        >>> import jax.numpy as jnp
+        >>> params = Parameterize(jnp.exp, jnp.zeros(3))
+        >>> unwrap(("abc", 1, params))
+        ("abc", 1, Array([1., 1., 1.], dtype=float32))
+    """
+
+    def _map_fn(leaf):
+        if isinstance(leaf, AbstractUnwrappable):
+            # Flatten to ignore until all contained AbstractUnwrappables are unwrapped
+            flat, tree_def = eqx.tree_flatten_one_level(leaf)
+            tree = jax.tree_util.tree_unflatten(tree_def, unwrap(flat))
+            return tree.unwrap()
+        return leaf
+
     return jax.tree_util.tree_map(
-        f=lambda leaf: (
-            leaf.recursive_unwrap() if isinstance(leaf, AbstractUnwrappable) else leaf
-        ),
+        f=_map_fn,
         tree=tree,
         is_leaf=lambda x: isinstance(x, AbstractUnwrappable),
     )
@@ -57,37 +76,54 @@ class AbstractUnwrappable(eqx.Module, Generic[T]):
     behaviour to apply upon unwrapping before use. This can be used e.g. to apply
     parameter constraints, such as making scale parameters postive, or applying
     stop_gradient before accessing the parameters.
-
-    If ``_dummy`` is set to an array (must have shape ()), this is used for inferring
-    vmapped dimensions (and sizes) when calling :func:`unwrap` to automatically
-    vecotorize the method. In some cases this is important for supporting the case where
-    an :class:`AbstractUnwrappable` is created within e.g. ``eqx.filter_vmap``.
     """
-
-    _dummy: eqx.AbstractVar[Int[Scalar, ""] | None]
-
-    def recursive_unwrap(self) -> T:
-        """Returns the unwrapped pytree, unwrapping subnodes as required."""
-
-        def vectorized_unwrap(unwrappable):
-            if unwrappable._dummy is None:
-                return unwrappable.unwrap()
-
-            def v_unwrap(unwrappable):
-                return unwrappable.unwrap()
-
-            for dim in reversed(unwrappable._dummy.shape):
-                v_unwrap = eqx.filter_vmap(v_unwrap, axis_size=dim)
-            return v_unwrap(unwrappable)
-
-        flat, tree_def = eqx.tree_flatten_one_level(self)
-        tree = jax.tree_util.tree_unflatten(tree_def, unwrap(flat))
-        return vectorized_unwrap(tree)
 
     @abstractmethod
     def unwrap(self) -> T:
         """Returns the unwrapped pytree, assuming no wrapped subnodes exist."""
         pass
+
+
+class Parameterize(AbstractUnwrappable[T]):
+    """Unwrap an object by calling fn with args and kwargs.
+
+    All of fn, args and kwargs may contain trainable parameters. If the Parameterize is
+    created within ``eqx.filter_vmap``, unwrapping is automatically vectorized
+    correctly, as long as the vmapped constructor adds leading batch
+    dimensions to all arrays (the default for ``eqx.filter_vmap``).
+
+    Example:
+        >>> from flowjax.wrappers import Parameterize, unwrap
+        >>> import jax.numpy as jnp
+        >>> positive = Parameterize(jnp.exp, jnp.zeros(3))
+        >>> unwrap(positive)  # Aplies exp on unwrapping
+        Array([1., 1., 1.], dtype=float32)
+
+    Args:
+        fn: Callable to call with args, and kwargs.
+        *args: Positional arguments to pass to fn.
+        **kwargs: Keyword arguments to pass to fn.
+    """
+
+    fn: Callable[..., T]
+    args: Iterable
+    kwargs: dict[str, Any]
+    _dummy: Int[Scalar, ""]  # Used to track vectorized construction.
+
+    def __init__(self, fn: Callable, *args, **kwargs):
+        self.fn = fn
+        self.args = args
+        self.kwargs = kwargs
+        self._dummy = jnp.empty((), int)
+
+    def unwrap(self) -> T:
+
+        def _unwrap_fn(self):
+            return self.fn(*self.args, **self.kwargs)
+
+        for dim in reversed(self._dummy.shape):  # vectorize if constructed under vmap
+            _unwrap_fn = eqx.filter_vmap(_unwrap_fn, axis_size=dim)
+        return _unwrap_fn(self)
 
 
 class NonTrainable(AbstractUnwrappable[T]):
@@ -103,7 +139,6 @@ class NonTrainable(AbstractUnwrappable[T]):
     """
 
     tree: T
-    _dummy: ClassVar[None] = None
 
     def unwrap(self) -> T:
         differentiable, static = eqx.partition(self.tree, eqx.is_array_like)
@@ -130,35 +165,6 @@ def non_trainable(tree: PyTree):
     )
 
 
-class Parameterize(AbstractUnwrappable[T]):
-    """Unwrap an object by calling fn with args and kwargs.
-
-    All of fn, args and kwargs may contain trainable parameters. If the Parameterize is
-    created within ``eqx.filter_vmap``, unwrapping is automatically vectorized
-    correctly, as long as the vmapped constructor adds leading batch
-    dimensions to all arrays (the default for ``eqx.filter_vmap``).
-
-    Args:
-        fn: Callable to call with args, and kwargs.
-        *args: Positional arguments to pass to fn.
-        **kwargs: Keyword arguments to pass to fn.
-    """
-
-    fn: Callable[..., T]
-    args: Iterable
-    kwargs: dict[str, Any]
-    _dummy: Int[Scalar, ""]
-
-    def __init__(self, fn: Callable, *args, **kwargs):
-        self.fn = fn
-        self.args = args
-        self.kwargs = kwargs
-        self._dummy = jnp.empty((), int)
-
-    def unwrap(self) -> T:
-        return self.fn(*self.args, **self.kwargs)
-
-
 class WeightNormalization(AbstractUnwrappable[Array]):
     """Applies weight normalization (https://arxiv.org/abs/1602.07868).
 
@@ -168,7 +174,6 @@ class WeightNormalization(AbstractUnwrappable[Array]):
 
     weight: Array | AbstractUnwrappable[Array]
     scale: Array | AbstractUnwrappable[Array] = eqx.field(init=False)
-    _dummy: ClassVar[None] = None
 
     def __init__(self, weight: Array | AbstractUnwrappable[Array]):
         self.weight = weight
