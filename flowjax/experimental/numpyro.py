@@ -40,7 +40,7 @@ class _BetterTransformedDistribution(TransformedDistribution):
     # In numpyro, the log_prob method seperately computes the inverse and the log
     # jacobian of the forward transformation. This becomes inefficient (or causes
     # errors) when the inverse computation and the forward log det share computations.
-    # This class avoids this for flowjax bijections.
+    # This class avoids this for FlowJAX bijections.
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -94,13 +94,13 @@ def _biject_to_independent(constraint):
 
 
 def sample(name: str, fn: Any, *args, condition=None, **kwargs):
-    """Numpyro sample wrapper that wraps flowjax distributions.
+    """Numpyro sample wrapper that wraps FlowJAX distributions.
 
     Args:
         name: Name of the sample site.
-        fn: A flowjax distribution, numpyro distribution or a stochastic function that
+        fn: A FlowJAX distribution, numpyro distribution or a stochastic function that
             returns a sample.
-        condition: Conditioning variable if fn is a conditional flowjax distribution.
+        condition: Conditioning variable if fn is a conditional FlowJAX distribution.
             Defaults to None.
         *args: Passed to numpyro sample.
         **kwargs: Passed to numpyro sample.
@@ -147,7 +147,7 @@ def distribution_to_numpyro(
     """Convert a flowjax distribution to a numpyro distribution.
 
     Args:
-        dist (AbstractDistribution): Flowjax distribution
+        dist (AbstractDistribution): FlowJAX distribution
         condition: condition: Conditioning variables. Any leading batch dimensions will
             be converted to batch dimensions in the numpyro distribution. Defaults to
             None.

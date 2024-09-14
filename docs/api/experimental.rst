@@ -10,14 +10,14 @@ we do provide some basic suppport for interfacing with numpyro. We note this sup
 in its infancy and there may be breaking changes without warning. 
 
 .. warning::
-    Batch dimensions are handled differently for flowjax distributions and numpyro
-    distributions. In flowjax we do not make a clear distinction between
-    event shapes and batch shapes. Hence, when a flowjax distribution is converted to a
+    Batch dimensions are handled differently for FlowJAX distributions and numpyro
+    distributions. In FlowJAX we do not make a clear distinction between
+    event shapes and batch shapes. Hence, when a FlowJAX distribution is converted to a
     numpyro distribution, we assume its shape corresponds to the event shape.
     
-In general, we can use a combination of flowjax and numpyro distributions in a
+In general, we can use a combination of FlowJAX and numpyro distributions in a
 numpyro model by using :func:`~flowjax.experimental.numpyro.sample`, in place of
-numpyro's ``sample``. This will wrap flowjax distributions to numpyro
+numpyro's ``sample``. This will wrap FlowJAX distributions to numpyro
 distributions, using :func:`~flowjax.experimental.numpyro.distribution_to_numpyro`.
 This approach can be used for example to embed normalising flows into arbitrary
 probabilistic models. Here is a simple example
@@ -32,7 +32,7 @@ probabilistic models. Here is a simple example
         >>> import numpy as np
 
         >>> def numpyro_model(X, y):
-        ...     "Example regression model defined in terms of flowjax distributions"
+        ...     "Example regression model defined in terms of FlowJAX distributions"
         ...     beta = sample("beta", Normal(np.zeros(2)))
         ...     sample("y", Normal(X @ beta), obs=y)
 

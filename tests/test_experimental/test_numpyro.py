@@ -56,9 +56,9 @@ def test_mcmc():
     assert pytest.approx(samps.std(axis=0), abs=0.2) == true_std
 
     def plate_model():
-        # Note, in flowjax we do not have the concept of batch shape for simplicity.
+        # Note, in FlowJAX we do not have the concept of batch shape for simplicity.
         # We could add support in the numpyro context later if we wish. Note below,
-        # the plate dim is -1 (as the flowjax normal has event dim (2,)).
+        # the plate dim is -1 (as the FlowJAX normal has event dim (2,)).
         with numpyro.plate("obs", 10, dim=-1):
             sample("x", Normal(true_mean, true_std))
 
@@ -73,7 +73,7 @@ def test_mcmc():
 
 
 def test_vi():
-    "Check that flowjax distributions can be used as guide/variational distributions."
+    "Check that FlowJAX distributions can be used as guide/variational distributions."
 
     def guide(dist):
         dist = register_params("guide", dist)

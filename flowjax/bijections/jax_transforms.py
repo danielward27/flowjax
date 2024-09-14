@@ -1,4 +1,4 @@
-"""Bijections that wrap jax function transforms (scan and vmap)."""
+"""Bijections that wrap JAX function transforms (scan and vmap)."""
 
 from collections.abc import Callable
 

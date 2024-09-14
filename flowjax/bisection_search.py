@@ -171,7 +171,7 @@ def _adapt_interval_to_include_root(
     """Dyamically adjust the interval to include the root of an increasing function.
 
     Note we do not currently perform any argument checking as it is challenging to
-    perform checks that rely on array values with jax. It is the users responsibility
+    perform checks that rely on array values with JAX. It is the users responsibility
     to ensure lower is less than upper, and the function is increasing.
 
     Args:

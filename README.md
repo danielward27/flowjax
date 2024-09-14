@@ -2,7 +2,7 @@
 <img src="./logo.png?raw=true" alt="logo" width="500" ></img>
 </div>
 
-# FlowJax: Distributions and Normalizing Flows in Jax
+# FlowJAX: Distributions, bijections and normalizing Flows in Jax
 
 ## Documentation
 Available [here](https://danielward27.github.io/flowjax/index.html).
@@ -78,7 +78,7 @@ can be obtained from [zenodo](https://zenodo.org/records/10402073) if desired.
 
 ```bibtex
 @software{ward2023flowjax,
-  title = {FlowJax: Distributions and Normalizing Flows in Jax},
+  title = {FlowJAX: Distributions and Normalizing Flows in Jax},
   author = {Daniel Ward},
   url = {https://github.com/danielward27/flowjax},
   version = {[version number]},

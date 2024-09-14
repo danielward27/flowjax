@@ -1,4 +1,4 @@
-"""flowjax - Basic flowjax implementation in jax."""
+"""FlowJAX - Distributions, bijections and normalizing flows using JAX and equinox."""
 
 from importlib.metadata import version
 

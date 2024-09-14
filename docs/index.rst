@@ -1,6 +1,6 @@
-FlowJax
+FlowJAX
 ===============
-FlowJax is a package for creating and fitting normalising flows in Jax.
+FlowJAX is a package for creating and fitting normalising flows in Jax.
 
 Installation
 ------------------------
@@ -8,6 +8,9 @@ Installation
 
     pip install flowjax
 
+Introduction
+------------------------
+TODO
 
 .. toctree::
    :caption: Examples

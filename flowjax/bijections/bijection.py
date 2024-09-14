@@ -71,7 +71,7 @@ class AbstractBijection(eqx.Module):
     :class:`~flowjax.bijections.jax_transforms.Vmap` bijection.
 
     Bijections are registered as Jax PyTrees (as they are equinox modules), so are
-    compatible with normal jax operations.
+    compatible with normal JAX operations.
 
     **Implementing a bijection**
 

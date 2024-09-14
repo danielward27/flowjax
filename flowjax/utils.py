@@ -102,15 +102,15 @@ def get_ravelled_pytree_constructor(tree, filter_spec=eqx.is_inexact_array) -> t
 def arraylike_to_array(
     arr: ArrayLike | None, err_name: str = "input", **kwargs
 ) -> Array:
-    """Check the input is arraylike and convert to a jax Array with ``jnp.asarray``.
+    """Check the input is arraylike and convert to a JAX Array with ``jnp.asarray``.
 
     Combines ``jnp.asarray``, with an isinstance(arr, ArrayLike) check. This
-    allows inputs to be jax arrays, numpy arrays, python built in numeric types
+    allows inputs to be JAX arrays, numpy arrays, python built in numeric types
     (float, int) etc, but does not allow list or tuple inputs (which are not arraylike
     and can introduce overhead and confusing behaviour in certain cases).
 
     Args:
-        arr: Arraylike input to convert to a jax array.
+        arr: Arraylike input to convert to a JAX array.
         err_name: Name of the input in the error message. Defaults to "input".
         **kwargs: Keyword arguments passed to jnp.asarray.
     """
