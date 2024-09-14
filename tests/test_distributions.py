@@ -71,11 +71,11 @@ _test_shapes = [(), (2,), (2, 3)]
 @pytest.mark.parametrize("shape", _test_shapes)
 def test_sample(distribution, shape):
     d = distribution(shape=shape)
-    sample = d.sample(jr.PRNGKey(0))
+    sample = d.sample(jr.key(0))
     assert sample.shape == shape
 
     sample_shape = (1, 2)
-    sample = d.sample(jr.PRNGKey(0), sample_shape)
+    sample = d.sample(jr.key(0), sample_shape)
     assert sample.shape == sample_shape + shape
 
 
@@ -83,12 +83,12 @@ def test_sample(distribution, shape):
 @pytest.mark.parametrize("shape", _test_shapes)
 def test_log_prob(distribution, shape):
     d = distribution(shape=shape)
-    x = d.sample(jr.PRNGKey(0))
+    x = d.sample(jr.key(0))
 
     assert d.log_prob(x).shape == ()
 
     sample_shape = (1, 2)
-    x = d.sample(jr.PRNGKey(0), sample_shape)
+    x = d.sample(jr.key(0), sample_shape)
     assert d.log_prob(x).shape == sample_shape
 
     # test arraylike input
@@ -138,7 +138,7 @@ def test_multivariate_normal():
     cov = jnp.array([[2, 0.5], [0.5, 3]])
     mvn = MultivariateNormal(loc, cov)
 
-    key = jr.PRNGKey(0)
+    key = jr.key(0)
     sample = mvn.sample(key)
     expected = pytest.approx(multivariate_normal.logpdf(sample, loc, cov))
     assert mvn.log_prob(sample) == expected
@@ -149,7 +149,7 @@ def test_multivariate_normal():
 @pytest.mark.parametrize("sample_shape", sample_shape)
 def test_broadcasting_unconditional(dist_shape, sample_shape):
     d = _TestDist(dist_shape)
-    samples = d.sample(jr.PRNGKey(0), sample_shape)
+    samples = d.sample(jr.key(0), sample_shape)
     assert samples.shape == sample_shape + dist_shape
 
     log_probs = d.log_prob(samples)
@@ -169,7 +169,7 @@ def test_broadcasting_conditional(
     condition_shape,
     leading_cond_shape,
 ):
-    key = jr.PRNGKey(0)
+    key = jr.key(0)
     d = _TestDist(dist_shape, condition_shape)
     condition = jnp.zeros(leading_cond_shape + condition_shape)
     samples = d.sample(key, sample_shape, condition)
@@ -195,7 +195,7 @@ test_cases = [
 def test_sample_and_log_prob(dist):
     # We test broadcasting behaviour seperately above.
     # Just check consistency to seperately using methods
-    key = jr.PRNGKey(0)
+    key = jr.key(0)
     x_naive = dist._sample(key)
     lp_naive = dist._log_prob(x_naive)
     x, lp = dist._sample_and_log_prob(key)
@@ -211,7 +211,7 @@ def test_transformed_merge_transforms():
     assert isinstance(nested.base_dist, AbstractTransformed)
     assert not isinstance(unnested.base_dist, AbstractTransformed)
 
-    key = jr.PRNGKey(0)
+    key = jr.key(0)
     sample = unnested.sample(key)
     assert pytest.approx(sample) == nested.sample(key)
 
@@ -230,7 +230,7 @@ test_cases = [
     _TestCase(
         name="missing condition sample",
         method=_TestDist((), ()).sample,
-        args=(jr.PRNGKey(0),),
+        args=(jr.key(0),),
         error=TypeError,
         match="Expected condition to be arraylike",
     ),

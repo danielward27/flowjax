@@ -11,7 +11,7 @@ from flowjax.bijections.rational_quadratic_spline import _real_to_increasing_on_
 
 @pytest.mark.parametrize("interval", [3, (-4, 5)])
 def test_RationalQuadraticSpline_tails(interval):
-    key = jr.PRNGKey(0)
+    key = jr.key(0)
     spline = RationalQuadraticSpline(knots=10, interval=interval)
 
     # Change to random initialisation, rather than identity.

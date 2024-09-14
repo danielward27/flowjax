@@ -55,7 +55,7 @@ class BlockAutoregressiveNetwork(AbstractBijection):
     densities (see https://github.com/danielward27/flowjax/issues/102).
 
     Args:
-        key: Jax PRNGKey
+        key: Jax key
         dim: Dimension of the distribution.
         cond_dim: Dimension of conditioning variables. Defaults to None.
         depth: Number of hidden layers in the network.

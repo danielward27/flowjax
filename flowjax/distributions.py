@@ -11,6 +11,7 @@ import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
 from equinox import AbstractVar
+from jax import dtypes
 from jax.nn import log_softmax, softplus
 from jax.numpy import linalg
 from jax.scipy import stats as jstats
@@ -38,8 +39,8 @@ from flowjax.wrappers import AbstractUnwrappable, Parameterize, unwrap
 class AbstractDistribution(eqx.Module):
     """Abstract distribution class.
 
-    Distributions are registered as jax PyTrees (as they are equinox modules), and as
-    such they are compatible with normal jax operations.
+    Distributions are registered as JAX PyTrees (as they are equinox modules), and as
+    such they are compatible with normal JAX operations.
 
     Concrete subclasses can be implemented as follows:
         (1) Inherit from :class:`AbstractDistribution`.
@@ -131,7 +132,7 @@ class AbstractDistribution(eqx.Module):
                 from flowjax.flows import coupling_flow
                 from flowjax.bijections import Affine
                 # For a unconditional distribution:
-                key = jr.PRNGKey(0)
+                key = jr.key(0)
                 dist = StandardNormal((2,))
                 # For a conditional distribution
                 cond_dist = coupling_flow(
@@ -216,8 +217,8 @@ class AbstractDistribution(eqx.Module):
         # Get shapes without broadcasting - note the (2, ) corresponds to key arrays.
         maybe_cond = [] if self.cond_shape is None else [self.cond_shape]
         in_shapes = {
-            "_sample_and_log_prob": [(2,)] + maybe_cond,
-            "_sample": [(2,)] + maybe_cond,
+            "_sample_and_log_prob": [()] + maybe_cond,
+            "_sample": [()] + maybe_cond,
             "_log_prob": [self.shape] + maybe_cond,
         }
         out_shapes = {
@@ -256,13 +257,17 @@ class AbstractDistribution(eqx.Module):
         sample_shape: tuple[int, ...],
         condition,
     ):
+
+        if not dtypes.issubdtype(key.dtype, dtypes.prng_key):
+            raise TypeError("New-style typed JAX PRNG keys required.")
+
         if self.cond_ndim is not None:
             leading_cond_shape = condition.shape[: -self.cond_ndim or None]
         else:
             leading_cond_shape = ()
         key_shape = sample_shape + leading_cond_shape
-        key_size = max(1, prod(key_shape))  # Still need 1 key for scalar sample
-        return jnp.reshape(jr.split(key, key_size), (*key_shape, 2))
+        key_size = prod(key_shape)  # note: prod(()) == 1, so works for scalar smaples
+        return jr.split(key, key_size).reshape(key_shape)
 
 
 class AbstractTransformed(AbstractDistribution):

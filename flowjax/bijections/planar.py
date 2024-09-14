@@ -32,7 +32,7 @@ class Planar(AbstractBijection):
     are learned directly. In the unconditional case they are parameterised by an MLP.
 
     Args:
-        key: Jax random seed.
+        key: Jax random key.
         dim: Dimension of the bijection.
         cond_dim: Dimension of extra conditioning variables. Defaults to None.
         negative_slope: A positive float. If provided, then a leaky relu activation

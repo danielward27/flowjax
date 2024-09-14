@@ -12,9 +12,9 @@ from flowjax.flows import (
 )
 
 DIM = 3
-KEY = jr.PRNGKey(0)
+KEY = jr.key(0)
 KWARGS = {
-    "key": jr.PRNGKey(0),
+    "key": jr.key(0),
     "base_dist": StandardNormal((DIM,)),
     "flow_layers": 2,
 }

@@ -153,7 +153,7 @@ class ElboLoss:
         Args:
             params: The trainable parameters of the model.
             static: The static components of the model.
-            key: Jax random seed.
+            key: Jax random key.
         """
         dist = eqx.combine(params, static)
 

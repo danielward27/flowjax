@@ -199,7 +199,7 @@ class AdditiveCondition(AbstractBijection):
             >>> import jax.numpy as jnp
             >>> import jax.random as jr
             >>> bijection = AdditiveCondition(
-            ...     Linear(2, 3, key=jr.PRNGKey(0)), shape=(3,), cond_shape=(2,)
+            ...     Linear(2, 3, key=jr.key(0)), shape=(3,), cond_shape=(2,)
             ...     )
             >>> bijection.transform(jnp.ones(3), condition=jnp.ones(2))
             Array([1.9670618, 0.8156546, 1.7763454], dtype=float32)

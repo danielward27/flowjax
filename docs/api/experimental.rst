@@ -40,7 +40,7 @@ probabilistic models. Here is a simple example
         >>> beta_true = np.array([-1, 1])
         >>> y = X @ beta_true + np.random.randn(100)
         >>> mcmc = MCMC(NUTS(numpyro_model), num_warmup=10, num_samples=100)
-        >>> mcmc.run(jr.PRNGKey(0), X, y)
+        >>> mcmc.run(jr.key(0), X, y)
 
 .. automodule:: flowjax.experimental.numpyro
    :members:

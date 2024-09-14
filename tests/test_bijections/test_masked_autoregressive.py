@@ -7,7 +7,7 @@ from flowjax.wrappers import unwrap
 
 
 def test_masked_autoregressive_mlp():
-    key = random.PRNGKey(0)
+    key = random.key(0)
     in_size = 4
     in_ranks = jnp.arange(in_size)
     hidden_ranks = jnp.arange(6) % in_size

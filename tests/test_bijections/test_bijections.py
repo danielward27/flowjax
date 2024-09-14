@@ -39,7 +39,7 @@ from flowjax.bijections.planar import _UnconditionalPlanar
 
 DIM = 3
 COND_DIM = 2
-KEY = jr.PRNGKey(0)
+KEY = jr.key(0)
 
 
 bijections = {
@@ -212,9 +212,9 @@ def test_transform_inverse(bijection_name):
     """Tests transform and inverse methods."""
     bijection = bijections[bijection_name]()
     shape = bijection.shape if bijection.shape is not None else (DIM,)
-    x = jr.normal(jr.PRNGKey(0), shape)
+    x = jr.normal(jr.key(0), shape)
     if bijection.cond_shape is not None:
-        cond = jr.normal(jr.PRNGKey(0), bijection.cond_shape)
+        cond = jr.normal(jr.key(0), bijection.cond_shape)
     else:
         cond = None
     y = bijection.transform(x, cond)
@@ -233,10 +233,10 @@ def test_transform_inverse_and_log_dets(bijection_name):
     """
     bijection = bijections[bijection_name]()
     shape = bijection.shape if bijection.shape is not None else (DIM,)
-    x = jr.normal(jr.PRNGKey(0), shape)
+    x = jr.normal(jr.key(0), shape)
 
     if bijection.cond_shape is not None:
-        cond = jr.normal(jr.PRNGKey(0), bijection.cond_shape)
+        cond = jr.normal(jr.key(0), bijection.cond_shape)
     else:
         cond = None
 

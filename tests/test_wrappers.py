@@ -41,7 +41,7 @@ def test_non_trainable():
 
 
 def test_WeightNormalization():
-    arr = jr.normal(jr.PRNGKey(0), (10, 3))
+    arr = jr.normal(jr.key(0), (10, 3))
     weight_norm = WeightNormalization(arr)
 
     # Unwrapped norms should match weightnorm scale parameter
@@ -62,7 +62,7 @@ test_cases = {
 @pytest.mark.parametrize("shape", [(), (2,), (5, 2, 4)])
 @pytest.mark.parametrize("wrapper_fn", test_cases.values(), ids=test_cases.keys())
 def test_vectorization_invariance(wrapper_fn, shape):
-    keys = jr.split(jr.PRNGKey(0), prod(shape))
+    keys = jr.split(jr.key(0), prod(shape))
     wrapper = wrapper_fn(keys[0])  # Standard init
 
     # Multiple vmap init - should have same result in zero-th index
@@ -70,7 +70,7 @@ def test_vectorization_invariance(wrapper_fn, shape):
     for _ in shape:
         vmap_wrapper_fn = eqx.filter_vmap(vmap_wrapper_fn)
 
-    vmap_wrapper = vmap_wrapper_fn(keys.reshape((*shape, 2)))
+    vmap_wrapper = vmap_wrapper_fn(keys.reshape(shape))
 
     unwrapped = unwrap(wrapper)
     unwrapped_vmap = unwrap(vmap_wrapper)

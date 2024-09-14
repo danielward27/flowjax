@@ -19,7 +19,7 @@ class Coupling(AbstractBijection):
     """Coupling layer implementation (https://arxiv.org/abs/1605.08803).
 
     Args:
-        key: Jax PRNGKey
+        key: Jax key
         transformer: Unconditional bijection with shape () to be parameterised by the
             conditioner neural netork. Parameters wrapped with ``NonTrainable``
             are excluded from being parameterized.

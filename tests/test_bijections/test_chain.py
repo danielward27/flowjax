@@ -34,7 +34,7 @@ def test_merge_chains():
 DIM = 4
 COND_DIM = 5
 NUM_LAYERS = 3
-keys = random.split(random.PRNGKey(0), NUM_LAYERS)
+keys = random.split(random.key(0), NUM_LAYERS)
 
 make_coupling_layer = partial(
     Coupling,

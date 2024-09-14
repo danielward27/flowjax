@@ -7,7 +7,7 @@ from flowjax.train.train_utils import count_fruitless, get_batches, train_val_sp
 
 
 def test_train_val_split():
-    key = jr.PRNGKey(0)
+    key = jr.key(0)
     arrays = [jnp.ones(5), jnp.ones((5, 2)), jnp.ones((5, 3, 3))]
 
     train, val = train_val_split(key, arrays, val_prop=0.2)

@@ -16,7 +16,7 @@ def test_elbo_loss(shape):
     target = StandardNormal(shape)
     vi_dist = StandardNormal(shape)
     loss = ElboLoss(target.log_prob, num_samples=100)
-    loss_val = loss(*eqx.partition(vi_dist, eqx.is_inexact_array), jr.PRNGKey(0))
+    loss_val = loss(*eqx.partition(vi_dist, eqx.is_inexact_array), jr.key(0))
     assert loss_val.shape == ()  # expect scalar loss
     assert jnp.isfinite(loss_val)  # expect finite loss
 
@@ -30,7 +30,7 @@ def test_fit_to_variational_target(shape):
     loss = ElboLoss(target_dist.log_prob, 50)
 
     vi_dist, losses = fit_to_variational_target(
-        key=jr.PRNGKey(0),
+        key=jr.key(0),
         dist=vi_dist,
         loss_fn=loss,
         show_progress=False,

@@ -31,7 +31,7 @@ In general you should consider the form and scales of the target samples. For ex
     import jax.numpy as jnp
     import jax.random as jr
     
-    key = jr.PRNGKey(0)
+    key = jr.key(0)
     x = jr.normal(key, (1000,3))
     flow = Normal(jnp.ones(3))
 
@@ -56,7 +56,7 @@ The methods of distributions and bijections are not jitted by default. For examp
     import jax.numpy as jnp
     import jax.random as jr
     
-    key = jr.PRNGKey(0)
+    key = jr.key(0)
     x = jr.normal(key, (256,3))
     flow = Normal(jnp.ones(3))
 
@@ -66,7 +66,7 @@ The methods of distributions and bijections are not jitted by default. For examp
     >>> import jax.random as jr
 
     >>> batch_size = 256
-    >>> keys = jr.split(jr.PRNGKey(0), 5)
+    >>> keys = jr.split(jr.key(0), 5)
 
     >>> # Often slow - sample not jitted!
     >>> results = []
