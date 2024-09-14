@@ -4,8 +4,9 @@ import sys
 import typing
 from pathlib import Path
 
-# tag used in jaxtyping prevent expanding cumbersome type aliases such as ArrayLike
-typing.GENERATING_DOCUMENTATION = True
+if "doctest" not in sys.argv:  # Avoid type checking/isinstance failures.
+    # Tag used to avoid expanding arraylike alias in docs
+    typing.GENERATING_DOCUMENTATION = True
 
 
 sys.path.insert(0, Path("..").resolve())
@@ -62,6 +63,8 @@ html_theme_options = {
     "repository_url": "https://github.com/danielward27/flowjax",
     "home_page_in_toc": True,
 }
+html_title = "FlowJAX"
+
 pygments_style = "xcode"
 
 copybutton_prompt_text = r">>> |\.\.\. "
