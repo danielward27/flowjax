@@ -22,25 +22,25 @@ distributions, using :func:`~flowjax.experimental.numpyro.distribution_to_numpyr
 This approach can be used for example to embed normalising flows into arbitrary
 probabilistic models. Here is a simple example
 
-    .. doctest::
+.. doctest::
 
 
-        >>> from numpyro.infer import MCMC, NUTS
-        >>> from flowjax.experimental.numpyro import sample
-        >>> from flowjax.distributions import Normal
-        >>> import jax.random as jr
-        >>> import numpy as np
+    >>> from numpyro.infer import MCMC, NUTS
+    >>> from flowjax.experimental.numpyro import sample
+    >>> from flowjax.distributions import Normal
+    >>> import jax.random as jr
+    >>> import numpy as np
 
-        >>> def numpyro_model(X, y):
-        ...     "Example regression model defined in terms of FlowJAX distributions"
-        ...     beta = sample("beta", Normal(np.zeros(2)))
-        ...     sample("y", Normal(X @ beta), obs=y)
+    >>> def numpyro_model(X, y):
+    ...     "Example regression model defined in terms of FlowJAX distributions"
+    ...     beta = sample("beta", Normal(np.zeros(2)))
+    ...     sample("y", Normal(X @ beta), obs=y)
 
-        >>> X = np.random.randn(100, 2)
-        >>> beta_true = np.array([-1, 1])
-        >>> y = X @ beta_true + np.random.randn(100)
-        >>> mcmc = MCMC(NUTS(numpyro_model), num_warmup=10, num_samples=100)
-        >>> mcmc.run(jr.key(0), X, y)
+    >>> X = np.random.randn(100, 2)
+    >>> beta_true = np.array([-1, 1])
+    >>> y = X @ beta_true + np.random.randn(100)
+    >>> mcmc = MCMC(NUTS(numpyro_model), num_warmup=10, num_samples=100)
+    >>> mcmc.run(jr.key(0), X, y)
 
 .. automodule:: flowjax.experimental.numpyro
    :members:

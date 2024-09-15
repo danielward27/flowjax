@@ -12,6 +12,11 @@ Introduction
 ------------------------
 TODO
 
+
+Introduction to distributions
+------------------------------
+
+
 .. toctree::
    :caption: Examples
    :maxdepth: 1

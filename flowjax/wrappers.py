@@ -47,11 +47,15 @@ def unwrap(tree: PyTree):
     ``AbstractUnwrappable`` nodes are unwrapped first.
 
     Example:
-        >>> from flowjax.wrappers import Parameterize, unwrap
-        >>> import jax.numpy as jnp
-        >>> params = Parameterize(jnp.exp, jnp.zeros(3))
-        >>> unwrap(("abc", 1, params))
-        ("abc", 1, Array([1., 1., 1.], dtype=float32))
+        Enforcing positivity.
+
+        .. doctest::
+
+            >>> from flowjax.wrappers import Parameterize, unwrap
+            >>> import jax.numpy as jnp
+            >>> params = Parameterize(jnp.exp, jnp.zeros(3))
+            >>> unwrap(("abc", 1, params))
+            ("abc", 1, Array([1., 1., 1.], dtype=float32))
     """
 
     def _map_fn(leaf):
@@ -93,11 +97,12 @@ class Parameterize(AbstractUnwrappable[T]):
     dimensions to all arrays (the default for ``eqx.filter_vmap``).
 
     Example:
-        >>> from flowjax.wrappers import Parameterize, unwrap
-        >>> import jax.numpy as jnp
-        >>> positive = Parameterize(jnp.exp, jnp.zeros(3))
-        >>> unwrap(positive)  # Aplies exp on unwrapping
-        Array([1., 1., 1.], dtype=float32)
+        ..doctest::
+            >>> from flowjax.wrappers import Parameterize, unwrap
+            >>> import jax.numpy as jnp
+            >>> positive = Parameterize(jnp.exp, jnp.zeros(3))
+            >>> unwrap(positive)  # Aplies exp on unwrapping
+            Array([1., 1., 1.], dtype=float32)
 
     Args:
         fn: Callable to call with args, and kwargs.
