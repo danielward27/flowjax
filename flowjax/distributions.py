@@ -139,15 +139,6 @@ class AbstractDistribution(eqx.Module):
                     key, base_dist=StandardNormal((2,)), cond_dim=3
                     )
 
-            For an unconditional distribution:
-
-            .. doctest::
-
-                >>> dist.shape
-                (2,)
-                >>> samples = dist.sample(key, (10, ))
-                >>> samples.shape
-                (10, 2)
 
             For a conditional distribution:
 

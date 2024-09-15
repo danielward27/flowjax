@@ -72,6 +72,8 @@ copybutton_prompt_is_regexp = True
 
 napolean_use_rtype = False
 napoleon_attr_annotations = True
+# napoleon_use_ivar = True
 
 add_module_names = False
 autodoc_inherit_docstrings = False
+python_maximum_signature_line_length = 88

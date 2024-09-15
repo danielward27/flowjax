@@ -102,11 +102,5 @@ jaxtypings import hook
     >>> with install_import_hook("flowjax", "beartype.beartype"):
     ...    from flowjax import bijections as bij
 
-    >>> bij.Exp(shape=2)  # Accidentally provide an integer shape instead of tuple
-    jaxtyping.TypeCheckError: Type-check error whilst checking the parameters of Exp.
-    The problem arose whilst typechecking parameter 'shape'.
-    Actual value: 2
-    Expected type: tuple[int, ...].
-    ----------------------
-    Called with parameters: {'self': Exp(...), 'shape': 2}
-    Parameter annotations: (self: Any, shape: tuple[int, ...]).
+    >>> exp = bij.Exp(shape=2)  # Raises a helpful error as 2 is not a tuple
+    
