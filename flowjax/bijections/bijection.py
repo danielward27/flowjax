@@ -65,7 +65,7 @@ class AbstractBijection(eqx.Module):
     a ``shape`` and a ``cond_shape`` attribute. To allow easy composing of bijections,
     all bijections support passing of conditioning variables (even if ignored).
 
-    The methods of bijections do not generally support passing of additional batch
+    The methods of bijections do not support passing of additional batch
     dimensions, however, ``jax.vmap`` or ``eqx.filter_vmap`` can be used to vmap
     specific methods if desired, and a bijection can be explicitly vectorised using the
     :class:`~flowjax.bijections.jax_transforms.Vmap` bijection.

@@ -55,7 +55,6 @@ def _get_ufunc_signature(
     """Convert a sequence of in_shapes and out_shapes to a universal function signature.
 
     Example:
-
         .. doctest
 
             >>> _get_ufunc_signature([(3,),(2,3)], [()])

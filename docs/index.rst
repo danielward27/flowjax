@@ -1,8 +1,16 @@
 FlowJAX
 ===============
-FlowJAX is a package distributions, bijections and normalizing flows using 
-`equinox <https://github.com/patrick-kidger/equinox/>`_ and 
-`jax <https://github.com/google/jax/>`_.
+FlowJAX: a package for continuous distributions, bijections and normalizing flows
+using `equinox <https://github.com/patrick-kidger/equinox/>`_ and 
+`jax <https://github.com/google/jax/>`_:
+
+- Includes a wide range of distributions and bijections.
+- Distributions and bijections are PyTrees, registered through 
+  `equinox <https://github.com/patrick-kidger/equinox/>`_ modules, making them
+  compatible with JAX transformations.
+- Includes many state of the art normalizing flow models.
+- First class support for conditional distributions, which are crucial for many
+  applications, such as amortized variational inference, and simulation-based inference.
 
 
 Installation
@@ -12,11 +20,10 @@ Installation
     pip install flowjax
 
 
-
-
 .. toctree::
    :caption: Getting started
    :glob:
+   :maxdepth: 1
 
    getting_started
 

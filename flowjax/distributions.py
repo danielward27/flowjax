@@ -110,58 +110,14 @@ class AbstractDistribution(eqx.Module):
         """Sample from the distribution.
 
         For unconditional distributions, the output will be of shape
-        ``sample_shape + dist.shape``. For conditional distributions, a batch dimension
-        in the condition is supported, and the output shape will be
+        ``sample_shape + dist.shape``. For conditional distributions, batch dimensions
+        in the condition is supported, and the output will have shape
         ``sample_shape + condition_batch_shape + dist.shape``.
-        See the example for more information.
 
         Args:
             key: Jax random key.
             condition: Conditioning variables. Defaults to None.
             sample_shape: Sample shape. Defaults to ().
-
-        Example:
-            The below example shows the behaviour of sampling, for an unconditional
-            and a conditional distribution.
-
-            .. testsetup::
-
-                from flowjax.distributions import StandardNormal
-                import jax.random as jr
-                import jax.numpy as jnp
-                from flowjax.flows import coupling_flow
-                from flowjax.bijections import Affine
-                # For a unconditional distribution:
-                key = jr.key(0)
-                dist = StandardNormal((2,))
-                # For a conditional distribution
-                cond_dist = coupling_flow(
-                    key, base_dist=StandardNormal((2,)), cond_dim=3
-                    )
-
-
-            For a conditional distribution:
-
-            .. doctest::
-
-                >>> cond_dist.shape
-                (2,)
-                >>> cond_dist.cond_shape
-                (3,)
-                >>> # Sample 10 times for a particular condition
-                >>> samples = cond_dist.sample(key, (10,), condition=jnp.ones(3))
-                >>> samples.shape
-                (10, 2)
-                >>> # Sampling, batching over a condition
-                >>> samples = cond_dist.sample(key, condition=jnp.ones((5, 3)))
-                >>> samples.shape
-                (5, 2)
-                >>> # Sample 10 times for each of 5 conditioning variables
-                >>> samples = cond_dist.sample(key, (10,), condition=jnp.ones((5, 3)))
-                >>> samples.shape
-                (10, 5, 2)
-
-
         """
         self = unwrap(self)
         if self.cond_shape is not None:
@@ -436,13 +392,12 @@ class LogNormal(AbstractTransformed):
         scale: Scale parameter. Defaults to 1.
     """
 
-    base_dist: StandardNormal
-    bijection: Chain
+    base_dist: Normal
+    bijection: Exp
 
     def __init__(self, loc: ArrayLike = 0, scale: ArrayLike = 1):
-        shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
-        self.base_dist = StandardNormal(shape)
-        self.bijection = Chain([Affine(loc, scale), Exp(shape)])
+        self.base_dist = Normal(loc, scale)
+        self.bijection = Exp(self.base_dist.shape)
 
 
 class MultivariateNormal(AbstractTransformed):

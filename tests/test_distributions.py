@@ -9,7 +9,7 @@ import numpy as np
 import pytest
 from jax.scipy.stats import multivariate_normal
 
-from flowjax.bijections import Exp
+from flowjax.bijections import AdditiveCondition, Affine, Exp
 from flowjax.distributions import (
     AbstractDistribution,
     AbstractTransformed,
@@ -270,3 +270,21 @@ def test_vmap_mixture(weights):
         + normalized_weights[1] * jnp.exp(Normal(1).log_prob(x))
     )
     assert pytest.approx(expected) == gaussian_mixture.log_prob(x)
+
+
+def test_transformed():
+    # Unconditional base dist, conditional transform
+
+    dist = Transformed(
+        StandardNormal(),
+        AdditiveCondition(lambda x: x.sum(), (), cond_shape=(2,)),
+    )
+    assert dist.sample(jr.key(0), condition=jnp.ones((5, 2))).shape == (5,)
+    assert dist.shape == ()
+    assert dist.cond_shape == (2,)
+
+    # Conditional base_dist, unconditional transform
+    dist = Transformed(dist, Affine())
+    assert dist.sample(jr.key(0), condition=jnp.ones((5, 2))).shape == (5,)
+    assert dist.shape == ()
+    assert dist.cond_shape == (2,)

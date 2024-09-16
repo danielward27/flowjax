@@ -151,7 +151,7 @@ class NonTrainable(AbstractUnwrappable[T]):
 
 
 def non_trainable(tree: PyTree):
-    """Freezes parameters by wrapping inexact array leaves with :class:``NonTrainable``.
+    """Freezes parameters by wrapping inexact array leaves with :class:`NonTrainable`.
 
     .. note::
 
@@ -159,17 +159,19 @@ def non_trainable(tree: PyTree):
         impacting non-trainable parameters, they should be filtered out,
         for example using:
 
-        >>> equinox.partition(
-        ... ...,
-        ... is_leaf=lambda leaf: isinstance(leaf, wrappers.NonTrainable),
-        ... )
+        .. code-block:: python
+
+            >>> eqx.partition(
+            ...     ...,
+            ...     is_leaf=lambda leaf: isinstance(leaf, wrappers.NonTrainable),
+            ... )
+
 
         This is done in both :func:`~flowjax.train.fit_to_data` and
         :func:`~flowjax.train.fit_to_variational_target`.
 
-
     Wrapping the arrays rather than the entire tree is often preferable, allowing easier
-    access to attributes, compared to wrapping the entire tree.
+    access to attributes compared to wrapping the entire tree.
 
     Args:
         tree: The pytree.

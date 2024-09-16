@@ -11,18 +11,9 @@ if "doctest" not in sys.argv:  # Avoid type checking/isinstance failures.
 
 sys.path.insert(0, Path("..").resolve())
 
-# For the full list of built-in configuration values, see the documentation:
-# https://www.sphinx-doc.org/en/master/usage/configuration.html
-
-# -- Project information -----------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
-
 project = "FlowJax"
 copyright = "2022, Daniel Ward"
 author = "Daniel Ward"
-
-# -- General configuration ---------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
     "sphinx.ext.viewcode",
@@ -43,18 +34,11 @@ intersphinx_mapping = {
 templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
-# napoleon_include_init_with_doc = False
-
-# -- Options for HTML output -------------------------------------------------
-# https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "sphinx_book_theme"
 html_static_path = ["_static"]
 
-html_css_files = [
-    "style.css",
-]
-
+html_css_files = ["style.css"]
 
 html_theme_options = {
     "use_fullscreen_button": False,
@@ -63,6 +47,7 @@ html_theme_options = {
     "repository_url": "https://github.com/danielward27/flowjax",
     "home_page_in_toc": True,
 }
+
 html_title = "FlowJAX"
 
 pygments_style = "xcode"
@@ -72,8 +57,8 @@ copybutton_prompt_is_regexp = True
 
 napolean_use_rtype = False
 napoleon_attr_annotations = True
-# napoleon_use_ivar = True
+napoleon_use_ivar = True
 
 add_module_names = False
-autodoc_inherit_docstrings = False
+autodoc_inherit_docstrings = True
 python_maximum_signature_line_length = 88
