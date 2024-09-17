@@ -1,5 +1,5 @@
 <div align="center">
-<img src="./logo.png?raw=true" alt="logo" width="500" ></img>
+<img src="./logo.png?raw=true" alt="logo" width="400" ></img>
 </div>
 
 # FlowJAX: Distributions, bijections and normalizing Flows in Jax
@@ -55,7 +55,7 @@ pip install flowjax
 ```
 
 ## Warning
-This package is in its early stages of development and may undergo significant changes, including breaking changes, between major releases. Whilst ideally we should be on version 0.y.z to indicate its state, we have already progressed beyond that stage.
+This package is in its early stages of development and may undergo significant changes, including breaking changes, between major releases. Whilst ideally we should be on version 0.y.z to indicate its state, we have already progressed beyond that stage. Any breaking changes will be in the release notes for each major release.
 
 ## Development
 We can install a version for development as follows
