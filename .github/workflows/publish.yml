@@ -1,8 +1,8 @@
-name: Publish to TestPyPI and PyPI 
+name: Publish to TestPyPI and PyPI
 
 on:
   # Triggers the workflow when a release is created or edited.
-  release: 
+  release:
     types: [created]
 
 jobs:
@@ -10,13 +10,13 @@ jobs:
     name: Publish to TestPyPI and PyPI
     runs-on: ubuntu-latest
     permissions:
-      id-token: write  # For pypi trusted publishing
+      id-token: write # For pypi trusted publishing
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.x"
 
@@ -33,35 +33,3 @@ jobs:
 
       - name: Publish distribution to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
-
-  docs:
-    name: Build and publish documentation
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.x"
-      
-      - name: Install pandoc
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y pandoc
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -e .[dev]
-      # - name: Test documentation
-      #   run: |
-      #     make -C docs doctest
-      - name: Sphinx build
-        run: |
-          sphinx-build docs docs/_build
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          publish_branch: gh-pages
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: docs/_build/
-          force_orphan: true
-      

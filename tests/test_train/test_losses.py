@@ -5,7 +5,7 @@ from flowjax.train.losses import _get_contrastive_idxs
 
 
 def test_get_contrastive_idxs():
-    key = jr.PRNGKey(0)
+    key = jr.key(0)
     batch_size = 5
 
     for _ in range(5):

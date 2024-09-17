@@ -32,14 +32,14 @@ class Planar(AbstractBijection):
     are learned directly. In the unconditional case they are parameterised by an MLP.
 
     Args:
-        key: Jax random seed.
+        key: Jax random key.
         dim: Dimension of the bijection.
         cond_dim: Dimension of extra conditioning variables. Defaults to None.
         negative_slope: A positive float. If provided, then a leaky relu activation
             (with the corresponding negative slope) is used instead of tanh. This also
             provides the advantage that the bijection can be inverted analytically.
         **mlp_kwargs: Keyword arguments (excluding in_size and out_size) passed to
-            the MLP (equinox.nn.MLP). Ignored when cond_dim is None.
+            the MLP (``equinox.nn.MLP``). Ignored when ``cond_dim`` is None.
     """
 
     shape: tuple[int, ...]

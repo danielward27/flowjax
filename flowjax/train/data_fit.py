@@ -43,7 +43,7 @@ def fit_to_data(
     non-distribution pytrees as long as a compatible loss function is provided.
 
     Args:
-        key: Jax random seed.
+        key: Jax random key.
         dist: The distribution to train.
         x: Samples from target distribution.
         condition: Conditioning variables. Defaults to None.

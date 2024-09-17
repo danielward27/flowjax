@@ -47,11 +47,15 @@ def unwrap(tree: PyTree):
     ``AbstractUnwrappable`` nodes are unwrapped first.
 
     Example:
-        >>> from flowjax.wrappers import Parameterize, unwrap
-        >>> import jax.numpy as jnp
-        >>> params = Parameterize(jnp.exp, jnp.zeros(3))
-        >>> unwrap(("abc", 1, params))
-        ("abc", 1, Array([1., 1., 1.], dtype=float32))
+        Enforcing positivity.
+
+        .. doctest::
+
+            >>> from flowjax.wrappers import Parameterize, unwrap
+            >>> import jax.numpy as jnp
+            >>> params = Parameterize(jnp.exp, jnp.zeros(3))
+            >>> unwrap(("abc", 1, params))
+            ('abc', 1, Array([1., 1., 1.], dtype=float32))
     """
 
     def _map_fn(leaf):
@@ -93,11 +97,13 @@ class Parameterize(AbstractUnwrappable[T]):
     dimensions to all arrays (the default for ``eqx.filter_vmap``).
 
     Example:
-        >>> from flowjax.wrappers import Parameterize, unwrap
-        >>> import jax.numpy as jnp
-        >>> positive = Parameterize(jnp.exp, jnp.zeros(3))
-        >>> unwrap(positive)  # Aplies exp on unwrapping
-        Array([1., 1., 1.], dtype=float32)
+        .. doctest::
+
+            >>> from flowjax.wrappers import Parameterize, unwrap
+            >>> import jax.numpy as jnp
+            >>> positive = Parameterize(jnp.exp, jnp.zeros(3))
+            >>> unwrap(positive)  # Aplies exp on unwrapping
+            Array([1., 1., 1.], dtype=float32)
 
     Args:
         fn: Callable to call with args, and kwargs.
@@ -131,11 +137,10 @@ class NonTrainable(AbstractUnwrappable[T]):
 
     See also :func:`non_trainable`, which is probably a generally prefereable way to
     achieve similar behaviour, which wraps the arraylike leaves directly, rather than
-    the tree.
-
-    Useful to mark pytrees (arrays, submodules, etc) as frozen/non-trainable. We also
-    filter out NonTrainable nodes when partitioning parameters for training, or when
-    parameterizing bijections in coupling/masked autoregressive flows (transformers).
+    the tree. Useful to mark pytrees (arrays, submodules, etc) as frozen/non-trainable.
+    We also filter out NonTrainable nodes when partitioning parameters for training,
+    or when parameterizing bijections in coupling/masked autoregressive flows
+    (transformers).
     """
 
     tree: T
@@ -146,10 +151,27 @@ class NonTrainable(AbstractUnwrappable[T]):
 
 
 def non_trainable(tree: PyTree):
-    """Freezes parameters by wrapping inexact array leaves with :class:``NonTrainable``.
+    """Freezes parameters by wrapping inexact array leaves with :class:`NonTrainable`.
+
+    .. note::
+
+        Regularization is likely to apply before unwrapping. To avoid regularization
+        impacting non-trainable parameters, they should be filtered out,
+        for example using:
+
+        .. code-block:: python
+
+            >>> eqx.partition(
+            ...     ...,
+            ...     is_leaf=lambda leaf: isinstance(leaf, wrappers.NonTrainable),
+            ... )
+
+
+        This is done in both :func:`~flowjax.train.fit_to_data` and
+        :func:`~flowjax.train.fit_to_variational_target`.
 
     Wrapping the arrays rather than the entire tree is often preferable, allowing easier
-    access to attributes, compared to wrapping the entire tree.
+    access to attributes compared to wrapping the entire tree.
 
     Args:
         tree: The pytree.

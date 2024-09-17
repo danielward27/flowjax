@@ -31,7 +31,7 @@ In general you should consider the form and scales of the target samples. For ex
     import jax.numpy as jnp
     import jax.random as jr
     
-    key = jr.PRNGKey(0)
+    key = jr.key(0)
     x = jr.normal(key, (1000,3))
     flow = Normal(jnp.ones(3))
 
@@ -56,7 +56,7 @@ The methods of distributions and bijections are not jitted by default. For examp
     import jax.numpy as jnp
     import jax.random as jr
     
-    key = jr.PRNGKey(0)
+    key = jr.key(0)
     x = jr.normal(key, (256,3))
     flow = Normal(jnp.ones(3))
 
@@ -66,7 +66,7 @@ The methods of distributions and bijections are not jitted by default. For examp
     >>> import jax.random as jr
 
     >>> batch_size = 256
-    >>> keys = jr.split(jr.PRNGKey(0), 5)
+    >>> keys = jr.split(jr.key(0), 5)
 
     >>> # Often slow - sample not jitted!
     >>> results = []
@@ -102,11 +102,5 @@ jaxtypings import hook
     >>> with install_import_hook("flowjax", "beartype.beartype"):
     ...    from flowjax import bijections as bij
 
-    >>> bij.Exp(shape=2)  # Accidentally provide an integer shape instead of tuple
-    jaxtyping.TypeCheckError: Type-check error whilst checking the parameters of Exp.
-    The problem arose whilst typechecking parameter 'shape'.
-    Actual value: 2
-    Expected type: tuple[int, ...].
-    ----------------------
-    Called with parameters: {'self': Exp(...), 'shape': 2}
-    Parameter annotations: (self: Any, shape: tuple[int, ...]).
+    >>> exp = bij.Exp(shape=2)  # Raises a helpful error as 2 is not a tuple
+    

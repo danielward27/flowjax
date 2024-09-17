@@ -13,7 +13,7 @@ from flowjax.wrappers import unwrap
 def test_block_autoregressive_linear():
     block_shape = (3, 2)
     linear, log_jac_3d_fn = block_autoregressive_linear(
-        jax.random.PRNGKey(0),
+        jax.random.key(0),
         n_blocks=3,
         block_shape=block_shape,
     )
@@ -26,7 +26,7 @@ def test_block_autoregressive_linear():
 def test_BlockAutoregressiveNetwork():
     dim = 3
     x = jnp.ones(dim)
-    key = random.PRNGKey(0)
+    key = random.key(0)
 
     barn = BlockAutoregressiveNetwork(key, dim=dim, cond_dim=None, depth=1, block_dim=4)
     barn = unwrap(barn)
@@ -43,7 +43,7 @@ def test_BlockAutoregressiveNetwork_conditioning():
     dim = 3
     cond_dim = 2
     x = jnp.ones(dim)
-    key = random.PRNGKey(0)
+    key = random.key(0)
     barn = BlockAutoregressiveNetwork(
         key,
         dim=dim,

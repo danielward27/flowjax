@@ -15,7 +15,7 @@ def _tanh_log_grad(x):
 
 
 class Tanh(AbstractBijection):
-    """Tanh bijection."""
+    r"""Tanh bijection :math:`y=\tanh(x)`."""
 
     shape: tuple[int, ...] = ()
     cond_shape: ClassVar[None] = None

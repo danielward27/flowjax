@@ -3,9 +3,6 @@
 All these functions return a :class:`~flowjax.distributions.Transformed` distribution.
 """
 
-# Note that here although we could chain arbitrary bijections using `Chain`, here,
-# we generally opt to use `Scan`, which avoids excessive compilation
-# when the flow layers share the same structure.
 from collections.abc import Callable
 from functools import partial
 
@@ -61,7 +58,7 @@ def coupling_flow(
     """Create a coupling flow (https://arxiv.org/abs/1605.08803).
 
     Args:
-        key: Jax random number generator key.
+        key: Jax random key.
         base_dist: Base distribution, with ``base_dist.ndim==1``.
         transformer: Bijection to be parameterised by conditioner. Defaults to
             affine.
@@ -176,7 +173,7 @@ def block_neural_autoregressive_flow(
     controlled by the ``invert`` argument.
 
     Args:
-        key: Jax PRNGKey.
+        key: Jax key.
         base_dist: Base distribution, with ``base_dist.ndim==1``.
         cond_dim: Dimension of conditional variables. Defaults to None.
         nn_depth: Number of hidden layers within the networks. Defaults to 1.
@@ -231,7 +228,7 @@ def planar_flow(
     permutations. Note the definition here is inverted compared to the original paper.
 
     Args:
-        key: Jax PRNGKey.
+        key: Jax key.
         base_dist: Base distribution, with ``base_dist.ndim==1``.
         cond_dim: Dimension of conditioning variables. Defaults to None.
         flow_layers: Number of flow layers. Defaults to 8.
@@ -281,7 +278,7 @@ def triangular_spline_flow(
     transformations.
 
     Args:
-        key: Jax random seed.
+        key: Jax random key.
         base_dist: Base distribution, with ``base_dist.ndim==1``.
         cond_dim: The number of conditioning features. Defaults to None.
         flow_layers: Number of flow layers. Defaults to 8.

@@ -9,14 +9,14 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Information Analysis",
   "Topic :: Scientific/Engineering :: Mathematics",
 ]
-dependencies = ["jax", "equinox>=0.10", "jaxtyping", "tqdm", "optax"]
+dependencies = ["jax>=0.4.16", "equinox>=0.10", "jaxtyping", "tqdm", "optax"]
 description = "Easy to use distributions, bijections and normalizing flows in JAX."
 keywords = ["jax", "neural-networks", "equinox"]
 license = { file = "LICENSE" }
 name = "flowjax"
 readme = "README.md"
 requires-python = ">=3.10"
-version = "14.0.0"
+version = "15.0.0"
 
 [project.urls]
 repository = "https://github.com/danielward27/flowjax"
@@ -28,7 +28,7 @@ dev = [
   "beartype",
   "ruff",
   "sphinx",
-  "sphinx-rtd-theme",
+  "sphinx-book-theme",
   "sphinx-copybutton",
   "sphinx-autodoc-typehints",
   "nbsphinx",

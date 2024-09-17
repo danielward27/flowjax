@@ -26,7 +26,7 @@ def fit_to_variational_target(
     """Train a distribution (e.g. a flow) by variational inference.
 
     Args:
-        key: Jax PRNGKey.
+        key: Jax key.
         dist: Distribution object, trainable parameters are found using
             equinox.is_inexact_array.
         loss_fn: The loss function to optimize (e.g. the ElboLoss).

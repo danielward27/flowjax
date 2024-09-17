@@ -1,4 +1,4 @@
-"""Bijections that wrap jax function transforms (scan and vmap)."""
+"""Bijections that wrap JAX function transforms (scan and vmap)."""
 
 from collections.abc import Callable
 
@@ -111,8 +111,8 @@ class Vmap(AbstractBijection):
         in_axes: Specify which axes of the bijection parameters to vectorise over. It
             should be a PyTree of ``None``, ``int`` with the tree structure being a
             prefix of the bijection, or a callable mapping ``Leaf -> Union[None, int]``.
-            Defaults to None. Note, if the bijection contains unwrappables, then in_axes
-            should be specified for the unwrapped structure of the bijection.
+            Note, if the bijection contains unwrappables, then in_axes should be
+            specified for the unwrapped structure of the bijection. Defaults to None.
         axis_size: The size of the new axis. This should be left unspecified if in_axes
             is provided, as the size can be inferred from the bijection parameters.
             Defaults to None.
@@ -120,12 +120,9 @@ class Vmap(AbstractBijection):
             vectorize over. Defaults to None.
 
     Example:
-        The two most common use cases, are shown below:
-
         .. doctest::
 
-            Add a batch dimension to a bijection, mapping over bijection parameters:
-
+            >>> # Add a bijection batch dimension, mapping over bijection parameters
             >>> import jax.numpy as jnp
             >>> import equinox as eqx
             >>> from flowjax.bijections import Vmap, RationalQuadraticSpline, Affine
@@ -136,8 +133,7 @@ class Vmap(AbstractBijection):
             >>> bijection = Vmap(bijection, in_axes=eqx.if_array(0))
             >>> bijection.shape
             (10,)
-
-            Add a batch dimension to a bijection, broadcasting bijection parameters:
+            >>> # Add a bijection batch dimension, broadcasting bijection parameters:
             >>> bijection = RationalQuadraticSpline(knots=5, interval=2)
             >>> bijection = Vmap(bijection, axis_size=10)
             >>> bijection.shape
@@ -164,7 +160,6 @@ class Vmap(AbstractBijection):
             (3,)
             >>> unwrap(bijection.bijection.scale).shape
             ()
-
             >>> x = jnp.ones(3)
             >>> bijection.transform(x)
             Array([1., 2., 3.], dtype=float32)

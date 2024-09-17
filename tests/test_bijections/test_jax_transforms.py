@@ -34,7 +34,7 @@ def test_vmap_error_with_unwrappable():
 
 def test_vmap_condition_only():
     bijection = MaskedAutoregressive(
-        jr.PRNGKey(0),
+        jr.key(0),
         transformer=Affine(),
         dim=3,
         cond_dim=4,

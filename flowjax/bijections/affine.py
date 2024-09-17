@@ -14,10 +14,10 @@ from flowjax.wrappers import AbstractUnwrappable, Parameterize, unwrap
 
 
 class Affine(AbstractBijection):
-    """Elementwise affine transformation ``y = a*x + b``.
+    r"""Elementwise affine transformation :math:`y = a \cdot x + b`.
 
     ``loc`` and ``scale`` should broadcast to the desired shape of the bijection.
-    By default, we constrain the scale parameter to be postive using ``SoftPlus``, but
+    By default, we constrain the scale parameter to be postive using ``softplus``, but
     other parameterizations can be achieved by replacing the scale parameter after
     construction e.g. using ``eqx.tree_at``.
 
@@ -56,7 +56,7 @@ class Affine(AbstractBijection):
 
 
 class Loc(AbstractBijection):
-    """Location transformation ``y = x + c``.
+    r"""Location transformation :math:`y = a \cdot x + b`.
 
     Args:
         loc: Scale parameter. Defaults to 1.
@@ -84,7 +84,7 @@ class Loc(AbstractBijection):
 
 
 class Scale(AbstractBijection):
-    """Scale transformation ``y = a*x``.
+    r"""Scale transformation :math:`y = a \cdot x`.
 
     Args:
         scale: Scale parameter. Defaults to 1.
@@ -199,7 +199,7 @@ class AdditiveCondition(AbstractBijection):
             >>> import jax.numpy as jnp
             >>> import jax.random as jr
             >>> bijection = AdditiveCondition(
-            ...     Linear(2, 3, key=jr.PRNGKey(0)), shape=(3,), cond_shape=(2,)
+            ...     Linear(2, 3, key=jr.key(0)), shape=(3,), cond_shape=(2,)
             ...     )
             >>> bijection.transform(jnp.ones(3), condition=jnp.ones(2))
             Array([1.9670618, 0.8156546, 1.7763454], dtype=float32)

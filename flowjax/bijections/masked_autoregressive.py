@@ -27,7 +27,7 @@ class MaskedAutoregressive(AbstractBijection):
         - https://arxiv.org/abs/1705.07057v4
 
     Args:
-        key: Jax PRNGKey
+        key: Jax key
         transformer: Bijection with shape () to be parameterised by the autoregressive
             network. Parameters wrapped with ``NonTrainable`` are exluded.
         dim: Dimension.
