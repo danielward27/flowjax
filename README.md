@@ -1,23 +1,37 @@
-# FlowJAX: Distributions, bijections and normalizing Flows in Jax
+
+![FlowJAX](/docs/_static/logo_light.svg)
+
+Distributions, bijections and normalizing flows using Equinox and JAX
+-----------------------------------------------------------------------
+- Includes a wide range of distributions and bijections.
+- Distributions and bijections are PyTrees, registered through 
+  [Equinox](https://github.com/patrick-kidger/equinox/) modules, making them
+  compatible with [JAX](https://github.com/google/jax) transformations.
+- Includes many state of the art normalizing flow models.
+- First class support for conditional distributions and density estimation.
 
 ## Documentation
 Available [here](https://danielward27.github.io/flowjax/index.html).
 
 ## Short example
-Training a flow can be done in a few lines of code:
+As an example we will create and train a normalizing flow model to toy data in just a few lines of code:
 
 ```python
 from flowjax.flows import block_neural_autoregressive_flow
 from flowjax.train import fit_to_data
 from flowjax.distributions import Normal
-from jax import random
+import jax.random as jr
 import jax.numpy as jnp
 
-data_key, flow_key, train_key, sample_key = random.split(random.key(0), 4)
+data_key, flow_key, train_key, sample_key = jr.split(jr.key(0), 4)
 
-x = random.uniform(data_key, (5000, 2))  # Toy data
-base_dist = Normal(jnp.zeros(x.shape[1]))
-flow = block_neural_autoregressive_flow(flow_key, base_dist=base_dist)
+x = jr.uniform(data_key, (5000, 2))  # Toy data
+
+flow = block_neural_autoregressive_flow(
+    key=flow_key,
+    base_dist=Normal(jnp.zeros(x.shape[1])),
+)
+
 flow, losses = fit_to_data(
     key=train_key,
     dist=flow,
