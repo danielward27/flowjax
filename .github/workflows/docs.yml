@@ -1,9 +1,9 @@
 name: Test and publish documentation
 
 on:
-  # Triggers the workflow when a release is created or edited.
-  release:
-    types: [created]
+  push:
+    branches:
+      - main
 
 jobs:
   docs:
