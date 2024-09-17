@@ -15,6 +15,15 @@ class Concatenate(AbstractBijection):
 
     See also :class:`Stack`.
 
+    Example:
+        .. doctest::
+
+            >>> from flowjax.bijections import Concatenate, Affine, Exp
+            >>> concat = Concatenate([Affine(jnp.ones(2, 3)), Exp((2,3))])
+            >>> concat.shape
+            (4,3)
+
+
     Args:
         bijections: Bijections, to stack into a single bijection.
         axis: Axis along which to stack. Defaults to 0.
@@ -92,6 +101,14 @@ class Stack(AbstractBijection):
     """Stack bijections along a new axis (analagous to ``jnp.stack``).
 
     See also :class:`Concatenate`.
+
+    Example:
+        .. doctest::
+
+            >>> from flowjax.bijections import Concatenate, Affine, Exp
+            >>> concat = Stack([Affine(jnp.ones(3)), Exp((3,))])
+            >>> concat.shape
+            (2,3)
 
     Args:
         bijections: Bijections.

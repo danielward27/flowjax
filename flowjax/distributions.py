@@ -1,4 +1,4 @@
-"""Distributions, including the abstract and concrete classes."""
+"""Distributions from flowjax.distributions."""
 
 import inspect
 from abc import abstractmethod
@@ -43,12 +43,18 @@ class AbstractDistribution(eqx.Module):
     such they are compatible with normal JAX operations.
 
     Concrete subclasses can be implemented as follows:
-        (1) Inherit from :class:`AbstractDistribution`.
-        (2) Define the abstract attributes ``shape`` and ``cond_shape``.
-            ``cond_shape`` should be ``None`` for unconditional distributions.
-        (3) Define the abstract methods ``_sample`` and ``_log_prob``.
 
-    See the source code for :class:`StandardNormal` for a simple concrete example.
+    - Inherit from :class:`AbstractDistribution`.
+    - Define the abstract attributes ``shape`` and ``cond_shape``.
+      ``cond_shape`` should be ``None`` for unconditional distributions.
+    - Define the abstract method ``_sample`` which returns a single sample
+      with shape ``dist.shape``, (given a single conditioning variable, if needed).
+    - Define the abstract method ``_log_prob``, returning a scalar log probability
+      of a single sample, (given a single conditioning variable, if needed).
+
+    The abstract class then defines vectorized versions with shape checking for the
+    public API. See the source code for :class:`StandardNormal` for a simple concrete
+    example.
 
     Attributes:
         shape: Tuple denoting the shape of a single sample from the distribution.
@@ -66,7 +72,7 @@ class AbstractDistribution(eqx.Module):
 
         This method should be be valid for inputs with shapes matching
         ``distribution.shape`` and ``distribution.cond_shape`` for conditional
-        distributions (i.e. the method defined for unbatched inputs).
+        distributions (i.e. it defines the method for unbatched inputs).
         """
 
     @abstractmethod
@@ -221,11 +227,15 @@ class AbstractTransformed(AbstractDistribution):
     """Abstract class respresenting transformed distributions.
 
     We take the forward bijection for use in sampling, and the inverse for use in
-    density evaluation. See also :class:`Transformed`.
+    density evaluation. See also :class:`Transformed`. Concete implementations should
+    subclass :class:`AbstractTransformed`, and define the abstract attributes
+    ``base_dist`` and ``bijection``. See the source code for :class:`Normal` as a
+    simple example.
 
-    Concete implementations should subclass :class:`AbstractTransformed`, and
-    define the abstract attributes ``base_dist`` and ``bijection``. See the source code
-    for :class:`Normal` as a simple example.
+    .. warning::
+            It is the users responsibility to ensure the bijection is valid across the
+            entire support of the distribution. Failure to do so may result in
+            non-finite values or incorrectly normalized densities.
 
     Attributes:
         base_dist: The base distribution.
@@ -304,9 +314,9 @@ class Transformed(AbstractTransformed):
     bijection for use in density evaluation.
 
     .. warning::
-            It is the currently the users responsibility to ensure the bijection is
-            valid across the entire support of the distribution. Failure to do so may
-            lead to to unexpected results.
+            It is the users responsibility to ensure the bijection is valid across the
+            entire support of the distribution. Failure to do so may result in
+            non-finite values or incorrectly normalized densities.
 
     Args:
         base_dist: Base distribution.
@@ -481,7 +491,7 @@ class Uniform(AbstractLocScaleDistribution):
 
 
 class _StandardGumbel(AbstractDistribution):
-    """Standard gumbel distribution (https://en.wikipedia.org/wiki/Gumbel_distribution)."""
+    """Standard gumbel distribution."""
 
     shape: tuple[int, ...] = ()
     cond_shape: ClassVar[None] = None
@@ -494,7 +504,7 @@ class _StandardGumbel(AbstractDistribution):
 
 
 class Gumbel(AbstractLocScaleDistribution):
-    """Gumbel distribution (https://en.wikipedia.org/wiki/Gumbel_distribution).
+    """Gumbel distribution.
 
     ``loc`` and ``scale`` should broadcast to the dimension of the distribution.
 
@@ -514,10 +524,7 @@ class Gumbel(AbstractLocScaleDistribution):
 
 
 class _StandardCauchy(AbstractDistribution):
-    """Implements standard cauchy distribution (loc=0, scale=1).
-
-    Ref: https://en.wikipedia.org/wiki/Cauchy_distribution.
-    """
+    """Implements standard cauchy distribution (loc=0, scale=1)."""
 
     shape: tuple[int, ...] = ()
     cond_shape: ClassVar[None] = None
@@ -530,7 +537,7 @@ class _StandardCauchy(AbstractDistribution):
 
 
 class Cauchy(AbstractLocScaleDistribution):
-    """Cauchy distribution (https://en.wikipedia.org/wiki/Cauchy_distribution).
+    """Cauchy distribution.
 
     ``loc`` and ``scale`` should broadcast to the dimension of the distribution.
 
@@ -570,7 +577,7 @@ class _StandardStudentT(AbstractDistribution):
 
 
 class StudentT(AbstractLocScaleDistribution):
-    """Student T distribution (https://en.wikipedia.org/wiki/Student%27s_t-distribution).
+    """Student T distribution.
 
     ``df``, ``loc`` and ``scale`` broadcast to the dimension of the distribution.
 
@@ -692,6 +699,18 @@ class VmapMixture(AbstractDistribution):
 
     Given a distribution in which the arrays have a leading dimension with size matching
     the number of components, and a set of weights, create a mixture distribution.
+
+    Example:
+        .. doctest::
+
+            >>> # Creating a 3 component, 2D gaussian mixture
+            >>> from flowjax.distributions import Normal, VmapMixture
+            >>> import equinox as eqx
+            >>> import jax.numpy as jnp
+            >>> normals = eqx.filter_vmap(Normal)(jnp.zeros((3, 2)))
+            >>> mixture = VmapMixture(normals, weights=jnp.ones(3))
+            >>> mixture.shape
+            (2, )
 
     Args:
         dist: Distribution with a leading dimension in arrays with size equal to the

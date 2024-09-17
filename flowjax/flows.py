@@ -3,9 +3,6 @@
 All these functions return a :class:`~flowjax.distributions.Transformed` distribution.
 """
 
-# Note that here although we could chain arbitrary bijections using `Chain`, here,
-# we generally opt to use `Scan`, which avoids excessive compilation
-# when the flow layers share the same structure.
 from collections.abc import Callable
 from functools import partial
 

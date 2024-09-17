@@ -51,7 +51,7 @@ class BlockAutoregressiveNetwork(AbstractBijection):
 
     Note that in contrast to the original paper which uses tanh activations, by default
     we use :class:`~flowjax.bijections.tanh.LeakyTanh`. This ensures the codomain of the
-    activation is the set of real values, which will ensure properly normalised
+    activation is the set of real values, which will ensure properly normalized
     densities (see https://github.com/danielward27/flowjax/issues/102).
 
     Args:

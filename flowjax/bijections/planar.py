@@ -39,7 +39,7 @@ class Planar(AbstractBijection):
             (with the corresponding negative slope) is used instead of tanh. This also
             provides the advantage that the bijection can be inverted analytically.
         **mlp_kwargs: Keyword arguments (excluding in_size and out_size) passed to
-            the MLP (equinox.nn.MLP). Ignored when cond_dim is None.
+            the MLP (``equinox.nn.MLP``). Ignored when ``cond_dim`` is None.
     """
 
     shape: tuple[int, ...]

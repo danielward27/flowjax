@@ -1,8 +1,8 @@
-Getting Started
+Getting started
 -----------------
-If you are interested in use of normalizing flows, feel free to start with an example
-on the left side page. This page gives an overview of FlowJAX distributions and
-bijections more generally.
+This section will give an overview of FlowJAX distributions and bijections. If you are
+interested in use of normalizing flows, feel free to start with an example
+on the left side page.
 
 Simple Distribution Example
 ============================
@@ -19,7 +19,8 @@ behavior of FlowJAX distributions.
    >>> normal.shape
    (3,)
 
-We can sample from the distribution, either as a single value or a batch of independent and identically distributed (iid) samples:
+We can sample from the distribution, either as a single value or a batch of independent
+and identically distributed (iid) samples
 
 .. doctest:: 
    
@@ -31,7 +32,7 @@ We can sample from the distribution, either as a single value or a batch of inde
    >>> batch.shape
    (4, 3)
 
-Additionally, we can evaluate the log probabilities of these samples:
+Additionally, we can evaluate the log probabilities of these samples
 
 .. doctest:: 
    
@@ -51,7 +52,7 @@ FlowJAX also supports conditional distributions. All distributions have a ``cond
 attribute, which is ``None`` for unconditional distributions. For conditional 
 distributions, this attribute is a tuple representing the shape of the conditioning variable.
 
-As an example, we construct a :func:`~flowjax.flows.coupling_flow`:
+As an example, we construct a :func:`~flowjax.flows.coupling_flow`
 
 .. doctest::
 
@@ -62,9 +63,8 @@ As an example, we construct a :func:`~flowjax.flows.coupling_flow`:
    >>> dist.cond_shape
    (2,)
 
-The distribution methods follow NumPy's broadcasting rules. The output shape for
-sampling is ``sample_shape + condition_batch_shape + dist.shape``, while the log
-probability shape is ``sample_shape + condition_batch_shape``. For example:
+If leading dimensions are passed in the arrays (e.g. passing batches of ``x`` and
+``condition``), the distribution methods follow NumPy's broadcasting rules
 
 .. doctest ::
 
@@ -83,12 +83,12 @@ probability shape is ``sample_shape + condition_batch_shape``. For example:
    >>> dist.log_prob(samples, condition).shape
    (5,)
 
-Bijections
-==========
+Simple bijection example
+=========================
 
-Bijections are invertible, differentiable transformations that can be used to
-transform distributions. For instance, :py:class:`~flowjax.bijections.Affine` performs the transformation
-:math:`y = a \cdot x + b`:
+Bijections are invertible transformations that can be used to transform distributions.
+For instance, :py:class:`~flowjax.bijections.Affine` performs the transformation
+:math:`y = a \cdot x + b`
 
 .. doctest::
 
@@ -102,7 +102,8 @@ transform distributions. For instance, :py:class:`~flowjax.bijections.Affine` pe
    >>> bijection.inverse(y)  # shapes must match!
    Array(1., dtype=float32)
 
-You can also compute the log determinant alongside the forward or inverse transformation:
+You can also compute the log absolute value of the Jacobian determinant alongside the
+forward or inverse transformation
 
 .. doctest:: 
 
@@ -111,10 +112,12 @@ You can also compute the log determinant alongside the forward or inverse transf
    >>> bijection.inverse_and_log_det(y)
    (Array(1., dtype=float32), Array(-0.6931472, dtype=float32))
 
-Similar to distributions, bijections can be conditional or unconditional, and they have 
-``shape`` and ``cond_shape`` attributes. The latter is ``None`` for unconditional
-bijections. Unlike distributions, array shapes must match exactly—no automatic broadcasting.
-To vectorize over bijection methods, it may be useful to apply ``jax.vmap``:
+- Similar to distributions, bijections can be conditional or unconditional, and they
+  have ``shape`` and ``cond_shape`` attributes. The latter is ``None`` for
+  unconditional bijections.
+- Unlike distributions, array shapes must match the bijection shapes exactly-there is
+  no automatic broadcasting. To vectorize over bijection methods, it may be useful to
+  apply ``jax.vmap``
 
 .. doctest:: 
 
@@ -128,10 +131,11 @@ To vectorize over bijection methods, it may be useful to apply ``jax.vmap``:
 Transforming Distributions
 ==========================
 
-FlowJAX provides two methods for defining transformed distributions. We'll create a log-normal distribution using both approaches.
+FlowJAX provides two methods for defining transformed distributions. We'll create a
+log-normal distribution using both approaches.
 
 **Option 1**: Using :py:class:`~flowjax.distributions.Transformed` which takes a base
-distribution and a transformation (bijection) as arguments:
+distribution and a transformation (bijection) as arguments
 
 .. doctest::
 
@@ -148,6 +152,7 @@ attributes.
 
    >>> from flowjax.distributions import Normal, AbstractTransformed
    >>> from flowjax.bijections import Exp
+   >>> 
    >>> class LogNormal(AbstractTransformed):
    ...     base_dist: Normal
    ...     bijection: Exp
@@ -159,9 +164,10 @@ attributes.
    >>> log_normal = LogNormal()
 
 .. note:: 
-   In either case, the ``shapes`` must match. Further, you can arbitrarily combine
-   unconditional and conditional bijections with unconditional and conditional
-   distributions, as long as all conditional components share the same ``cond_shape``.
+   In either case, the ``bijection.shape`` and ``distribution.shape`` must match.
+   Further, you can arbitrarily combine unconditional and conditional bijections with
+   unconditional and conditional distributions, as long as all conditional components
+   share the same conditioning variable (and as such, the same ``cond_shape``).
 
 Distributions and Bijections as PyTrees
 =======================================
@@ -169,7 +175,7 @@ Distributions and Bijections as PyTrees
 Distributions and bijections are PyTrees, registered through
 `equinox <https://github.com/patrick-kidger/equinox/>`_ modules. This allows us to 
 use JAX/equinox operations on them. For instance, to define a batch of independent but
-non-identically distributed distributions, we can vectorize the initialization:
+non-identically distributed distributions, we can vectorize the initialization
 
 .. doctest:: 
    
@@ -178,7 +184,7 @@ non-identically distributed distributions, we can vectorize the initialization:
    >>> normals.shape
    ()
 
-We can then vectorize the log probability computation over these parameters:
+We can then vectorize the log probability computation over these parameters
 
 .. doctest:: 
 
@@ -186,11 +192,15 @@ We can then vectorize the log probability computation over these parameters:
    >>> log_probs.shape  # not scalar!
    (3,)
 
-This approach avoids the need for a seperately specificying e.g. a ``batch_shape``,
-which is often inconsistently available in other distribution packages.
+This can be applied to arbitrary distributions (e.g. flows). Many distribution 
+packages require all distributions (and bijections) to have a ``batch_shape`` to denote
+independent but not identical dimensions. Here, we let vectorization handle this use
+case, keeping the distribution and bijection definitions simpler, and avoiding the
+bookkeeping associated with tracking batch shapes. For more on filtered transformations,
+refer to the `Equinox documentation <https://docs.kidger.site/equinox/>`_.
 
-Additional Notes
-==================
+Notes on optimizing FlowJAX modules
+====================================
 
 - The underlying parameterizations are constrained for direct optimization 
   (e.g., positivity constraints for scale parameters).

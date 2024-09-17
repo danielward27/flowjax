@@ -46,9 +46,14 @@ html_theme_options = {
     "use_repository_button": True,
     "repository_url": "https://github.com/danielward27/flowjax",
     "home_page_in_toc": True,
+    "logo": {
+        "image_light": "_static/logo_light.svg",
+        "image_dark": "_static/logo_dark.svg",
+    },
 }
 
 html_title = "FlowJAX"
+html_favicon = "_static/icon.svg"
 
 pygments_style = "xcode"
 
@@ -60,5 +65,5 @@ napoleon_attr_annotations = True
 napoleon_use_ivar = True
 
 add_module_names = False
-autodoc_inherit_docstrings = True
+autodoc_inherit_docstrings = False
 python_maximum_signature_line_length = 88

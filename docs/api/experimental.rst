@@ -1,19 +1,17 @@
-Experimental
-==========================
-
-Interfacing with numpyro
---------------------------
+Experimental numpyro interface
+===============================
 
 Supporting complex inference approaches such as MCMC or variational inference
 with arbitrary probabilistic models is out of the scope of this package. However,
 we do provide some basic suppport for interfacing with numpyro. We note this support is
 in its infancy and there may be breaking changes without warning. 
 
-.. warning::
-    Batch dimensions are handled differently for FlowJAX distributions and numpyro
-    distributions. In FlowJAX we do not make a clear distinction between
-    event shapes and batch shapes. Hence, when a FlowJAX distribution is converted to a
-    numpyro distribution, we assume its shape corresponds to the event shape.
+.. note::
+    When converting a FlowJAX distribution to a numpyro distribution, the shape of 
+    the distribution Flowjax distribution will correspond to the event shape. This
+    is because there is no concept of ``batch_shape`` in flowjax distributions.
+    However, batch dimensions in conditioning variables will be converted to a
+    corresponding batch shape for the converted distribution.
     
 In general, we can use a combination of FlowJAX and numpyro distributions in a
 numpyro model by using :func:`~flowjax.experimental.numpyro.sample`, in place of

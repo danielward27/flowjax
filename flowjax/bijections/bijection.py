@@ -65,23 +65,21 @@ class AbstractBijection(eqx.Module):
     a ``shape`` and a ``cond_shape`` attribute. To allow easy composing of bijections,
     all bijections support passing of conditioning variables (even if ignored).
 
-    The methods of bijections do not support passing of additional batch
-    dimensions, however, ``jax.vmap`` or ``eqx.filter_vmap`` can be used to vmap
-    specific methods if desired, and a bijection can be explicitly vectorised using the
-    :class:`~flowjax.bijections.jax_transforms.Vmap` bijection.
-
     Bijections are registered as Jax PyTrees (as they are equinox modules), so are
-    compatible with normal JAX operations.
+    compatible with normal JAX operations. The methods of bijections do not support
+    passing of additional batch dimensions, however, ``jax.vmap`` or ``eqx.filter_vmap``
+    can be used to vmap specific methods if desired, and a bijection can be explicitly
+    vectorised using the :class:`~flowjax.bijections.jax_transforms.Vmap` bijection.
 
-    **Implementing a bijection**
+    Implementing a bijection:
 
-        (1) Inherit from ``AbstractBijection``.
-        (2) Define the attributes ``shape`` and ``cond_shape``. A ``cond_shape`` of
-            ``None`` is used to represent unconditional bijections.
-        (3) Implement the abstract methods ``transform``, ``transform_and_log_det``,
-            ``inverse`` and ``inverse_and_log_det``. These should act on
-            inputs compatible with the shapes ``shape`` for ``x``, and ``cond_shape``
-            for ``condition``.
+    - Inherit from ``AbstractBijection``.
+    - Define the attributes ``shape`` and ``cond_shape``. A ``cond_shape`` of
+      ``None`` is used to represent unconditional bijections.
+    - Implement the abstract methods ``transform``, ``transform_and_log_det``,
+      ``inverse`` and ``inverse_and_log_det``. These should act on
+      inputs compatible with the shapes ``shape`` for ``x``, and ``cond_shape``
+      for ``condition``.
     """
 
     shape: AbstractVar[tuple[int, ...]]

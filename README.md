@@ -1,7 +1,3 @@
-<div align="center">
-<img src="./logo.png?raw=true" alt="logo" width="400" ></img>
-</div>
-
 # FlowJAX: Distributions, bijections and normalizing Flows in Jax
 
 ## Documentation

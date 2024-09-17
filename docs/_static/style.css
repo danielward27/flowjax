@@ -1,5 +1,6 @@
 @import url("theme.css");
 
+/* Clearer distinction between each class. */
 dl.py.class {
     border-left: 3px solid #008080;
     padding: 10px;

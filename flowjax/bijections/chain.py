@@ -8,7 +8,7 @@ from flowjax.wrappers import AbstractUnwrappable, unwrap
 
 
 class Chain(AbstractBijection):
-    """Chain together arbitrary bijections to form another bijection.
+    """Compose arbitrary bijections to form another bijection.
 
     Args:
         bijections: Sequence of bijections. The bijection shapes must match, and any

@@ -390,7 +390,9 @@ def test_transformed_reparam():
     ).get_trace()
 
     assert "x_base" in trace.keys()
-    expected_x = log_norm.bijection.transform(trace["x_base"]["value"])
+    expected_x = log_norm.merge_transforms().bijection.transform(
+        trace["x_base"]["value"]
+    )
     assert pytest.approx(expected_x) == trace["x"]["value"]
 
 
