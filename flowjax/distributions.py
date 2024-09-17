@@ -710,7 +710,7 @@ class VmapMixture(AbstractDistribution):
             >>> normals = eqx.filter_vmap(Normal)(jnp.zeros((3, 2)))
             >>> mixture = VmapMixture(normals, weights=jnp.ones(3))
             >>> mixture.shape
-            (2, )
+            (2,)
 
     Args:
         dist: Distribution with a leading dimension in arrays with size equal to the
