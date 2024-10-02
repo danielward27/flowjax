@@ -15,6 +15,7 @@ from flowjax.distributions import (
     AbstractTransformed,
     Cauchy,
     Exponential,
+    Gamma,
     Gumbel,
     Laplace,
     Logistic,
@@ -36,7 +37,7 @@ from flowjax.distributions import (
 
 # This sets up a number of constructors shape -> instance for testing
 # the generic API of Distribution classes.
-# Note we do not test the private "Standard" distributions, assuming they are
+# Note we do not test all the private "Standard" distributions, assuming they are
 # sufficiently tested by their loc, scale public counterparts.
 _test_distributions = {
     # flowjax.distributions
@@ -45,6 +46,7 @@ _test_distributions = {
     "_StandardUniform": _StandardUniform,
     "Uniform": lambda shape: Uniform(jnp.zeros(shape), 1),
     "_StandardGumbel": _StandardGumbel,
+    "Gamma": lambda shape: Gamma(2 * jnp.ones(shape), 3),
     "Gumbel": lambda shape: Gumbel(jnp.zeros(shape)),
     "_StandardCauchy": _StandardCauchy,
     "Cauchy": lambda shape: Cauchy(jnp.zeros(shape)),

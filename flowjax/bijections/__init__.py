@@ -10,6 +10,7 @@ from .exp import Exp
 from .jax_transforms import Scan, Vmap
 from .masked_autoregressive import MaskedAutoregressive
 from .planar import Planar
+from .power import Power
 from .rational_quadratic_spline import RationalQuadraticSpline
 from .softplus import SoftPlus
 from .tanh import LeakyTanh, Tanh
@@ -33,6 +34,7 @@ __all__ = [
     "MaskedAutoregressive",
     "Partial",
     "Permute",
+    "Power",
     "Planar",
     "RationalQuadraticSpline",
     "Reshape",

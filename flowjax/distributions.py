@@ -747,3 +747,36 @@ class VmapMixture(AbstractDistribution):
             tree=self.dist,
         )
         return component_dist._sample(key2, condition)
+
+
+class _StandardGamma(AbstractDistribution):
+    concentration: Array | AbstractUnwrappable[Array]
+    shape: tuple[int, ...]
+    cond_shape: ClassVar[None] = None
+
+    def __init__(self, concentration: ArrayLike):
+        self.concentration = Parameterize(softplus, inv_softplus(concentration))
+        self.shape = jnp.shape(concentration)
+
+    def _sample(self, key, condition=None):
+        return jr.gamma(key, self.concentration)
+
+    def _log_prob(self, x, condition=None):
+        return jstats.gamma.logpdf(x, self.concentration).sum()
+
+
+class Gamma(AbstractTransformed):
+    """Gamma distribution.
+
+    Args:
+        concentration: Positive concentration parameter.
+        scale: The scale (inverse of rate) parameter.
+    """
+
+    base_dist: _StandardGamma
+    bijection: Scale
+
+    def __init__(self, concentration: ArrayLike, scale: ArrayLike):
+        concentration, scale = jnp.broadcast_arrays(concentration, scale)
+        self.base_dist = _StandardGamma(concentration)
+        self.bijection = Scale(scale)
