@@ -25,6 +25,7 @@ from flowjax.bijections import (
     Partial,
     Permute,
     Planar,
+    Power,
     RationalQuadraticSpline,
     Reshape,
     Scale,
@@ -186,6 +187,7 @@ bijections = {
         KEY,
         dim=DIM,
     ),
+    "Power": lambda: Power(3, (2, 2)),
     "Vmap (broadcast params)": lambda: Vmap(Affine(1, 2), axis_size=10),
     "Vmap (vectorize params)": lambda: Vmap(
         eqx.filter_vmap(Affine)(jnp.ones(3)),
@@ -207,12 +209,19 @@ bijections = {
 }
 
 
-@pytest.mark.parametrize("bijection_name", bijections.keys())
-def test_transform_inverse(bijection_name):
+POSITIVE_DOMAIN = [Power]
+
+
+@pytest.mark.parametrize("constructor", bijections.values(), ids=bijections.keys())
+def test_transform_inverse(constructor):
     """Tests transform and inverse methods."""
-    bijection = bijections[bijection_name]()
+    bijection = constructor()
     shape = bijection.shape if bijection.shape is not None else (DIM,)
     x = jr.normal(jr.key(0), shape)
+
+    if type(bijection) in POSITIVE_DOMAIN:
+        x = jnp.exp(x)
+
     if bijection.cond_shape is not None:
         cond = jr.normal(jr.key(0), bijection.cond_shape)
     else:
@@ -225,15 +234,18 @@ def test_transform_inverse(bijection_name):
         pass
 
 
-@pytest.mark.parametrize("bijection_name", bijections.keys())
-def test_transform_inverse_and_log_dets(bijection_name):
+@pytest.mark.parametrize("constructor", bijections.values(), ids=bijections.keys())
+def test_transform_inverse_and_log_dets(constructor):
     """Tests the transform_and_log_det and inverse_and_log_det methods,
     by 1) checking invertibility and 2) comparing log dets to those obtained with
     automatic differentiation.
     """
-    bijection = bijections[bijection_name]()
+    bijection = constructor()
     shape = bijection.shape if bijection.shape is not None else (DIM,)
     x = jr.normal(jr.key(0), shape)
+
+    if type(bijection) in POSITIVE_DOMAIN:
+        x = jnp.exp(x)
 
     if bijection.cond_shape is not None:
         cond = jr.normal(jr.key(0), bijection.cond_shape)
