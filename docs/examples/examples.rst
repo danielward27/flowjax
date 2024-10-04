@@ -6,5 +6,5 @@
    unconditional
    conditional
    variational_inference
-   bounded
+   constrained
    snpe
