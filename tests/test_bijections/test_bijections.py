@@ -30,6 +30,7 @@ from flowjax.bijections import (
     Reshape,
     Scale,
     Scan,
+    Sigmoid,
     SoftPlus,
     Stack,
     Tanh,
@@ -67,6 +68,7 @@ bijections = {
     "LeakyTanh (broadcast max_val)": lambda: LeakyTanh(1, (2, 3)),
     "Loc": lambda: Loc(jnp.arange(DIM)),
     "Exp": lambda: Exp((DIM,)),
+    "Sigmoid": lambda: Sigmoid((DIM,)),
     "SoftPlus": lambda: SoftPlus((DIM,)),
     "TriangularAffine (lower)": lambda: TriangularAffine(
         jnp.arange(DIM),

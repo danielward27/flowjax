@@ -780,3 +780,29 @@ class Gamma(AbstractTransformed):
         concentration, scale = jnp.broadcast_arrays(concentration, scale)
         self.base_dist = _StandardGamma(concentration)
         self.bijection = Scale(scale)
+
+
+class Beta(AbstractDistribution):
+    """Beta distribution.
+
+    Args:
+        alpha: The alpha shape parameter.
+        beta: The beta shape parameter.
+    """
+
+    alpha: Array | AbstractUnwrappable[Array]
+    beta: Array | AbstractUnwrappable[Array]
+    shape: tuple[int, ...]
+    cond_shape: ClassVar[None] = None
+
+    def __init__(self, alpha: ArrayLike, beta: ArrayLike):
+        alpha, beta = jnp.broadcast_arrays(alpha, beta)
+        self.alpha = Parameterize(softplus, inv_softplus(alpha))
+        self.beta = Parameterize(softplus, inv_softplus(beta))
+        self.shape = alpha.shape
+
+    def _sample(self, key, condition=None):
+        return jr.beta(key, self.alpha, self.beta)
+
+    def _log_prob(self, x, condition=None):
+        return jstats.beta.logpdf(x, self.alpha, self.beta).sum()
