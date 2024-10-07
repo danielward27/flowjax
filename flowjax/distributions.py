@@ -796,7 +796,10 @@ class Beta(AbstractDistribution):
     cond_shape: ClassVar[None] = None
 
     def __init__(self, alpha: ArrayLike, beta: ArrayLike):
-        alpha, beta = jnp.broadcast_arrays(alpha, beta)
+        alpha, beta = jnp.broadcast_arrays(
+            arraylike_to_array(alpha, dtype=float),
+            arraylike_to_array(beta, dtype=float),
+        )
         self.alpha = Parameterize(softplus, inv_softplus(alpha))
         self.beta = Parameterize(softplus, inv_softplus(beta))
         self.shape = alpha.shape
