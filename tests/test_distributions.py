@@ -13,6 +13,7 @@ from flowjax.bijections import AdditiveCondition, Affine, Exp
 from flowjax.distributions import (
     AbstractDistribution,
     AbstractTransformed,
+    Beta,
     Cauchy,
     Exponential,
     Gamma,
@@ -62,6 +63,7 @@ _test_distributions = {
         eqx.filter_vmap(Normal)(jnp.arange(3 * prod(shape)).reshape(3, *shape)),
         weights=jnp.arange(3) + 1,
     ),
+    "Beta": lambda shape: Beta(jnp.ones(shape), jnp.ones(shape)),
 }
 
 
