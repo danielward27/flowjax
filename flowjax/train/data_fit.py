@@ -34,7 +34,7 @@ def fit_to_data(
     optimizer: optax.GradientTransformation | None = None,
     return_best: bool = True,
     show_progress: bool = True,
-):
+) -> tuple[PyTree, dict[str, list]]:
     r"""Train a distribution (e.g. a flow) to samples from the target distribution.
 
     The distribution can be unconditional :math:`p(x)` or conditional
@@ -108,7 +108,7 @@ def fit_to_data(
                 key=subkey,
             )
             batch_losses.append(loss_i)
-        losses["train"].append(sum(batch_losses) / len(batch_losses))
+        losses["train"].append((sum(batch_losses) / len(batch_losses)).item())
 
         # Val epoch
         batch_losses = []
@@ -116,7 +116,7 @@ def fit_to_data(
             key, subkey = jr.split(key)
             loss_i = loss_fn(params, static, *batch, key=subkey)
             batch_losses.append(loss_i)
-        losses["val"].append(sum(batch_losses) / len(batch_losses))
+        losses["val"].append((sum(batch_losses) / len(batch_losses)).item())
 
         loop.set_postfix({k: v[-1] for k, v in losses.items()})
         if losses["val"][-1] == min(losses["val"]):
