@@ -39,3 +39,4 @@ def test_fit_to_variational_target(shape):
     # We expect the loss to be decreasing
     start, end = jnp.split(jnp.array(losses), 2)
     assert jnp.mean(start) > jnp.mean(end)
+    assert isinstance(losses[0], float)

@@ -16,7 +16,7 @@ def test_data_fit():
     # All params should change by default
     before = eqx.filter(flow, eqx.is_inexact_array)
     x = random.normal(random.key(0), (100, dim))
-    flow, _ = fit_to_data(
+    flow, losses = fit_to_data(
         random.key(0),
         dist=flow,
         x=x,
@@ -27,3 +27,5 @@ def test_data_fit():
 
     assert jnp.all(before.base_dist.bijection.loc != after.base_dist.bijection.loc)
     assert jnp.all(before.bijection.loc != after.bijection.loc)
+    assert isinstance(losses["train"][0], float)
+    assert isinstance(losses["val"][0], float)

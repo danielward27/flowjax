@@ -174,8 +174,12 @@ class _DistributionToNumpyro(numpyro.distributions.Distribution):
     ):
         self.dist = dist
 
+        if condition is None and dist.cond_shape is not None:
+            raise ValueError("Condition must be provided for conditional distribution.")
+
         if condition is not None:
             condition = arraylike_to_array(condition, "condition")
+
         self._condition = condition
         self.support = _RealNdim(dist.ndim)
         batch_shape = _get_batch_shape(condition, dist.cond_shape)
