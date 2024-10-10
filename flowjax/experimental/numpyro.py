@@ -8,6 +8,7 @@ from typing import Any
 
 import equinox as eqx
 import jax
+import jax.random as jr
 from jaxtyping import Array, ArrayLike
 
 from flowjax import wrappers
@@ -190,6 +191,10 @@ class _DistributionToNumpyro(numpyro.distributions.Distribution):
         return jax.lax.stop_gradient(self._condition)
 
     def sample(self, key, sample_shape=()):
+        # TODO remove when old-style keys fully deprecated
+        if not jax.dtypes.issubdtype(key.dtype, jax.dtypes.prng_key):
+            key = jr.wrap_key_data(key)
+
         return self.dist.sample(key, sample_shape, self.condition)
 
     def log_prob(self, value):
