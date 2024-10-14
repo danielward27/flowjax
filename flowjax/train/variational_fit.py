@@ -1,5 +1,6 @@
 """Basic training script for fitting a flow using variational inference."""
 
+import warnings
 from collections.abc import Callable
 
 import equinox as eqx
@@ -42,6 +43,12 @@ def fit_to_variational_target(
     Returns:
         A tuple containing the trained distribution and the losses.
     """
+    warnings.warn(
+        "This function will be deprecated in 17.0.0. Please switch to using "
+        "``flowjax.train.loops.fit_to_key_based_loss``.",
+        DeprecationWarning,
+        stacklevel=2,
+    )  # TODO deprecate
     if optimizer is None:
         optimizer = optax.adam(learning_rate)
 
