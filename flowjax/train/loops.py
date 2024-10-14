@@ -172,7 +172,7 @@ def fit_to_data(
             key, subkey = jr.split(key)
             loss_i = loss_fn(params, static, *batch, key=subkey)
             batch_losses.append(loss_i)
-        losses["val"].append(sum(batch_losses) / len(batch_losses))
+        losses["val"].append((sum(batch_losses) / len(batch_losses)).item())
 
         loop.set_postfix({k: v[-1] for k, v in losses.items()})
         if losses["val"][-1] == min(losses["val"]):
