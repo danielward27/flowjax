@@ -4,7 +4,7 @@ from jax import random
 
 from flowjax.bijections import Affine
 from flowjax.distributions import Normal, Transformed
-from flowjax.train.data_fit import fit_to_data
+from flowjax.train.loops import fit_to_data
 
 
 def test_data_fit():
