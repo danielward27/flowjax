@@ -164,7 +164,7 @@ def fit_to_data(
                 key=subkey,
             )
             batch_losses.append(loss_i)
-        losses["train"].append(sum(batch_losses) / len(batch_losses))
+        losses["train"].append((sum(batch_losses) / len(batch_losses)).item())
 
         # Val epoch
         batch_losses = []
