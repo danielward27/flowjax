@@ -4,7 +4,7 @@ In order to be compatible with ``fit_to_data``, the loss function arguments must
 ``(params, static, x, condition, key)``, where ``params`` and ``static`` are the
 partitioned model (see ``equinox.partition``).
 
-For ``fit_to_variational_target``, the loss function signature must match
+For ``fit_to_key_based_loss``, the loss function signature must match
 ``(params, static, key)``.
 """
 
