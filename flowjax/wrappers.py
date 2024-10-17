@@ -168,7 +168,7 @@ def non_trainable(tree: PyTree):
 
 
         This is done in both :func:`~flowjax.train.fit_to_data` and
-        :func:`~flowjax.train.fit_to_variational_target`.
+        :func:`~flowjax.train.fit_to_key_based_loss`.
 
     Wrapping the arrays rather than the entire tree is often preferable, allowing easier
     access to attributes compared to wrapping the entire tree.
