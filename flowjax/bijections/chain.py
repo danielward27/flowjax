@@ -3,6 +3,7 @@
 from collections.abc import Sequence
 
 from paramax import AbstractUnwrappable, unwrap
+from jax import Array
 
 from flowjax.bijections.bijection import AbstractBijection
 from flowjax.utils import check_shapes_match, merge_cond_shapes
@@ -55,6 +56,19 @@ class Chain(AbstractBijection):
             y, log_abs_det_jac_i = bijection.inverse_and_log_det(y, condition)
             log_abs_det_jac += log_abs_det_jac_i.sum()
         return y, log_abs_det_jac
+
+    def inverse_gradient_and_val(
+        self,
+        y: Array,
+        y_grad: Array,
+        y_logp: Array,
+        condition: Array | None = None,
+    ) -> tuple[Array, Array, Array]:
+        for bijection in reversed(self.bijections):
+            y, y_grad, y_logp = bijection.inverse_gradient_and_val(
+                y, y_grad, y_logp, condition
+            )
+        return y, y_grad, y_logp
 
     def __getitem__(self, i: int | slice) -> AbstractBijection:
         if isinstance(i, int):

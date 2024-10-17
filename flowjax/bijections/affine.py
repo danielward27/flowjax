@@ -56,6 +56,17 @@ class Affine(AbstractBijection):
     def inverse_and_log_det(self, y, condition=None):
         return (y - self.loc) / self.scale, -jnp.log(jnp.abs(self.scale)).sum()
 
+    def inverse_gradient_and_val(
+        self,
+        y: Array,
+        y_grad: Array,
+        y_logp: Array,
+        condition: ArrayLike | None = None,
+    ) -> tuple[Array, Array, Array]:
+        x, logdet = self.inverse_and_log_det(y)
+        x_grad = y_grad * self.scale
+        return (x, x_grad, y_logp - logdet)
+
 
 class Loc(AbstractBijection):
     r"""Location transformation :math:`y = a \cdot x + b`.
