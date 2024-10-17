@@ -7,8 +7,6 @@ import jax.numpy as jnp
 from jax.flatten_util import ravel_pytree
 from jaxtyping import Array, ArrayLike
 
-import flowjax
-
 
 def inv_softplus(x: ArrayLike) -> Array:
     """The inverse of the softplus function, checking for positive inputs."""
@@ -70,28 +68,28 @@ def _get_ufunc_signature(
     return f"{in_shapes_str}->{out_shapes_str}"
 
 
-def get_ravelled_pytree_constructor(tree, filter_spec=eqx.is_inexact_array) -> tuple:
+def get_ravelled_pytree_constructor(
+    tree,
+    *args,
+    **kwargs,
+) -> tuple:
     """Get a pytree constructor taking ravelled parameters, and the number of params.
 
     The constructor takes a single argument as input, which is all the bijection
     parameters flattened into a single contiguous vector. This is useful when we wish to
     parameterize a pytree with a neural neural network. Calling the constructor
-    at the zero vector will return the initial pytree. Parameters warpped in
-    ``NonTrainable`` are treated as leaves during partitioning.
+    at the zero vector will return the initial pytree. When using, you may wish to
+    specify ``NonTrainable`` nodes as leaves, using the ``is_leaf`` argument.
 
     Args:
         tree: Pytree to form constructor for.
-        filter_spec: Filter function to specify parameters. Defaults to
-            eqx.is_inexact_array.
+        *args: Arguments passed to ``eqx.partition``.
+        **kwargs: Key word arguments passed to ``eqx.partition``.
 
     Returns:
         tuple: Tuple containing the constructor, and the number of parameters.
     """
-    params, static = eqx.partition(
-        tree,
-        filter_spec,
-        is_leaf=lambda leaf: isinstance(leaf, flowjax.wrappers.NonTrainable),
-    )
+    params, static = eqx.partition(tree, *args, **kwargs)
     init, unravel = ravel_pytree(params)
 
     def constructor(ravelled_params: Array):

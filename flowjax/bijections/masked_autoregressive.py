@@ -9,11 +9,11 @@ import jax.nn as jnn
 import jax.numpy as jnp
 from jaxtyping import Array, Int, PRNGKeyArray
 
+from flowjax import wrappers
 from flowjax.bijections.bijection import AbstractBijection
 from flowjax.bijections.jax_transforms import Vmap
 from flowjax.masks import rank_based_mask
 from flowjax.utils import get_ravelled_pytree_constructor
-from flowjax.wrappers import Parameterize
 
 
 class MaskedAutoregressive(AbstractBijection):
@@ -58,7 +58,11 @@ class MaskedAutoregressive(AbstractBijection):
                 "Only unconditional transformers with shape () are supported.",
             )
 
-        constructor, num_params = get_ravelled_pytree_constructor(transformer)
+        constructor, num_params = get_ravelled_pytree_constructor(
+            transformer,
+            filter_spec=eqx.is_inexact_array,
+            is_leaf=lambda leaf: isinstance(leaf, wrappers.NonTrainable),
+        )
 
         if cond_dim is None:
             self.cond_shape = None
@@ -162,7 +166,7 @@ def masked_autoregressive_mlp(
         masked_linear = eqx.tree_at(
             lambda linear: linear.weight,
             linear,
-            Parameterize(jnp.where, mask, linear.weight, 0),
+            wrappers.Parameterize(jnp.where, mask, linear.weight, 0),
         )
         masked_layers.append(masked_linear)
 
