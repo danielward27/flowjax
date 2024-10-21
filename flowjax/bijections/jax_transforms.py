@@ -7,8 +7,8 @@ import jax.numpy as jnp
 from jax.lax import scan
 from jax.tree_util import tree_leaves, tree_map
 from jaxtyping import PyTree
+from paramax import contains_unwrappables, unwrap
 
-from flowjax import wrappers
 from flowjax.bijections.bijection import AbstractBijection
 
 
@@ -91,15 +91,11 @@ def _filter_scan(f, init, xs, *, reverse=False):
 
 
 def _check_no_unwrappables(pytree):
-    def _is_unwrappable(leaf):
-        return isinstance(leaf, wrappers.AbstractUnwrappable)
-
-    leaves = tree_leaves(pytree, is_leaf=_is_unwrappable)
-    if any(_is_unwrappable(leaf) for leaf in leaves):
+    if contains_unwrappables(pytree):
         raise ValueError(
             "In axes containing unwrappables is not supported. In axes must be "
             "specified to match the structure of the unwrapped pytree i.e after "
-            "calling flowjax.wrappers.unwrap."
+            "calling pararamax.unwrap."
         )
 
 
@@ -146,10 +142,10 @@ class Vmap(AbstractBijection):
         parameter? We could achieve this as follows.
 
             >>> from jax.tree_util import tree_map
-            >>> from flowjax.wrappers import unwrap
+            >>> import paramax
             >>> bijection = Affine(jnp.zeros(()), jnp.ones(()))
             >>> bijection = eqx.tree_at(lambda bij: bij.loc, bijection, jnp.arange(3))
-            >>> in_axes = tree_map(lambda _: None, unwrap(bijection))
+            >>> in_axes = tree_map(lambda _: None, paramax.unwrap(bijection))
             >>> in_axes = eqx.tree_at(
             ...     lambda bij: bij.loc, in_axes, 0, is_leaf=lambda x: x is None
             ...     )
@@ -158,7 +154,7 @@ class Vmap(AbstractBijection):
             (3,)
             >>> bijection.bijection.loc.shape
             (3,)
-            >>> unwrap(bijection.bijection.scale).shape
+            >>> paramax.unwrap(bijection.bijection.scale).shape
             ()
             >>> x = jnp.ones(3)
             >>> bijection.transform(x)
@@ -186,9 +182,7 @@ class Vmap(AbstractBijection):
             if in_axes is None:
                 raise ValueError("Either axis_size or in_axes must be provided.")
             _check_no_unwrappables(in_axes)
-            axis_size = _infer_axis_size_from_params(
-                wrappers.unwrap(bijection), in_axes
-            )
+            axis_size = _infer_axis_size_from_params(unwrap(bijection), in_axes)
 
         self.in_axes = (in_axes, 0, in_axes_condition)
         self.bijection = bijection

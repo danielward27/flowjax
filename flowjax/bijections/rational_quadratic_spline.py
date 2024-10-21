@@ -6,10 +6,10 @@ from typing import ClassVar
 import jax
 import jax.numpy as jnp
 from jaxtyping import Array, Float
+from paramax import AbstractUnwrappable, Parameterize
+from paramax.utils import inv_softplus
 
 from flowjax.bijections.bijection import AbstractBijection
-from flowjax.utils import inv_softplus
-from flowjax.wrappers import AbstractUnwrappable, Parameterize
 
 
 def _real_to_increasing_on_interval(
@@ -83,17 +83,19 @@ class RationalQuadraticSpline(AbstractBijection):
         self.softmax_adjust = softmax_adjust
         self.min_derivative = min_derivative
 
-        # Inexact arrays
-        pos_parameterization = partial(
-            _real_to_increasing_on_interval,
-            interval=interval,
-            softmax_adjust=softmax_adjust,
+        to_interval = jnp.vectorize(
+            partial(
+                _real_to_increasing_on_interval,
+                interval=interval,
+                softmax_adjust=softmax_adjust,
+            ),
+            signature="(a)->(b)",
         )
 
-        self.x_pos = Parameterize(pos_parameterization, jnp.zeros(knots))
-        self.y_pos = Parameterize(pos_parameterization, jnp.zeros(knots))
+        self.x_pos = Parameterize(to_interval, jnp.zeros(knots))
+        self.y_pos = Parameterize(to_interval, jnp.zeros(knots))
         self.derivatives = Parameterize(
-            lambda arr: jax.nn.softplus(arr) + self.min_derivative,
+            lambda arr: jax.nn.softplus(arr) + min_derivative,
             jnp.full(knots + 2, inv_softplus(1 - min_derivative)),
         )
 

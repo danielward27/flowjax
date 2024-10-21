@@ -6,10 +6,10 @@ from collections.abc import Callable
 import equinox as eqx
 import jax.random as jr
 import optax
+import paramax
 from jaxtyping import PRNGKeyArray, PyTree
 from tqdm import tqdm
 
-from flowjax import wrappers
 from flowjax.train.train_utils import step
 
 
@@ -55,7 +55,7 @@ def fit_to_variational_target(
     params, static = eqx.partition(
         dist,
         eqx.is_inexact_array,
-        is_leaf=lambda leaf: isinstance(leaf, wrappers.NonTrainable),
+        is_leaf=lambda leaf: isinstance(leaf, paramax.NonTrainable),
     )
     opt_state = optimizer.init(params)
 

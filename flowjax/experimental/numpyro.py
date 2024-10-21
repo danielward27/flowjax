@@ -9,9 +9,9 @@ from typing import Any
 import equinox as eqx
 import jax
 import jax.random as jr
+import paramax
 from jaxtyping import Array, ArrayLike
 
-from flowjax import wrappers
 from flowjax.bijections import AbstractBijection
 from flowjax.distributions import AbstractDistribution, AbstractTransformed
 from flowjax.utils import arraylike_to_array
@@ -129,7 +129,7 @@ def register_params(
     params, static = eqx.partition(
         model,
         eqx.is_inexact_array,
-        is_leaf=lambda leaf: isinstance(leaf, wrappers.NonTrainable),
+        is_leaf=lambda leaf: isinstance(leaf, paramax.NonTrainable),
     )
     if callable(params):
         # Wrap to avoid special handling of callables by numpyro. Numpyro expects a
@@ -138,7 +138,7 @@ def register_params(
         params = numpyro.param(name, lambda _: params)
     else:
         params = numpyro.param(name, params)
-    return wrappers.unwrap(eqx.combine(params, static))
+    return paramax.unwrap(eqx.combine(params, static))
 
 
 def distribution_to_numpyro(

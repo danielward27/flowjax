@@ -18,6 +18,8 @@ from jax.scipy import stats as jstats
 from jax.scipy.special import logsumexp
 from jax.tree_util import tree_map
 from jaxtyping import Array, ArrayLike, PRNGKeyArray, Shaped
+from paramax import AbstractUnwrappable, Parameterize, unwrap
+from paramax.utils import inv_softplus
 
 from flowjax.bijections import (
     AbstractBijection,
@@ -30,10 +32,8 @@ from flowjax.bijections import (
 from flowjax.utils import (
     _get_ufunc_signature,
     arraylike_to_array,
-    inv_softplus,
     merge_cond_shapes,
 )
-from flowjax.wrappers import AbstractUnwrappable, Parameterize, unwrap
 
 
 class AbstractDistribution(eqx.Module):
@@ -104,8 +104,7 @@ class AbstractDistribution(eqx.Module):
         x = arraylike_to_array(x, err_name="x", dtype=float)
         if self.cond_shape is not None:
             condition = arraylike_to_array(condition, err_name="condition", dtype=float)
-        lps = self._vectorize(self._log_prob)(x, condition)
-        return jnp.where(jnp.isnan(lps), -jnp.inf, lps)
+        return self._vectorize(self._log_prob)(x, condition)
 
     def sample(
         self,
@@ -167,7 +166,7 @@ class AbstractDistribution(eqx.Module):
 
     def _vectorize(self, method: Callable) -> Callable:
         """Returns a vectorized version of the distribution method."""
-        # Get shapes without broadcasting - note the (2, ) corresponds to key arrays.
+        # Get shapes without broadcasting - note the () corresponds to key arrays.
         maybe_cond = [] if self.cond_shape is None else [self.cond_shape]
         in_shapes = {
             "_sample_and_log_prob": [()] + maybe_cond,
@@ -248,7 +247,9 @@ class AbstractTransformed(AbstractDistribution):
     def _log_prob(self, x, condition=None):
         z, log_abs_det = self.bijection.inverse_and_log_det(x, condition)
         p_z = self.base_dist._log_prob(z, condition)
-        return p_z + log_abs_det
+        log_prob = p_z + log_abs_det
+        # If log_prob is nan, we assume outside transform support
+        return jnp.where(jnp.isnan(log_prob), -jnp.inf, log_prob)
 
     def _sample(self, key, condition=None):
         base_sample = self.base_dist._sample(key, condition)

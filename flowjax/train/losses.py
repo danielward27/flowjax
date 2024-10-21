@@ -13,13 +13,13 @@ from collections.abc import Callable
 import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
+import paramax
 from jax import vmap
 from jax.lax import stop_gradient
 from jax.scipy.special import logsumexp
 from jaxtyping import Array, ArrayLike, Float, PRNGKeyArray
 
 from flowjax.distributions import AbstractDistribution
-from flowjax.wrappers import unwrap
 
 
 class MaximumLikelihoodLoss:
@@ -38,7 +38,7 @@ class MaximumLikelihoodLoss:
         key: PRNGKeyArray | None = None,
     ) -> Float[Array, ""]:
         """Compute the loss. Key is ignored (for consistency of API)."""
-        dist = unwrap(eqx.combine(params, static))
+        dist = paramax.unwrap(eqx.combine(params, static))
         return -dist.log_prob(x, condition).mean()
 
 
@@ -85,7 +85,7 @@ class ContrastiveLoss:
                 f"the size of x {x.shape}.",
             )
 
-        dist = unwrap(eqx.combine(params, static))
+        dist = paramax.unwrap(eqx.combine(params, static))
 
         def single_x_loss(x_i, condition_i, contrastive_idxs):
             positive_logit = dist.log_prob(x_i, condition_i) - self.prior.log_prob(x_i)

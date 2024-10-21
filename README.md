@@ -77,8 +77,10 @@ sudo apt-get install pandoc  # Required for building documentation
 ```
 
 ## Related
-We make use of the [Equinox](https://arxiv.org/abs/2111.00254) package, which
-facilitates defining models using a PyTorch-like syntax with Jax. 
+- We make use of the [Equinox](https://arxiv.org/abs/2111.00254) package, which
+  facilitates defining models using a PyTorch-like syntax with Jax.
+- For applying parameterizations, we use
+  [paramax](https://github.com/danielward27/paramax).
 
 ## Citation
 If you found this package useful in academic work, please consider citing it using the

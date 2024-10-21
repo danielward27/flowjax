@@ -8,9 +8,9 @@ from collections.abc import Callable
 import equinox as eqx
 import jax.nn as jnn
 import jax.numpy as jnp
+import paramax
 from jaxtyping import PRNGKeyArray
 
-from flowjax import wrappers
 from flowjax.bijections.bijection import AbstractBijection
 from flowjax.bijections.jax_transforms import Vmap
 from flowjax.utils import Array, get_ravelled_pytree_constructor
@@ -59,7 +59,7 @@ class Coupling(AbstractBijection):
         constructor, num_params = get_ravelled_pytree_constructor(
             transformer,
             filter_spec=eqx.is_inexact_array,
-            is_leaf=lambda leaf: isinstance(leaf, wrappers.NonTrainable),
+            is_leaf=lambda leaf: isinstance(leaf, paramax.NonTrainable),
         )
 
         self.transformer_constructor = constructor

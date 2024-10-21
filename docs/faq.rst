@@ -4,15 +4,15 @@ FAQ
 Freezing parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Often it is useful to not train particular parameters. The easiest way to achieve this
-is to use :func:`flowjax.wrappers.non_trainable`. This will wrap the inexact array
-leaves with :class:`flowjax.wrappers.NonTrainable`, which will apply ``stop_gradient``
+is to use :func:`paramax.wrappers.non_trainable`. This will wrap the inexact array
+leaves with :class:`paramax.wrappers.NonTrainable`, which will apply ``stop_gradient``
 when unwrapping the parameters. For commonly used distribution and bijection methods,
 unwrapping is applied automatically. For example
 
 .. doctest::
     
     >>> from flowjax.distributions import Normal
-    >>> from flowjax.wrappers import non_trainable
+    >>> from paramax import non_trainable
     >>> dist = Normal()
     >>> dist = non_trainable(dist)
 

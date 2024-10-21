@@ -1,9 +1,9 @@
 import jax.numpy as jnp
+import paramax
 from jax import random
 
 from flowjax.bijections.masked_autoregressive import masked_autoregressive_mlp
 from flowjax.masks import rank_based_mask
-from flowjax.wrappers import unwrap
 
 
 def test_masked_autoregressive_mlp():
@@ -15,7 +15,7 @@ def test_masked_autoregressive_mlp():
 
     # Extract masks before unwrapping
     mlp = masked_autoregressive_mlp(in_ranks, hidden_ranks, out_ranks, depth=3, key=key)
-    mlp = unwrap(mlp)
+    mlp = paramax.unwrap(mlp)
     masks = [layer.weight != 0 for layer in mlp.layers]
     x = jnp.ones(in_size)
     y = mlp(x)
