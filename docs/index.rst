@@ -28,7 +28,6 @@ Installation
 
    getting_started
 
-
 .. toctree::
    :caption: Examples
    :glob:
@@ -45,7 +44,6 @@ Installation
    api/flows
    api/training
    api/losses
-   api/wrappers
    api/experimental
 
 .. toctree::

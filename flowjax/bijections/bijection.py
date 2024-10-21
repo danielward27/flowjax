@@ -14,9 +14,9 @@ import equinox as eqx
 import jax.numpy as jnp
 from equinox import AbstractVar
 from jaxtyping import Array, ArrayLike
+from paramax import unwrap
 
 from flowjax.utils import _get_ufunc_signature, arraylike_to_array
-from flowjax.wrappers import unwrap
 
 
 def _unwrap_check_and_cast(method):

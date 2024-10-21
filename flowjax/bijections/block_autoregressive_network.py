@@ -11,12 +11,12 @@ import jax.random as jr
 from jax import random
 from jax.nn import softplus
 from jaxtyping import PRNGKeyArray
+from paramax import Parameterize, WeightNormalization
 
 from flowjax import masks
 from flowjax.bijections.bijection import AbstractBijection
 from flowjax.bijections.tanh import LeakyTanh
 from flowjax.bisection_search import AutoregressiveBisectionInverter
-from flowjax.wrappers import Parameterize, WeightNormalization
 
 
 class _CallableToBijection(AbstractBijection):

@@ -2,9 +2,10 @@
 
 from collections.abc import Sequence
 
+from paramax import AbstractUnwrappable, unwrap
+
 from flowjax.bijections.bijection import AbstractBijection
 from flowjax.utils import check_shapes_match, merge_cond_shapes
-from flowjax.wrappers import AbstractUnwrappable, unwrap
 
 
 class Chain(AbstractBijection):

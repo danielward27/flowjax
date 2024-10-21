@@ -1,24 +1,24 @@
 import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
+import paramax
 import pytest
 from jax.tree_util import tree_map
 
 from flowjax.bijections import Affine, MaskedAutoregressive, Vmap
-from flowjax.wrappers import unwrap
 
 
 def test_vmap_uneven_init():
     "Tests adding a batch dimension to a particular leaf (parameter array)."
     bijection = Affine(jnp.zeros(()), jnp.ones(()))
     bijection = eqx.tree_at(lambda bij: bij.loc, bijection, jnp.arange(3))
-    in_axes = tree_map(lambda _: None, unwrap(bijection))
+    in_axes = tree_map(lambda _: None, paramax.unwrap(bijection))
     in_axes = eqx.tree_at(lambda bij: bij.loc, in_axes, 0, is_leaf=lambda x: x is None)
     bijection = Vmap(bijection, in_axes=in_axes)
 
     assert bijection.shape == (3,)
     assert bijection.bijection.loc.shape == (3,)
-    assert unwrap(bijection.bijection.scale).shape == ()
+    assert paramax.unwrap(bijection.bijection.scale).shape == ()
 
     x = jnp.ones(3)
     expected = x + jnp.arange(3)

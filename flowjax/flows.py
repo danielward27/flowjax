@@ -14,6 +14,8 @@ from equinox.nn import Linear
 from jax.nn import softplus
 from jax.nn.initializers import glorot_uniform
 from jaxtyping import PRNGKeyArray
+from paramax import Parameterize, WeightNormalization
+from paramax.utils import inv_softplus
 
 from flowjax.bijections import (
     AbstractBijection,
@@ -34,8 +36,6 @@ from flowjax.bijections import (
     Vmap,
 )
 from flowjax.distributions import AbstractDistribution, Transformed
-from flowjax.utils import inv_softplus
-from flowjax.wrappers import Parameterize, WeightNormalization
 
 
 def _affine_with_min_scale(min_scale: float = 1e-2) -> Affine:

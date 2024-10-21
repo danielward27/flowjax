@@ -1,16 +1,18 @@
 """Affine bijections."""
 
 from collections.abc import Callable
+from functools import partial
 from typing import ClassVar
 
 import jax.numpy as jnp
 from jax.nn import softplus
 from jax.scipy.linalg import solve_triangular
 from jaxtyping import Array, ArrayLike, Shaped
+from paramax import AbstractUnwrappable, Parameterize, unwrap
+from paramax.utils import inv_softplus
 
 from flowjax.bijections.bijection import AbstractBijection
-from flowjax.utils import arraylike_to_array, inv_softplus
-from flowjax.wrappers import AbstractUnwrappable, Parameterize, unwrap
+from flowjax.utils import arraylike_to_array
 
 
 class Affine(AbstractBijection):
@@ -149,12 +151,13 @@ class TriangularAffine(AbstractBijection):
         if (arr.ndim != 2) or (arr.shape[0] != arr.shape[1]):
             raise ValueError("arr must be a square, 2-dimensional matrix.")
         dim = arr.shape[0]
+        arr = jnp.fill_diagonal(arr, inv_softplus(jnp.diag(arr)), inplace=False)
 
+        @partial(jnp.vectorize, signature="(d,d)->(d,d)")
         def _to_triangular(arr):
             tri = jnp.tril(arr) if lower else jnp.triu(arr)
             return jnp.fill_diagonal(tri, softplus(jnp.diag(tri)), inplace=False)
 
-        arr = jnp.fill_diagonal(arr, inv_softplus(jnp.diag(arr)), inplace=False)
         self.triangular = Parameterize(_to_triangular, arr)
         self.lower = lower
         self.shape = (dim,)

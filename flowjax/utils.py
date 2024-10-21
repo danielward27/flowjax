@@ -5,19 +5,8 @@ from collections.abc import Sequence
 import equinox as eqx
 import jax.numpy as jnp
 from jax.flatten_util import ravel_pytree
-from jaxtyping import Array, ArrayLike
-
-
-def inv_softplus(x: ArrayLike) -> Array:
-    """The inverse of the softplus function, checking for positive inputs."""
-    x = eqx.error_if(
-        x,
-        x < 0,
-        "Expected positive inputs to inv_softplus. If you are trying to use a negative "
-        "scale parameter, consider constructing with positive scales and modifying the "
-        "scale attribute post-construction, e.g., using eqx.tree_at.",
-    )
-    return jnp.log(-jnp.expm1(-x)) + x
+from jax.tree_util import tree_leaves, tree_map
+from jaxtyping import Array, ArrayLike, PyTree
 
 
 def merge_cond_shapes(shapes: Sequence[tuple[int, ...] | None]):
@@ -119,3 +108,31 @@ def arraylike_to_array(
             f"Expected {err_name} to be arraylike; got {type(arr).__name__}.",
         )
     return jnp.asarray(arr, **kwargs)
+
+
+def _infer_axis_size_from_params(tree: PyTree, in_axes) -> int:
+    axes = _resolve_vmapped_axes(tree, in_axes)
+    axis_sizes = tree_leaves(
+        tree_map(
+            lambda leaf, ax: leaf.shape[ax] if ax is not None else None,
+            tree,
+            axes,
+        ),
+    )
+    if len(axis_sizes) == 0:
+        raise ValueError("in_axes did not map to any leaves to vectorize.")
+    return axis_sizes[0]
+
+
+def _resolve_vmapped_axes(pytree, in_axes):
+    """Returns pytree with ints denoting vmapped dimensions."""
+
+    # Adapted from equinox filter_vmap
+    def _resolve_axis(in_axes, elem):
+        if in_axes is None or isinstance(in_axes, int):
+            return tree_map(lambda _: in_axes, elem)
+        if callable(in_axes):
+            return tree_map(in_axes, elem)
+        raise TypeError("`in_axes` must consist of None, ints, and callables.")
+
+    return tree_map(_resolve_axis, in_axes, pytree, is_leaf=lambda x: x is None)
