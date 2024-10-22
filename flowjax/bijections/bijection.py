@@ -230,10 +230,12 @@ class AbstractBijection(eqx.Module):
             x_grad: The gradient of the log density at `x`.
             x_logp: The log density on the untransformed space at `x`.
         """
-        x, logdet = self.inverse_and_log_det(y, condition)
-        _, pull_grad_fn = jax.vjp(lambda x: self.transform_and_log_det(x, condition), x)
+        x = self.inverse(y, condition)
+        (_, fwd_log_det), pull_grad_fn = jax.vjp(
+            lambda x: self.transform_and_log_det(x, condition), x
+        )
         (x_grad,) = pull_grad_fn((y_grad, jnp.ones(())))
-        return (x, x_grad, y_logp - logdet)
+        return (x, x_grad, y_logp + fwd_log_det)
 
     @property
     def _vectorize(self):
