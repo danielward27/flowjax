@@ -1,4 +1,5 @@
 "General tests for bijections (including transformers)."
+
 from abc import abstractmethod
 
 import equinox as eqx
@@ -283,6 +284,9 @@ def test_inverse_gradient_and_val(bijection_name):
     bijection = bijections[bijection_name]()
     shape = bijection.shape if bijection.shape is not None else (DIM,)
     y = jr.normal(jr.PRNGKey(0), shape)
+
+    if type(bijection) in POSITIVE_DOMAIN:
+        y = jnp.abs(y)
 
     if bijection.cond_shape is not None:
         cond = jr.normal(jr.PRNGKey(0), bijection.cond_shape)

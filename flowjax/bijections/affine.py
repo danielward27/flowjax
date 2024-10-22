@@ -238,10 +238,10 @@ class AdditiveCondition(AbstractBijection):
         return x + self.module(condition)
 
     def transform_and_log_det(self, x, condition=None):
-        return self.transform(x, condition), jnp.array(0)
+        return self.transform(x, condition), jnp.zeros(())
 
     def inverse(self, y, condition=None):
         return y - self.module(condition)
 
     def inverse_and_log_det(self, y, condition=None):
-        return self.inverse(y, condition), jnp.array(0)
+        return self.inverse(y, condition), jnp.zeros(())
