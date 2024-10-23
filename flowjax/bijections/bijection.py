@@ -167,19 +167,13 @@ class _VectorizedBijection(eqx.Module):
         return self.transform_and_log_det(x, condition)[0]
 
     def inverse(self, y, condition=None):
-        return self.bijection.inverse_and_log_det(y, condition)[0]
+        return self.inverse_and_log_det(y, condition)[0]
 
     def transform_and_log_det(self, x, condition=None):
-        return self.vectorize(
-            self.bijection.transform_and_log_det,
-            log_det=True,
-        )(x, condition)
+        return self.vectorize(self.bijection.transform_and_log_det)(x, condition)
 
     def inverse_and_log_det(self, x, condition=None):
-        return self.vectorize(
-            self.bijection.inverse_and_log_det,
-            log_det=True,
-        )(x, condition)
+        return self.vectorize(self.bijection.inverse_and_log_det)(x, condition)
 
     def vectorize(self, func):
         in_shapes, out_shapes = [self.bijection.shape], [self.bijection.shape, ()]

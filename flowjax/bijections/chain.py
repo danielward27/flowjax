@@ -11,6 +11,10 @@ from flowjax.utils import check_shapes_match, merge_cond_shapes
 class Chain(AbstractBijection):
     """Compose arbitrary bijections to form another bijection.
 
+    If the layers you are chaining have consistent structure, consider using
+    :py:class:`~flowjax.bijections.Scan`, which will avoid seperately compiling each
+    layer.
+
     Args:
         bijections: Sequence of bijections. The bijection shapes must match, and any
             none None condition shapes must match.
