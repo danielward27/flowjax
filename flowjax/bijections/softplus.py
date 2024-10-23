@@ -14,15 +14,9 @@ class SoftPlus(AbstractBijection):
     shape: tuple[int, ...] = ()
     cond_shape: ClassVar[None] = None
 
-    def transform(self, x, condition=None):
-        return softplus(x)
-
     def transform_and_log_det(self, x, condition=None):
         return softplus(x), -softplus(-x).sum()
 
-    def inverse(self, y, condition=None):
-        return jnp.log(-jnp.expm1(-y)) + y
-
     def inverse_and_log_det(self, y, condition=None):
-        x = self.inverse(y)
+        x = jnp.log(-jnp.expm1(-y)) + y
         return x, softplus(-x).sum()

@@ -400,14 +400,8 @@ class _ForwardOnly(AbstractBijection):
     shape: tuple[int, ...] = ()
     cond_shape: ClassVar[None] = None
 
-    def transform(self, x, condition=None):
-        return x
-
     def transform_and_log_det(self, x, condition=None):
         return x, jnp.zeros(())
-
-    def inverse(self, y, condition=None):
-        raise NotImplementedError()
 
     def inverse_and_log_det(self, y, condition=None):
         raise NotImplementedError()

@@ -81,14 +81,6 @@ class Coupling(AbstractBijection):
             key=key,
         )
 
-    def transform(self, x, condition=None):
-        x_cond, x_trans = x[: self.untransformed_dim], x[self.untransformed_dim :]
-        nn_input = x_cond if condition is None else jnp.hstack((x_cond, condition))
-        transformer_params = self.conditioner(nn_input)
-        transformer = self._flat_params_to_transformer(transformer_params)
-        y_trans = transformer.transform(x_trans)
-        return jnp.hstack((x_cond, y_trans))
-
     def transform_and_log_det(self, x, condition=None):
         x_cond, x_trans = x[: self.untransformed_dim], x[self.untransformed_dim :]
         nn_input = x_cond if condition is None else jnp.hstack((x_cond, condition))
@@ -97,14 +89,6 @@ class Coupling(AbstractBijection):
         y_trans, log_det = transformer.transform_and_log_det(x_trans)
         y = jnp.hstack((x_cond, y_trans))
         return y, log_det
-
-    def inverse(self, y, condition=None):
-        x_cond, y_trans = y[: self.untransformed_dim], y[self.untransformed_dim :]
-        nn_input = x_cond if condition is None else jnp.concatenate((x_cond, condition))
-        transformer_params = self.conditioner(nn_input)
-        transformer = self._flat_params_to_transformer(transformer_params)
-        x_trans = transformer.inverse(y_trans)
-        return jnp.hstack((x_cond, x_trans))
 
     def inverse_and_log_det(self, y, condition=None):
         x_cond, y_trans = y[: self.untransformed_dim], y[self.untransformed_dim :]

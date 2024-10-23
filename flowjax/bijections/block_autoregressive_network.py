@@ -32,18 +32,12 @@ class _CallableToBijection(AbstractBijection):
             raise TypeError(f"Expected callable, got {type(fn)}.")
         self.fn = fn
 
-    def transform(self, x, condition=None):
-        return self.fn(x)
-
     def transform_and_log_det(self, x, condition=None):
         y, grad = eqx.filter_value_and_grad(self.fn)(x)
         return y, jnp.log(jnp.abs(grad))
 
-    def inverse(self, y, condition=None):
-        raise NotImplementedError
-
     def inverse_and_log_det(self, y, condition=None):
-        raise NotImplementedError
+        raise NotImplementedError()
 
 
 class BlockAutoregressiveNetwork(AbstractBijection):
@@ -148,15 +142,6 @@ class BlockAutoregressiveNetwork(AbstractBijection):
         self.cond_shape = None if cond_dim is None else (cond_dim,)
         self.activation = activation
 
-    def transform(self, x, condition=None):
-        for i, (layer, _) in enumerate(self.layers[:-1]):
-            x = layer(x)
-            if i == 0 and condition is not None:
-                assert self.cond_linear is not None
-                x += self.cond_linear(condition)
-            x = eqx.filter_vmap(self.activation.transform)(x)
-        return self.layers[-1][0](x)
-
     def transform_and_log_det(self, x, condition=None):
         log_dets_3ds = []
         for i, (linear, log_jacobian_fn) in enumerate(self.layers[:-1]):
@@ -176,9 +161,6 @@ class BlockAutoregressiveNetwork(AbstractBijection):
         for log_jacobian in reversed(log_dets_3ds[:-1]):
             log_det = logmatmulexp(log_det, log_jacobian)
         return x, log_det.sum()
-
-    def inverse(self, y, condition=None):
-        return self.inverter(self, y, condition)
 
     def inverse_and_log_det(self, y, condition=None):
         x = self.inverter(self, y, condition)

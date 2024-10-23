@@ -99,7 +99,7 @@ class RationalQuadraticSpline(AbstractBijection):
             jnp.full(knots + 2, inv_softplus(1 - min_derivative)),
         )
 
-    def transform(self, x, condition=None):
+    def transform_and_log_det(self, x, condition=None):
         # Following notation from the paper
         x_pos, y_pos, derivatives = self.x_pos, self.y_pos, self.derivatives
         in_bounds = jnp.logical_and(x >= self.interval[0], x <= self.interval[1])
@@ -114,14 +114,11 @@ class RationalQuadraticSpline(AbstractBijection):
 
         # avoid numerical precision issues transforming from in -> out of bounds
         y = jnp.clip(y, self.interval[0], self.interval[1])
-        return jnp.where(in_bounds, y, x)
+        y = jnp.where(in_bounds, y, x)
 
-    def transform_and_log_det(self, x, condition=None):
-        y = self.transform(x)
-        derivative = self.derivative(x)
-        return y, jnp.log(derivative).sum()
+        return y, jnp.log(self.derivative(x)).sum()
 
-    def inverse(self, y, condition=None):
+    def inverse_and_log_det(self, y, condition=None):
         # Following notation from the paper
         x_pos, y_pos, derivatives = self.x_pos, self.y_pos, self.derivatives
         in_bounds = jnp.logical_and(y >= self.interval[0], y <= self.interval[1])
@@ -141,12 +138,9 @@ class RationalQuadraticSpline(AbstractBijection):
 
         # avoid numerical precision issues transforming from in -> out of bounds
         x = jnp.clip(x, self.interval[0], self.interval[1])
-        return jnp.where(in_bounds, x, y)
+        x = jnp.where(in_bounds, x, y)
 
-    def inverse_and_log_det(self, y, condition=None):
-        x = self.inverse(y)
-        derivative = self.derivative(x)
-        return x, -jnp.log(derivative).sum()
+        return x, -jnp.log(self.derivative(x)).sum()
 
     def derivative(self, x) -> Array:
         """The derivative dy/dx of the forward transformation."""

@@ -70,14 +70,8 @@ class Planar(AbstractBijection):
 
         self.negative_slope = negative_slope
 
-    def transform(self, x, condition=None):
-        return self.get_planar(condition).transform(x)
-
     def transform_and_log_det(self, x, condition=None):
         return self.get_planar(condition).transform_and_log_det(x)
-
-    def inverse(self, y, condition=None):
-        return self.get_planar(condition).inverse(y)
 
     def inverse_and_log_det(self, y, condition=None):
         return self.get_planar(condition).inverse_and_log_det(y)
@@ -132,10 +126,6 @@ class _UnconditionalPlanar(AbstractBijection):
             self.activation = "leaky_relu"
             self.activation_fn = partial(nn.leaky_relu, negative_slope=negative_slope)
 
-    def transform(self, x, condition=None):
-        u = self.get_act_scale()
-        return x + u * self.activation_fn(self.weight @ x + self.bias)
-
     def transform_and_log_det(self, x, condition=None):
         u = self.get_act_scale()
         act = self.activation_fn(x @ self.weight + self.bias)
@@ -155,14 +145,6 @@ class _UnconditionalPlanar(AbstractBijection):
         wtu = self._act_scale @ self.weight
         m_wtu = -1 + jnp.log(1 + nn.softplus(wtu))
         return self._act_scale + (m_wtu - wtu) * self.weight / norm(self.weight) ** 2
-
-    def inverse(self, y, condition=None):
-        if self.activation != "leaky_relu":
-            raise NotImplementedError(
-                "The inverse planar transformation is only implemented with the leaky "
-                "relu activation function.",
-            )
-        return self.inverse_and_log_det(y, condition)[0]
 
     def inverse_and_log_det(self, y, condition=None):
         if self.activation != "leaky_relu":
