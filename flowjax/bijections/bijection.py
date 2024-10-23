@@ -88,9 +88,7 @@ class AbstractBijection(eqx.Module):
     def __init_subclass__(cls) -> None:
         # We wrap the class methods with argument checking
         wrap_methods = [
-            "transform",
             "transform_and_log_det",
-            "inverse",
             "inverse_and_log_det",
         ]
         for meth in wrap_methods:
@@ -100,8 +98,7 @@ class AbstractBijection(eqx.Module):
             ):
                 setattr(cls, meth, _unwrap_check_and_cast(cls.__dict__[meth]))
 
-    @abstractmethod
-    def transform(self, x: Array, condition: Array | None = None) -> Array:
+    def transform(self, x: ArrayLike, condition: ArrayLike | None = None) -> Array:
         """Apply the forward transformation.
 
         Args:
@@ -110,12 +107,23 @@ class AbstractBijection(eqx.Module):
                 for conditional bijections and ignored for unconditional bijections.
                 Defaults to None.
         """
+        return self.transform_and_log_det(x, condition)[0]  # Rely on JAX DCE
+
+    def inverse(self, y: ArrayLike, condition: ArrayLike | None = None) -> Array:
+        """Compute the inverse transformation.
+
+        Args:
+            y: Input array with shape matching bijection.shape
+            condition: Condition array with shape matching bijection.cond_shape.
+                Required for conditional bijections. Defaults to None.
+        """
+        return self.inverse_and_log_det(y, condition)[0]  # Rely on JAX DCE
 
     @abstractmethod
     def transform_and_log_det(
         self,
-        x: Array,
-        condition: Array | None = None,
+        x: ArrayLike,
+        condition: ArrayLike | None = None,
     ) -> tuple[Array, Array]:
         """Apply transformation and compute the log absolute Jacobian determinant.
 
@@ -125,20 +133,10 @@ class AbstractBijection(eqx.Module):
         """
 
     @abstractmethod
-    def inverse(self, y: Array, condition: Array | None = None) -> Array:
-        """Compute the inverse transformation.
-
-        Args:
-            y: Input array with shape matching bijection.shape
-            condition: Condition array with shape matching bijection.cond_shape.
-                Required for conditional bijections. Defaults to None.
-        """
-
-    @abstractmethod
     def inverse_and_log_det(
         self,
-        y: Array,
-        condition: Array | None = None,
+        y: ArrayLike,
+        condition: ArrayLike | None = None,
     ) -> tuple[Array, Array]:
         """Inverse transformation and corresponding log absolute jacobian determinant.
 
@@ -167,10 +165,10 @@ class _VectorizedBijection(eqx.Module):
         self.bijection = bijection
 
     def transform(self, x, condition=None):
-        return self.vectorize(self.bijection.transform)(x, condition)
+        return self.transform_and_log_det(x, condition)[0]
 
     def inverse(self, y, condition=None):
-        return self.vectorize(self.bijection.inverse)(y, condition)
+        return self.bijection.inverse_and_log_det(y, condition)[0]
 
     def transform_and_log_det(self, x, condition=None):
         return self.vectorize(
@@ -184,10 +182,8 @@ class _VectorizedBijection(eqx.Module):
             log_det=True,
         )(x, condition)
 
-    def vectorize(self, func, *, log_det=False):
-        in_shapes, out_shapes = [self.bijection.shape], [self.bijection.shape]
-        if log_det:
-            out_shapes.append(())
+    def vectorize(self, func):
+        in_shapes, out_shapes = [self.bijection.shape], [self.bijection.shape, ()]
         if self.bijection.cond_shape is not None:
             in_shapes.append(self.bijection.cond_shape)
             exclude = frozenset()

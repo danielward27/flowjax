@@ -44,14 +44,8 @@ class Affine(AbstractBijection):
         self.shape = scale.shape
         self.scale = Parameterize(softplus, inv_softplus(scale))
 
-    def transform(self, x, condition=None):
-        return x * self.scale + self.loc
-
     def transform_and_log_det(self, x, condition=None):
         return x * self.scale + self.loc, jnp.log(jnp.abs(self.scale)).sum()
-
-    def inverse(self, y, condition=None):
-        return (y - self.loc) / self.scale
 
     def inverse_and_log_det(self, y, condition=None):
         return (y - self.loc) / self.scale, -jnp.log(jnp.abs(self.scale)).sum()
@@ -72,14 +66,8 @@ class Loc(AbstractBijection):
         self.loc = arraylike_to_array(loc, dtype=float)
         self.shape = self.loc.shape
 
-    def transform(self, x, condition=None):
-        return x + self.loc
-
     def transform_and_log_det(self, x, condition=None):
         return x + self.loc, jnp.zeros(())
-
-    def inverse(self, y, condition=None):
-        return y - self.loc
 
     def inverse_and_log_det(self, y, condition=None):
         return y - self.loc, jnp.zeros(())
@@ -104,14 +92,8 @@ class Scale(AbstractBijection):
         self.scale = Parameterize(softplus, inv_softplus(scale))
         self.shape = jnp.shape(unwrap(scale))
 
-    def transform(self, x, condition=None):
-        return x * self.scale
-
     def transform_and_log_det(self, x, condition=None):
         return x * self.scale, jnp.log(jnp.abs(self.scale)).sum()
-
-    def inverse(self, y, condition=None):
-        return y / self.scale
 
     def inverse_and_log_det(self, y, condition=None):
         return y / self.scale, -jnp.log(jnp.abs(self.scale)).sum()
@@ -163,15 +145,9 @@ class TriangularAffine(AbstractBijection):
         self.shape = (dim,)
         self.loc = jnp.broadcast_to(loc, (dim,))
 
-    def transform(self, x, condition=None):
-        return self.triangular @ x + self.loc
-
     def transform_and_log_det(self, x, condition=None):
         y = self.triangular @ x + self.loc
         return y, jnp.log(jnp.abs(jnp.diag(self.triangular))).sum()
-
-    def inverse(self, y, condition=None):
-        return solve_triangular(self.triangular, y - self.loc, lower=self.lower)
 
     def inverse_and_log_det(self, y, condition=None):
         x = solve_triangular(self.triangular, y - self.loc, lower=self.lower)
@@ -223,14 +199,8 @@ class AdditiveCondition(AbstractBijection):
         self.shape = shape
         self.cond_shape = cond_shape
 
-    def transform(self, x, condition=None):
-        return x + self.module(condition)
-
     def transform_and_log_det(self, x, condition=None):
-        return self.transform(x, condition), jnp.array(0)
-
-    def inverse(self, y, condition=None):
-        return y - self.module(condition)
+        return x + self.module(condition), jnp.array(0)
 
     def inverse_and_log_det(self, y, condition=None):
-        return self.inverse(y, condition), jnp.array(0)
+        return y - self.module(condition), jnp.array(0)

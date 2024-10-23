@@ -19,16 +19,10 @@ class Sigmoid(AbstractBijection):
     shape: tuple[int, ...] = ()
     cond_shape: ClassVar[None] = None
 
-    def transform(self, x, condition=None):
-        return nn.sigmoid(x)
-
     def transform_and_log_det(self, x, condition=None):
         y = nn.sigmoid(x)
         log_det = jnp.sum(nn.log_sigmoid(x) + nn.log_sigmoid(-x))
         return y, log_det
-
-    def inverse(self, y, condition=None):
-        return logit(y)
 
     def inverse_and_log_det(self, y, condition=None):
         x = logit(y)

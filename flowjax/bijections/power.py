@@ -22,18 +22,12 @@ class Power(AbstractBijection):
     shape: tuple[int, ...] = ()
     cond_shape: ClassVar[None] = None
 
-    def transform(self, x, condition=None):
-        x = eqx.error_if(x, x < 0, "Negative values not supported for Power.")
-        return x**self.exponent
-
-    def inverse(self, y, condition=None):
-        y = eqx.error_if(y, y < 0, "Negative values not supported for Power.")
-        return y ** (1 / self.exponent)
-
     def transform_and_log_det(self, x, condition=None):
-        y = self.transform(x)
+        x = eqx.error_if(x, x < 0, "Negative values not supported for Power.")
+        y = x**self.exponent
         return y, jnp.log(jnp.abs(self.exponent * y / x)).sum()
 
     def inverse_and_log_det(self, y, condition=None):
-        x = self.inverse(y)
+        y = eqx.error_if(y, y < 0, "Negative values not supported for Power.")
+        x = y ** (1 / self.exponent)
         return x, -jnp.log(jnp.abs(self.exponent * y / x)).sum()

@@ -29,14 +29,8 @@ class Invert(AbstractBijection):
 
     bijection: AbstractBijection
 
-    def transform(self, x, condition=None):
-        return self.bijection.inverse(x, condition)
-
     def transform_and_log_det(self, x, condition=None):
         return self.bijection.inverse_and_log_det(x, condition)
-
-    def inverse(self, y, condition=None):
-        return self.bijection.transform(y, condition)
 
     def inverse_and_log_det(self, y, condition=None):
         return self.bijection.transform_and_log_det(y, condition)
@@ -84,14 +78,8 @@ class Permute(AbstractBijection):
             jnp.reshape(i, permutation.shape) for i in inv_indices
         )
 
-    def transform(self, x, condition=None):
-        return x[self.permutation]
-
     def transform_and_log_det(self, x, condition=None):
         return x[self.permutation], jnp.array(0)
-
-    def inverse(self, y, condition=None):
-        return y[self.inverse_permutation]
 
     def inverse_and_log_det(self, y, condition=None):
         return y[self.inverse_permutation], jnp.array(0)
@@ -107,20 +95,14 @@ class Flip(AbstractBijection):
     shape: tuple[int, ...] = ()
     cond_shape: ClassVar[None] = None
 
-    def transform(self, x, condition=None):
-        return jnp.flip(x)
-
     def transform_and_log_det(self, x, condition=None):
         return jnp.flip(x), jnp.array(0)
-
-    def inverse(self, y, condition=None):
-        return jnp.flip(y)
 
     def inverse_and_log_det(self, y, condition=None):
         return jnp.flip(y), jnp.array(0)
 
 
-class Partial(AbstractBijection):
+class Partial(AbstractBijection):  # TODO rename to avoid confusion with functools
     """Applies bijection to specific indices of an input.
 
     Args:
@@ -144,17 +126,9 @@ class Partial(AbstractBijection):
                 f"while the subset has a shape of {expected_shape}.",
             )
 
-    def transform(self, x, condition=None):
-        y = self.bijection.transform(x[self.idxs], condition)
-        return x.at[self.idxs].set(y)
-
     def transform_and_log_det(self, x, condition=None):
         y, log_det = self.bijection.transform_and_log_det(x[self.idxs], condition)
         return x.at[self.idxs].set(y), log_det
-
-    def inverse(self, y, condition=None):
-        x = self.bijection.inverse(y[self.idxs], condition)
-        return y.at[self.idxs].set(x)
 
     def inverse_and_log_det(self, y, condition=None):
         x, log_det = self.bijection.inverse_and_log_det(y[self.idxs], condition)
@@ -175,14 +149,8 @@ class Identity(AbstractBijection):
     shape: tuple[int, ...] = ()
     cond_shape: ClassVar[None] = None
 
-    def transform(self, x, condition=None):
-        return x
-
     def transform_and_log_det(self, x, condition=None):
         return x, jnp.zeros(())
-
-    def inverse(self, y, condition=None):
-        return y
 
     def inverse_and_log_det(self, y, condition=None):
         return y, jnp.zeros(())
@@ -210,22 +178,14 @@ class EmbedCondition(AbstractBijection):
         bijection: AbstractBijection,
         embedding_net: Callable,
         raw_cond_shape: tuple[int, ...],
-    ) -> None:
+    ):
         self.bijection = bijection
         self.embedding_net = embedding_net
         self.cond_shape = raw_cond_shape
 
-    def transform(self, x, condition=None):
-        condition = self.embedding_net(condition)
-        return self.bijection.transform(x, condition)
-
     def transform_and_log_det(self, x, condition=None):
         condition = self.embedding_net(condition)
         return self.bijection.transform_and_log_det(x, condition)
-
-    def inverse(self, y, condition=None):
-        condition = self.embedding_net(condition)
-        return self.bijection.inverse(y, condition)
 
     def inverse_and_log_det(self, y, condition=None):
         condition = self.embedding_net(condition)
@@ -294,18 +254,6 @@ class Reshape(AbstractBijection):
                     f"Cannot reshape to a different number of elements. Got {k} "
                     f"{v[0]}, but bijection has shape {v[1]}.",
                 )
-
-    def transform(self, x, condition=None):
-        x = x.reshape(self.bijection.shape)
-        if self.cond_shape is not None:
-            condition = condition.reshape(self.bijection.cond_shape)
-        return self.bijection.transform(x, condition).reshape(self.shape)
-
-    def inverse(self, y, condition=None):
-        y = y.reshape(self.bijection.shape)
-        if self.cond_shape is not None:
-            condition = condition.reshape(self.bijection.cond_shape)
-        return self.bijection.inverse(y, condition).reshape(self.shape)
 
     def transform_and_log_det(self, x, condition=None):
         x = x.reshape(self.bijection.shape)

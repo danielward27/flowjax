@@ -38,13 +38,6 @@ class Scan(AbstractBijection):
 
     bijection: AbstractBijection
 
-    def transform(self, x, condition=None):
-        def step(x, bijection):
-            return (bijection.transform(x, condition), None)
-
-        y, _ = _filter_scan(step, x, self.bijection)
-        return y
-
     def transform_and_log_det(self, x, condition=None):
         def step(carry, bijection):
             x, log_det = carry
@@ -53,13 +46,6 @@ class Scan(AbstractBijection):
 
         (y, log_det), _ = _filter_scan(step, (x, 0), self.bijection)
         return y, log_det
-
-    def inverse(self, y, condition=None):
-        def step(y, bijection):
-            return bijection.inverse(y, condition), None
-
-        x, _ = _filter_scan(step, y, self.bijection, reverse=True)
-        return x
 
     def inverse_and_log_det(self, y, condition=None):
         def step(carry, bijection):
@@ -192,24 +178,12 @@ class Vmap(AbstractBijection):
     def vmap(self, f: Callable):
         return eqx.filter_vmap(f, in_axes=self.in_axes, axis_size=self.axis_size)
 
-    def transform(self, x, condition=None):
-        def _transform(bijection, x, condition):
-            return bijection.transform(x, condition)
-
-        return self.vmap(_transform)(self.bijection, x, condition)
-
     def transform_and_log_det(self, x, condition=None):
         def _transform_and_log_det(bijection, x, condition):
             return bijection.transform_and_log_det(x, condition)
 
         y, log_det = self.vmap(_transform_and_log_det)(self.bijection, x, condition)
         return y, jnp.sum(log_det)
-
-    def inverse(self, y, condition=None):
-        def _inverse(bijection, x, condition):
-            return bijection.inverse(x, condition)
-
-        return self.vmap(_inverse)(self.bijection, y, condition)
 
     def inverse_and_log_det(self, y, condition=None):
         def _inverse_and_log_det(bijection, x, condition):
