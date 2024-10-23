@@ -76,10 +76,9 @@ class AbstractBijection(eqx.Module):
     - Inherit from ``AbstractBijection``.
     - Define the attributes ``shape`` and ``cond_shape``. A ``cond_shape`` of
       ``None`` is used to represent unconditional bijections.
-    - Implement the abstract methods ``transform``, ``transform_and_log_det``,
-      ``inverse`` and ``inverse_and_log_det``. These should act on
-      inputs compatible with the shapes ``shape`` for ``x``, and ``cond_shape``
-      for ``condition``.
+    - Implement the abstract methods, ``transform_and_log_det``, and
+      ``inverse_and_log_det``. These should act on inputs compatible with the shapes
+      ``shape`` for ``x``, and ``cond_shape`` for ``condition``.
     """
 
     shape: AbstractVar[tuple[int, ...]]
