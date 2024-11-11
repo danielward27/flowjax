@@ -1,14 +1,15 @@
 """Basic training script for fitting a flow using variational inference."""
 
+import warnings
 from collections.abc import Callable
 
 import equinox as eqx
 import jax.random as jr
 import optax
+import paramax
 from jaxtyping import PRNGKeyArray, PyTree
 from tqdm import tqdm
 
-from flowjax import wrappers
 from flowjax.train.train_utils import step
 
 
@@ -26,7 +27,7 @@ def fit_to_variational_target(
     """Train a distribution (e.g. a flow) by variational inference.
 
     Args:
-        key: Jax PRNGKey.
+        key: Jax key.
         dist: Distribution object, trainable parameters are found using
             equinox.is_inexact_array.
         loss_fn: The loss function to optimize (e.g. the ElboLoss).
@@ -42,13 +43,19 @@ def fit_to_variational_target(
     Returns:
         A tuple containing the trained distribution and the losses.
     """
+    warnings.warn(
+        "This function will be deprecated in 17.0.0. Please switch to using "
+        "``flowjax.train.loops.fit_to_key_based_loss``.",
+        DeprecationWarning,
+        stacklevel=2,
+    )  # TODO deprecate
     if optimizer is None:
         optimizer = optax.adam(learning_rate)
 
     params, static = eqx.partition(
         dist,
         eqx.is_inexact_array,
-        is_leaf=lambda leaf: isinstance(leaf, wrappers.NonTrainable),
+        is_leaf=lambda leaf: isinstance(leaf, paramax.NonTrainable),
     )
     opt_state = optimizer.init(params)
 
@@ -61,7 +68,7 @@ def fit_to_variational_target(
         params, opt_state, loss = step(
             params,
             static,
-            key,
+            key=key,
             optimizer=optimizer,
             opt_state=opt_state,
             loss_fn=loss_fn,

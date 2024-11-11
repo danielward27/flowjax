@@ -1,0 +1,37 @@
+name: Test and publish documentation
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  docs:
+    name: Build and publish documentation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install pandoc
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y pandoc
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[dev]
+      - name: Test documentation
+        run: |
+          make -C docs doctest
+      - name: Sphinx build
+        run: |
+          sphinx-build docs docs/_build
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          publish_branch: gh-pages
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: docs/_build/
+          force_orphan: true

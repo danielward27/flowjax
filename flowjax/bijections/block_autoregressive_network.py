@@ -9,14 +9,14 @@ import jax
 import jax.numpy as jnp
 import jax.random as jr
 from jax import random
+from jax.nn import softplus
 from jaxtyping import PRNGKeyArray
+from paramax import Parameterize, WeightNormalization
 
 from flowjax import masks
 from flowjax.bijections.bijection import AbstractBijection
-from flowjax.bijections.softplus import SoftPlus
 from flowjax.bijections.tanh import LeakyTanh
 from flowjax.bisection_search import AutoregressiveBisectionInverter
-from flowjax.wrappers import BijectionReparam, WeightNormalization, Where
 
 
 class _CallableToBijection(AbstractBijection):
@@ -32,18 +32,12 @@ class _CallableToBijection(AbstractBijection):
             raise TypeError(f"Expected callable, got {type(fn)}.")
         self.fn = fn
 
-    def transform(self, x, condition=None):
-        return self.fn(x)
-
     def transform_and_log_det(self, x, condition=None):
         y, grad = eqx.filter_value_and_grad(self.fn)(x)
         return y, jnp.log(jnp.abs(grad))
 
-    def inverse(self, y, condition=None):
-        raise NotImplementedError
-
     def inverse_and_log_det(self, y, condition=None):
-        raise NotImplementedError
+        raise NotImplementedError()
 
 
 class BlockAutoregressiveNetwork(AbstractBijection):
@@ -51,11 +45,11 @@ class BlockAutoregressiveNetwork(AbstractBijection):
 
     Note that in contrast to the original paper which uses tanh activations, by default
     we use :class:`~flowjax.bijections.tanh.LeakyTanh`. This ensures the codomain of the
-    activation is the set of real values, which will ensure properly normalised
+    activation is the set of real values, which will ensure properly normalized
     densities (see https://github.com/danielward27/flowjax/issues/102).
 
     Args:
-        key: Jax PRNGKey
+        key: Jax key
         dim: Dimension of the distribution.
         cond_dim: Dimension of conditioning variables. Defaults to None.
         depth: Number of hidden layers in the network.
@@ -148,15 +142,6 @@ class BlockAutoregressiveNetwork(AbstractBijection):
         self.cond_shape = None if cond_dim is None else (cond_dim,)
         self.activation = activation
 
-    def transform(self, x, condition=None):
-        for i, (layer, _) in enumerate(self.layers[:-1]):
-            x = layer(x)
-            if i == 0 and condition is not None:
-                assert self.cond_linear is not None
-                x += self.cond_linear(condition)
-            x = eqx.filter_vmap(self.activation.transform)(x)
-        return self.layers[-1][0](x)
-
     def transform_and_log_det(self, x, condition=None):
         log_dets_3ds = []
         for i, (linear, log_jacobian_fn) in enumerate(self.layers[:-1]):
@@ -176,9 +161,6 @@ class BlockAutoregressiveNetwork(AbstractBijection):
         for log_jacobian in reversed(log_dets_3ds[:-1]):
             log_det = logmatmulexp(log_det, log_jacobian)
         return x, log_det.sum()
-
-    def inverse(self, y, condition=None):
-        return self.inverter(self, y, condition)
 
     def inverse_and_log_det(self, y, condition=None):
         x = self.inverter(self, y, condition)
@@ -219,13 +201,11 @@ def block_autoregressive_linear(
     block_diag_mask = masks.block_diag_mask(block_shape, n_blocks)
     block_tril_mask = masks.block_tril_mask(block_shape, n_blocks)
 
-    weight = Where(block_tril_mask, linear.weight, 0)
-    weight = Where(
-        block_diag_mask,
-        BijectionReparam(weight, SoftPlus(), invert_on_init=False),
-        weight,
-    )
-    weight = WeightNormalization(weight)
+    def apply_mask(weight):
+        weight = jnp.where(block_tril_mask, weight, 0)
+        return jnp.where(block_diag_mask, softplus(weight), weight)
+
+    weight = WeightNormalization(Parameterize(apply_mask, linear.weight))
     linear = eqx.tree_at(lambda linear: linear.weight, linear, replace=weight)
 
     def linear_to_log_block_diagonal(linear: eqx.nn.Linear):

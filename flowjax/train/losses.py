@@ -1,20 +1,25 @@
 """Common loss functions for training normalizing flows.
 
-The loss functions are callables, with the first two arguments being the partitioned
-distribution (see ``equinox.partition``).
+In order to be compatible with ``fit_to_data``, the loss function arguments must match
+``(params, static, x, condition, key)``, where ``params`` and ``static`` are the
+partitioned model (see ``equinox.partition``).
+
+For ``fit_to_key_based_loss``, the loss function signature must match
+``(params, static, key)``.
 """
 
 from collections.abc import Callable
 
 import equinox as eqx
 import jax.numpy as jnp
+import jax.random as jr
+import paramax
 from jax import vmap
 from jax.lax import stop_gradient
 from jax.scipy.special import logsumexp
 from jaxtyping import Array, ArrayLike, Float, PRNGKeyArray
 
 from flowjax.distributions import AbstractDistribution
-from flowjax.wrappers import unwrap
 
 
 class MaximumLikelihoodLoss:
@@ -30,9 +35,10 @@ class MaximumLikelihoodLoss:
         static: AbstractDistribution,
         x: Array,
         condition: Array | None = None,
+        key: PRNGKeyArray | None = None,
     ) -> Float[Array, ""]:
-        """Compute the loss."""
-        dist = unwrap(eqx.combine(params, static))
+        """Compute the loss. Key is ignored (for consistency of API)."""
+        dist = paramax.unwrap(eqx.combine(params, static))
         return -dist.log_prob(x, condition).mean()
 
 
@@ -50,6 +56,7 @@ class WeightedMaximumLikelihoodLoss:
         x: Array,
         weights: Array, 
         condition: Array | None = None,
+        key: PRNGKeyArray | None = None,
     ) -> Float[Array, ""]:
         """Compute the loss."""
         dist = unwrap(eqx.combine(params, static))
@@ -73,7 +80,7 @@ class ContrastiveLoss:
         prior: The prior distribution over x (the target
             variable).
         n_contrastive: The number of contrastive samples/atoms to use when
-            computing the loss.
+            computing the loss. Must be less than ``batch_size``.
 
     References:
         - https://arxiv.org/abs/1905.07488
@@ -90,31 +97,40 @@ class ContrastiveLoss:
         params: AbstractDistribution,
         static: AbstractDistribution,
         x: Float[Array, "..."],
-        condition: Array | None = None,
+        condition: Array | None,
+        key: PRNGKeyArray,
     ) -> Float[Array, ""]:
         """Compute the loss."""
-        dist = unwrap(eqx.combine(params, static))
-        contrastive = self._get_contrastive(x)
-        joint_log_odds = dist.log_prob(x, condition) - self.prior.log_prob(x)
-        contrastive_log_odds = dist.log_prob(
-            contrastive,
-            condition,
-        ) - self.prior.log_prob(contrastive)
-        contrastive_log_odds = jnp.clip(
-            contrastive_log_odds, -5
-        )  # TODO Clip for stability - this maybe should reconsidered
-        return -(joint_log_odds - logsumexp(contrastive_log_odds, axis=0)).mean()
-
-    def _get_contrastive(self, theta):
-        if theta.shape[0] <= self.n_contrastive:
+        if x.shape[0] <= self.n_contrastive:
             raise ValueError(
                 f"Number of contrastive samples {self.n_contrastive} must be less than "
-                f"the size of theta {theta.shape}.",
+                f"the size of x {x.shape}.",
             )
-        # Rolling window over theta batch to create contrastive samples.
-        idx = jnp.arange(len(theta))[:, None] + jnp.arange(self.n_contrastive)[None, :]
-        contrastive = jnp.roll(theta[idx], -1, axis=0)  # Ensure mismatch with condition
-        return jnp.swapaxes(contrastive, 0, 1)  # (contrastive, batch_size, dim)
+
+        dist = paramax.unwrap(eqx.combine(params, static))
+
+        def single_x_loss(x_i, condition_i, contrastive_idxs):
+            positive_logit = dist.log_prob(x_i, condition_i) - self.prior.log_prob(x_i)
+            contrastive = x[contrastive_idxs]
+            contrastive_logits = dist.log_prob(
+                contrastive, condition_i
+            ) - self.prior.log_prob(contrastive)
+            normalizer = logsumexp(jnp.append(contrastive_logits, positive_logit))
+            return -(positive_logit - normalizer)
+
+        contrastive_idxs = _get_contrastive_idxs(key, x.shape[0], self.n_contrastive)
+        return eqx.filter_vmap(single_x_loss)(x, condition, contrastive_idxs).mean()
+
+
+def _get_contrastive_idxs(key: PRNGKeyArray, batch_size: int, n_contrastive: int):
+
+    @eqx.filter_vmap
+    def _get_idxs(key, idx, batch_size, n_contrastive):
+        choices = jnp.delete(jnp.arange(batch_size), idx, assume_unique_indices=True)
+        return jr.choice(key, choices, (n_contrastive,), replace=False)
+
+    keys = jr.split(key, batch_size)
+    return _get_idxs(keys, jnp.arange(batch_size), batch_size, n_contrastive)
 
 
 class ElboLoss:
@@ -159,7 +175,7 @@ class ElboLoss:
         Args:
             params: The trainable parameters of the model.
             static: The static components of the model.
-            key: Jax random seed.
+            key: Jax random key.
         """
         dist = eqx.combine(params, static)
 

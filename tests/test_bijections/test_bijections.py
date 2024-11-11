@@ -1,5 +1,4 @@
 "General tests for bijections (including transformers)."
-from abc import abstractmethod
 
 import equinox as eqx
 import jax
@@ -25,20 +24,23 @@ from flowjax.bijections import (
     Partial,
     Permute,
     Planar,
+    Power,
     RationalQuadraticSpline,
     Reshape,
     Scale,
     Scan,
+    Sigmoid,
     SoftPlus,
     Stack,
     Tanh,
     TriangularAffine,
     Vmap,
 )
+from flowjax.bijections.planar import _UnconditionalPlanar
 
 DIM = 3
 COND_DIM = 2
-KEY = jr.PRNGKey(0)
+KEY = jr.key(0)
 
 
 bijections = {
@@ -65,6 +67,7 @@ bijections = {
     "LeakyTanh (broadcast max_val)": lambda: LeakyTanh(1, (2, 3)),
     "Loc": lambda: Loc(jnp.arange(DIM)),
     "Exp": lambda: Exp((DIM,)),
+    "Sigmoid": lambda: Sigmoid((DIM,)),
     "SoftPlus": lambda: SoftPlus((DIM,)),
     "TriangularAffine (lower)": lambda: TriangularAffine(
         jnp.arange(DIM),
@@ -171,10 +174,21 @@ bijections = {
         [Affine(jr.uniform(k, (1, 2, 3))) for k in jr.split(KEY, 3)],
         axis=-1,
     ),
+    "_UnconditionalPlanar (leaky_relu +ve bias)": lambda: _UnconditionalPlanar(
+        *jnp.split(jr.normal(KEY, (8,)), 2),
+        bias=jnp.array(100.0),  # leads to evaluation in +ve relu portion
+        negative_slope=0.1,
+    ),
+    "_UnconditionalPlanar (leaky_relu -ve bias)": lambda: _UnconditionalPlanar(
+        *jnp.split(jr.normal(KEY, (8,)), 2),
+        bias=-jnp.array(100.0),  # leads to evaluation in -ve relu portion
+        negative_slope=0.1,
+    ),
     "Planar": lambda: Planar(
         KEY,
         dim=DIM,
     ),
+    "Power": lambda: Power(3, (2, 2)),
     "Vmap (broadcast params)": lambda: Vmap(Affine(1, 2), axis_size=10),
     "Vmap (vectorize params)": lambda: Vmap(
         eqx.filter_vmap(Affine)(jnp.ones(3)),
@@ -196,36 +210,46 @@ bijections = {
 }
 
 
-@pytest.mark.parametrize("bijection_name", bijections.keys())
-def test_transform_inverse(bijection_name):
+POSITIVE_DOMAIN = [Power]
+
+
+@pytest.mark.parametrize("constructor", bijections.values(), ids=bijections.keys())
+def test_transform_inverse(constructor):
     """Tests transform and inverse methods."""
-    bijection = bijections[bijection_name]()
+    bijection = constructor()
     shape = bijection.shape if bijection.shape is not None else (DIM,)
-    x = jr.normal(jr.PRNGKey(0), shape)
+    x = jr.normal(jr.key(0), shape)
+
+    if type(bijection) in POSITIVE_DOMAIN:
+        x = jnp.exp(x)
+
     if bijection.cond_shape is not None:
-        cond = jr.normal(jr.PRNGKey(0), bijection.cond_shape)
+        cond = jr.normal(jr.key(0), bijection.cond_shape)
     else:
         cond = None
     y = bijection.transform(x, cond)
     try:
         x_reconstructed = bijection.inverse(y, cond)
-        assert x == pytest.approx(x_reconstructed, abs=1e-4)
+        assert x_reconstructed == pytest.approx(x, abs=1e-4)
     except NotImplementedError:
         pass
 
 
-@pytest.mark.parametrize("bijection_name", bijections.keys())
-def test_transform_inverse_and_log_dets(bijection_name):
+@pytest.mark.parametrize("constructor", bijections.values(), ids=bijections.keys())
+def test_transform_inverse_and_log_dets(constructor):
     """Tests the transform_and_log_det and inverse_and_log_det methods,
     by 1) checking invertibility and 2) comparing log dets to those obtained with
     automatic differentiation.
     """
-    bijection = bijections[bijection_name]()
+    bijection = constructor()
     shape = bijection.shape if bijection.shape is not None else (DIM,)
-    x = jr.normal(jr.PRNGKey(0), shape)
+    x = jr.normal(jr.key(0), shape)
+
+    if type(bijection) in POSITIVE_DOMAIN:
+        x = jnp.exp(x)
 
     if bijection.cond_shape is not None:
-        cond = jr.normal(jr.PRNGKey(0), bijection.cond_shape)
+        cond = jr.normal(jr.key(0), bijection.cond_shape)
     else:
         cond = None
 
@@ -251,32 +275,12 @@ def test_transform_inverse_and_log_dets(bijection_name):
         pass
 
 
-class _AstractTestBijection(AbstractBijection):
+class _TestBijection(AbstractBijection):
     shape: tuple[int, ...] = ()
     cond_shape: tuple[int, ...] | None = None
 
-    def transform(self, x, condition=None):
-        return x
-
     def transform_and_log_det(self, x, condition=None):
         return x, jnp.zeros(())
-
-    @abstractmethod
-    def inverse(self, y, condition=None):
-        pass
-
-    @abstractmethod
-    def inverse_and_log_det(self, y, condition=None):
-        return y, jnp.zeros(())
-
-
-class _TestBijection(_AstractTestBijection):
-    # Test bijection (with inheritance + method overide)
-    def transform(self, x, condition=None):  # Check overiding
-        return x
-
-    def inverse(self, y, condition=None):
-        return y
 
     def inverse_and_log_det(self, y, condition=None):
         return y, jnp.zeros(())

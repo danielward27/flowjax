@@ -4,7 +4,7 @@ from jax import random
 
 from flowjax.bijections import Affine
 from flowjax.distributions import Normal, Transformed
-from flowjax.train.data_fit import fit_to_data
+from flowjax.train.loops import fit_to_data
 
 
 def test_data_fit():
@@ -15,9 +15,9 @@ def test_data_fit():
 
     # All params should change by default
     before = eqx.filter(flow, eqx.is_inexact_array)
-    x = random.normal(random.PRNGKey(0), (100, dim))
-    flow, _ = fit_to_data(
-        random.PRNGKey(0),
+    x = random.normal(random.key(0), (100, dim))
+    flow, losses = fit_to_data(
+        random.key(0),
         dist=flow,
         x=x,
         max_epochs=1,
@@ -27,3 +27,5 @@ def test_data_fit():
 
     assert jnp.all(before.base_dist.bijection.loc != after.base_dist.bijection.loc)
     assert jnp.all(before.bijection.loc != after.bijection.loc)
+    assert isinstance(losses["train"][0], float)
+    assert isinstance(losses["val"][0], float)

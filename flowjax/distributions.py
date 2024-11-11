@@ -1,4 +1,4 @@
-"""Distributions, including the abstract and concrete classes."""
+"""Distributions from flowjax.distributions."""
 
 import inspect
 from abc import abstractmethod
@@ -11,12 +11,15 @@ import equinox as eqx
 import jax.numpy as jnp
 import jax.random as jr
 from equinox import AbstractVar
-from jax.nn import log_softmax
+from jax import dtypes
+from jax.nn import log_softmax, softplus
 from jax.numpy import linalg
 from jax.scipy import stats as jstats
 from jax.scipy.special import logsumexp
 from jax.tree_util import tree_map
 from jaxtyping import Array, ArrayLike, PRNGKeyArray, Shaped
+from paramax import AbstractUnwrappable, Parameterize, unwrap
+from paramax.utils import inv_softplus
 
 from flowjax.bijections import (
     AbstractBijection,
@@ -24,7 +27,6 @@ from flowjax.bijections import (
     Chain,
     Exp,
     Scale,
-    SoftPlus,
     TriangularAffine,
 )
 from flowjax.utils import (
@@ -32,22 +34,27 @@ from flowjax.utils import (
     arraylike_to_array,
     merge_cond_shapes,
 )
-from flowjax.wrappers import AbstractUnwrappable, BijectionReparam, Lambda, unwrap
 
 
 class AbstractDistribution(eqx.Module):
     """Abstract distribution class.
 
-    Distributions are registered as jax PyTrees (as they are equinox modules), and as
-    such they are compatible with normal jax operations.
+    Distributions are registered as JAX PyTrees (as they are equinox modules), and as
+    such they are compatible with normal JAX operations.
 
     Concrete subclasses can be implemented as follows:
-        (1) Inherit from :class:`AbstractDistribution`.
-        (2) Define the abstract attributes ``shape`` and ``cond_shape``.
-            ``cond_shape`` should be ``None`` for unconditional distributions.
-        (3) Define the abstract methods `_sample` and `_log_prob`.
 
-    See the source code for :class:`StandardNormal` for a simple concrete example.
+    - Inherit from :class:`AbstractDistribution`.
+    - Define the abstract attributes ``shape`` and ``cond_shape``.
+      ``cond_shape`` should be ``None`` for unconditional distributions.
+    - Define the abstract method ``_sample`` which returns a single sample
+      with shape ``dist.shape``, (given a single conditioning variable, if needed).
+    - Define the abstract method ``_log_prob``, returning a scalar log probability
+      of a single sample, (given a single conditioning variable, if needed).
+
+    The abstract class then defines vectorized versions with shape checking for the
+    public API. See the source code for :class:`StandardNormal` for a simple concrete
+    example.
 
     Attributes:
         shape: Tuple denoting the shape of a single sample from the distribution.
@@ -65,7 +72,7 @@ class AbstractDistribution(eqx.Module):
 
         This method should be be valid for inputs with shapes matching
         ``distribution.shape`` and ``distribution.cond_shape`` for conditional
-        distributions (i.e. the method defined for unbatched inputs).
+        distributions (i.e. it defines the method for unbatched inputs).
         """
 
     @abstractmethod
@@ -97,8 +104,7 @@ class AbstractDistribution(eqx.Module):
         x = arraylike_to_array(x, err_name="x", dtype=float)
         if self.cond_shape is not None:
             condition = arraylike_to_array(condition, err_name="condition", dtype=float)
-        lps = self._vectorize(self._log_prob)(x, condition)
-        return jnp.where(jnp.isnan(lps), -jnp.inf, lps)
+        return self._vectorize(self._log_prob)(x, condition)
 
     def sample(
         self,
@@ -109,67 +115,14 @@ class AbstractDistribution(eqx.Module):
         """Sample from the distribution.
 
         For unconditional distributions, the output will be of shape
-        ``sample_shape + dist.shape``. For conditional distributions, a batch dimension
-        in the condition is supported, and the output shape will be
+        ``sample_shape + dist.shape``. For conditional distributions, batch dimensions
+        in the condition is supported, and the output will have shape
         ``sample_shape + condition_batch_shape + dist.shape``.
-        See the example for more information.
 
         Args:
             key: Jax random key.
             condition: Conditioning variables. Defaults to None.
             sample_shape: Sample shape. Defaults to ().
-
-        Example:
-            The below example shows the behaviour of sampling, for an unconditional
-            and a conditional distribution.
-
-            .. testsetup::
-
-                from flowjax.distributions import StandardNormal
-                import jax.random as jr
-                import jax.numpy as jnp
-                from flowjax.flows import coupling_flow
-                from flowjax.bijections import Affine
-                # For a unconditional distribution:
-                key = jr.PRNGKey(0)
-                dist = StandardNormal((2,))
-                # For a conditional distribution
-                cond_dist = coupling_flow(
-                    key, base_dist=StandardNormal((2,)), cond_dim=3
-                    )
-
-            For an unconditional distribution:
-
-            .. doctest::
-
-                >>> dist.shape
-                (2,)
-                >>> samples = dist.sample(key, (10, ))
-                >>> samples.shape
-                (10, 2)
-
-            For a conditional distribution:
-
-            .. doctest::
-
-                >>> cond_dist.shape
-                (2,)
-                >>> cond_dist.cond_shape
-                (3,)
-                >>> # Sample 10 times for a particular condition
-                >>> samples = cond_dist.sample(key, (10,), condition=jnp.ones(3))
-                >>> samples.shape
-                (10, 2)
-                >>> # Sampling, batching over a condition
-                >>> samples = cond_dist.sample(key, condition=jnp.ones((5, 3)))
-                >>> samples.shape
-                (5, 2)
-                >>> # Sample 10 times for each of 5 conditioning variables
-                >>> samples = cond_dist.sample(key, (10,), condition=jnp.ones((5, 3)))
-                >>> samples.shape
-                (10, 5, 2)
-
-
         """
         self = unwrap(self)
         if self.cond_shape is not None:
@@ -213,11 +166,11 @@ class AbstractDistribution(eqx.Module):
 
     def _vectorize(self, method: Callable) -> Callable:
         """Returns a vectorized version of the distribution method."""
-        # Get shapes without broadcasting - note the (2, ) corresponds to key arrays.
+        # Get shapes without broadcasting - note the () corresponds to key arrays.
         maybe_cond = [] if self.cond_shape is None else [self.cond_shape]
         in_shapes = {
-            "_sample_and_log_prob": [(2,)] + maybe_cond,
-            "_sample": [(2,)] + maybe_cond,
+            "_sample_and_log_prob": [()] + maybe_cond,
+            "_sample": [()] + maybe_cond,
             "_log_prob": [self.shape] + maybe_cond,
         }
         out_shapes = {
@@ -256,24 +209,32 @@ class AbstractDistribution(eqx.Module):
         sample_shape: tuple[int, ...],
         condition,
     ):
+
+        if not dtypes.issubdtype(key.dtype, dtypes.prng_key):
+            raise TypeError("New-style typed JAX PRNG keys required.")
+
         if self.cond_ndim is not None:
             leading_cond_shape = condition.shape[: -self.cond_ndim or None]
         else:
             leading_cond_shape = ()
         key_shape = sample_shape + leading_cond_shape
-        key_size = max(1, prod(key_shape))  # Still need 1 key for scalar sample
-        return jnp.reshape(jr.split(key, key_size), (*key_shape, 2))
+        key_size = prod(key_shape)  # note: prod(()) == 1, so works for scalar smaples
+        return jr.split(key, key_size).reshape(key_shape)
 
 
 class AbstractTransformed(AbstractDistribution):
     """Abstract class respresenting transformed distributions.
 
     We take the forward bijection for use in sampling, and the inverse for use in
-    density evaluation. See also :class:`Transformed`.
+    density evaluation. See also :class:`Transformed`. Concete implementations should
+    subclass :class:`AbstractTransformed`, and define the abstract attributes
+    ``base_dist`` and ``bijection``. See the source code for :class:`Normal` as a
+    simple example.
 
-    Concete implementations should subclass :class:`AbstractTransformed`, and
-    define the abstract attributes ``base_dist`` and ``bijection``. See the source code
-    for :class:`Normal` as a simple example.
+    .. warning::
+            It is the users responsibility to ensure the bijection is valid across the
+            entire support of the distribution. Failure to do so may result in
+            non-finite values or incorrectly normalized densities.
 
     Attributes:
         base_dist: The base distribution.
@@ -286,7 +247,9 @@ class AbstractTransformed(AbstractDistribution):
     def _log_prob(self, x, condition=None):
         z, log_abs_det = self.bijection.inverse_and_log_det(x, condition)
         p_z = self.base_dist._log_prob(z, condition)
-        return p_z + log_abs_det
+        log_prob = p_z + log_abs_det
+        # If log_prob is nan, we assume outside transform support
+        return jnp.where(jnp.isnan(log_prob), -jnp.inf, log_prob)
 
     def _sample(self, key, condition=None):
         base_sample = self.base_dist._sample(key, condition)
@@ -352,9 +315,9 @@ class Transformed(AbstractTransformed):
     bijection for use in density evaluation.
 
     .. warning::
-            It is the currently the users responsibility to ensure the bijection is
-            valid across the entire support of the distribution. Failure to do so may
-            lead to to unexpected results.
+            It is the users responsibility to ensure the bijection is valid across the
+            entire support of the distribution. Failure to do so may result in
+            non-finite values or incorrectly normalized densities.
 
     Args:
         base_dist: Base distribution.
@@ -440,13 +403,12 @@ class LogNormal(AbstractTransformed):
         scale: Scale parameter. Defaults to 1.
     """
 
-    base_dist: StandardNormal
-    bijection: Chain
+    base_dist: Normal
+    bijection: Exp
 
     def __init__(self, loc: ArrayLike = 0, scale: ArrayLike = 1):
-        shape = jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale))
-        self.base_dist = StandardNormal(shape)
-        self.bijection = Chain([Affine(loc, scale), Exp(shape)])
+        self.base_dist = Normal(loc, scale)
+        self.bijection = Exp(self.base_dist.shape)
 
 
 class MultivariateNormal(AbstractTransformed):
@@ -530,7 +492,7 @@ class Uniform(AbstractLocScaleDistribution):
 
 
 class _StandardGumbel(AbstractDistribution):
-    """Standard gumbel distribution (https://en.wikipedia.org/wiki/Gumbel_distribution)."""
+    """Standard gumbel distribution."""
 
     shape: tuple[int, ...] = ()
     cond_shape: ClassVar[None] = None
@@ -543,7 +505,7 @@ class _StandardGumbel(AbstractDistribution):
 
 
 class Gumbel(AbstractLocScaleDistribution):
-    """Gumbel distribution (https://en.wikipedia.org/wiki/Gumbel_distribution).
+    """Gumbel distribution.
 
     ``loc`` and ``scale`` should broadcast to the dimension of the distribution.
 
@@ -563,10 +525,7 @@ class Gumbel(AbstractLocScaleDistribution):
 
 
 class _StandardCauchy(AbstractDistribution):
-    """Implements standard cauchy distribution (loc=0, scale=1).
-
-    Ref: https://en.wikipedia.org/wiki/Cauchy_distribution.
-    """
+    """Implements standard cauchy distribution (loc=0, scale=1)."""
 
     shape: tuple[int, ...] = ()
     cond_shape: ClassVar[None] = None
@@ -579,7 +538,7 @@ class _StandardCauchy(AbstractDistribution):
 
 
 class Cauchy(AbstractLocScaleDistribution):
-    """Cauchy distribution (https://en.wikipedia.org/wiki/Cauchy_distribution).
+    """Cauchy distribution.
 
     ``loc`` and ``scale`` should broadcast to the dimension of the distribution.
 
@@ -609,7 +568,7 @@ class _StandardStudentT(AbstractDistribution):
         df = arraylike_to_array(df, dtype=float)
         df = eqx.error_if(df, df <= 0, "Degrees of freedom values must be positive.")
         self.shape = jnp.shape(df)
-        self.df = BijectionReparam(df, SoftPlus())
+        self.df = Parameterize(softplus, inv_softplus(df))
 
     def _log_prob(self, x, condition=None):
         return jstats.t.logpdf(x, df=self.df).sum()
@@ -619,7 +578,7 @@ class _StandardStudentT(AbstractDistribution):
 
 
 class StudentT(AbstractLocScaleDistribution):
-    """Student T distribution (https://en.wikipedia.org/wiki/Student%27s_t-distribution).
+    """Student T distribution.
 
     ``df``, ``loc`` and ``scale`` broadcast to the dimension of the distribution.
 
@@ -742,6 +701,18 @@ class VmapMixture(AbstractDistribution):
     Given a distribution in which the arrays have a leading dimension with size matching
     the number of components, and a set of weights, create a mixture distribution.
 
+    Example:
+        .. doctest::
+
+            >>> # Creating a 3 component, 2D gaussian mixture
+            >>> from flowjax.distributions import Normal, VmapMixture
+            >>> import equinox as eqx
+            >>> import jax.numpy as jnp
+            >>> normals = eqx.filter_vmap(Normal)(jnp.zeros((3, 2)))
+            >>> mixture = VmapMixture(normals, weights=jnp.ones(3))
+            >>> mixture.shape
+            (2,)
+
     Args:
         dist: Distribution with a leading dimension in arrays with size equal to the
             number of mixture components. Often it is convenient to construct this with
@@ -761,7 +732,7 @@ class VmapMixture(AbstractDistribution):
     ):
         weights = eqx.error_if(weights, weights <= 0, "Weights must be positive.")
         self.dist = dist
-        self.log_normalized_weights = Lambda(lambda w: log_softmax(w), jnp.log(weights))
+        self.log_normalized_weights = Parameterize(log_softmax, jnp.log(weights))
         self.shape = dist.shape
         self.cond_shape = dist.cond_shape
 
@@ -777,3 +748,65 @@ class VmapMixture(AbstractDistribution):
             tree=self.dist,
         )
         return component_dist._sample(key2, condition)
+
+
+class _StandardGamma(AbstractDistribution):
+    concentration: Array | AbstractUnwrappable[Array]
+    shape: tuple[int, ...]
+    cond_shape: ClassVar[None] = None
+
+    def __init__(self, concentration: ArrayLike):
+        self.concentration = Parameterize(softplus, inv_softplus(concentration))
+        self.shape = jnp.shape(concentration)
+
+    def _sample(self, key, condition=None):
+        return jr.gamma(key, self.concentration)
+
+    def _log_prob(self, x, condition=None):
+        return jstats.gamma.logpdf(x, self.concentration).sum()
+
+
+class Gamma(AbstractTransformed):
+    """Gamma distribution.
+
+    Args:
+        concentration: Positive concentration parameter.
+        scale: The scale (inverse of rate) parameter.
+    """
+
+    base_dist: _StandardGamma
+    bijection: Scale
+
+    def __init__(self, concentration: ArrayLike, scale: ArrayLike):
+        concentration, scale = jnp.broadcast_arrays(concentration, scale)
+        self.base_dist = _StandardGamma(concentration)
+        self.bijection = Scale(scale)
+
+
+class Beta(AbstractDistribution):
+    """Beta distribution.
+
+    Args:
+        alpha: The alpha shape parameter.
+        beta: The beta shape parameter.
+    """
+
+    alpha: Array | AbstractUnwrappable[Array]
+    beta: Array | AbstractUnwrappable[Array]
+    shape: tuple[int, ...]
+    cond_shape: ClassVar[None] = None
+
+    def __init__(self, alpha: ArrayLike, beta: ArrayLike):
+        alpha, beta = jnp.broadcast_arrays(
+            arraylike_to_array(alpha, dtype=float),
+            arraylike_to_array(beta, dtype=float),
+        )
+        self.alpha = Parameterize(softplus, inv_softplus(alpha))
+        self.beta = Parameterize(softplus, inv_softplus(beta))
+        self.shape = alpha.shape
+
+    def _sample(self, key, condition=None):
+        return jr.beta(key, self.alpha, self.beta)
+
+    def _log_prob(self, x, condition=None):
+        return jstats.beta.logpdf(x, self.alpha, self.beta).sum()

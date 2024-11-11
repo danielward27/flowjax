@@ -15,6 +15,15 @@ class Concatenate(AbstractBijection):
 
     See also :class:`Stack`.
 
+    Example:
+        .. doctest::
+
+            >>> from flowjax.bijections import Concatenate, Affine, Exp
+            >>> concat = Concatenate([Affine(jnp.ones((2, 3))), Exp((2,3))])
+            >>> concat.shape
+            (4, 3)
+
+
     Args:
         bijections: Bijections, to stack into a single bijection.
         axis: Axis along which to stack. Defaults to 0.
@@ -39,14 +48,6 @@ class Concatenate(AbstractBijection):
         self.split_idxs = tuple(accumulate([s[axis] for s in shapes[:-1]]))
         self.cond_shape = merge_cond_shapes([b.cond_shape for b in bijections])
 
-    def transform(self, x, condition=None):
-        x_parts = jnp.array_split(x, self.split_idxs, axis=self.axis)
-        y_parts = [
-            b.transform(x_part, condition)
-            for b, x_part in zip(self.bijections, x_parts, strict=True)
-        ]
-        return jnp.concatenate(y_parts, axis=self.axis)
-
     def transform_and_log_det(self, x, condition=None):
         x_parts = jnp.array_split(x, self.split_idxs, axis=self.axis)
 
@@ -57,14 +58,6 @@ class Concatenate(AbstractBijection):
 
         y_parts, log_dets = zip(*ys_log_dets, strict=True)
         return jnp.concatenate(y_parts, self.axis), sum(log_dets)
-
-    def inverse(self, y, condition=None):
-        y_parts = jnp.array_split(y, self.split_idxs, axis=self.axis)
-        x_parts = [
-            b.inverse(y_part, condition)
-            for b, y_part in zip(self.bijections, y_parts, strict=True)
-        ]
-        return jnp.concatenate(x_parts, axis=self.axis)
 
     def inverse_and_log_det(self, y, condition=None):
         y_parts = jnp.array_split(y, self.split_idxs, axis=self.axis)
@@ -93,6 +86,14 @@ class Stack(AbstractBijection):
 
     See also :class:`Concatenate`.
 
+    Example:
+        .. doctest::
+
+            >>> from flowjax.bijections import Stack, Affine, Exp
+            >>> concat = Stack([Affine(jnp.ones(3)), Exp((3,))])
+            >>> concat.shape
+            (2, 3)
+
     Args:
         bijections: Bijections.
         axis: Axis along which to stack. Defaults to 0.
@@ -113,14 +114,6 @@ class Stack(AbstractBijection):
         self.shape = shapes[0][:axis] + (len(bijections),) + shapes[0][axis:]
         self.cond_shape = merge_cond_shapes([b.cond_shape for b in bijections])
 
-    def transform(self, x, condition=None):
-        x_parts = self._split_and_squeeze(x)
-        y_parts = [
-            b.transform(x, condition)
-            for (b, x) in zip(self.bijections, x_parts, strict=True)
-        ]
-        return jnp.stack(y_parts, self.axis)
-
     def transform_and_log_det(self, x, condition=None):
         x_parts = self._split_and_squeeze(x)
         ys_log_det = [
@@ -130,14 +123,6 @@ class Stack(AbstractBijection):
 
         y_parts, log_dets = zip(*ys_log_det, strict=True)
         return jnp.stack(y_parts, self.axis), sum(log_dets)
-
-    def inverse(self, y, condition=None):
-        y_parts = self._split_and_squeeze(y)
-        x_parts = [
-            b.inverse(y, condition)
-            for (b, y) in zip(self.bijections, y_parts, strict=True)
-        ]
-        return jnp.stack(x_parts, self.axis)
 
     def inverse_and_log_det(self, y, condition=None):
         y_parts = self._split_and_squeeze(y)

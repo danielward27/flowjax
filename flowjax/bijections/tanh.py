@@ -15,19 +15,13 @@ def _tanh_log_grad(x):
 
 
 class Tanh(AbstractBijection):
-    """Tanh bijection."""
+    r"""Tanh bijection :math:`y=\tanh(x)`."""
 
     shape: tuple[int, ...] = ()
     cond_shape: ClassVar[None] = None
 
-    def transform(self, x, condition=None):
-        return jnp.tanh(x)
-
     def transform_and_log_det(self, x, condition=None):
         return jnp.tanh(x), jnp.sum(_tanh_log_grad(x))
-
-    def inverse(self, y, condition=None):
-        return jnp.arctanh(y)
 
     def inverse_and_log_det(self, y, condition=None):
         x = jnp.arctanh(y)
@@ -59,32 +53,18 @@ class LeakyTanh(AbstractBijection):
         self.intercept = math.tanh(max_val) - self.linear_grad * max_val
         self.shape = shape
 
-    def transform(self, x, condition=None):
+    def transform_and_log_det(self, x, condition=None):
         is_linear = jnp.abs(x) >= self.max_val
         linear_y = self.linear_grad * x + jnp.sign(x) * self.intercept
         tanh_y = jnp.tanh(x)
-        return jnp.where(is_linear, linear_y, tanh_y)
-
-    def transform_and_log_det(self, x, condition=None):
-        y = self.transform(x)
-        log_grads = jnp.where(
-            jnp.abs(x) >= self.max_val,
-            jnp.log(self.linear_grad),
-            _tanh_log_grad(x),
-        )
+        y = jnp.where(is_linear, linear_y, tanh_y)
+        log_grads = jnp.where(is_linear, jnp.log(self.linear_grad), _tanh_log_grad(x))
         return y, jnp.sum(log_grads)
 
-    def inverse(self, y, condition=None):
+    def inverse_and_log_det(self, y, condition=None):
         is_linear = jnp.abs(y) >= jnp.tanh(self.max_val)
         x_linear = (y - jnp.sign(y) * self.intercept) / self.linear_grad
         x_arctan = jnp.arctanh(y)
-        return jnp.where(is_linear, x_linear, x_arctan)
-
-    def inverse_and_log_det(self, y, condition=None):
-        x = self.inverse(y)
-        log_grads = jnp.where(
-            jnp.abs(y) >= jnp.tanh(self.max_val),
-            jnp.log(self.linear_grad),
-            _tanh_log_grad(x),
-        )
+        x = jnp.where(is_linear, x_linear, x_arctan)
+        log_grads = jnp.where(is_linear, jnp.log(self.linear_grad), _tanh_log_grad(x))
         return x, -jnp.sum(log_grads)

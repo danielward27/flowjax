@@ -4,22 +4,21 @@ FAQ
 Freezing parameters
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Often it is useful to not train particular parameters. The easiest way to achieve this
-is to use the :class:`flowjax.wrappers.NonTrainable` wrapper class. For example, to
-avoid training the base distribution of a transformed distribution:
-
-.. testsetup::
-
-    from flowjax.distributions import Normal    
-    flow = Normal()
+is to use :func:`paramax.wrappers.non_trainable`. This will wrap the inexact array
+leaves with :class:`paramax.wrappers.NonTrainable`, which will apply ``stop_gradient``
+when unwrapping the parameters. For commonly used distribution and bijection methods,
+unwrapping is applied automatically. For example
 
 .. doctest::
+    
+    >>> from flowjax.distributions import Normal
+    >>> from paramax import non_trainable
+    >>> dist = Normal()
+    >>> dist = non_trainable(dist)
 
-    >>> import equinox as eqx
-    >>> from flowjax.wrappers import NonTrainable
-    >>> flow = eqx.tree_at(lambda flow: flow.base_dist, flow, replace_fn=NonTrainable)
+To mark part of a tree as frozen, use ``non_trainable`` with e.g. 
+``equinox.tree_at`` or ``jax.tree_map``.
 
-If you wish to avoid training e.g. a specific type, it may be easier to use
-``jax.tree_map`` to apply the NonTrainable wrapper as required. 
 
 Standardizing variables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -32,7 +31,7 @@ In general you should consider the form and scales of the target samples. For ex
     import jax.numpy as jnp
     import jax.random as jr
     
-    key = jr.PRNGKey(0)
+    key = jr.key(0)
     x = jr.normal(key, (1000,3))
     flow = Normal(jnp.ones(3))
 
@@ -57,7 +56,7 @@ The methods of distributions and bijections are not jitted by default. For examp
     import jax.numpy as jnp
     import jax.random as jr
     
-    key = jr.PRNGKey(0)
+    key = jr.key(0)
     x = jr.normal(key, (256,3))
     flow = Normal(jnp.ones(3))
 
@@ -67,7 +66,7 @@ The methods of distributions and bijections are not jitted by default. For examp
     >>> import jax.random as jr
 
     >>> batch_size = 256
-    >>> keys = jr.split(jr.PRNGKey(0), 5)
+    >>> keys = jr.split(jr.key(0), 5)
 
     >>> # Often slow - sample not jitted!
     >>> results = []
@@ -103,11 +102,5 @@ jaxtypings import hook
     >>> with install_import_hook("flowjax", "beartype.beartype"):
     ...    from flowjax import bijections as bij
 
-    >>> bij.Exp(shape=2)  # Accidentally provide an integer shape instead of tuple
-    jaxtyping.TypeCheckError: Type-check error whilst checking the parameters of Exp.
-    The problem arose whilst typechecking parameter 'shape'.
-    Actual value: 2
-    Expected type: tuple[int, ...].
-    ----------------------
-    Called with parameters: {'self': Exp(...), 'shape': 2}
-    Parameter annotations: (self: Any, shape: tuple[int, ...]).
+    >>> exp = bij.Exp(shape=2)  # Raises a helpful error as 2 is not a tuple
+    

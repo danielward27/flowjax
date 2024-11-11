@@ -8,9 +8,10 @@ from typing import Any
 
 import equinox as eqx
 import jax
+import jax.random as jr
+import paramax
 from jaxtyping import Array, ArrayLike
 
-from flowjax import wrappers
 from flowjax.bijections import AbstractBijection
 from flowjax.distributions import AbstractDistribution, AbstractTransformed
 from flowjax.utils import arraylike_to_array
@@ -25,11 +26,59 @@ except ImportError as e:
     raise
 
 from jaxtyping import PyTree
+from numpyro.distributions import TransformedDistribution
 from numpyro.distributions.constraints import (
     _IndependentConstraint,
     _Real,
 )
 from numpyro.distributions.transforms import IndependentTransform, biject_to
+from numpyro.distributions.util import sum_rightmost
+
+from flowjax.bijections import Invert
+
+
+class _BetterTransformedDistribution(TransformedDistribution):
+    # In numpyro, the log_prob method seperately computes the inverse and the log
+    # jacobian of the forward transformation. This becomes inefficient (or causes
+    # errors) when the inverse computation and the forward log det share computations.
+    # This class avoids this for FlowJAX bijections.
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def log_prob(self, value, intermediates=None):
+        event_dim = len(self.event_shape)
+        log_prob = 0.0
+        y = value
+
+        for i, transform in enumerate(reversed(self.transforms)):
+
+            if isinstance(transform, _BijectionToNumpyro) and intermediates is None:
+                # Compute inv and log det in one
+                inv_transform = _BijectionToNumpyro(
+                    Invert(transform.bijection),
+                    transform.condition,
+                    domain=transform.inv.domain,
+                    codomain=transform.inv.codomain,
+                )
+                x, t_log_det = inv_transform.call_with_intermediates(y)
+                t_log_det = -t_log_det
+            else:
+                if intermediates is None:
+                    x = transform.inv(y)
+                    t_inter = None
+                else:
+                    x = intermediates[-i - 1][0]
+                    t_inter = intermediates[-i - 1][1]
+                t_log_det = transform.log_abs_det_jacobian(x, y, t_inter)
+            batch_ndim = event_dim - transform.codomain.event_dim
+            log_prob = log_prob - sum_rightmost(t_log_det, batch_ndim)
+            event_dim = transform.domain.event_dim + batch_ndim
+            y = x
+
+        return log_prob + sum_rightmost(
+            self.base_dist.log_prob(y), event_dim - len(self.base_dist.event_shape)
+        )
 
 
 class _RealNdim(_IndependentConstraint):
@@ -46,13 +95,13 @@ def _biject_to_independent(constraint):
 
 
 def sample(name: str, fn: Any, *args, condition=None, **kwargs):
-    """Numpyro sample wrapper that wraps flowjax distributions.
+    """Numpyro sample wrapper that wraps FlowJAX distributions.
 
     Args:
         name: Name of the sample site.
-        fn: A flowjax distribution, numpyro distribution or a stochastic function that
+        fn: A FlowJAX distribution, numpyro distribution or a stochastic function that
             returns a sample.
-        condition: Conditioning variable if fn is a conditional flowjax distribution.
+        condition: Conditioning variable if fn is a conditional FlowJAX distribution.
             Defaults to None.
         *args: Passed to numpyro sample.
         **kwargs: Passed to numpyro sample.
@@ -80,7 +129,7 @@ def register_params(
     params, static = eqx.partition(
         model,
         eqx.is_inexact_array,
-        is_leaf=lambda leaf: isinstance(leaf, wrappers.NonTrainable),
+        is_leaf=lambda leaf: isinstance(leaf, paramax.NonTrainable),
     )
     if callable(params):
         # Wrap to avoid special handling of callables by numpyro. Numpyro expects a
@@ -89,7 +138,7 @@ def register_params(
         params = numpyro.param(name, lambda _: params)
     else:
         params = numpyro.param(name, params)
-    return wrappers.unwrap(eqx.combine(params, static))
+    return paramax.unwrap(eqx.combine(params, static))
 
 
 def distribution_to_numpyro(
@@ -99,7 +148,7 @@ def distribution_to_numpyro(
     """Convert a flowjax distribution to a numpyro distribution.
 
     Args:
-        dist (AbstractDistribution): Flowjax distribution
+        dist (AbstractDistribution): FlowJAX distribution
         condition: condition: Conditioning variables. Any leading batch dimensions will
             be converted to batch dimensions in the numpyro distribution. Defaults to
             None.
@@ -126,8 +175,12 @@ class _DistributionToNumpyro(numpyro.distributions.Distribution):
     ):
         self.dist = dist
 
+        if condition is None and dist.cond_shape is not None:
+            raise ValueError("Condition must be provided for conditional distribution.")
+
         if condition is not None:
             condition = arraylike_to_array(condition, "condition")
+
         self._condition = condition
         self.support = _RealNdim(dist.ndim)
         batch_shape = _get_batch_shape(condition, dist.cond_shape)
@@ -138,6 +191,10 @@ class _DistributionToNumpyro(numpyro.distributions.Distribution):
         return jax.lax.stop_gradient(self._condition)
 
     def sample(self, key, sample_shape=()):
+        # TODO remove when old-style keys fully deprecated
+        if not jax.dtypes.issubdtype(key.dtype, jax.dtypes.prng_key):
+            key = jr.wrap_key_data(key)
+
         return self.dist.sample(key, sample_shape, self.condition)
 
     def log_prob(self, value):
@@ -158,7 +215,7 @@ def _transformed_to_numpyro(dist, condition=None):
         base_dist = _DistributionToNumpyro(dist.base_dist).expand(batch_shape)
 
     transform = _BijectionToNumpyro(dist.bijection, condition)
-    return numpyro.distributions.TransformedDistribution(base_dist, transform)
+    return _BetterTransformedDistribution(base_dist, transform)
 
 
 def _get_batch_shape(condition, cond_shape):

@@ -14,27 +14,32 @@ from jaxtyping import Array, PRNGKeyArray, PyTree, Scalar, Shaped
 @eqx.filter_jit
 def step(
     params: PyTree,
-    static: PyTree,
     *args,
     optimizer: optax.GradientTransformation,
     opt_state: PyTree,
     loss_fn: Callable[[PyTree, PyTree], Scalar],
+    **kwargs,
 ):
     """Carry out a training step.
 
     Args:
         params: Parameters for the model
-        static: Static components of the model.
-        *args: Arguments passed to the loss function.
+        *args: Arguments passed to the loss function (often the static components
+            of the model).
         optimizer: Optax optimizer.
         opt_state: Optimizer state.
         loss_fn: The loss function. This should take params and static as the first two
             arguments.
+        **kwargs: Key word arguments passed to the loss function.
 
     Returns:
         tuple: (params, opt_state, loss_val)
     """
-    loss_val, grads = eqx.filter_value_and_grad(loss_fn)(params, static, *args)
+    loss_val, grads = eqx.filter_value_and_grad(loss_fn)(
+        params,
+        *args,
+        **kwargs,
+    )
     updates, opt_state = optimizer.update(grads, opt_state, params=params)
     params = eqx.apply_updates(params, updates)
     return params, opt_state, loss_val

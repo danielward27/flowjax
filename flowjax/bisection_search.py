@@ -26,12 +26,8 @@ class AutoregressiveBisectionInverter(eqx.Module):
         max_iter: Maximum number of iterations to use.
     """
 
-    lower: Real[Array, ""] = eqx.field(
-        default_factory=lambda: -10.0, converter=jnp.asarray
-    )
-    upper: Real[Array, ""] = eqx.field(
-        default_factory=lambda: 10.0, converter=jnp.asarray
-    )
+    lower: float | int = -10
+    upper: float | int = 10
     tol: float = 1e-7
     max_iter: int = 200
 
@@ -49,8 +45,8 @@ class AutoregressiveBisectionInverter(eqx.Module):
 
         return _autoregressive_bisection_search(
             autoregressive_fn=fn,
-            lower=self.lower,
-            upper=self.upper,
+            lower=jnp.array(self.lower, dtype=float),
+            upper=jnp.array(self.upper, dtype=float),
             tol=self.tol,
             length=bijection.shape[0],
             max_iter=self.max_iter,
@@ -175,7 +171,7 @@ def _adapt_interval_to_include_root(
     """Dyamically adjust the interval to include the root of an increasing function.
 
     Note we do not currently perform any argument checking as it is challenging to
-    perform checks that rely on array values with jax. It is the users responsibility
+    perform checks that rely on array values with JAX. It is the users responsibility
     to ensure lower is less than upper, and the function is increasing.
 
     Args:

@@ -1,4 +1,4 @@
-"""Bijections that wrap jax function transforms (scan and vmap)."""
+"""Bijections that wrap JAX function transforms (scan and vmap)."""
 
 from collections.abc import Callable
 
@@ -7,8 +7,8 @@ import jax.numpy as jnp
 from jax.lax import scan
 from jax.tree_util import tree_leaves, tree_map
 from jaxtyping import PyTree
+from paramax import contains_unwrappables, unwrap
 
-from flowjax import wrappers
 from flowjax.bijections.bijection import AbstractBijection
 
 
@@ -38,13 +38,6 @@ class Scan(AbstractBijection):
 
     bijection: AbstractBijection
 
-    def transform(self, x, condition=None):
-        def step(x, bijection):
-            return (bijection.transform(x, condition), None)
-
-        y, _ = _filter_scan(step, x, self.bijection)
-        return y
-
     def transform_and_log_det(self, x, condition=None):
         def step(carry, bijection):
             x, log_det = carry
@@ -53,13 +46,6 @@ class Scan(AbstractBijection):
 
         (y, log_det), _ = _filter_scan(step, (x, 0), self.bijection)
         return y, log_det
-
-    def inverse(self, y, condition=None):
-        def step(y, bijection):
-            return bijection.inverse(y, condition), None
-
-        x, _ = _filter_scan(step, y, self.bijection, reverse=True)
-        return x
 
     def inverse_and_log_det(self, y, condition=None):
         def step(carry, bijection):
@@ -91,15 +77,11 @@ def _filter_scan(f, init, xs, *, reverse=False):
 
 
 def _check_no_unwrappables(pytree):
-    def _is_unwrappable(leaf):
-        return isinstance(leaf, wrappers.AbstractUnwrappable)
-
-    leaves = tree_leaves(pytree, is_leaf=_is_unwrappable)
-    if any(_is_unwrappable(leaf) for leaf in leaves):
+    if contains_unwrappables(pytree):
         raise ValueError(
             "In axes containing unwrappables is not supported. In axes must be "
             "specified to match the structure of the unwrapped pytree i.e after "
-            "calling flowjax.wrappers.unwrap."
+            "calling pararamax.unwrap."
         )
 
 
@@ -111,8 +93,8 @@ class Vmap(AbstractBijection):
         in_axes: Specify which axes of the bijection parameters to vectorise over. It
             should be a PyTree of ``None``, ``int`` with the tree structure being a
             prefix of the bijection, or a callable mapping ``Leaf -> Union[None, int]``.
-            Defaults to None. Note, if the bijection contains unwrappables, then in_axes
-            should be specified for the unwrapped structure of the bijection.
+            Note, if the bijection contains unwrappables, then in_axes should be
+            specified for the unwrapped structure of the bijection. Defaults to None.
         axis_size: The size of the new axis. This should be left unspecified if in_axes
             is provided, as the size can be inferred from the bijection parameters.
             Defaults to None.
@@ -120,12 +102,9 @@ class Vmap(AbstractBijection):
             vectorize over. Defaults to None.
 
     Example:
-        The two most common use cases, are shown below:
-
         .. doctest::
 
-            Add a batch dimension to a bijection, mapping over bijection parameters:
-
+            >>> # Add a bijection batch dimension, mapping over bijection parameters
             >>> import jax.numpy as jnp
             >>> import equinox as eqx
             >>> from flowjax.bijections import Vmap, RationalQuadraticSpline, Affine
@@ -136,8 +115,7 @@ class Vmap(AbstractBijection):
             >>> bijection = Vmap(bijection, in_axes=eqx.if_array(0))
             >>> bijection.shape
             (10,)
-
-            Add a batch dimension to a bijection, broadcasting bijection parameters:
+            >>> # Add a bijection batch dimension, broadcasting bijection parameters:
             >>> bijection = RationalQuadraticSpline(knots=5, interval=2)
             >>> bijection = Vmap(bijection, axis_size=10)
             >>> bijection.shape
@@ -150,10 +128,10 @@ class Vmap(AbstractBijection):
         parameter? We could achieve this as follows.
 
             >>> from jax.tree_util import tree_map
-            >>> from flowjax.wrappers import unwrap
+            >>> import paramax
             >>> bijection = Affine(jnp.zeros(()), jnp.ones(()))
             >>> bijection = eqx.tree_at(lambda bij: bij.loc, bijection, jnp.arange(3))
-            >>> in_axes = tree_map(lambda _: None, unwrap(bijection))
+            >>> in_axes = tree_map(lambda _: None, paramax.unwrap(bijection))
             >>> in_axes = eqx.tree_at(
             ...     lambda bij: bij.loc, in_axes, 0, is_leaf=lambda x: x is None
             ...     )
@@ -162,9 +140,8 @@ class Vmap(AbstractBijection):
             (3,)
             >>> bijection.bijection.loc.shape
             (3,)
-            >>> unwrap(bijection.bijection.scale).shape
+            >>> paramax.unwrap(bijection.bijection.scale).shape
             ()
-
             >>> x = jnp.ones(3)
             >>> bijection.transform(x)
             Array([1., 2., 3.], dtype=float32)
@@ -191,9 +168,7 @@ class Vmap(AbstractBijection):
             if in_axes is None:
                 raise ValueError("Either axis_size or in_axes must be provided.")
             _check_no_unwrappables(in_axes)
-            axis_size = _infer_axis_size_from_params(
-                wrappers.unwrap(bijection), in_axes
-            )
+            axis_size = _infer_axis_size_from_params(unwrap(bijection), in_axes)
 
         self.in_axes = (in_axes, 0, in_axes_condition)
         self.bijection = bijection
@@ -203,24 +178,12 @@ class Vmap(AbstractBijection):
     def vmap(self, f: Callable):
         return eqx.filter_vmap(f, in_axes=self.in_axes, axis_size=self.axis_size)
 
-    def transform(self, x, condition=None):
-        def _transform(bijection, x, condition):
-            return bijection.transform(x, condition)
-
-        return self.vmap(_transform)(self.bijection, x, condition)
-
     def transform_and_log_det(self, x, condition=None):
         def _transform_and_log_det(bijection, x, condition):
             return bijection.transform_and_log_det(x, condition)
 
         y, log_det = self.vmap(_transform_and_log_det)(self.bijection, x, condition)
         return y, jnp.sum(log_det)
-
-    def inverse(self, y, condition=None):
-        def _inverse(bijection, x, condition):
-            return bijection.inverse(x, condition)
-
-        return self.vmap(_inverse)(self.bijection, y, condition)
 
     def inverse_and_log_det(self, y, condition=None):
         def _inverse_and_log_det(bijection, x, condition):

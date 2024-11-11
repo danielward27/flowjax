@@ -10,7 +10,9 @@ from .exp import Exp
 from .jax_transforms import Scan, Vmap
 from .masked_autoregressive import MaskedAutoregressive
 from .planar import Planar
+from .power import Power
 from .rational_quadratic_spline import RationalQuadraticSpline
+from .sigmoid import Sigmoid
 from .softplus import SoftPlus
 from .tanh import LeakyTanh, Tanh
 from .utils import EmbedCondition, Flip, Identity, Invert, Partial, Permute, Reshape
@@ -33,11 +35,13 @@ __all__ = [
     "MaskedAutoregressive",
     "Partial",
     "Permute",
+    "Power",
     "Planar",
     "RationalQuadraticSpline",
     "Reshape",
     "Scale",
     "Scan",
+    "Sigmoid",
     "SoftPlus",
     "Stack",
     "Tanh",

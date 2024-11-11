@@ -3,9 +3,6 @@
 All these functions return a :class:`~flowjax.distributions.Transformed` distribution.
 """
 
-# Note that here although we could chain arbitrary bijections using `Chain`, here,
-# we generally opt to use `Scan`, which avoids excessive compilation
-# when the flow layers share the same structure.
 from collections.abc import Callable
 from functools import partial
 
@@ -14,8 +11,11 @@ import jax.nn as jnn
 import jax.numpy as jnp
 import jax.random as jr
 from equinox.nn import Linear
+from jax.nn import softplus
 from jax.nn.initializers import glorot_uniform
 from jaxtyping import PRNGKeyArray
+from paramax import Parameterize, WeightNormalization
+from paramax.utils import inv_softplus
 
 from flowjax.bijections import (
     AbstractBijection,
@@ -27,27 +27,20 @@ from flowjax.bijections import (
     Flip,
     Invert,
     LeakyTanh,
-    Loc,
     MaskedAutoregressive,
     Permute,
     Planar,
     RationalQuadraticSpline,
     Scan,
-    SoftPlus,
     TriangularAffine,
     Vmap,
 )
 from flowjax.distributions import AbstractDistribution, Transformed
-from flowjax.wrappers import BijectionReparam, NonTrainable, WeightNormalization
 
 
 def _affine_with_min_scale(min_scale: float = 1e-2) -> Affine:
-    scale_reparam = Chain([SoftPlus(), NonTrainable(Loc(min_scale))])
-    return eqx.tree_at(
-        where=lambda aff: aff.scale,
-        pytree=Affine(),
-        replace=BijectionReparam(jnp.array(1), scale_reparam),
-    )
+    scale = Parameterize(lambda x: softplus(x) + min_scale, inv_softplus(1 - min_scale))
+    return eqx.tree_at(where=lambda aff: aff.scale, pytree=Affine(), replace=scale)
 
 
 def coupling_flow(
@@ -65,7 +58,7 @@ def coupling_flow(
     """Create a coupling flow (https://arxiv.org/abs/1605.08803).
 
     Args:
-        key: Jax random number generator key.
+        key: Jax random key.
         base_dist: Base distribution, with ``base_dist.ndim==1``.
         transformer: Bijection to be parameterised by conditioner. Defaults to
             affine.
@@ -180,7 +173,7 @@ def block_neural_autoregressive_flow(
     controlled by the ``invert`` argument.
 
     Args:
-        key: Jax PRNGKey.
+        key: Jax key.
         base_dist: Base distribution, with ``base_dist.ndim==1``.
         cond_dim: Dimension of conditional variables. Defaults to None.
         nn_depth: Number of hidden layers within the networks. Defaults to 1.
@@ -226,6 +219,7 @@ def planar_flow(
     cond_dim: int | None = None,
     flow_layers: int = 8,
     invert: bool = True,
+    negative_slope: float | None = None,
     **mlp_kwargs,
 ) -> Transformed:
     """Planar flow as introduced in https://arxiv.org/pdf/1505.05770.pdf.
@@ -234,13 +228,16 @@ def planar_flow(
     permutations. Note the definition here is inverted compared to the original paper.
 
     Args:
-        key: Jax PRNGKey.
+        key: Jax key.
         base_dist: Base distribution, with ``base_dist.ndim==1``.
         cond_dim: Dimension of conditioning variables. Defaults to None.
         flow_layers: Number of flow layers. Defaults to 8.
         invert: Whether to invert the bijection. Broadly, True will prioritise a faster
             `inverse` methods, leading to faster `log_prob`, False will prioritise
             faster `transform` methods, leading to faster `sample`. Defaults to True.
+        negative_slope: A positive float. If provided, then a leaky relu activation
+            (with the corresponding negative slope) is used instead of tanh. This also
+            provides the advantage that the bijection can be inverted analytically.
         **mlp_kwargs: Keyword arguments (excluding in_size and out_size) passed to
             the MLP (equinox.nn.MLP). Ignored when cond_dim is None.
     """
@@ -251,6 +248,7 @@ def planar_flow(
             bij_key,
             dim=base_dist.shape[-1],
             cond_dim=cond_dim,
+            negative_slope=negative_slope,
             **mlp_kwargs,
         )
         return _add_default_permute(bijection, base_dist.shape[-1], perm_key)
@@ -280,7 +278,7 @@ def triangular_spline_flow(
     transformations.
 
     Args:
-        key: Jax random seed.
+        key: Jax random key.
         base_dist: Base distribution, with ``base_dist.ndim==1``.
         cond_dim: The number of conditioning features. Defaults to None.
         flow_layers: Number of flow layers. Defaults to 8.

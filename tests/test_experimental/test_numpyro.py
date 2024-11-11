@@ -1,4 +1,5 @@
 from functools import partial
+from typing import ClassVar
 
 import equinox as eqx
 import jax
@@ -15,7 +16,7 @@ from numpyro.distributions.transforms import AffineTransform
 from numpyro.infer import MCMC, NUTS, SVI, Trace_ELBO
 from numpyro.optim import Adam
 
-from flowjax.bijections import AdditiveCondition, Affine
+from flowjax.bijections import AbstractBijection, AdditiveCondition, Affine, Invert
 from flowjax.distributions import (
     LogNormal,
     Normal,
@@ -46,7 +47,7 @@ def test_get_batch_shape():
 
 def test_mcmc():
     "Check that flowjax distributions function in MCMC."
-    key = jr.PRNGKey(0)
+    key = jr.key(0)
     mcmc = MCMC(NUTS(numpyro_model), num_warmup=50, num_samples=500)  # 2d N(1, 2)
     key, subkey = jr.split(key)
     mcmc.run(subkey)
@@ -55,9 +56,9 @@ def test_mcmc():
     assert pytest.approx(samps.std(axis=0), abs=0.2) == true_std
 
     def plate_model():
-        # Note, in flowjax we do not have the concept of batch shape for simplicity.
+        # Note, in FlowJAX we do not have the concept of batch shape for simplicity.
         # We could add support in the numpyro context later if we wish. Note below,
-        # the plate dim is -1 (as the flowjax normal has event dim (2,)).
+        # the plate dim is -1 (as the FlowJAX normal has event dim (2,)).
         with numpyro.plate("obs", 10, dim=-1):
             sample("x", Normal(true_mean, true_std))
 
@@ -72,7 +73,7 @@ def test_mcmc():
 
 
 def test_vi():
-    "Check that flowjax distributions can be used as guide/variational distributions."
+    "Check that FlowJAX distributions can be used as guide/variational distributions."
 
     def guide(dist):
         dist = register_params("guide", dist)
@@ -83,7 +84,7 @@ def test_vi():
     guide_dist = Normal(jnp.zeros(2), 1)  # 2d N(0, 1)
 
     svi = SVI(numpyro_model, partial(guide, guide_dist), optimizer, loss=Trace_ELBO())
-    svi_result = svi.run(jr.PRNGKey(0), num_steps=1000)
+    svi_result = svi.run(jr.key(0), num_steps=1000)
 
     guide_dist = eqx.combine(svi_result.params["guide"], guide_dist)
 
@@ -99,7 +100,7 @@ def test_vi():
         nn_block_dim=1,
     )
     svi = SVI(numpyro_model, partial(guide, guide_dist), optimizer, loss=Trace_ELBO())
-    svi_result = svi.run(jr.PRNGKey(0), num_steps=2)  # Check runs
+    svi_result = svi.run(jr.key(0), num_steps=2)  # Check runs
 
 
 def test_conditional_vi():
@@ -107,7 +108,7 @@ def test_conditional_vi():
     dim = 2
     cond_dim = 3
 
-    key, subkey = jr.split(jr.PRNGKey(0))
+    key, subkey = jr.split(jr.key(0))
 
     true_dist, guide_dist = get_conditional_true_guide(subkey, dim, cond_dim)
 
@@ -154,7 +155,7 @@ def test_vi_plate():
     optimizer = Adam(step_size=0.01)
     svi = SVI(model, guide, optimizer, loss=Trace_ELBO())
 
-    svi_result = svi.run(jr.PRNGKey(0), num_steps=10000)
+    svi_result = svi.run(jr.key(0), num_steps=10000)
 
     guide_dist = eqx.combine(svi_result.params["guide"], guide_dist)
 
@@ -162,7 +163,7 @@ def test_vi_plate():
     assert pytest.approx(guide_dist.scale, abs=0.2) == true_std
 
 
-key = jr.PRNGKey(0)
+key = jr.key(0)
 test_cases = {
     "distribution": [
         StandardNormal(()),
@@ -190,7 +191,7 @@ def test_distribution_to_numpyro(distribution, sample_shape):
 def test_batched_condition():
     dim = 2
     cond_dim = 3
-    key, subkey = jr.split(jr.PRNGKey(0))
+    key, subkey = jr.split(jr.key(0))
     dist = block_neural_autoregressive_flow(
         key,
         base_dist=Normal(jnp.zeros(dim)),
@@ -265,7 +266,7 @@ def test_expected_elbo():
     dim = 2
     cond_dim = 3
     n_obs = 5
-    key, subkey = jr.split(jr.PRNGKey(0))
+    key, subkey = jr.split(jr.key(0))
 
     likelihood = block_neural_autoregressive_flow(
         key,
@@ -275,7 +276,7 @@ def test_expected_elbo():
     )
     prior = StandardNormal((cond_dim,))
 
-    key, subkey = jr.split(jr.PRNGKey(0))
+    key, subkey = jr.split(jr.key(0))
     posterior = block_neural_autoregressive_flow(
         key,
         base_dist=Normal(jnp.zeros(cond_dim)),
@@ -314,7 +315,7 @@ def test_expected_elbo():
 def test_conditional_sample_and_log_prob_with_intermediates():
 
     cond_flow = masked_autoregressive_flow(
-        jr.PRNGKey(0),
+        jr.key(0),
         base_dist=Normal(jnp.ones(3)),
         cond_dim=2,
         flow_layers=2,
@@ -385,9 +386,40 @@ def test_transformed_reparam():
             sample("x", log_norm)
 
     trace = handlers.trace(
-        handlers.seed(model, jr.PRNGKey(0)),
+        handlers.seed(model, jr.key(0)),
     ).get_trace()
 
     assert "x_base" in trace.keys()
-    expected_x = log_norm.bijection.transform(trace["x_base"]["value"])
+    expected_x = log_norm.merge_transforms().bijection.transform(
+        trace["x_base"]["value"]
+    )
     assert pytest.approx(expected_x) == trace["x"]["value"]
+
+
+class _ForwardOnly(AbstractBijection):
+    shape: tuple[int, ...] = ()
+    cond_shape: ClassVar[None] = None
+
+    def transform_and_log_det(self, x, condition=None):
+        return x, jnp.zeros(())
+
+    def inverse_and_log_det(self, y, condition=None):
+        raise NotImplementedError()
+
+
+def test_sampling_forward_only():
+    dist = Transformed(
+        StandardNormal(),
+        _ForwardOnly(),
+    )
+    dist = distribution_to_numpyro(dist)
+    dist.sample(jr.key(0))
+
+
+def test_log_prob_inverse_only():
+    dist = Transformed(
+        StandardNormal(),
+        Invert(_ForwardOnly()),
+    )
+    dist = distribution_to_numpyro(dist)
+    dist.log_prob(0)
