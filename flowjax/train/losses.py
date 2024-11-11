@@ -59,7 +59,7 @@ class WeightedMaximumLikelihoodLoss:
         key: PRNGKeyArray | None = None,
     ) -> Float[Array, ""]:
         """Compute the loss."""
-        dist = unwrap(eqx.combine(params, static))
+        dist = paramax.unwrap(eqx.combine(params, static))
         evl = -dist.log_prob(x, condition)
         return (evl*weights).sum()/len(evl)
 
