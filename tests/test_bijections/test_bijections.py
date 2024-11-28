@@ -21,6 +21,7 @@ from flowjax.bijections import (
     LeakyTanh,
     Loc,
     MaskedAutoregressive,
+    NumericalInverse,
     Partial,
     Permute,
     Planar,
@@ -139,7 +140,7 @@ bijections = {
         dim=DIM,
         cond_dim=COND_DIM,
         block_dim=3,
-        depth=1,
+        depth=2,
     ),
     "AdditiveCondtition": lambda: AdditiveCondition(
         lambda condition: jnp.arange(DIM) * jnp.sum(condition),
@@ -207,6 +208,7 @@ bijections = {
         shape=(1, 4, 1),
         cond_shape=(),
     ),
+    # "NumericalInverse": NumericalInverse(), TODO
 }
 
 
