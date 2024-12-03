@@ -1,5 +1,7 @@
 "General tests for bijections (including transformers)."
 
+from functools import partial
+
 import equinox as eqx
 import jax
 import jax.numpy as jnp
@@ -21,6 +23,7 @@ from flowjax.bijections import (
     LeakyTanh,
     Loc,
     MaskedAutoregressive,
+    NumericalInverse,
     Partial,
     Permute,
     Planar,
@@ -37,6 +40,7 @@ from flowjax.bijections import (
     Vmap,
 )
 from flowjax.bijections.planar import _UnconditionalPlanar
+from flowjax.root_finding import bisection_search, root_finder_to_inverter
 
 DIM = 3
 COND_DIM = 2
@@ -139,7 +143,7 @@ bijections = {
         dim=DIM,
         cond_dim=COND_DIM,
         block_dim=3,
-        depth=1,
+        depth=2,
     ),
     "AdditiveCondtition": lambda: AdditiveCondition(
         lambda condition: jnp.arange(DIM) * jnp.sum(condition),
@@ -206,6 +210,12 @@ bijections = {
         ),
         shape=(1, 4, 1),
         cond_shape=(),
+    ),
+    "NumericalInverse": lambda: NumericalInverse(
+        Affine(5),
+        root_finder_to_inverter(
+            partial(bisection_search, lower=-1, upper=1, atol=1e-7),
+        ),
     ),
 }
 
