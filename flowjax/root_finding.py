@@ -63,11 +63,10 @@ def _adapt_interval_to_include_root(
     max_iter: int = 1000,
     error: bool = True,
 ):
-    """Dyamically adjust the interval to include the root of an increasing function.
+    """Adjust the interval to include the root of an increasing function.
 
-    Note we do not currently perform any argument checking as it is challenging to
-    perform checks that rely on array values with JAX. It is the users responsibility
-    to ensure lower is less than upper, and the function is increasing.
+    Note we do not currently perform any argument checking - it is the users
+    responsibility to ensure lower is less than upper, and the function is increasing.
 
     Args:
         fn: A scalar increasing function.
@@ -140,7 +139,6 @@ def elementwise_autoregressive_bisection_search(
     *,
     lower: Array,
     upper: Array,
-    rtol: float = 1e-5,
     atol: float = 1e-5,
     max_iter: int = 1000,
     error: bool = True,
@@ -150,13 +148,10 @@ def elementwise_autoregressive_bisection_search(
     We scan over the inputs finding the root element by element, assuming that
     each input only depends on previous inputs in the input array. This is useful
     for inverting some bijections without a known inverse, such as those used in block
-    neural autoregressive flows. Note that tol refers to the tolerance used in each
-    run of the bisection search. This means the found solution may not necessarily
-    be within the tolerance for all elements, as errors can accumulate in each step.
+    neural autoregressive flows.
 
     Args:
         fn: The monotonically increasing autoregressive function.
-        rtol: Relative tolerance level. Defaults to 1e-5.
         atol: Absolute tolerance level. Defaults to 1e-5.
         lower: Lower bound of the initial interval where the root is expected. Lower and
             upper should broadcast to the dimensionality of the root finding problem.
@@ -178,7 +173,6 @@ def elementwise_autoregressive_bisection_search(
 
         root, aux = bisection_search(
             scalar_fn,
-            rtol=rtol,
             atol=atol,
             lower=lower,
             upper=upper,
@@ -197,7 +191,6 @@ def bisection_search(
     *,
     lower: ScalarLike,
     upper: ScalarLike,
-    rtol: float = 1e-5,
     atol: float = 1e-5,
     max_iter: int = 1000,
     error: bool = True,
@@ -212,18 +205,17 @@ def bisection_search(
         func: Scalar increasing function to find the root for.
         lower: Lower bound of the initial interval where the root is expected.
         upper: Upper bound of the initial interval where the root is expected.
-        rtol: Relative tolerance level. Defaults to 1e-5.
         atol: Absolute tolerance level. Defaults to 1e-5.
         max_iter: Maximum number of iterations to use, passed to both the adaptation of
             the intervals, and the bisection search. Defaults to 1000.
-        error: Whether to error if the maximum numer of iterations is reached. Defaults
-            to True.
-
+        error: Whether to error if the maximum numer of iterations is reached in the
+            bisection search. Note if the adapation of the interval fails, an error will
+            be raised regardless of the value of error. Defaults to True.
     """
     if max_iter < 0:
         raise ValueError("max_iter must be positive.")
-    if atol < 0 or rtol < 0:
-        raise ValueError("Tolerances can not be negative.")
+    if atol <= 0:
+        raise ValueError("atol must be positive.")
 
     adapt_result = _adapt_interval_to_include_root(
         func,
@@ -234,7 +226,7 @@ def bisection_search(
     )
 
     def cond_fn(state):
-        return ~jnp.isclose((state.upper - state.lower) / 2, 0, rtol=rtol, atol=atol)
+        return ~jnp.isclose((state.upper - state.lower) / 2, 0, atol=atol)
 
     def body_fn(state):
         midpoint = (state.lower + state.upper) / 2
