@@ -21,19 +21,19 @@ def test_adapt_interval_to_include_root():
         upper=jnp.array(1.2),
     )
 
-    assert adapt_result["state"].lower < -4
-    assert adapt_result["state"].upper < 1.1  # Upper should improve too
+    assert adapt_result.state.lower < -4
+    assert adapt_result.state.upper < 1.1  # Upper should improve too
 
     # If already includes root, shouldn't change anything
     init_lower, init_upper = jnp.array(-10), jnp.array(10)
-    adapt_result["state"] = _adapt_interval_to_include_root(
+    adapt_result = _adapt_interval_to_include_root(
         target_function,
         lower=init_lower,
         upper=init_upper,
     )
-    assert adapt_result["state"].lower == init_lower
-    assert adapt_result["state"].upper == init_upper
-    assert adapt_result["iterations"] == 0
+    assert adapt_result.state.lower == init_lower
+    assert adapt_result.state.upper == init_upper
+    assert adapt_result.iterations == 0
 
 
 true_root = -4
@@ -80,10 +80,10 @@ def test_bisection_search():
         target_function,
         lower=jnp.array(-10),
         upper=jnp.array(10),
-        max_iter=0,
+        max_iter=1,
         error=False,
     )
-    assert aux[1].iterations == 0
+    assert aux[1].iterations == 1
 
     # Check can adapt interval if needed
     root, (adapt_state, _) = bisection_search(
@@ -126,7 +126,7 @@ def test_autoregressive_bisection_search():
         max_iter=200,
     )
     assert root == pytest.approx(jnp.array([0, -1, -1]), abs=1e-4)
-    assert isinstance(aux[0], _AdaptIntervalState)
-    assert isinstance(aux[1], _BisectionState)
-    assert aux[0].lower.shape == (3,)
-    assert aux[1].lower.shape == (3,)
+    assert isinstance(aux[0].state, _AdaptIntervalState)
+    assert isinstance(aux[1].state, _BisectionState)
+    assert aux[0].state.lower.shape == (3,)
+    assert aux[1].state.lower.shape == (3,)

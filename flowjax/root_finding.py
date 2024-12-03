@@ -10,13 +10,13 @@ from typing import Any
 import equinox as eqx
 import jax.numpy as jnp
 from jax import lax
-from jaxtyping import Array, Float, Int, Real, ScalarLike
+from jaxtyping import Array, Bool, Float, Int, Real, ScalarLike
 
 
 def root_finder_to_inverter(
     root_finder: Callable[[Callable], tuple[Array, Any]],
 ):
-    """Convert root finder to an "inverter".
+    """Utility to convert root finder to an "inverter".
 
     For use with :class:`~flowjax.bijections.NumericalInverse`. Root finder should have
     arguments provided e.g. using ``functools.partial``. We assume the root finder
@@ -48,12 +48,18 @@ class _AdaptIntervalState(eqx.Module):
     fn_upper: Real[Array, ""]
 
 
+class _WhileResult(eqx.Module):
+    state: Any
+    iterations: Int[Array, " "]
+    reached_max_iter: Bool[Array, " "]
+
+
 def _adapt_interval_to_include_root(
     fn,
     *,
     lower: Real[Array, ""],
     upper: Real[Array, ""],
-    expand_factor: float = 2.0,
+    expand_factor: float | int = 2,
     max_iter: int = 1000,
     error: bool = True,
 ):
@@ -64,13 +70,16 @@ def _adapt_interval_to_include_root(
     to ensure lower is less than upper, and the function is increasing.
 
     Args:
-        func: A scalar increasing function.
+        fn: A scalar increasing function.
         lower: Lower component of interval. Must be less than upper.
         upper: Upper component of interval. Must be greater than upper.
         expand_factor: How much to (multiplicatively) increase the adjustment by on
             each iteration. The magnitude of the adjustment of the necessary bound is
             given by ``(init_upper - init_lower)*expand_factor**iteration``. Defaults to
             2.0.
+        max_iter: Maximum number of iterations to use. Defaults to 1000.
+        error: Whether to error if the maximum numer of iterations is reached. Defaults
+            to True.
     """
     fn_lower, fn_upper = fn(lower), fn(upper)
 
@@ -135,7 +144,7 @@ def elementwise_autoregressive_bisection_search(
     atol: float = 1e-5,
     max_iter: int = 1000,
     error: bool = True,
-) -> tuple[Array, tuple[_AdaptIntervalState, _BisectionState]]:
+) -> tuple[Array, tuple[_WhileResult, _WhileResult]]:
     """Bisection search for a monotonic increasing autoregressive function.
 
     We scan over the inputs finding the root element by element, assuming that
@@ -147,12 +156,14 @@ def elementwise_autoregressive_bisection_search(
 
     Args:
         fn: The monotonically increasing autoregressive function.
-        tol: Tolerance of a solution. Note due to accumulation of errors at each step,
-            the found solution may not fall within the given tolerance.
+        rtol: Relative tolerance level. Defaults to 1e-5.
+        atol: Absolute tolerance level. Defaults to 1e-5.
         lower: Lower bound of the initial interval where the root is expected. Lower and
             upper should broadcast to the dimensionality of the root finding problem.
         upper: Upper bound of the initial interval where the root is expected.
         max_iter: Maximum number of iterations for each element. Defaults to 1000.
+        error: Whether to error if the maximum numer of iterations is reached. Defaults
+            to True.
 
     """
     lower, upper = jnp.broadcast_arrays(lower, upper)
@@ -201,23 +212,25 @@ def bisection_search(
         func: Scalar increasing function to find the root for.
         lower: Lower bound of the initial interval where the root is expected.
         upper: Upper bound of the initial interval where the root is expected.
-        tol: Tolerance level for the root. Defaults to 1e-6. Defaults to 1e-6.
-        max_iter: Maximum number of iterations. Used independently for both adapting the
-            interval bounds, and for the bisection search. Defaults to 1000.
-        error_on_max_iter: bool = True,
+        rtol: Relative tolerance level. Defaults to 1e-5.
+        atol: Absolute tolerance level. Defaults to 1e-5.
+        max_iter: Maximum number of iterations to use, passed to both the adaptation of
+            the intervals, and the bisection search. Defaults to 1000.
+        error: Whether to error if the maximum numer of iterations is reached. Defaults
+            to True.
 
     """
     if max_iter < 0:
         raise ValueError("max_iter must be positive.")
-    if atol <= 0:
-        raise ValueError("tol must be positive.")
+    if atol < 0 or rtol < 0:
+        raise ValueError("Tolerances can not be negative.")
 
     adapt_result = _adapt_interval_to_include_root(
         func,
         lower=jnp.asarray(lower, float),
         upper=jnp.asarray(upper, float),
         max_iter=max_iter,
-        error=error,
+        error=True,  # Cannot continue if root not spanned
     )
 
     def cond_fn(state):
@@ -263,15 +276,11 @@ def _max_iter_while(cond_fun, body_fun, init_val, *, max_iter: int, error: bool 
         body_fn_with_iter,
         (init_val, jnp.array(0)),
     )
+    result = _WhileResult(state, iterations, iterations == max_iter)
     if error:
-        state = eqx.error_if(
-            state,
-            iterations == max_iter,
+        result = eqx.error_if(
+            result,
+            result.reached_max_iter,
             "Maximum iterations reached in while loop. Consider increasing max_iter.",
         )
-
-    class _Result(eqx.Module):
-        state: Any
-        iterations: Int[Array, " "]
-
-    return _Result(state, iterations)
+    return result
