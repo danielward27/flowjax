@@ -20,11 +20,11 @@ from flowjax.bijections import (
     Exp,
     Flip,
     Identity,
+    Indexed,
     LeakyTanh,
     Loc,
     MaskedAutoregressive,
     NumericalInverse,
-    Partial,
     Permute,
     Planar,
     Power,
@@ -54,14 +54,14 @@ bijections = {
     "Permute (3D)": lambda: Permute(
         jnp.reshape(jr.permutation(KEY, jnp.arange(2 * 3 * 4)), (2, 3, 4)),
     ),
-    "Partial (int)": lambda: Partial(Affine(jnp.array(2), jnp.array(2)), 0, (DIM,)),
-    "Partial (bool array)": lambda: Partial(
+    "Indexed (int)": lambda: Indexed(Affine(jnp.array(2), jnp.array(2)), 0, (DIM,)),
+    "Indexed (bool array)": lambda: Indexed(
         Flip((2,)),
         jnp.array([True, False, True]),
         (DIM,),
     ),
-    "Partial (int array)": lambda: Partial(Flip((2,)), jnp.array([0, 2]), (DIM,)),
-    "Partial (slice)": lambda: Partial(Affine(jnp.zeros(2)), slice(0, 2), (DIM,)),
+    "Indexed (int array)": lambda: Indexed(Flip((2,)), jnp.array([0, 2]), (DIM,)),
+    "Indexed (slice)": lambda: Indexed(Affine(jnp.zeros(2)), slice(0, 2), (DIM,)),
     "Affine": lambda: Affine(jnp.ones(DIM), jnp.full(DIM, 2)),
     "Affine (pos and neg scales)": lambda: eqx.tree_at(
         lambda aff: aff.scale, Affine(scale=jnp.ones(3)), jnp.array([-1, 1, -2])
