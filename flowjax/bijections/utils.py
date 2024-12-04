@@ -102,14 +102,13 @@ class Flip(AbstractBijection):
         return jnp.flip(y), jnp.array(0)
 
 
-class Partial(AbstractBijection):  # TODO rename to avoid confusion with functools
+class Indexed(AbstractBijection):
     """Applies bijection to specific indices of an input.
 
     Args:
-        bijection: Bijection that is compatible with the subset
-            of x indexed by idxs. idxs: Indices (Integer, a slice, or an ndarray
-            with integer/bool dtype) of the transformed portion.
-        idxs: The indexes to transform.
+        bijection: Bijection that is compatible with the subset of x indexed by idxs.
+        idxs: Indices (Integer, a slice, or an ndarray with integer/bool dtype) of the
+            transformed portion.
         shape: Shape of the bijection. Defaults to None.
     """
 
