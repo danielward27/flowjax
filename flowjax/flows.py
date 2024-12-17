@@ -38,7 +38,7 @@ from flowjax.bijections import (
 )
 from flowjax.distributions import AbstractDistribution, Transformed
 from flowjax.root_finding import (
-    elementwise_autoregressive_bisection_search,
+    bisect_check_expand_search,
     root_finder_to_inverter,
 )
 
@@ -195,16 +195,16 @@ def block_neural_autoregressive_flow(
         inverter: Callable that implements the required numerical method to
             invert the ``BlockAutoregressiveNetwork`` bijection. Passed to
             :py:class:`~flowjax.bijections.NumericalInverse`. Defaults to
-            using ``elementwise_autoregressive_bisection_search``.
+            using ``elementwise_autoregressive_bisection``.
     """
     dim = base_dist.shape[-1]
 
     if inverter is None:
         inverter = root_finder_to_inverter(
             partial(
-                elementwise_autoregressive_bisection_search,
-                lower=jnp.full(dim, -10),
-                upper=jnp.full(dim, 10),
+                bisect_check_expand_search,
+                midpoint=jnp.zeros(dim),
+                width=5,
             )
         )
 
