@@ -12,17 +12,38 @@ unwrapping is applied automatically. For example
 .. doctest::
     
     >>> from flowjax.distributions import Normal
-    >>> from paramax import non_trainable
+    >>> import paramax
     >>> dist = Normal()
-    >>> dist = non_trainable(dist)
+    >>> dist = paramax.non_trainable(dist)
 
 To mark part of a tree as frozen, use ``non_trainable`` with e.g. 
 ``equinox.tree_at`` or ``jax.tree_map``.
 
 
+Extracting parameters
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+To partition out the trainable parameters from other components of FlowJAX distributions
+or bijections we can use ``equinox``. As ``paramax.NonTrainable`` can be used to mark
+certain arrays as non-trainable, these should additionally be filtered into the static
+component.
+
+.. doctest::
+    
+    >>> import equinox as eqx
+    >>> params, static = eqx.partition(
+    ...     dist,
+    ...     eqx.is_inexact_array,
+    ...     is_leaf=lambda leaf: isinstance(leaf, paramax.NonTrainable),
+    ... )
+
+where ``params`` is a pytree of arrays containing the parameters.
+
+
 Standardizing variables
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-In general you should consider the form and scales of the target samples. For example, you could define a bijection to carry out the preprocessing, then to transform the flow with the inverse, to "undo" the preprocessing, e.g.
+In general you should consider the form and scales of the target samples. For example,
+you could define a bijection to carry out the preprocessing, then to transform the flow
+with the inverse, to "undo" the preprocessing, e.g.
 
 .. testsetup::
 
@@ -48,7 +69,9 @@ In general you should consider the form and scales of the target samples. For ex
 
 When to JIT
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-The methods of distributions and bijections are not jitted by default. For example, if you wanted to sample several batches after training, then it is usually worth using jit
+The methods of distributions and bijections are not necessarily jitted by default.
+For example, if you wanted to sample several batches after training, then it is usually
+worth using jit
 
 .. testsetup::
 
