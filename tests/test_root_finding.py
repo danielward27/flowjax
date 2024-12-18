@@ -1,12 +1,15 @@
+from functools import partial
+
+import jax
 import jax.numpy as jnp
 import pytest
 
 from flowjax.root_finding import (
+    WhileResult,
     _adapt_interval_to_include_root,
-    _AdaptIntervalState,
-    _BisectionState,
+    bisect_check_expand_search,
     bisection_search,
-    elementwise_autoregressive_bisection_search,
+    elementwise_autoregressive_bisection,
 )
 
 
@@ -33,7 +36,7 @@ def test_adapt_interval_to_include_root():
     )
     assert adapt_result.state.lower == init_lower
     assert adapt_result.state.upper == init_upper
-    assert adapt_result.iterations == 0
+    assert adapt_result.steps == 0
 
 
 true_root = -4
@@ -46,10 +49,10 @@ adapt_exact_test_cases = [
 
 
 @pytest.mark.parametrize(
-    ("lower", "upper", "expected_iterations"),
+    ("lower", "upper", "expected_steps"),
     adapt_exact_test_cases,
 )
-def test_adapt_interval_to_include_root_exact(lower, upper, expected_iterations):
+def test_adapt_interval_to_include_root_exact(lower, upper, expected_steps):
     # Tests cases where the exact root is found
     adapt_result = _adapt_interval_to_include_root(
         target_function,
@@ -58,48 +61,48 @@ def test_adapt_interval_to_include_root_exact(lower, upper, expected_iterations)
     )
     assert adapt_result.state.lower == true_root
     assert adapt_result.state.upper == true_root
-    assert adapt_result.iterations == expected_iterations
+    assert adapt_result.steps == expected_steps
 
 
 def test_bisection_search():
-    max_iter = 200
+    max_steps = 200
 
     root, (adapt_state, bisect_state) = bisection_search(
         target_function,
         lower=jnp.array(-10),
         upper=jnp.array(10),
-        max_iter=max_iter,
+        max_steps=max_steps,
     )
 
     assert root == pytest.approx(-4, abs=1e-5)
-    assert bisect_state.iterations < max_iter
-    assert adapt_state.iterations == 0
+    assert bisect_state.steps < max_steps
+    assert adapt_state.steps == 0
 
-    # Check max_iter terminates loop
+    # Check max_steps terminates loop
     root, aux = bisection_search(
         target_function,
         lower=jnp.array(-10),
         upper=jnp.array(10),
-        max_iter=1,
-        error=False,
+        max_steps=1,
+        throw=False,
     )
-    assert aux[1].iterations == 1
+    assert aux[1].steps == 1
 
     # Check can adapt interval if needed
     root, (adapt_state, _) = bisection_search(
         target_function,
         lower=jnp.array(3),
         upper=jnp.array(4),
-        max_iter=200,
+        max_steps=200,
     )
     assert root == pytest.approx(-4, abs=1e-5)
-    assert adapt_state.iterations > 0
+    assert adapt_state.steps > 0
 
     root, (adapt_state, _) = bisection_search(
         target_function,
         lower=-10,
         upper=-9,
-        max_iter=200,
+        max_steps=200,
     )
 
 
@@ -109,24 +112,80 @@ def test_bisection_search_exact():
         target_function,
         lower=jnp.array(true_root - 2),
         upper=jnp.array(true_root + 2),
-        max_iter=200,
+        max_steps=200,
     )
     assert root == true_root
-    assert aux[1].iterations == 1
+    assert aux[1].steps == 1
 
 
-def test_autoregressive_bisection_search():
-    def autoregressive_func(array):
-        return jnp.cumsum(array) + jnp.arange(3)
-
-    root, aux = elementwise_autoregressive_bisection_search(
-        fn=autoregressive_func,
+autoregressive_test_cases = {
+    "elementwise": partial(
+        elementwise_autoregressive_bisection,
         lower=jnp.full((3,), -10),
         upper=jnp.full((3,), 10),
-        max_iter=200,
-    )
+    ),
+    "elementwise high init": partial(
+        elementwise_autoregressive_bisection,
+        lower=jnp.full((3,), 10),
+        upper=jnp.full((3,), 11),
+    ),
+    "elementwise low init": partial(
+        elementwise_autoregressive_bisection,
+        lower=jnp.full((3,), -11),
+        upper=jnp.full((3,), -10),
+    ),
+    "elementwise exact init lower": partial(
+        elementwise_autoregressive_bisection,
+        lower=jnp.array([0, -1, -1]),
+        upper=jnp.full((3,), 10),
+    ),
+    "elementwise exact init upper": partial(
+        elementwise_autoregressive_bisection,
+        lower=jnp.full((3,), -10),
+        upper=jnp.array([0, -1, -1]),
+    ),
+    "bisect_check_expand_search": partial(
+        bisect_check_expand_search,
+        midpoint=jnp.zeros(3),
+        width=5,
+    ),
+    "bisect_check_expand_search high init": partial(
+        bisect_check_expand_search,
+        midpoint=jnp.full((3,), 10, float),
+        width=0.1,
+    ),
+    "bisect_check_expand_search low init": partial(
+        bisect_check_expand_search,
+        midpoint=jnp.full((3,), -10, float),
+        width=0.1,
+    ),
+    "bisect_check_expand_search exact init": partial(
+        bisect_check_expand_search,
+        midpoint=jnp.array([0, -1, -1], float),
+        width=5,
+    ),
+}
+
+
+def autoregressive_func(array):
+    return jnp.cumsum(array) + jnp.arange(3)
+
+
+@pytest.mark.parametrize(
+    "root_finder",
+    autoregressive_test_cases.values(),
+    ids=autoregressive_test_cases.keys(),
+)
+def test_autoregressive_root_finders(root_finder):
+    root, aux = root_finder(fn=autoregressive_func, max_steps=1000)
     assert root == pytest.approx(jnp.array([0, -1, -1]), abs=1e-4)
-    assert isinstance(aux[0].state, _AdaptIntervalState)
-    assert isinstance(aux[1].state, _BisectionState)
-    assert aux[0].state.lower.shape == (3,)
-    assert aux[1].state.lower.shape == (3,)
+
+    def map_fn(leaf):
+        if isinstance(leaf, WhileResult):
+            assert ~jnp.any(leaf.reached_max_steps)
+
+    jax.tree_util.tree_map(
+        map_fn,
+        aux,
+        is_leaf=lambda leaf: isinstance(leaf, WhileResult),
+    )
