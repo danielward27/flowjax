@@ -18,7 +18,7 @@ from jax.scipy import stats as jstats
 from jax.scipy.special import logsumexp
 from jax.tree_util import tree_map
 from jaxtyping import Array, ArrayLike, PRNGKeyArray, Shaped
-from paramax import AbstractUnwrappable, Parameterize, unwrap
+from paramax import AbstractUnwrappable, Parameterize, non_trainable, unwrap
 from paramax.utils import inv_softplus
 
 from flowjax.bijections import (
@@ -478,17 +478,18 @@ class Uniform(AbstractLocScaleDistribution):
             (minval, maxval), maxval <= minval, "minval must be less than the maxval."
         )
         self.base_dist = _StandardUniform(shape)
-        self.bijection = Affine(loc=minval, scale=maxval - minval)
+        self.bijection = non_trainable(Affine(loc=minval, scale=maxval - minval))
 
     @property
     def minval(self):
         """Minimum value of the uniform distribution."""
-        return self.bijection.loc
+        return unwrap(self.bijection.loc)
 
     @property
     def maxval(self):
         """Maximum value of the uniform distribution."""
-        return self.bijection.loc + unwrap(self.bijection.scale)
+        unwrapped = unwrap(self)
+        return unwrapped.loc + unwrapped.scale
 
 
 class _StandardGumbel(AbstractDistribution):
