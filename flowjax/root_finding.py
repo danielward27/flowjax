@@ -111,7 +111,7 @@ def bisect_check_expand_search(
     throw: bool = True,
     max_width: float | int | None = None,
 ) -> tuple[Array, WhileResult]:
-    """Bisect check expand search for a monotonically increasing function.
+    """Bisect check expand search for an increasing autoregressive function.
 
     This algorithm uses elementwise bisection-like updates whilst tracking sign changes
     in fn across iterations as measure of reliability of the bracketing interval. If the
