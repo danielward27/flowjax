@@ -103,9 +103,9 @@ class BisectCheckExpandSearchState(eqx.Module, strict=True):
 @eqx.filter_jit
 def bisect_check_expand_search(
     fn: Callable,
-    *,
     midpoint: ArrayLike,
-    width: float | int = 2,
+    width: ArrayLike = 2,
+    *,
     atol: float = 1e-5,
     max_steps: int = 5000,
     throw: bool = True,
@@ -209,9 +209,9 @@ class _AdaptIntervalState(eqx.Module):
 
 def bisection(
     func: Callable,
-    *,
     lower: ScalarLike,
     upper: ScalarLike,
+    *,
     atol: float = 1e-5,
     max_steps: int = 1000,
     throw: bool = True,
@@ -273,9 +273,9 @@ def bisection(
 
 def _adapt_interval_to_include_root(
     fn,
-    *,
     lower: Real[Array, ""],
     upper: Real[Array, ""],
+    *,
     expand_factor: float | int = 2,
     max_steps: int = 1000,
     throw: bool = True,
@@ -352,9 +352,9 @@ def _adapt_interval_to_include_root(
 
 def elementwise_autoregressive_bisection(
     fn: Callable,
-    *,
     lower: Array,
     upper: Array,
+    *,
     atol: float = 1e-5,
     max_steps: int = 1000,
     throw: bool = True,
