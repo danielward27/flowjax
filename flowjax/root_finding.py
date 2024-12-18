@@ -207,7 +207,7 @@ class _AdaptIntervalState(eqx.Module):
     fn_upper: Real[Array, ""]
 
 
-def bisection(
+def bisection_search(
     func: Callable,
     lower: ScalarLike,
     upper: ScalarLike,
@@ -392,7 +392,7 @@ def elementwise_autoregressive_bisection(
             x = y.at[idx].set(x)
             return fn(x)[idx]
 
-        root, aux = bisection(
+        root, aux = bisection_search(
             scalar_fn,
             atol=atol,
             lower=lower,

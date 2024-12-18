@@ -8,7 +8,7 @@ from flowjax.root_finding import (
     WhileResult,
     _adapt_interval_to_include_root,
     bisect_check_expand_search,
-    bisection,
+    bisection_search,
     elementwise_autoregressive_bisection,
 )
 
@@ -67,7 +67,7 @@ def test_adapt_interval_to_include_root_exact(lower, upper, expected_steps):
 def test_bisection_search():
     max_steps = 200
 
-    root, (adapt_state, bisect_state) = bisection(
+    root, (adapt_state, bisect_state) = bisection_search(
         target_function,
         lower=jnp.array(-10),
         upper=jnp.array(10),
@@ -79,7 +79,7 @@ def test_bisection_search():
     assert adapt_state.steps == 0
 
     # Check max_steps terminates loop
-    root, aux = bisection(
+    root, aux = bisection_search(
         target_function,
         lower=jnp.array(-10),
         upper=jnp.array(10),
@@ -89,7 +89,7 @@ def test_bisection_search():
     assert aux[1].steps == 1
 
     # Check can adapt interval if needed
-    root, (adapt_state, _) = bisection(
+    root, (adapt_state, _) = bisection_search(
         target_function,
         lower=jnp.array(3),
         upper=jnp.array(4),
@@ -98,7 +98,7 @@ def test_bisection_search():
     assert root == pytest.approx(-4, abs=1e-5)
     assert adapt_state.steps > 0
 
-    root, (adapt_state, _) = bisection(
+    root, (adapt_state, _) = bisection_search(
         target_function,
         lower=-10,
         upper=-9,
@@ -108,7 +108,7 @@ def test_bisection_search():
 
 def test_bisection_search_exact():
     # Tests cases where the exact root is found
-    root, aux = bisection(
+    root, aux = bisection_search(
         target_function,
         lower=jnp.array(true_root - 2),
         upper=jnp.array(true_root + 2),
