@@ -175,7 +175,8 @@ def block_neural_autoregressive_flow(
     bijection. The bijection does not have an analytic inverse, so must be inverted
     using numerical methods (by default a bisection search). Note that this means
     that only one of ``log_prob`` or ``sample{_and_log_prob}`` can be efficient,
-    controlled by the ``invert`` argument.
+    controlled by the ``invert`` argument. Note, ensuring reasonably scaled base and
+    target distributions will be beneficial for the efficiency of the numerical inverse.
 
     Args:
         key: Jax key.
