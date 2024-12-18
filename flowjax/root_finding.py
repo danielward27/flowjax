@@ -172,7 +172,7 @@ def bisect_check_expand_search(
             midpoint=midpoint,
             width=width,
             last_fn_sign=jnp.sign(f_midpoint),
-            confidence=confidence,  ## TODO
+            confidence=confidence,
             f_midpoint=f_midpoint,
         )
 
