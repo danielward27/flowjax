@@ -4,7 +4,6 @@ on:
   # Triggers the workflow when a release is created or edited.
   release:
     types: [created]
-  workflow_dispatch:
 
 jobs:
   build:
@@ -27,34 +26,10 @@ jobs:
           name: python-package-distributions
           path: dist/
 
-  publish-to-testpypi:
-    name: Publish to TestPyPI
+  publish-to-pypi:
+    name: Publish to PyPI
     needs:
       - build
-    runs-on: ubuntu-latest
-
-    environment:
-      name: testpypi
-      url: https://test.pypi.org/p/flowjax
-
-    permissions:
-      id-token: write # IMPORTANT: mandatory for trusted publishing
-
-    steps:
-      - name: Download all the dists
-        uses: actions/download-artifact@v4
-        with:
-          name: python-package-distributions
-          path: dist/
-      - name: Publish distribution 📦 to TestPyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          repository-url: https://test.pypi.org/legacy/
-
-  publish-to-pypi:
-    name: Publish Python distribution to PyPI
-    needs:
-      - publish-to-testpypi
     runs-on: ubuntu-latest
 
     environment:
@@ -62,7 +37,7 @@ jobs:
       url: https://pypi.org/p/flowjax
 
     permissions:
-      id-token: write # IMPORTANT: mandatory for trusted publishing
+      id-token: write # Mandatory for trusted publishing
 
     steps:
       - name: Download all the dists
