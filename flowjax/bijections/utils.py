@@ -10,7 +10,8 @@ import numpy as np
 from jaxtyping import Array, Int
 
 from flowjax.bijections.bijection import AbstractBijection
-from flowjax.utils import arraylike_to_array
+from flowjax.bijections.chain import Chain
+from flowjax.utils import arraylike_to_array, check_shapes_match, merge_cond_shapes
 
 
 class Invert(AbstractBijection):
@@ -332,26 +333,16 @@ class Sandwich(AbstractBijection):
     inner: AbstractBijection
 
     def __init__(self, outer: AbstractBijection, inner: AbstractBijection):
-        shape = inner.shape
-        if outer.shape != shape:
-            raise ValueError("Inner and outer transformations are incompatible")
-        self.cond_shape = inner.cond_shape
-        if outer.cond_shape != self.cond_shape:
-            raise ValueError("Inner and outer transformations are incompatible")
-        self.shape = shape
+        check_shapes_match([outer.shape, inner.shape])
+        self.cond_shape = merge_cond_shapes([outer.cond_shape, inner.cond_shape])
+        self.shape = inner.shape
         self.outer = outer
         self.inner = inner
 
     def transform_and_log_det(self, x: Array, condition=None) -> tuple[Array, Array]:
-        z1, logdet1 = self.outer.transform_and_log_det(x, condition)
-        z2, logdet2 = self.inner.transform_and_log_det(z1, condition)
-        y, logdet3 = self.outer.inverse_and_log_det(z2, condition)
-
-        return y, logdet1 + logdet2 + logdet3
+        chain = Chain([self.outer, self.inner, Invert(self.outer)])
+        return chain.transform_and_log_det(x, condition)
 
     def inverse_and_log_det(self, y: Array, condition=None) -> tuple[Array, Array]:
-        z1, logdet1 = self.outer.transform_and_log_det(y, condition)
-        z2, logdet2 = self.inner.inverse_and_log_det(z1, condition)
-        x, logdet3 = self.outer.inverse_and_log_det(z2, condition)
-
-        return x, logdet1 + logdet2 + logdet3
+        chain = Chain([self.outer, self.inner, Invert(self.outer)])
+        return chain.inverse_and_log_det(y, condition)

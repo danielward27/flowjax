@@ -13,7 +13,7 @@ from .planar import Planar
 from .power import Power
 from .rational_quadratic_spline import RationalQuadraticSpline
 from .sigmoid import Sigmoid
-from .softplus import SoftPlus, AsymmetricAffine
+from .softplus import SoftPlus
 from .tanh import LeakyTanh, Tanh
 from .utils import (
     EmbedCondition,
@@ -27,18 +27,17 @@ from .utils import (
     Sandwich,
 )
 from .utils import EmbedCondition, Flip, Identity, Invert, Permute, Reshape, Sandwich
-from .orthogonal import Householder, DCT, Neg
+from .orthogonal import Householder, DiscreteCosine
 
 __all__ = [
     "AdditiveCondition",
     "Affine",
     "AbstractBijection",
-    "AsymmetricAffine",
     "BlockAutoregressiveNetwork",
     "Chain",
     "Concatenate",
     "Coupling",
-    "DCT",
+    "DiscreteCosine",
     "EmbedCondition",
     "Exp",
     "Flip",
@@ -49,7 +48,6 @@ __all__ = [
     "Loc",
     "MaskedAutoregressive",
     "Indexed",
-    "Neg",
     "Permute",
     "Power",
     "Planar",
