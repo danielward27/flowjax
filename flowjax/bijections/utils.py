@@ -299,4 +299,4 @@ class NumericalInverse(AbstractBijection):
     def inverse_and_log_det(self, y, condition=None):
         x = self.inverter(self.bijection, y, condition)
         _, log_det = self.bijection.transform_and_log_det(x, condition)
-        return x, log_det
+        return x, -log_det
