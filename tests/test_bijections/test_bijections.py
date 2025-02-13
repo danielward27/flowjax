@@ -212,7 +212,7 @@ bijections = {
         cond_shape=(),
     ),
     "NumericalInverse": lambda: NumericalInverse(
-        Affine(5),
+        Affine(5, 2),
         root_finder_to_inverter(
             partial(bisection_search, lower=-1, upper=1, atol=1e-7),
         ),
