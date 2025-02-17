@@ -141,7 +141,7 @@ def masked_autoregressive_mlp(
     """
     in_ranks, hidden_ranks, out_ranks = (
         jnp.asarray(a, jnp.int32) for a in (in_ranks, hidden_ranks, out_ranks)
-    )  # TODO remove if using beartype
+    )
     mlp = eqx.nn.MLP(
         in_size=len(in_ranks),
         out_size=len(out_ranks),

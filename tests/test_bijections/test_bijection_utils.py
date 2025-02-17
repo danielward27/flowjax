@@ -2,7 +2,7 @@ import jax.numpy as jnp
 import pytest
 from equinox import EquinoxRuntimeError
 
-from flowjax.bijections import Affine, Partial, Permute
+from flowjax.bijections import Affine, Indexed, Permute
 
 test_cases = {
     # name: idx, expected
@@ -24,7 +24,7 @@ def test_partial(idx, expected):
     "Check values only change where we expect."
     x = jnp.zeros(4)
     shape = x[idx].shape
-    bijection = Partial(Affine(jnp.ones(shape)), idx, x.shape)
+    bijection = Indexed(Affine(jnp.ones(shape)), idx, x.shape)
     y = bijection.transform(x)
     assert jnp.all((x != y) == expected)
 

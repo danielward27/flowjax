@@ -15,8 +15,7 @@ from paramax import Parameterize, WeightNormalization
 
 from flowjax import masks
 from flowjax.bijections.bijection import AbstractBijection
-from flowjax.bijections.tanh import LeakyTanh
-from flowjax.bisection_search import AutoregressiveBisectionInverter
+from flowjax.bijections.tanh import _tanh_log_grad
 
 
 class _CallableToBijection(AbstractBijection):
@@ -40,13 +39,29 @@ class _CallableToBijection(AbstractBijection):
         raise NotImplementedError()
 
 
+class _LeakyTanh(AbstractBijection):
+    min_grad: float = 0.01
+    shape: ClassVar[tuple] = ()
+    cond_shape: ClassVar[None] = None
+
+    def transform_and_log_det(self, x, condition=None):
+        y = jnp.tanh(x) + self.min_grad * x
+        tanh_log_det = _tanh_log_grad(x)
+        log_det = jnp.logaddexp(tanh_log_det, jnp.log(self.min_grad))
+        return y, log_det
+
+    def inverse_and_log_det(self, y, condition=None):
+        raise NotImplementedError()
+
+
 class BlockAutoregressiveNetwork(AbstractBijection):
     r"""Block Autoregressive Network (https://arxiv.org/abs/1904.04676).
 
     Note that in contrast to the original paper which uses tanh activations, by default
-    we use :class:`~flowjax.bijections.tanh.LeakyTanh`. This ensures the codomain of the
-    activation is the set of real values, which will ensure properly normalized
-    densities (see https://github.com/danielward27/flowjax/issues/102).
+    we use :math:`\tanh(x) + 0.01 * x`. This ensures the image of the
+    activation is the set of real values, which ensures the transform maps
+    real -> real, avoiding various issues
+    (see https://github.com/danielward27/flowjax/issues/102).
 
     Args:
         key: Jax key
@@ -59,11 +74,7 @@ class BlockAutoregressiveNetwork(AbstractBijection):
             be bijective to ensure invertibility of the network and in general should
             map real -> real to ensure that when transforming a distribution (either
             with the forward or inverse), the map is defined across the support of
-            the base distribution. Defaults to ``LeakyTanh(3)``.
-        inverter: Callable that implements the required numerical method to invert the
-            ``BlockAutoregressiveNetwork`` bijection. Must have the signature
-            ``inverter(bijection, y, condition=None)``. Defaults to
-            ``AutoregressiveBisectionInverter``.
+            the base distribution. Defaults to :math:`\tanh(x) + 0.01 * x`.
     """
 
     shape: tuple[int, ...]
@@ -73,7 +84,6 @@ class BlockAutoregressiveNetwork(AbstractBijection):
     cond_linear: eqx.nn.Linear | None
     block_dim: int
     activation: AbstractBijection
-    inverter: Callable
 
     def __init__(
         self,
@@ -84,21 +94,15 @@ class BlockAutoregressiveNetwork(AbstractBijection):
         depth: int,
         block_dim: int,
         activation: AbstractBijection | Callable | None = None,
-        inverter: Callable | None = None,
     ):
         key, subkey = jr.split(key)
+        activation = _LeakyTanh(0.01) if activation is None else activation
 
-        if activation is None:
-            activation = LeakyTanh(3)
-        elif isinstance(activation, AbstractBijection):
+        if isinstance(activation, AbstractBijection):
             if activation.shape != () or activation.cond_shape is not None:
                 raise ValueError("Bijection must be unconditional with shape ().")
         else:
             activation = _CallableToBijection(activation)
-
-        self.inverter = (
-            AutoregressiveBisectionInverter() if inverter is None else inverter
-        )
 
         layers_and_log_jac_fns = []
         if depth == 0:
@@ -163,9 +167,11 @@ class BlockAutoregressiveNetwork(AbstractBijection):
         return x, log_det.sum()
 
     def inverse_and_log_det(self, y, condition=None):
-        x = self.inverter(self, y, condition)
-        _, forward_log_det = self.transform_and_log_det(x, condition)
-        return x, -forward_log_det
+        raise NotImplementedError(
+            "Inverse methods not implemented for block autoregressive network. "
+            "Consider providing a numerical method with ``NumericalInverse``. "
+            "See ``flowjax.root_finding`` for numerical methods."
+        )
 
     def _activation_and_log_jacobian_3d(self, x):
         """Compute activation and the log determinant (blocks, block_dim, block_dim)."""

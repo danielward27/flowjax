@@ -102,14 +102,13 @@ class Flip(AbstractBijection):
         return jnp.flip(y), jnp.array(0)
 
 
-class Partial(AbstractBijection):  # TODO rename to avoid confusion with functools
+class Indexed(AbstractBijection):
     """Applies bijection to specific indices of an input.
 
     Args:
-        bijection: Bijection that is compatible with the subset
-            of x indexed by idxs. idxs: Indices (Integer, a slice, or an ndarray
-            with integer/bool dtype) of the transformed portion.
-        idxs: The indexes to transform.
+        bijection: Bijection that is compatible with the subset of x indexed by idxs.
+        idxs: Indices (Integer, a slice, or an ndarray with integer/bool dtype) of the
+            transformed portion.
         shape: Shape of the bijection. Defaults to None.
     """
 
@@ -268,3 +267,36 @@ class Reshape(AbstractBijection):
             condition = condition.reshape(self.bijection.cond_shape)
         x, log_det = self.bijection.inverse_and_log_det(y, condition)
         return x.reshape(self.shape), log_det
+
+
+class NumericalInverse(AbstractBijection):
+    """Bijection wrapper to provide inverse methods using e.g. root finding.
+
+    Args:
+        bijection: The bijection to add an inverse to.
+        inverter: Callable implementing the numerical inversion method. Should accept
+            the bijection, y and condition as arguments, and return the inverse.
+    """
+
+    bijection: AbstractBijection
+    inverter: Callable[[AbstractBijection, Array, Array | None], Array]
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
+
+    def __init__(
+        self,
+        bijection: AbstractBijection,
+        inverter: Callable[[AbstractBijection, Array, Array | None], Array],
+    ):
+        self.bijection = bijection
+        self.inverter = inverter
+        self.shape = self.bijection.shape
+        self.cond_shape = self.bijection.cond_shape
+
+    def transform_and_log_det(self, x, condition=None):
+        return self.bijection.transform_and_log_det(x, condition)
+
+    def inverse_and_log_det(self, y, condition=None):
+        x = self.inverter(self.bijection, y, condition)
+        _, log_det = self.bijection.transform_and_log_det(x, condition)
+        return x, -log_det

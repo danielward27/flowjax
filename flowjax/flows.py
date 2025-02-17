@@ -13,7 +13,7 @@ import jax.random as jr
 from equinox.nn import Linear
 from jax.nn import softplus
 from jax.nn.initializers import glorot_uniform
-from jaxtyping import PRNGKeyArray
+from jaxtyping import Array, PRNGKeyArray
 from paramax import Parameterize, WeightNormalization
 from paramax.utils import inv_softplus
 
@@ -28,6 +28,7 @@ from flowjax.bijections import (
     Invert,
     LeakyTanh,
     MaskedAutoregressive,
+    NumericalInverse,
     Permute,
     Planar,
     RationalQuadraticSpline,
@@ -36,6 +37,10 @@ from flowjax.bijections import (
     Vmap,
 )
 from flowjax.distributions import AbstractDistribution, Transformed
+from flowjax.root_finding import (
+    bisect_check_expand_search,
+    root_finder_to_inverter,
+)
 
 
 def _affine_with_min_scale(min_scale: float = 1e-2) -> Affine:
@@ -161,7 +166,7 @@ def block_neural_autoregressive_flow(
     flow_layers: int = 1,
     invert: bool = True,
     activation: AbstractBijection | Callable | None = None,
-    inverter: Callable | None = None,
+    inverter: Callable[[AbstractBijection, Array, Array | None], Array] | None = None,
 ) -> Transformed:
     """Block neural autoregressive flow (BNAF) (https://arxiv.org/abs/1904.04676).
 
@@ -170,7 +175,8 @@ def block_neural_autoregressive_flow(
     bijection. The bijection does not have an analytic inverse, so must be inverted
     using numerical methods (by default a bisection search). Note that this means
     that only one of ``log_prob`` or ``sample{_and_log_prob}`` can be efficient,
-    controlled by the ``invert`` argument.
+    controlled by the ``invert`` argument. Note, ensuring reasonably scaled base and
+    target distributions will be beneficial for the efficiency of the numerical inverse.
 
     Args:
         key: Jax key.
@@ -187,21 +193,33 @@ def block_neural_autoregressive_flow(
             real -> real. For more information, see
             :class:`~flowjax.bijections.block_autoregressive_network.BlockAutoregressiveNetwork`.
             Defaults to :class:`~flowjax.bijections.tanh.LeakyTanh`.
-        inverter: Callable that implements the required numerical method to invert the
-            ``BlockAutoregressiveNetwork`` bijection. Must have the signature
-            ``inverter(bijection, y, condition=None)``. Defaults to using a bisection
-            search via ``AutoregressiveBisectionInverter``.
+        inverter: Callable that implements the required numerical method to
+            invert the ``BlockAutoregressiveNetwork`` bijection. Passed to
+            :py:class:`~flowjax.bijections.NumericalInverse`. Defaults to
+            using ``elementwise_autoregressive_bisection``.
     """
+    dim = base_dist.shape[-1]
+
+    if inverter is None:
+        inverter = root_finder_to_inverter(
+            partial(
+                bisect_check_expand_search,
+                midpoint=jnp.zeros(dim),
+                width=5,
+            )
+        )
 
     def make_layer(key):  # bnaf layer + permutation
         bij_key, perm_key = jr.split(key)
-        bijection = BlockAutoregressiveNetwork(
-            bij_key,
-            dim=base_dist.shape[-1],
-            cond_dim=cond_dim,
-            depth=nn_depth,
-            block_dim=nn_block_dim,
-            activation=activation,
+        bijection = NumericalInverse(
+            BlockAutoregressiveNetwork(
+                bij_key,
+                dim=base_dist.shape[-1],
+                cond_dim=cond_dim,
+                depth=nn_depth,
+                block_dim=nn_block_dim,
+                activation=activation,
+            ),
             inverter=inverter,
         )
         return _add_default_permute(bijection, base_dist.shape[-1], perm_key)
