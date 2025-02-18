@@ -20,12 +20,21 @@ def test_data_fit():
     x = random.normal(random.key(0), (100, dim))
     flow, losses = fit_to_data(
         random.key(0),
-        dist=flow,
-        x=x,
+        flow,
+        x,
         max_epochs=1,
         batch_size=50,
     )
     after = eqx.filter(flow, eqx.is_inexact_array)
+
+    flow2, losses2, opt_state = fit_to_data(
+        random.key(0),
+        flow,
+        x,
+        max_epochs=1,
+        batch_size=50,
+        return_opt_state=True,
+    )
 
     assert jnp.all(before.base_dist.bijection.loc != after.base_dist.bijection.loc)
     assert jnp.all(before.bijection.loc != after.bijection.loc)
@@ -50,8 +59,9 @@ def test_data_fit_opt_state():
 
     flow, losses, opt_state = fit_to_data(
         random.key(0),
-        dist=flow,
-        x=(values, log_probs),
+        flow,
+        values,
+        log_probs,
         max_epochs=1,
         batch_size=50,
         return_opt_state=True,
@@ -69,8 +79,9 @@ def test_data_fit_opt_state():
 
     flow, losses, opt_state = fit_to_data(
         random.key(4),
-        dist=flow,
-        x=(values, log_probs),
+        flow,
+        values,
+        log_probs,
         max_epochs=1,
         batch_size=50,
         return_opt_state=True,
