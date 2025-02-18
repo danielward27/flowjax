@@ -7,6 +7,8 @@ import jax
 import jax.numpy as jnp
 import jax.random as jr
 import pytest
+import numpy as np
+from scipy import stats
 
 from flowjax.bijections import (
     AbstractBijection,
@@ -16,9 +18,11 @@ from flowjax.bijections import (
     Chain,
     Concatenate,
     Coupling,
+    DiscreteCosine,
     EmbedCondition,
     Exp,
     Flip,
+    Householder,
     Identity,
     Indexed,
     LeakyTanh,
@@ -30,6 +34,7 @@ from flowjax.bijections import (
     Power,
     RationalQuadraticSpline,
     Reshape,
+    Sandwich,
     Scale,
     Scan,
     Sigmoid,
@@ -217,6 +222,12 @@ bijections = {
             partial(bisection_search, lower=-1, upper=1, atol=1e-7),
         ),
     ),
+    "Sandwich": lambda: Sandwich(
+        Exp(),
+        Affine(0.1, 0.5),
+    ),
+    "DiscreteCosine": lambda: DiscreteCosine(shape=(3, 4)),
+    "Householder": lambda: Householder(jnp.ones(3)),
 }
 
 

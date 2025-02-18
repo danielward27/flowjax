@@ -2,11 +2,15 @@
 
 from typing import ClassVar
 
+import jax
 import jax.numpy as jnp
-from jax.nn import softplus
+from jax.nn import softplus, soft_sign
+from jaxtyping import Array, ArrayLike
+from paramax import AbstractUnwrappable, Parameterize, unwrap
+from paramax.utils import inv_softplus
 
 from flowjax.bijections.bijection import AbstractBijection
-
+from flowjax.utils import arraylike_to_array
 
 class SoftPlus(AbstractBijection):
     r"""Transforms to positive domain using softplus :math:`y = \log(1 + \exp(x))`."""
