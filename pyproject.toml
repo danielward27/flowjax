@@ -23,7 +23,7 @@ license = { file = "LICENSE" }
 name = "flowjax"
 readme = "README.md"
 requires-python = ">=3.10"
-version = "17.0.2"
+version = "17.1.0"
 
 [project.urls]
 repository = "https://github.com/danielward27/flowjax"
