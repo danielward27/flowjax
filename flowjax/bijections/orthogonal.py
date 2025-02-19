@@ -1,3 +1,5 @@
+"""Orthogonal transformations."""
+
 import jax.numpy as jnp
 from jax import Array
 from jax.scipy import fft
