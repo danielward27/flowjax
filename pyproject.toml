@@ -23,7 +23,7 @@ license = { file = "LICENSE" }
 name = "flowjax"
 readme = "README.md"
 requires-python = ">=3.10"
-version = "17.0.2"
+version = "17.1.0"
 
 [project.urls]
 repository = "https://github.com/danielward27/flowjax"
@@ -34,7 +34,7 @@ dev = [
   "pytest",
   "beartype",
   "ruff",
-  "sphinx",
+  "sphinx <8.2",              # TODO due to https://github.com/tox-dev/sphinx-autodoc-typehints/issues/523
   "sphinx-book-theme",
   "sphinx-copybutton",
   "sphinx-autodoc-typehints",

@@ -9,6 +9,7 @@ from .coupling import Coupling
 from .exp import Exp
 from .jax_transforms import Scan, Vmap
 from .masked_autoregressive import MaskedAutoregressive
+from .orthogonal import DiscreteCosine, Householder
 from .planar import Planar
 from .power import Power
 from .rational_quadratic_spline import RationalQuadraticSpline
@@ -26,8 +27,6 @@ from .utils import (
     Reshape,
     Sandwich,
 )
-from .utils import EmbedCondition, Flip, Identity, Invert, Permute, Reshape, Sandwich
-from .orthogonal import Householder, DiscreteCosine
 
 __all__ = [
     "AdditiveCondition",

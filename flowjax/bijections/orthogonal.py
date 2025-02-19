@@ -1,35 +1,54 @@
-from paramax import AbstractUnwrappable, Parameterize
-from flowjax.bijections.bijection import AbstractBijection
-from jax import Array
+"""Orthogonal transformations."""
+
 import jax.numpy as jnp
-import jax.nn as jnn
+from jax import Array
 from jax.scipy import fft
+from jaxtyping import ArrayLike
+from paramax import AbstractUnwrappable, Parameterize
+
+from flowjax.bijections.bijection import AbstractBijection
+from flowjax.utils import arraylike_to_array
 
 
 class Householder(AbstractBijection):
-    """A Householder reflection bijection.
+    """A Householder reflection.
 
-    This bijection implements a Householder reflection, which is a linear
-    transformation that reflects vectors across a hyperplane defined by a normal
+    A linear transformation reflecting vectors across a hyperplane defined by a normal
     vector (params). The transformation is its own inverse and volume-preserving
-    (determinant = ±1).
+    (determinant = -1). Given a unit vector :math:`v`, the transformation is
+    :math:`y = x - 2(x^T v)v`.
 
-    Given a unit vector v, the transformation is:
-    x → x - 2(x·v)v
+    It is often desirable to stack multiple such transforms (e.g. up to the
+    dimensionality of the data):
 
-    Attributes:
-        shape: Shape of the input/output vectors
-        cond_shape: Shape of conditional inputs (None as this bijection is unconditional)
+    .. doctest::
+
+        >>> from flowjax.bijections import Householder, Scan
+        >>> import jax.random as jr
+        >>> import equinox as eqx
+        >>> import jax.numpy as jnp
+
+        >>> dim = 5
+        >>> keys = jr.split(jr.key(0), dim)
+        >>> householder_stack = Scan(
+        ...    eqx.filter_vmap(lambda key: Householder(jr.normal(key, dim)))(keys)
+        ... )
+
+    Args:
         params: Normal vector defining the reflection hyperplane. The vector is
             normalized in the transformation, so scaling params will have no effect
             on the bijection.
     """
+
     shape: tuple[int, ...]
     unit_vec: Array | AbstractUnwrappable
     cond_shape = None
 
-    def __init__(self, params: Array):
-        self.shape = (params.shape[-1],)
+    def __init__(self, params: ArrayLike):
+        params = arraylike_to_array(params)
+        if params.ndim != 1:
+            raise ValueError("params must be a vector.")
+        self.shape = params.shape
         self.unit_vec = Parameterize(lambda x: x / jnp.linalg.norm(x), params)
 
     def _householder(self, x: Array) -> Array:
@@ -47,11 +66,9 @@ class DiscreteCosine(AbstractBijection):
 
     This bijection applies the DCT or its inverse along a specified axis.
 
-    Attributes:
-        shape: Shape of the input/output arrays
-        cond_shape: Shape of conditional inputs (None as this bijection is unconditional)
-        axis: Axis along which to apply the DCT
-        norm: Normalization method, fixed to 'ortho' to ensure bijectivity
+    Args:
+        shape: Shape of the input/output arrays.
+        axis: Axis along which to apply the DCT.
     """
 
     shape: tuple[int, ...]

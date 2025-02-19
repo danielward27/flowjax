@@ -7,8 +7,6 @@ import jax
 import jax.numpy as jnp
 import jax.random as jr
 import pytest
-import numpy as np
-from scipy import stats
 
 from flowjax.bijections import (
     AbstractBijection,
@@ -223,8 +221,8 @@ bijections = {
         ),
     ),
     "Sandwich": lambda: Sandwich(
-        Exp(),
         Affine(0.1, 0.5),
+        Exp(),
     ),
     "DiscreteCosine": lambda: DiscreteCosine(shape=(3, 4)),
     "Householder": lambda: Householder(jnp.ones(3)),
