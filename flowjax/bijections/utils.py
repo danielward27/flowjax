@@ -314,8 +314,8 @@ class Sandwich(AbstractBijection):
     inverse applications of another. Given bijections :math:`f` and :math:`g`, it
     computes
 
-    - Forward: :math:`x = g^{-1}(f(g(x)))`
-    - Inverse: :math:`y = g^{-1}(f^{-1}(g(y)))`
+    - Forward: :math:`y = g^{-1}(f(g(x)))`
+    - Inverse: :math:`x = g^{-1}(f^{-1}(g(y)))`
 
     This can be used for e.g. creating symmetries in the transformation or to apply a
     transformation in a different coordinate system.
