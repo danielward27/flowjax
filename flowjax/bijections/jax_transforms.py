@@ -3,7 +3,6 @@
 from collections.abc import Callable
 
 import equinox as eqx
-from jax import Array
 import jax.numpy as jnp
 from jax.lax import scan
 from jax.tree_util import tree_leaves, tree_map

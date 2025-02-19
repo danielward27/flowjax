@@ -7,8 +7,6 @@ import jax
 import jax.numpy as jnp
 import jax.random as jr
 import pytest
-import numpy as np
-from scipy import stats
 
 from flowjax.bijections import (
     AbstractBijection,

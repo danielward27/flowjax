@@ -1,9 +1,9 @@
-from paramax import AbstractUnwrappable, Parameterize
-from flowjax.bijections.bijection import AbstractBijection
-from jax import Array
 import jax.numpy as jnp
-import jax.nn as jnn
+from jax import Array
 from jax.scipy import fft
+from paramax import AbstractUnwrappable, Parameterize
+
+from flowjax.bijections.bijection import AbstractBijection
 
 
 class Householder(AbstractBijection):
