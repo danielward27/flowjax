@@ -80,10 +80,10 @@ class Permute(AbstractBijection):
         )
 
     def transform_and_log_det(self, x, condition=None):
-        return x[self.permutation], jnp.array(0.0)
+        return x[self.permutation], jnp.zeros(())
 
     def inverse_and_log_det(self, y, condition=None):
-        return y[self.inverse_permutation], jnp.array(0.0)
+        return y[self.inverse_permutation], jnp.zeros(())
 
 
 class Flip(AbstractBijection):
