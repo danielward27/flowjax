@@ -32,6 +32,7 @@ from flowjax.bijections import (
     Permute,
     Planar,
     RationalQuadraticSpline,
+    Sandwich,
     Scan,
     TriangularAffine,
     Vmap,
@@ -290,10 +291,9 @@ def triangular_spline_flow(
 ) -> Transformed:
     """Triangular spline flow.
 
-    A single layer consists where each layer consists of a triangular affine
-    transformation with weight normalisation, and an elementwise rational quadratic
-    spline. Tanh is used to constrain to the input to [-1, 1] before spline
-    transformations.
+    Each layer consists of a triangular affine transformation with weight normalisation,
+    and an elementwise rational quadratic spline. Tanh is used to constrain to the input
+    to [-1, 1] before spline transformations.
 
     Args:
         key: Jax random key.
@@ -325,9 +325,7 @@ def triangular_spline_flow(
             lambda t: t.triangular, tri_aff, replace_fn=WeightNormalization
         )
         bijections = [
-            LeakyTanh(tanh_max_val, (dim,)),
-            get_splines(),
-            Invert(LeakyTanh(tanh_max_val, (dim,))),
+            Sandwich(get_splines(), LeakyTanh(tanh_max_val, (dim,))),
             tri_aff,
         ]
 
