@@ -321,21 +321,21 @@ class Sandwich(AbstractBijection):
     transformation in a different coordinate system.
 
     Args:
-        outer: The outer transform.
         inner: The inner transform.
+        outer: The outer transform.
     """
 
     shape: tuple[int, ...]
     cond_shape: tuple[int, ...] | None
-    outer: AbstractBijection
     inner: AbstractBijection
+    outer: AbstractBijection
 
-    def __init__(self, outer: AbstractBijection, inner: AbstractBijection):
+    def __init__(self, inner: AbstractBijection, outer: AbstractBijection):
         check_shapes_match([outer.shape, inner.shape])
         self.cond_shape = merge_cond_shapes([outer.cond_shape, inner.cond_shape])
         self.shape = inner.shape
-        self.outer = outer
         self.inner = inner
+        self.outer = outer
 
     def transform_and_log_det(self, x: Array, condition=None) -> tuple[Array, Array]:
         chain = Chain([self.outer, self.inner, Invert(self.outer)])
