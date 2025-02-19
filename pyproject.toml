@@ -34,7 +34,7 @@ dev = [
   "pytest",
   "beartype",
   "ruff",
-  "sphinx",
+  "sphinx <8.2",              # TODO due to https://github.com/tox-dev/sphinx-autodoc-typehints/issues/523
   "sphinx-book-theme",
   "sphinx-copybutton",
   "sphinx-autodoc-typehints",
