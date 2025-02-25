@@ -86,6 +86,7 @@ def fit_to_key_based_loss(
 def fit_to_data(
     key: PRNGKeyArray,
     dist: PyTree,  # Custom losses may support broader types than AbstractDistribution
+    x: ArrayLike,
     *data: ArrayLike,
     condition: ArrayLike | None = None,
     loss_fn: Callable | None = None,
@@ -110,9 +111,9 @@ def fit_to_data(
     Args:
         key: Jax random seed.
         dist: The pytree to train (usually a distribution).
-        data: Samples from target distribution. If several arrays are passed, each one
-            is split into batches along the first axes, and one batch of each is
-            passed into the loss function.
+        x: Samples from target distribution.
+        data: Extra arrays that are sliced into batches like the samples, and passed
+            to the loss function.
         learning_rate: The learning rate for adam optimizer. Ignored if optimizer is
             provided.
         optimizer: Optax optimizer. Defaults to None.
@@ -144,6 +145,7 @@ def fit_to_data(
             DeprecationWarning,
         )
         data = (*data, condition)
+    data = (x, *data)
     data = tuple(jnp.asarray(a) for a in data)
 
     if loss_fn is None:

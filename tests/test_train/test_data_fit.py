@@ -20,8 +20,8 @@ def test_data_fit():
     x = random.normal(random.key(0), (100, dim))
     flow, losses = fit_to_data(
         random.key(0),
-        flow,
-        x,
+        dist=flow,
+        x=x,
         max_epochs=1,
         batch_size=50,
     )
@@ -29,8 +29,8 @@ def test_data_fit():
 
     flow2, losses2, opt_state = fit_to_data(
         random.key(0),
-        flow,
-        x,
+        dist=flow,
+        x=x,
         max_epochs=1,
         batch_size=50,
         return_opt_state=True,
