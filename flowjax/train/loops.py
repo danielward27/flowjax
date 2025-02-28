@@ -1,9 +1,11 @@
 """Training loops."""
 
+import warnings
 from collections.abc import Callable
+from functools import partial
 
 import equinox as eqx
-import jax.numpy as jnp
+import jax
 import jax.random as jr
 import optax
 import paramax
@@ -17,6 +19,7 @@ from flowjax.train.train_utils import (
     step,
     train_val_split,
 )
+from flowjax.utils import arraylike_to_array
 
 
 def fit_to_key_based_loss(
@@ -78,9 +81,7 @@ def fit_to_key_based_loss(
 def fit_to_data(
     key: PRNGKeyArray,
     dist: PyTree,  # Custom losses may support broader types than AbstractDistribution
-    x: ArrayLike,
-    *,
-    condition: ArrayLike | None = None,
+    *data: ArrayLike,
     loss_fn: Callable | None = None,
     learning_rate: float = 5e-4,
     optimizer: optax.GradientTransformation | None = None,
@@ -90,6 +91,8 @@ def fit_to_data(
     val_prop: float = 0.1,
     return_best: bool = True,
     show_progress: bool = True,
+    x: ArrayLike | None = None,
+    condition: ArrayLike | None = None,
 ):
     r"""Train a PyTree (e.g. a distribution) to samples from the target.
 
@@ -101,12 +104,16 @@ def fit_to_data(
     Args:
         key: Jax random seed.
         dist: The pytree to train (usually a distribution).
-        x: Samples from target distribution.
+        *data: A variable number of data arrays with matching shape on axis 0. Batches
+            of each array are passed to the loss function as positional arguments
+            (see documentation for ``loss_fn``). Commonly this is a single array for
+            unconditional density estimation, or two arrays ``*(target, condition)``
+            for conditional density estimation.
         learning_rate: The learning rate for adam optimizer. Ignored if optimizer is
             provided.
         optimizer: Optax optimizer. Defaults to None.
-        condition: Conditioning variables. Defaults to None.
-        loss_fn: Loss function. Defaults to MaximumLikelihoodLoss.
+        loss_fn: Loss function. The signature should be of the form
+            ``(params, static, *arrays, key)``. Defaults to MaximumLikelihoodLoss.
         max_epochs: Maximum number of epochs. Defaults to 100.
         max_patience: Number of consecutive epochs with no validation loss improvement
             after which training is terminated. Defaults to 5.
@@ -116,12 +123,49 @@ def fit_to_data(
             was reached (when True), or the parameters after the last update (when
             False). Defaults to True.
         show_progress: Whether to show progress bar. Defaults to True.
+        x: Deprecated. Pass in as positional argument instead. See variable argument
+            *data.
+        condition: Deprecated way to pass conditioning variables. Pass as a positional
+            argument instead. See variable argument *data.
 
     Returns:
         A tuple containing the trained distribution and the losses.
     """
-    data = (x,) if condition is None else (x, condition)
-    data = tuple(jnp.asarray(a) for a in data)
+
+    def _handle_deprecation(data, x, condition):
+        # TODO This function handles the deprecation of x and condition, so will
+        # be removed when deprecated.
+
+        if data != () and x is not None:  # Note x passed as key word in this case
+            raise ValueError("Use data argument only (pass x in data).")
+
+        if x is not None:
+            warnings.warn(
+                "Argument x to fit_to_data is deprecated and will be removed in the "
+                "next major version. Pass as a positional argument instead. See "
+                "documentation of *data. This change allows for more flexibility in "
+                "the number of arrays required by a loss.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            data += (x,)
+
+        if condition is not None:
+            warnings.warn(
+                "condition is deprecated and will be removed in the next major "
+                "version. Pass both x and condition as positional arguments. "
+                "See documentation of *data. This change allows for more flexibility "
+                "in the number of arrays required by a loss.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+            data += (condition,)
+
+        return data
+
+    data = _handle_deprecation(data, x, condition)
+
+    data = jax.tree.map(arraylike_to_array, data)
 
     if loss_fn is None:
         loss_fn = MaximumLikelihoodLoss()
@@ -147,8 +191,8 @@ def fit_to_data(
     for _ in loop:
         # Shuffle data
         key, *subkeys = jr.split(key, 3)
-        train_data = [jr.permutation(subkeys[0], a) for a in train_data]
-        val_data = [jr.permutation(subkeys[1], a) for a in val_data]
+        train_data = jax.tree.map(partial(jr.permutation, subkeys[0]), train_data)
+        val_data = jax.tree.map(partial(jr.permutation, subkeys[1]), val_data)
 
         # Train epoch
         batch_losses = []
