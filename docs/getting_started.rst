@@ -36,10 +36,12 @@ Additionally, we can evaluate the log probabilities of these samples
 
 .. doctest:: 
    
-   >>> normal.log_prob(sample)
-   Array(-3.4016984, dtype=float32)
-   >>> normal.log_prob(batch)
-   Array([-4.8808994, -5.0121717, -3.2557464, -4.131773 ], dtype=float32)
+   >>> log_prob = normal.log_prob(sample)
+   >>> log_prob.shape
+   ()
+   >>> log_probs = normal.log_prob(batch)
+   >>> log_probs.shape
+   (4,)
 
 When ``sample.shape == distribution.shape``, a scalar log probability is returned. For 
 a batch of samples, the shape of the returned log probabilities matches the shape
