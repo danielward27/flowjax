@@ -5,7 +5,6 @@ from abc import abstractmethod
 from collections.abc import Callable
 from functools import wraps
 from math import prod
-from typing import ClassVar
 
 import equinox as eqx
 import jax.numpy as jnp
@@ -168,17 +167,18 @@ class AbstractDistribution(eqx.Module):
         """Returns a vectorized version of the distribution method."""
         # Get shapes without broadcasting - note the () corresponds to key arrays.
         maybe_cond = [] if self.cond_shape is None else [self.cond_shape]
-        in_shapes = {
+        in_shape_dict = {
             "_sample_and_log_prob": [()] + maybe_cond,
             "_sample": [()] + maybe_cond,
             "_log_prob": [self.shape] + maybe_cond,
         }
-        out_shapes = {
+        out_shape_dict: dict[str, list[tuple]] = {
             "_sample_and_log_prob": [self.shape, ()],
             "_sample": [self.shape],
             "_log_prob": [()],
         }
-        in_shapes, out_shapes = in_shapes[method.__name__], out_shapes[method.__name__]
+        in_shapes = in_shape_dict[method.__name__]
+        out_shapes = out_shape_dict[method.__name__]
 
         def _check_shapes(method):
             # Wraps unvectorised method with shape checking
@@ -299,12 +299,12 @@ class AbstractTransformed(AbstractDistribution):
         bijection = Chain(list(reversed(bijections))).merge_chains()
         return Transformed(base_dist, bijection)
 
-    @property
-    def shape(self) -> tuple[int, ...]:
+    @property  # type: ignore
+    def shape(self) -> tuple[int, ...]:  # type: ignore
         return self.base_dist.shape
 
-    @property
-    def cond_shape(self) -> tuple[int, ...] | None:
+    @property  # type: ignore
+    def cond_shape(self) -> tuple[int, ...] | None:  # type: ignore
         return merge_cond_shapes((self.bijection.cond_shape, self.base_dist.cond_shape))
 
 
@@ -364,7 +364,7 @@ class StandardNormal(AbstractDistribution):
     """
 
     shape: tuple[int, ...] = ()
-    cond_shape: ClassVar[None] = None
+    cond_shape: None = None
 
     def _log_prob(self, x, condition=None):
         return jstats.norm.logpdf(x).sum()
@@ -450,7 +450,7 @@ class _StandardUniform(AbstractDistribution):
     r"""Standard Uniform distribution."""
 
     shape: tuple[int, ...] = ()
-    cond_shape: ClassVar[None] = None
+    cond_shape: None = None
 
     def _log_prob(self, x, condition=None):
         return jstats.uniform.logpdf(x).sum()
@@ -496,7 +496,7 @@ class _StandardGumbel(AbstractDistribution):
     """Standard gumbel distribution."""
 
     shape: tuple[int, ...] = ()
-    cond_shape: ClassVar[None] = None
+    cond_shape: None = None
 
     def _log_prob(self, x, condition=None):
         return -(x + jnp.exp(-x)).sum()
@@ -529,7 +529,7 @@ class _StandardCauchy(AbstractDistribution):
     """Implements standard cauchy distribution (loc=0, scale=1)."""
 
     shape: tuple[int, ...] = ()
-    cond_shape: ClassVar[None] = None
+    cond_shape: None = None
 
     def _log_prob(self, x, condition=None):
         return jstats.cauchy.logpdf(x).sum()
@@ -562,7 +562,7 @@ class _StandardStudentT(AbstractDistribution):
     """Implements student T distribution with specified degrees of freedom."""
 
     shape: tuple[int, ...]
-    cond_shape: ClassVar[None] = None
+    cond_shape: None = None
     df: Array | AbstractUnwrappable[Array]
 
     def __init__(self, df: ArrayLike):
@@ -607,7 +607,7 @@ class _StandardLaplace(AbstractDistribution):
     """Implements standard laplace distribution (loc=0, scale=1)."""
 
     shape: tuple[int, ...] = ()
-    cond_shape: ClassVar[None] = None
+    cond_shape: None = None
 
     def _log_prob(self, x, condition=None):
         return jstats.laplace.logpdf(x).sum()
@@ -637,7 +637,7 @@ class Laplace(AbstractLocScaleDistribution):
 
 class _StandardExponential(AbstractDistribution):
     shape: tuple[int, ...] = ()
-    cond_shape: ClassVar[None] = None
+    cond_shape: None = None
 
     def _log_prob(self, x, condition=None):
         return jstats.expon.logpdf(x).sum()
@@ -667,7 +667,7 @@ class Exponential(AbstractTransformed):
 
 class _StandardLogistic(AbstractDistribution):
     shape: tuple[int, ...] = ()
-    cond_shape: ClassVar[None] = None
+    cond_shape: None = None
 
     def _sample(self, key, condition=None):
         return jr.logistic(key, self.shape)
@@ -754,7 +754,7 @@ class VmapMixture(AbstractDistribution):
 class _StandardGamma(AbstractDistribution):
     concentration: Array | AbstractUnwrappable[Array]
     shape: tuple[int, ...]
-    cond_shape: ClassVar[None] = None
+    cond_shape: None = None
 
     def __init__(self, concentration: ArrayLike):
         self.concentration = Parameterize(softplus, inv_softplus(concentration))
@@ -795,7 +795,7 @@ class Beta(AbstractDistribution):
     alpha: Array | AbstractUnwrappable[Array]
     beta: Array | AbstractUnwrappable[Array]
     shape: tuple[int, ...]
-    cond_shape: ClassVar[None] = None
+    cond_shape: None = None
 
     def __init__(self, alpha: ArrayLike, beta: ArrayLike):
         alpha, beta = jnp.broadcast_arrays(

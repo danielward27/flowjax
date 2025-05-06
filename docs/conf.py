@@ -6,10 +6,10 @@ from pathlib import Path
 
 if "doctest" not in sys.argv:  # Avoid type checking/isinstance failures.
     # Tag used to avoid expanding arraylike alias in docs
-    typing.GENERATING_DOCUMENTATION = True
+    typing.GENERATING_DOCUMENTATION = True  # type: ignore
 
 
-sys.path.insert(0, Path("..").resolve())
+sys.path.insert(0, str(Path("..").resolve()))
 
 project = "FlowJax"
 copyright = "2022, Daniel Ward"

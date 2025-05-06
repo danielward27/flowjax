@@ -65,3 +65,6 @@ convention = "google"
 "tests/*" = ["D"]
 "*.ipynb" = ["D"]
 "__init__.py" = ["D"]
+
+[tool.mypy]
+ignore_missing_imports = true
