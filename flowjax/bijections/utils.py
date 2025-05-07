@@ -293,8 +293,23 @@ class NumericalInverse(AbstractBijection):
         bijection: AbstractBijection,
         inverter: Callable[[AbstractBijection, Array, Array | None], Array],
     ):
+        @eqx.filter_custom_jvp
+        def nondiff_inverter(bijection, y, condition):
+            return inverter(bijection, y, condition)
+
+        @nondiff_inverter.def_jvp
+        def nondiff_inverter_jvp(*args, **kwargs):
+            raise RuntimeError(
+                "Computing gradients through the numerical inverse would lead to "
+                "misleading results. If you are using a flow with the analytical "
+                "transform only defined in one direction, consider inverting the "
+                "bijection by flipping the ``invert`` argument to the flow. If this is "
+                "not possible, consider using implicit differentation (not yet "
+                "supported)."
+            )
+
         self.bijection = bijection
-        self.inverter = inverter
+        self.inverter = nondiff_inverter
         self.shape = self.bijection.shape
         self.cond_shape = self.bijection.cond_shape
 
