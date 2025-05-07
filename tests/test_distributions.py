@@ -120,6 +120,7 @@ dist_shape, sample_shape, condition_shape = ([(), (3, 4)] for _ in range(3))
 
 class _TestDist(AbstractDistribution):
     "Toy distribution object, for testing of distribution broadcasting."
+
     shape: tuple[int, ...]
     cond_shape: tuple[int, ...] | None
 
@@ -292,3 +293,12 @@ def test_transformed():
     assert dist.sample(jr.key(0), condition=jnp.ones((5, 2))).shape == (5,)
     assert dist.shape == ()
     assert dist.cond_shape == (2,)
+
+
+def test_transformed_wrong_shape():
+
+    with pytest.raises(ValueError, match="mismatched shapes"):
+        Transformed(
+            StandardNormal((2,)),
+            Affine(),
+        )
