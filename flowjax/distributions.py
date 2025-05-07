@@ -244,7 +244,7 @@ class AbstractTransformed(AbstractDistribution):
     base_dist: AbstractVar[AbstractDistribution]
     bijection: AbstractVar[AbstractBijection]
 
-    def __check_init__(self):  # TODO test errors and test conditional base distribution
+    def __check_init__(self):
         """Check for compatible shapes between base_dist and bijection."""
         if (
             self.base_dist.cond_shape is not None
