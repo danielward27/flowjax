@@ -244,6 +244,27 @@ class AbstractTransformed(AbstractDistribution):
     base_dist: AbstractVar[AbstractDistribution]
     bijection: AbstractVar[AbstractBijection]
 
+    def __check_init__(self):
+        """Check for compatible shapes between base_dist and bijection."""
+        if (
+            self.base_dist.cond_shape is not None
+            and self.bijection.cond_shape is not None
+            and self.base_dist.cond_shape != self.bijection.cond_shape
+        ):
+            raise ValueError(
+                "The base distribution and bijection are both conditional "
+                "but have mismatched cond_shape attributes. Base distribution has"
+                f"{self.base_dist.cond_shape}, and the bijection has"
+                f"{self.bijection.cond_shape}.",
+            )
+
+        if self.base_dist.shape != self.bijection.shape:
+            raise ValueError(
+                "The base distribution and bijection have mismatched shapes. "
+                f"Base distribution has {self.base_dist.shape}, and the bijection "
+                f"has {self.bijection.shape}.",
+            )
+
     def _log_prob(self, x, condition=None):
         z, log_abs_det = self.bijection.inverse_and_log_det(x, condition)
         p_z = self.base_dist._log_prob(z, condition)
@@ -267,20 +288,6 @@ class AbstractTransformed(AbstractDistribution):
             condition,
         )
         return sample, log_prob_base - forward_log_dets
-
-    def __check_init__(self):  # TODO test errors and test conditional base distribution
-        """Checks cond_shape is compatible in both bijection and distribution."""
-        if (
-            self.base_dist.cond_shape is not None
-            and self.bijection.cond_shape is not None
-            and self.base_dist.cond_shape != self.bijection.cond_shape
-        ):
-            raise ValueError(
-                "The base distribution and bijection are both conditional "
-                "but have mismatched cond_shape attributes. Base distribution has"
-                f"{self.base_dist.cond_shape}, and the bijection has"
-                f"{self.bijection.cond_shape}.",
-            )
 
     def merge_transforms(self):
         """Unnests nested transformed distributions.
