@@ -1,5 +1,6 @@
 """Training loops."""
 
+import warnings
 from collections.abc import Callable
 
 import equinox as eqx
@@ -75,12 +76,12 @@ def fit_to_key_based_loss(
     return eqx.combine(params, static), losses
 
 
+
+
 def fit_to_data(
     key: PRNGKeyArray,
     dist: PyTree,  # Custom losses may support broader types than AbstractDistribution
-    x: ArrayLike,
-    *,
-    condition: ArrayLike | None = None,
+    *data: ArrayLike,
     loss_fn: Callable | None = None,
     learning_rate: float = 5e-4,
     optimizer: optax.GradientTransformation | None = None,
@@ -90,6 +91,8 @@ def fit_to_data(
     val_prop: float = 0.1,
     return_best: bool = True,
     show_progress: bool = True,
+    x: ArrayLike | None = None,
+    condition: ArrayLike | None = None,
 ):
     r"""Train a PyTree (e.g. a distribution) to samples from the target.
 
@@ -101,12 +104,16 @@ def fit_to_data(
     Args:
         key: Jax random seed.
         dist: The pytree to train (usually a distribution).
-        x: Samples from target distribution.
+        *data: A variable number of data arrays with matching shape on axis 0. Batches
+            of each array are passed to the loss function as positional arguments
+            (see documentation for ``loss_fn``). Commonly this is a single array for
+            unconditional density estimation, or two arrays ``target, condition)``
+            for conditional density estimation.
         learning_rate: The learning rate for adam optimizer. Ignored if optimizer is
             provided.
         optimizer: Optax optimizer. Defaults to None.
-        condition: Conditioning variables. Defaults to None.
-        loss_fn: Loss function. Defaults to MaximumLikelihoodLoss.
+        loss_fn: Loss function. The signature should be of the form
+            ``(params, static, *arrays, key)``. Defaults to MaximumLikelihoodLoss.
         max_epochs: Maximum number of epochs. Defaults to 100.
         max_patience: Number of consecutive epochs with no validation loss improvement
             after which training is terminated. Defaults to 5.
@@ -116,11 +123,41 @@ def fit_to_data(
             was reached (when True), or the parameters after the last update (when
             False). Defaults to True.
         show_progress: Whether to show progress bar. Defaults to True.
+        x: Deprecated. Pass in as positional argument instead. See variable argument
+            *data.
+        condition: Deprecated way to pass conditioning variables. Pass as a positional
+            argument instead. See variable argument *data.
 
     Returns:
         A tuple containing the trained distribution and the losses.
     """
-    data = (x,) if condition is None else (x, condition)
+
+    def _handle_deprecation(data, x, condition):
+        # TODO This function handles the deprecation of x and condition, so will
+        # be removed when deprecated.
+
+        if data != () and x is not None:  # Note x passed as key word in this case
+            raise ValueError("Use data argument only (pass x in data).")
+        
+        if x is not None or condition is not None:
+            warnings.warn(
+                "Passing x and condition as key word arguments is deprecated and will "
+                "be removed in the next major version. Pass both x and condition as "
+                "positional arguments. See documentation of *data. This change allows "
+                "for more flexibility in the number of arrays required by a loss.",
+                FutureWarning,
+            )
+
+        if x is not None:
+            data += (x,)
+
+        if condition is not None:
+            data += (condition,)
+
+        return data
+
+    data = _handle_deprecation(data, x, condition)
+
     data = tuple(jnp.asarray(a) for a in data)
 
     if loss_fn is None:
@@ -170,7 +207,7 @@ def fit_to_data(
         batch_losses = []
         for batch in zip(*get_batches(val_data, batch_size), strict=True):
             key, subkey = jr.split(key)
-            loss_i = loss_fn(params, static, *batch, key=subkey)
+            loss_i = eqx.filter_jit(loss_fn)(params, static, *batch, key=subkey)
             batch_losses.append(loss_i)
         losses["val"].append((sum(batch_losses) / len(batch_losses)).item())
 

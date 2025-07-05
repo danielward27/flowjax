@@ -45,3 +45,4 @@ timing_tests.ipynb
 _temp*
 .vscode/settings.json
 _build
+.zed

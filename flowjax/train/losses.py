@@ -55,8 +55,7 @@ class ContrastiveLoss:
     (the simulator output/oberved data).
 
     Args:
-        prior: The prior distribution over x (the target
-            variable).
+        prior: The prior distribution over x (the target variable).
         n_contrastive: The number of contrastive samples/atoms to use when
             computing the loss. Must be less than ``batch_size``.
 
@@ -101,7 +100,6 @@ class ContrastiveLoss:
 
 
 def _get_contrastive_idxs(key: PRNGKeyArray, batch_size: int, n_contrastive: int):
-
     @eqx.filter_vmap
     def _get_idxs(key, idx, batch_size, n_contrastive):
         choices = jnp.delete(jnp.arange(batch_size), idx, assume_unique_indices=True)
