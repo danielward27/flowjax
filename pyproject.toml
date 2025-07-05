@@ -1,21 +1,21 @@
 [project]
 authors = [{ name = "Daniel Ward", email = "danielward27@outlook.com" }]
 classifiers = [
-  "Intended Audience :: Science/Research",
-  "License :: OSI Approved :: MIT License",
-  "Natural Language :: English",
-  "Programming Language :: Python :: 3",
-  "Topic :: Scientific/Engineering :: Artificial Intelligence",
-  "Topic :: Scientific/Engineering :: Information Analysis",
-  "Topic :: Scientific/Engineering :: Mathematics",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Scientific/Engineering :: Mathematics",
 ]
 dependencies = [
-  "jax>=0.4.16",
-  "equinox>=0.10",
-  "jaxtyping",
-  "tqdm",
-  "optax",
-  "paramax",
+    "jax>=0.4.16",
+    "equinox>=0.10",
+    "jaxtyping",
+    "tqdm",
+    "optax",
+    "paramax",
 ]
 description = "Easy to use distributions, bijections and normalizing flows in JAX."
 keywords = ["jax", "neural-networks", "equinox"]
@@ -23,7 +23,7 @@ license = { file = "LICENSE" }
 name = "flowjax"
 readme = "README.md"
 requires-python = ">=3.10"
-version = "17.1.2"
+version = "17.2.0"
 
 [project.urls]
 repository = "https://github.com/danielward27/flowjax"
@@ -31,16 +31,16 @@ documentation = "https://danielward27.github.io/flowjax/index.html"
 
 [project.optional-dependencies]
 dev = [
-  "pytest",
-  "beartype",
-  "ruff",
-  "sphinx <8.2",              # TODO due to https://github.com/tox-dev/sphinx-autodoc-typehints/issues/523
-  "sphinx-book-theme",
-  "sphinx-copybutton",
-  "sphinx-autodoc-typehints",
-  "nbsphinx",
-  "ipython",
-  "numpyro",
+    "pytest",
+    "beartype",
+    "ruff",
+    "sphinx <8.2",              # TODO due to https://github.com/tox-dev/sphinx-autodoc-typehints/issues/523
+    "sphinx-book-theme",
+    "sphinx-copybutton",
+    "sphinx-autodoc-typehints",
+    "nbsphinx",
+    "ipython",
+    "numpyro",
 ]
 
 [build-system]
