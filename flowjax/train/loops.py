@@ -76,12 +76,11 @@ def fit_to_key_based_loss(
     return eqx.combine(params, static), losses
 
 
-
-
 def fit_to_data(
     key: PRNGKeyArray,
     dist: PyTree,  # Custom losses may support broader types than AbstractDistribution
-    *data: ArrayLike,
+    data: ArrayLike | tuple[ArrayLike, ...] = (),
+    *,
     loss_fn: Callable | None = None,
     learning_rate: float = 5e-4,
     optimizer: optax.GradientTransformation | None = None,
@@ -104,11 +103,10 @@ def fit_to_data(
     Args:
         key: Jax random seed.
         dist: The pytree to train (usually a distribution).
-        *data: A variable number of data arrays with matching shape on axis 0. Batches
-            of each array are passed to the loss function as positional arguments
-            (see documentation for ``loss_fn``). Commonly this is a single array for
-            unconditional density estimation, or two arrays ``target, condition)``
-            for conditional density estimation.
+        data: An array or tuple of arrays passed as positional arguments to the
+            loss function (see documentation for ``loss_fn``). Commonly this is a
+            single array for unconditional density estimation, or two arrays
+            ``(target, condition)`` for conditional density estimation.
         learning_rate: The learning rate for adam optimizer. Ignored if optimizer is
             provided.
         optimizer: Optax optimizer. Defaults to None.
@@ -123,27 +121,23 @@ def fit_to_data(
             was reached (when True), or the parameters after the last update (when
             False). Defaults to True.
         show_progress: Whether to show progress bar. Defaults to True.
-        x: Deprecated. Pass in as positional argument instead. See variable argument
-            *data.
-        condition: Deprecated way to pass conditioning variables. Pass as a positional
-            argument instead. See variable argument *data.
+        x: Deprecated. Pass in data instead.
+        condition: Deprecated. Pass in data instead.
 
     Returns:
         A tuple containing the trained distribution and the losses.
     """
+    data = (data,) if isinstance(data, ArrayLike) else data
 
     def _handle_deprecation(data, x, condition):
         # TODO This function handles the deprecation of x and condition, so will
-        # be removed when deprecated.
-
-        if data != () and x is not None:  # Note x passed as key word in this case
-            raise ValueError("Use data argument only (pass x in data).")
-        
+        # be removed when deprecated. The default to tuple for data should also be
+        # removed.
         if x is not None or condition is not None:
             warnings.warn(
-                "Passing x and condition as key word arguments is deprecated and will "
-                "be removed in the next major version. Pass both x and condition as "
-                "positional arguments. See documentation of *data. This change allows "
+                "Keyword arguments x and condition are deprecated and will "
+                "be removed in the next major version. Pass both x and condition "
+                "to the data argument. See documentation of data. This change allows "
                 "for more flexibility in the number of arrays required by a loss.",
                 FutureWarning,
             )
