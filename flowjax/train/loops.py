@@ -1,7 +1,7 @@
 """Training loops."""
 
 import warnings
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 
 import equinox as eqx
 import jax.numpy as jnp
@@ -79,7 +79,7 @@ def fit_to_key_based_loss(
 def fit_to_data(
     key: PRNGKeyArray,
     dist: PyTree,  # Custom losses may support broader types than AbstractDistribution
-    data: ArrayLike | tuple[ArrayLike, ...] = (),
+    data: ArrayLike | Iterable[ArrayLike] = (),
     *,
     loss_fn: Callable | None = None,
     learning_rate: float = 5e-4,
