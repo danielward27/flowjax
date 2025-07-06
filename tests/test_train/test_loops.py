@@ -20,9 +20,9 @@ def test_data_fit():
     before = eqx.filter(flow, eqx.is_inexact_array)
     x = random.normal(random.key(0), (100, dim))
     flow, losses = fit_to_data(
-        random.key(0),
-        flow,
-        x,
+        key=random.key(0),
+        dist=flow,
+        data=x,
         max_epochs=1,
         batch_size=50,
     )

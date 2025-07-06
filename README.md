@@ -33,9 +33,9 @@ flow = block_neural_autoregressive_flow(
 )
 
 flow, losses = fit_to_data(
-    train_key,
-    flow,
-    x,
+    key=train_key,
+    dist=flow,
+    data=x,
     learning_rate=5e-3,
     max_epochs=200,
     )
