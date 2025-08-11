@@ -339,9 +339,14 @@ class Transformed(AbstractTransformed):
             >>> bijection = Affine(1)
             >>> transformed = Transformed(normal, bijection)
     """
-
     base_dist: AbstractDistribution
     bijection: AbstractBijection
+
+    # manual init because Pylance doesn't understand AbstractVar
+    def __init__(self, base_dist: AbstractDistribution, bijection: AbstractBijection):
+        self.base_dist = base_dist
+        self.bijection = bijection
+
 
 
 class AbstractLocScaleDistribution(AbstractTransformed):
