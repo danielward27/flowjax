@@ -85,7 +85,7 @@ def root_finder_to_inverter(
         def fn(x):
             return bijection.transform(x, condition) - y
 
-        return root_finder(fn)[0]
+        return root_finder(fn, y)[0]
 
     return inverter
 

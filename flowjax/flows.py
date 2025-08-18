@@ -168,6 +168,7 @@ def block_neural_autoregressive_flow(
     invert: bool = True,
     activation: AbstractBijection | Callable | None = None,
     inverter: Callable[[AbstractBijection, Array, Array | None], Array] | None = None,
+    diffable_inverter: bool = False
 ) -> Transformed:
     """Block neural autoregressive flow (BNAF) (https://arxiv.org/abs/1904.04676).
 
@@ -222,6 +223,7 @@ def block_neural_autoregressive_flow(
                 activation=activation,
             ),
             inverter=inverter,
+            diffable_inverter=diffable_inverter
         )
         return _add_default_permute(bijection, base_dist.shape[-1], perm_key)
 
