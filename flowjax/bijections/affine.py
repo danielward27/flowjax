@@ -19,7 +19,7 @@ class Affine(AbstractBijection):
     r"""Elementwise affine transformation :math:`y = a \cdot x + b`.
 
     ``loc`` and ``scale`` should broadcast to the desired shape of the bijection.
-    By default, we constrain the scale parameter to be postive using ``softplus``, but
+    By default, we constrain the scale parameter to be positive using ``softplus``, but
     other parameterizations can be achieved by replacing the scale parameter after
     construction e.g. using ``eqx.tree_at``.
 
@@ -33,11 +33,7 @@ class Affine(AbstractBijection):
     loc: Array
     scale: Array | AbstractUnwrappable[Array]
 
-    def __init__(
-        self,
-        loc: ArrayLike = 0,
-        scale: ArrayLike = 1,
-    ):
+    def __init__(self, loc: ArrayLike = 0, scale: ArrayLike = 1):
         self.loc, scale = jnp.broadcast_arrays(
             *(arraylike_to_array(a, dtype=float) for a in (loc, scale)),
         )
@@ -52,17 +48,17 @@ class Affine(AbstractBijection):
 
 
 class Loc(AbstractBijection):
-    r"""Location transformation :math:`y = a \cdot x + b`.
+    r"""Location transformation :math:`y = x + b`.
 
     Args:
-        loc: Scale parameter. Defaults to 1.
+        loc: Scale parameter. Defaults to 0.
     """
 
     loc: Array
     shape: tuple[int, ...]
     cond_shape: ClassVar[None] = None
 
-    def __init__(self, loc: ArrayLike):
+    def __init__(self, loc: ArrayLike = 0):
         self.loc = arraylike_to_array(loc, dtype=float)
         self.shape = self.loc.shape
 
@@ -84,10 +80,7 @@ class Scale(AbstractBijection):
     cond_shape: ClassVar[None] = None
     scale: Array | AbstractUnwrappable[Array]
 
-    def __init__(
-        self,
-        scale: ArrayLike,
-    ):
+    def __init__(self, scale: ArrayLike = 1):
         scale = arraylike_to_array(scale, "scale", dtype=float)
         self.scale = Parameterize(softplus, inv_softplus(scale))
         self.shape = jnp.shape(unwrap(scale))
