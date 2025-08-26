@@ -15,6 +15,7 @@ from flowjax.bijections.bijection import AbstractBijection
 from flowjax.bijections.chain import Chain
 from flowjax.utils import arraylike_to_array, check_shapes_match, merge_cond_shapes
 
+import lineax as lx
 
 class Invert(AbstractBijection):
     """Invert a bijection.
@@ -309,7 +310,11 @@ class NumericalInverse(AbstractBijection):
 
                 # TODO: implement with lineax JacobianLinearOperator
                 # which determines whether jacfwd or jacrev is more efficient
-                A = jacfwd(lambda x: bijection.transform(x, condition))(x_star)
+                #A = jacfwd(lambda x: bijection.transform(x, condition))(x_star)
+                A = lx.JacobianLinearOperator(
+                    lambda x, _: bijection.transform(x, condition),
+                    x_star
+                )
 
                 def F(bijection, y):
                     return bijection.transform(x_star, condition) - y
@@ -319,7 +324,7 @@ class NumericalInverse(AbstractBijection):
                 )
 
                 # TODO: use more robust solvers in lineax
-                return x_star, jnp.linalg.solve(A, b)
+                return x_star, lx.linear_solve(A, -b).value #jnp.linalg.solve(A, b)
 
             self.inverter = inverter_wrapper
         else:
