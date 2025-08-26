@@ -9,6 +9,8 @@ import jax.numpy as jnp
 import numpy as np
 from jaxtyping import Array, Int
 
+from jax import jacfwd
+
 from flowjax.bijections.bijection import AbstractBijection
 from flowjax.bijections.chain import Chain
 from flowjax.utils import arraylike_to_array, check_shapes_match, merge_cond_shapes
@@ -296,21 +298,30 @@ class NumericalInverse(AbstractBijection):
     ):
         if not diffable_inverter:
             @eqx.filter_custom_jvp
-            def nondiff_inverter(bijection, y, condition):
+            def inverter_wrapper(bijection, y, condition=None):
                 return inverter(bijection, y, condition)
 
-            @nondiff_inverter.def_jvp
-            def nondiff_inverter_jvp(*args, **kwargs):
-                raise RuntimeError(
-                    "Computing gradients through the numerical inverse would lead to "
-                    "misleading results. If you are using a flow with the analytical "
-                    "transform only defined in one direction, consider inverting the "
-                    "bijection by flipping the ``invert`` argument to the flow. If this is "
-                    "not possible, consider using implicit differentation (not yet "
-                    "supported)."
+            @inverter_wrapper.def_jvp
+            def inverter_jvp(primals, tangents, condition=None):
+                (bijection, y), (bijection_dot, y_dot) = primals, tangents
+
+                x_star = inverter_wrapper(bijection, y, condition)
+
+                # TODO: implement with lineax JacobianLinearOperator
+                # which determines whether jacfwd or jacrev is more efficient
+                A = jacfwd(lambda x: bijection.transform(x, condition))(x_star)
+
+                def F(bijection, y):
+                    return bijection.transform(x_star, condition) - y
+
+                _, b = eqx.filter_jvp(
+                    F, (bijection, y), (bijection_dot, y_dot)
                 )
 
-            self.inverter = nondiff_inverter
+                # TODO: use more robust solvers in lineax
+                return x_star, jnp.linalg.solve(A, b)
+
+            self.inverter = inverter_wrapper
         else:
             self.inverter = inverter
 
@@ -322,7 +333,7 @@ class NumericalInverse(AbstractBijection):
         return self.bijection.transform_and_log_det(x, condition)
 
     def inverse_and_log_det(self, y, condition=None):
-        x = self.inverter(self.bijection, y, condition)
+        x = self.inverter(self.bijection, y, condition=condition)
         _, log_det = self.bijection.transform_and_log_det(x, condition)
         return x, -log_det
 
