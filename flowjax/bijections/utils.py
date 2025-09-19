@@ -295,40 +295,59 @@ class NumericalInverse(AbstractBijection):
         self,
         bijection: AbstractBijection,
         inverter: Callable[[AbstractBijection, Array, Array | None], Array],
-        diffable_inverter: bool = False
+        diffable_inverter: bool = False,
+        raise_old_error: bool = False
     ):
-        if not diffable_inverter:
+        if raise_old_error:
             @eqx.filter_custom_jvp
-            def inverter_wrapper(bijection, y, condition=None):
+            def nondiff_inverter(bijection, y, condition):
                 return inverter(bijection, y, condition)
 
-            @inverter_wrapper.def_jvp
-            def inverter_jvp(primals, tangents, condition=None):
-                (bijection, y), (bijection_dot, y_dot) = primals, tangents
-
-                x_star = inverter_wrapper(bijection, y, condition)
-
-                # TODO: implement with lineax JacobianLinearOperator
-                # which determines whether jacfwd or jacrev is more efficient
-                #A = jacfwd(lambda x: bijection.transform(x, condition))(x_star)
-                A = lx.JacobianLinearOperator(
-                    lambda x, _: bijection.transform(x, condition),
-                    x_star
+            @nondiff_inverter.def_jvp
+            def nondiff_inverter_jvp(*args, **kwargs):
+                raise RuntimeError(
+                    "Computing gradients through the numerical inverse would lead to "
+                    "misleading results. If you are using a flow with the analytical "
+                    "transform only defined in one direction, consider inverting the "
+                    "bijection by flipping the ``invert`` argument to the flow. If this is "
+                    "not possible, consider using implicit differentation (not yet "
+                    "supported)."
                 )
 
-                def F(bijection, y):
-                    return bijection.transform(x_star, condition) - y
-
-                _, b = eqx.filter_jvp(
-                    F, (bijection, y), (bijection_dot, y_dot)
-                )
-
-                # TODO: use more robust solvers in lineax
-                return x_star, lx.linear_solve(A, -b).value #jnp.linalg.solve(A, b)
-
-            self.inverter = inverter_wrapper
+            self.inverter = nondiff_inverter
         else:
-            self.inverter = inverter
+            if not diffable_inverter:
+                @eqx.filter_custom_jvp
+                def inverter_wrapper(bijection, y, condition=None):
+                    return inverter(bijection, y, condition)
+
+                @inverter_wrapper.def_jvp
+                def inverter_jvp(primals, tangents, condition=None):
+                    (bijection, y), (bijection_dot, y_dot) = primals, tangents
+
+                    x_star = inverter_wrapper(bijection, y, condition)
+
+                    # TODO: implement with lineax JacobianLinearOperator
+                    # which determines whether jacfwd or jacrev is more efficient
+                    #A = jacfwd(lambda x: bijection.transform(x, condition))(x_star)
+                    A = lx.JacobianLinearOperator(
+                        lambda x, _: bijection.transform(x, condition),
+                        x_star
+                    )
+
+                    def F(bijection, y):
+                        return bijection.transform(x_star, condition) - y
+
+                    _, b = eqx.filter_jvp(
+                        F, (bijection, y), (bijection_dot, y_dot)
+                    )
+
+                    # TODO: use more robust solvers in lineax
+                    return x_star, lx.linear_solve(A, -b).value #jnp.linalg.solve(A, b)
+
+                self.inverter = inverter_wrapper
+            else:
+                self.inverter = inverter
 
         self.bijection = bijection
         self.shape = self.bijection.shape
