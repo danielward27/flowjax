@@ -44,9 +44,7 @@ def block_tril_mask(
     block_shape: tuple, n_blocks: int, k: int = 0
 ) -> Bool[Array, "dim1 dim2"]:
     """Lower triangular block mask, with offset k."""
-    mask = jnp.zeros((block_shape[0] * n_blocks, block_shape[1] * n_blocks), bool)
-    for i in range(n_blocks):
-        row_i = max(0, (i - k)) * block_shape[0]
-        col_i = i * block_shape[1]
-        mask = mask.at[row_i:, col_i : col_i + block_shape[1]].set(True)  # noqa
+    mask = jnp.tri(n_blocks, n_blocks, k=k, dtype=int)
+    block = jnp.ones(block_shape, dtype=int)
+    mask = jnp.kron(mask, block).astype(bool)
     return mask
