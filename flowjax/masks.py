@@ -8,7 +8,6 @@ calculations.
 import operator
 
 import jax.numpy as jnp
-from jax.scipy.linalg import block_diag
 from jaxtyping import Array, Bool, Int
 
 
@@ -37,7 +36,9 @@ def rank_based_mask(
 
 def block_diag_mask(block_shape: tuple, n_blocks: int) -> Bool[Array, "dim1 dim2"]:
     """Block diagonal mask."""
-    return block_diag(*jnp.ones((n_blocks, *block_shape), bool))
+    mask = jnp.diag(jnp.ones(n_blocks, dtype=int))
+    block = jnp.ones(block_shape, dtype=int)
+    return jnp.kron(mask, block).astype(bool)
 
 
 def block_tril_mask(
@@ -46,5 +47,4 @@ def block_tril_mask(
     """Lower triangular block mask, with offset k."""
     mask = jnp.tri(n_blocks, n_blocks, k=k, dtype=int)
     block = jnp.ones(block_shape, dtype=int)
-    mask = jnp.kron(mask, block).astype(bool)
-    return mask
+    return jnp.kron(mask, block).astype(bool)
