@@ -344,6 +344,10 @@ class Transformed(AbstractTransformed):
 
     # manual init because Pylance doesn't understand AbstractVar
     def __init__(self, base_dist: AbstractDistribution, bijection: AbstractBijection):
+        if base_dist.shape != bijection.shape:
+            raise ValueError(
+                "Base distribution and bijection must have the same shape."
+            )
         self.base_dist = base_dist
         self.bijection = bijection
 
