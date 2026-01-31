@@ -17,7 +17,7 @@ def step(
     *args,
     optimizer: optax.GradientTransformation,
     opt_state: PyTree,
-    loss_fn: Callable[[PyTree, PyTree], Scalar],
+    loss_fn: Callable[..., Scalar],
     **kwargs,
 ):
     """Carry out a training step.

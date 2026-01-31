@@ -1,6 +1,5 @@
 """Training loops."""
 
-import warnings
 from collections.abc import Callable, Iterable
 
 import equinox as eqx
@@ -90,8 +89,6 @@ def fit_to_data(
     val_prop: float = 0.1,
     return_best: bool = True,
     show_progress: bool = True,
-    x: ArrayLike | None = None,
-    condition: ArrayLike | None = None,
 ):
     r"""Train a PyTree (e.g. a distribution) to samples from the target.
 
@@ -121,37 +118,11 @@ def fit_to_data(
             was reached (when True), or the parameters after the last update (when
             False). Defaults to True.
         show_progress: Whether to show progress bar. Defaults to True.
-        x: Deprecated. Pass in data instead.
-        condition: Deprecated. Pass in data instead.
 
     Returns:
         A tuple containing the trained distribution and the losses.
     """
     data = (data,) if isinstance(data, ArrayLike) else data
-
-    def _handle_deprecation(data, x, condition):
-        # TODO This function handles the deprecation of x and condition, so will
-        # be removed when deprecated. The default to tuple for data should also be
-        # removed.
-        if x is not None or condition is not None:
-            warnings.warn(
-                "Keyword arguments x and condition are deprecated and will "
-                "be removed in the next major version. Pass both x and condition "
-                "to the data argument. See documentation of data. This change allows "
-                "for more flexibility in the number of arrays required by a loss.",
-                FutureWarning,
-            )
-
-        if x is not None:
-            data += (x,)
-
-        if condition is not None:
-            data += (condition,)
-
-        return data
-
-    data = _handle_deprecation(data, x, condition)
-
     data = tuple(jnp.asarray(a) for a in data)
 
     if loss_fn is None:
