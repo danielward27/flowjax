@@ -40,7 +40,7 @@ dev = [
     "sphinx-autodoc-typehints",
     "nbsphinx",
     "ipython",
-    "numpyro",
+    "numpyro>=0.20.0",
 ]
 
 [build-system]
