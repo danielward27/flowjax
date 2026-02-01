@@ -8,7 +8,6 @@ from typing import Any
 
 import equinox as eqx
 import jax
-import jax.random as jr
 import paramax
 from jaxtyping import Array, ArrayLike
 
@@ -18,7 +17,14 @@ from flowjax.utils import arraylike_to_array
 
 try:
     import numpyro
-except ImportError as e:
+    from packaging.version import Version
+
+    if Version(numpyro.__version__) < Version("0.20.0"):
+        raise ImportError(
+            f"numpyro version must be >= 0.20.0, got {numpyro.__version__}."
+        )
+
+except ModuleNotFoundError as e:
     e.add_note(
         "Note, in order to interface with numpyro, it must be installed. Please see "
         "https://num.pyro.ai/en/latest/getting_started.html#installation",
@@ -52,7 +58,6 @@ class _BetterTransformedDistribution(TransformedDistribution):
         y = value
 
         for i, transform in enumerate(reversed(self.transforms)):
-
             if isinstance(transform, _BijectionToNumpyro) and intermediates is None:
                 # Compute inv and log det in one
                 inv_transform = _BijectionToNumpyro(
@@ -182,7 +187,7 @@ class _DistributionToNumpyro(numpyro.distributions.Distribution):
             condition = arraylike_to_array(condition, "condition")
 
         self._condition = condition
-        self.support = _RealNdim(dist.ndim)
+        self._support = _RealNdim(dist.ndim)
         batch_shape = _get_batch_shape(condition, dist.cond_shape)
         super().__init__(batch_shape, dist.shape)
 
@@ -191,10 +196,6 @@ class _DistributionToNumpyro(numpyro.distributions.Distribution):
         return jax.lax.stop_gradient(self._condition)
 
     def sample(self, key, sample_shape=()):
-        # TODO remove when old-style keys fully deprecated
-        if not jax.dtypes.issubdtype(key.dtype, jax.dtypes.prng_key):
-            key = jr.wrap_key_data(key)
-
         return self.dist.sample(key, sample_shape, self.condition)
 
     def log_prob(self, value):
@@ -243,8 +244,8 @@ class _BijectionToNumpyro(numpyro.distributions.transforms.Transform):
             domain = _RealNdim(len(bijection.shape))
         if codomain is None:
             codomain = _RealNdim(len(bijection.shape))
-        self.domain = domain
-        self.codomain = codomain
+        self._domain = domain
+        self._codomain = codomain
         self._argcheck_domains()
 
     def __call__(self, x):
@@ -264,6 +265,14 @@ class _BijectionToNumpyro(numpyro.distributions.transforms.Transform):
     @property
     def condition(self):
         return jax.lax.stop_gradient(self._condition)
+
+    @property
+    def domain(self):
+        return self._domain
+
+    @property
+    def codomain(self):
+        return self._codomain
 
     def tree_flatten(self):
         return (self.bijection, self._condition, self.domain, self.codomain), (
