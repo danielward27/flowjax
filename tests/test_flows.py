@@ -22,6 +22,7 @@ KWARGS = {
 
 testcases = {
     "BNAF": lambda c: block_neural_autoregressive_flow(**KWARGS, cond_dim=c),
+    "BNAF_diffable_inverse": lambda c: block_neural_autoregressive_flow(**KWARGS, invert=False, cond_dim=c),
     "triangular_spline_flow": lambda c: triangular_spline_flow(**KWARGS, cond_dim=c),
     "affine_coupling": lambda c: coupling_flow(
         transformer=Affine(), **KWARGS, cond_dim=c

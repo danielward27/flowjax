@@ -200,6 +200,12 @@ def block_neural_autoregressive_flow(
             invert the ``BlockAutoregressiveNetwork`` bijection. Passed to
             :py:class:`~flowjax.bijections.NumericalInverse`. Defaults to
             using ``elementwise_autoregressive_bisection``.
+        diffable_inverter: Passed to :py:class:`~flowjax.bijections.NumericalInverse`.
+            If ``False`` (default), gradients through the inverse use a custom JVP.
+            If ``True``, the provided ``inverter`` is treated as differentiable.
+        raise_old_error: Passed to :py:class:`~flowjax.bijections.NumericalInverse`.
+            If ``True``, attempting to differentiate through the numerical inverse
+            raises a ``RuntimeError`` (legacy behavior).
     """
     dim = base_dist.shape[-1]
 
