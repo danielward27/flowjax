@@ -30,20 +30,19 @@ class Invert(AbstractBijection):
     """
 
     bijection: AbstractBijection
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
+
+    def __init__(self, bijection: AbstractBijection):
+        self.bijection = bijection
+        self.shape = self.bijection.shape
+        self.cond_shape = self.bijection.cond_shape
 
     def transform_and_log_det(self, x, condition=None):
         return self.bijection.inverse_and_log_det(x, condition)
 
     def inverse_and_log_det(self, y, condition=None):
         return self.bijection.transform_and_log_det(y, condition)
-
-    @property
-    def shape(self):
-        return self.bijection.shape
-
-    @property
-    def cond_shape(self):
-        return self.bijection.cond_shape
 
 
 class Permute(AbstractBijection):
@@ -115,12 +114,24 @@ class Indexed(AbstractBijection):
         bijection: Bijection that is compatible with the subset of x indexed by idxs.
         idxs: Indices (Integer, a slice, or an ndarray with integer/bool dtype) of the
             transformed portion.
-        shape: Shape of the bijection. Defaults to None.
+        shape: Shape of the bijection.
     """
 
     bijection: AbstractBijection
     idxs: int | slice | Array | tuple
     shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
+
+    def __init__(
+        self,
+        bijection: AbstractBijection,
+        idxs: int | slice | Array | tuple,
+        shape: tuple[int, ...],
+    ):
+        self.bijection = bijection
+        self.idxs = idxs
+        self.shape = shape
+        self.cond_shape = bijection.cond_shape
 
     def __check_init__(self):
         expected_shape = jnp.zeros(self.shape)[self.idxs].shape
@@ -138,10 +149,6 @@ class Indexed(AbstractBijection):
     def inverse_and_log_det(self, y, condition=None):
         x, log_det = self.bijection.inverse_and_log_det(y[self.idxs], condition)
         return y.at[self.idxs].set(x), log_det
-
-    @property
-    def cond_shape(self):
-        return self.bijection.cond_shape
 
 
 class Identity(AbstractBijection):
@@ -175,6 +182,7 @@ class EmbedCondition(AbstractBijection):
     """
 
     bijection: AbstractBijection
+    shape: tuple[int, ...]
     cond_shape: tuple[int, ...]
     embedding_net: Callable
 
@@ -186,6 +194,7 @@ class EmbedCondition(AbstractBijection):
     ):
         self.bijection = bijection
         self.embedding_net = embedding_net
+        self.shape = self.bijection.shape
         self.cond_shape = raw_cond_shape
 
     def transform_and_log_det(self, x, condition=None):
@@ -195,10 +204,6 @@ class EmbedCondition(AbstractBijection):
     def inverse_and_log_det(self, y, condition=None):
         condition = self.embedding_net(condition)
         return self.bijection.inverse_and_log_det(y, condition)
-
-    @property
-    def shape(self):
-        return self.bijection.shape
 
 
 class Reshape(AbstractBijection):

@@ -37,6 +37,13 @@ class Scan(AbstractBijection):
     """
 
     bijection: AbstractBijection
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
+
+    def __init__(self, bijection: AbstractBijection):
+        self.bijection = bijection
+        self.shape = self.bijection.shape
+        self.cond_shape = self.bijection.cond_shape
 
     def transform_and_log_det(self, x, condition=None):
         def step(carry, bijection):
@@ -55,14 +62,6 @@ class Scan(AbstractBijection):
 
         (y, log_det), _ = _filter_scan(step, (y, 0), self.bijection, reverse=True)
         return y, log_det
-
-    @property
-    def shape(self):
-        return self.bijection.shape
-
-    @property
-    def cond_shape(self):
-        return self.bijection.cond_shape
 
 
 def _filter_scan(f, init, xs, *, reverse=False):
@@ -151,6 +150,7 @@ class Vmap(AbstractBijection):
     bijection: AbstractBijection
     in_axes: tuple
     axis_size: int
+    shape: tuple[int, ...]
     cond_shape: tuple[int, ...] | None
 
     def __init__(
@@ -173,6 +173,7 @@ class Vmap(AbstractBijection):
         self.in_axes = (in_axes, 0, in_axes_condition)
         self.bijection = bijection
         self.axis_size = axis_size
+        self.shape = (self.axis_size, *self.bijection.shape)
         self.cond_shape = self.get_cond_shape(in_axes_condition)
 
     def vmap(self, f: Callable):
@@ -191,10 +192,6 @@ class Vmap(AbstractBijection):
 
         x, log_det = self.vmap(_inverse_and_log_det)(self.bijection, y, condition)
         return x, jnp.sum(log_det)
-
-    @property
-    def shape(self):
-        return (self.axis_size, *self.bijection.shape)
 
     def get_cond_shape(self, cond_ax):
         if self.bijection.cond_shape is None or cond_ax is None:

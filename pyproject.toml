@@ -15,7 +15,7 @@ dependencies = [
     "jaxtyping",
     "tqdm",
     "optax",
-    "paramax",
+    "paramax>=0.0.5",
     "lineax"
 ]
 description = "Easy to use distributions, bijections and normalizing flows in JAX."
@@ -24,7 +24,7 @@ license = { file = "LICENSE" }
 name = "flowjax"
 readme = "README.md"
 requires-python = ">=3.10"
-version = "17.2.1"
+version = "18.0.0"
 
 [project.urls]
 repository = "https://github.com/danielward27/flowjax"
@@ -41,7 +41,7 @@ dev = [
     "sphinx-autodoc-typehints",
     "nbsphinx",
     "ipython",
-    "numpyro",
+    "numpyro>=0.20.0",
 ]
 
 [build-system]
