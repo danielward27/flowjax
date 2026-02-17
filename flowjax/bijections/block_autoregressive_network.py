@@ -122,10 +122,6 @@ class BlockAutoregressiveNetwork(AbstractBijection):
                 (1, block_dim),
             ]
 
-            def make_layer(inp):
-                layer_key, block_shape = inp
-                return block_autoregressive_linear(layer_key, n_blocks=dim, block_shape=block_shape)
-
             for layer_key, block_shape in zip(keys, block_shapes, strict=True):
                 layers_and_log_jac_fns.append(
                     block_autoregressive_linear(

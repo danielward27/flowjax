@@ -287,12 +287,9 @@ class NumericalInverse(AbstractBijection):
         bijection: The bijection to add an inverse to.
         inverter: Callable implementing the numerical inversion method. Should accept
             the bijection, y and condition as arguments, and return the inverse.
-        diffable_inverter: If ``False`` (default), gradients through the numerical
+        use_implicit_differentation: If ``True`` (default), gradients through the numerical
             inverse are supplied with a custom JVP using implicit differentiation. If
-            ``True``, the inverter is assumed to be safely differentiable as provided.
-        raise_old_error: If ``True``, preserve legacy behaviour and raise
-            ``RuntimeError`` when users attempt to differentiate through the numerical
-            inverse. Takes precedence over ``diffable_inverter``.
+            ``False``, the inverter is assumed to be safely differentiable as provided.
     """
 
     bijection: AbstractBijection
@@ -304,18 +301,16 @@ class NumericalInverse(AbstractBijection):
         self,
         bijection: AbstractBijection,
         inverter: Callable[[AbstractBijection, Array, Array | None], Array],
-        diffable_inverter: bool = False,
-        raise_old_error: bool = False,
+        use_implicit_differentation: bool = True,
     ):
         self.bijection = bijection
         self.shape = self.bijection.shape
         self.cond_shape = self.bijection.cond_shape
-        if raise_old_error:
-            self.inverter = self._wrap_inverter_with_error_on_grad(inverter)
-        elif diffable_inverter:
-            self.inverter = inverter
-        else:
+
+        if use_implicit_differentation:
             self.inverter = self._wrap_inverter_with_implicit_jvp(inverter)
+        else:
+            self.inverter = inverter
 
     @staticmethod
     def _wrap_inverter_with_error_on_grad(inverter):
