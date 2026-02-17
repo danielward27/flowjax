@@ -168,8 +168,7 @@ def block_neural_autoregressive_flow(
     invert: bool = True,
     activation: AbstractBijection | Callable | None = None,
     inverter: Callable[[AbstractBijection, Array, Array | None], Array] | None = None,
-    diffable_inverter: bool = False,
-    raise_old_error: bool = False
+    use_implicit_differentation: bool = True
 ) -> Transformed:
     """Block neural autoregressive flow (BNAF) (https://arxiv.org/abs/1904.04676).
 
@@ -200,12 +199,9 @@ def block_neural_autoregressive_flow(
             invert the ``BlockAutoregressiveNetwork`` bijection. Passed to
             :py:class:`~flowjax.bijections.NumericalInverse`. Defaults to
             using ``elementwise_autoregressive_bisection``.
-        diffable_inverter: Passed to :py:class:`~flowjax.bijections.NumericalInverse`.
-            If ``False`` (default), gradients through the inverse use a custom JVP.
-            If ``True``, the provided ``inverter`` is treated as differentiable.
-        raise_old_error: Passed to :py:class:`~flowjax.bijections.NumericalInverse`.
-            If ``True``, attempting to differentiate through the numerical inverse
-            raises a ``RuntimeError`` (legacy behavior).
+        use_implicit_differentation:  Passed to :py:class:`~flowjax.bijections.NumericalInverse`.
+            If ``True`` (default), gradients through the through the inverse use a custom JVP. 
+            If ``False``, the inverter is treated as differentiable.
     """
     dim = base_dist.shape[-1]
 
@@ -230,8 +226,7 @@ def block_neural_autoregressive_flow(
                 activation=activation,
             ),
             inverter=inverter,
-            diffable_inverter=diffable_inverter,
-            raise_old_error=raise_old_error
+            use_implicit_differentation=use_implicit_differentation
         )
         return _add_default_permute(bijection, base_dist.shape[-1], perm_key)
 
