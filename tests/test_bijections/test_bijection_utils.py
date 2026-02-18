@@ -42,14 +42,12 @@ test_cases = [jax.grad, jax.jacfwd, jax.jacrev]
 
 
 @pytest.mark.parametrize("diff_fn", test_cases)
-def test_NumericalInverse_not_differentiable(diff_fn):
+def test_NumericalInverse_implicit_jvp(diff_fn):
     bijection = NumericalInverse(
         Affine(5, 2),
         root_finder_to_inverter(
             partial(bisection_search, lower=-1, upper=1, atol=1e-7),
         ),
     )
-    with pytest.raises(
-        RuntimeError, match="Computing gradients through the numerical inverse"
-    ):
-        diff_fn(bijection.inverse)(jnp.ones(()))
+    derivative = diff_fn(bijection.inverse)(jnp.array(1.0))
+    assert jnp.allclose(derivative, 0.5, atol=1e-5)

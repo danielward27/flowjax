@@ -13,6 +13,7 @@ from flowjax.bijections.bijection import AbstractBijection
 from flowjax.bijections.chain import Chain
 from flowjax.utils import arraylike_to_array, check_shapes_match, merge_cond_shapes
 
+import lineax as lx
 
 class Invert(AbstractBijection):
     """Invert a bijection.
@@ -286,6 +287,9 @@ class NumericalInverse(AbstractBijection):
         bijection: The bijection to add an inverse to.
         inverter: Callable implementing the numerical inversion method. Should accept
             the bijection, y and condition as arguments, and return the inverse.
+        use_implicit_differentation: If ``True`` (default), gradients through the numerical
+            inverse are supplied with a custom JVP using implicit differentiation. If
+            ``False``, the inverter is assumed to be safely differentiable as provided.
     """
 
     bijection: AbstractBijection
@@ -297,13 +301,25 @@ class NumericalInverse(AbstractBijection):
         self,
         bijection: AbstractBijection,
         inverter: Callable[[AbstractBijection, Array, Array | None], Array],
+        use_implicit_differentation: bool = True,
     ):
+        self.bijection = bijection
+        self.shape = self.bijection.shape
+        self.cond_shape = self.bijection.cond_shape
+
+        if use_implicit_differentation:
+            self.inverter = self._wrap_inverter_with_implicit_jvp(inverter)
+        else:
+            self.inverter = inverter
+
+    @staticmethod
+    def _wrap_inverter_with_error_on_grad(inverter):
         @eqx.filter_custom_jvp
-        def nondiff_inverter(bijection, y, condition):
+        def wrapped_inverter(bijection, y, condition=None):
             return inverter(bijection, y, condition)
 
-        @nondiff_inverter.def_jvp
-        def nondiff_inverter_jvp(*args, **kwargs):
+        @wrapped_inverter.def_jvp
+        def wrapped_inverter_jvp(*_args, **_kwargs):
             raise RuntimeError(
                 "Computing gradients through the numerical inverse would lead to "
                 "misleading results. If you are using a flow with the analytical "
@@ -313,16 +329,46 @@ class NumericalInverse(AbstractBijection):
                 "supported)."
             )
 
-        self.bijection = bijection
-        self.inverter = nondiff_inverter
-        self.shape = self.bijection.shape
-        self.cond_shape = self.bijection.cond_shape
+        return wrapped_inverter
+
+    @staticmethod
+    def _wrap_inverter_with_implicit_jvp(inverter):
+        @eqx.filter_custom_jvp
+        def wrapped_inverter(bijection, y, condition=None):
+            return inverter(bijection, y, condition)
+
+        @wrapped_inverter.def_jvp
+        def wrapped_inverter_jvp(primals, tangents, condition=None):
+            (bijection, y), (bijection_tangent, y_tangent) = primals, tangents
+            x_star = wrapped_inverter(bijection, y, condition)
+            jacobian_operator = lx.JacobianLinearOperator(
+                lambda x, _: bijection.transform(x, condition),
+                x_star,
+            )
+
+            def residual(bijection, y):
+                return bijection.transform(x_star, condition) - y
+
+            _, residual_tangent = eqx.filter_jvp(
+                residual,
+                (bijection, y),
+                (bijection_tangent, y_tangent),
+            )
+
+            x_star_tangent = lx.linear_solve(
+                jacobian_operator,
+                -residual_tangent,
+            ).value
+
+            return x_star, x_star_tangent
+
+        return wrapped_inverter
 
     def transform_and_log_det(self, x, condition=None):
         return self.bijection.transform_and_log_det(x, condition)
 
     def inverse_and_log_det(self, y, condition=None):
-        x = self.inverter(self.bijection, y, condition)
+        x = self.inverter(self.bijection, y, condition=condition)
         _, log_det = self.bijection.transform_and_log_det(x, condition)
         return x, -log_det
 

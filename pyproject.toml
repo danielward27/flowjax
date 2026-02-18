@@ -16,6 +16,7 @@ dependencies = [
     "tqdm",
     "optax",
     "paramax>=0.0.5",
+    "lineax"
 ]
 description = "Easy to use distributions, bijections and normalizing flows in JAX."
 keywords = ["jax", "neural-networks", "equinox"]

@@ -168,6 +168,7 @@ def block_neural_autoregressive_flow(
     invert: bool = True,
     activation: AbstractBijection | Callable | None = None,
     inverter: Callable[[AbstractBijection, Array, Array | None], Array] | None = None,
+    use_implicit_differentation: bool = True
 ) -> Transformed:
     """Block neural autoregressive flow (BNAF) (https://arxiv.org/abs/1904.04676).
 
@@ -198,6 +199,9 @@ def block_neural_autoregressive_flow(
             invert the ``BlockAutoregressiveNetwork`` bijection. Passed to
             :py:class:`~flowjax.bijections.NumericalInverse`. Defaults to
             using ``elementwise_autoregressive_bisection``.
+        use_implicit_differentation:  Passed to :py:class:`~flowjax.bijections.NumericalInverse`.
+            If ``True`` (default), gradients through the through the inverse use a custom JVP. 
+            If ``False``, the inverter is treated as differentiable.
     """
     dim = base_dist.shape[-1]
 
@@ -222,6 +226,7 @@ def block_neural_autoregressive_flow(
                 activation=activation,
             ),
             inverter=inverter,
+            use_implicit_differentation=use_implicit_differentation
         )
         return _add_default_permute(bijection, base_dist.shape[-1], perm_key)
 
