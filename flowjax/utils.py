@@ -103,7 +103,7 @@ def arraylike_to_array(
         err_name: Name of the input in the error message. Defaults to "input".
         **kwargs: Keyword arguments passed to jnp.asarray.
     """
-    if not isinstance(arr, ArrayLike):
+    if not eqx.is_array_like(arr):
         raise TypeError(
             f"Expected {err_name} to be arraylike; got {type(arr).__name__}.",
         )
