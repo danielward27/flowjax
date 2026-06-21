@@ -66,9 +66,10 @@ class RationalQuadraticSpline(AbstractBijection):
             x >= jnp.array(self.interval[0]),
             x <= jnp.array(self.interval[1]),
         )
-        k = jnp.searchsorted(x_pos, x) - 1  # k is bin number
+        x_clipped = jnp.clip(x, self.interval[0], self.interval[1])
+        k = jnp.searchsorted(x_pos, x_clipped) - 1  # k is bin number
         k = jnp.clip(k, min=0, max=len(x_pos) - 2)
-        xi = (x - x_pos[k]) / (x_pos[k + 1] - x_pos[k])
+        xi = (x_clipped - x_pos[k]) / (x_pos[k + 1] - x_pos[k])
         sk = (y_pos[k + 1] - y_pos[k]) / (x_pos[k + 1] - x_pos[k])
         dk, dk1, yk, yk1 = derivatives[k], derivatives[k + 1], y_pos[k], y_pos[k + 1]
         num = (yk1 - yk) * (sk * xi**2 + dk * xi * (1 - xi))
@@ -94,14 +95,15 @@ class RationalQuadraticSpline(AbstractBijection):
             y >= jnp.array(self.interval[0]),
             y <= jnp.array(self.interval[1]),
         )
-        k = jnp.searchsorted(y_pos, y) - 1
+        y_clipped = jnp.clip(y, self.interval[0], self.interval[1])
+        k = jnp.searchsorted(y_pos, y_clipped) - 1
         k = jnp.clip(k, min=0, max=len(x_pos) - 2)
         xk, xk1, yk, yk1 = x_pos[k], x_pos[k + 1], y_pos[k], y_pos[k + 1]
         sk = (yk1 - yk) / (xk1 - xk)
-        y_delta_s_term = (y - yk) * (derivatives[k + 1] + derivatives[k] - 2 * sk)
+        y_delta_s_term = (y_clipped - yk) * (derivatives[k + 1] + derivatives[k] - 2 * sk)
         a = (yk1 - yk) * (sk - derivatives[k]) + y_delta_s_term
         b = (yk1 - yk) * derivatives[k] - y_delta_s_term
-        c = -sk * (y - yk)
+        c = -sk * (y_clipped - yk)
         sqrt_term = jnp.sqrt(b**2 - 4 * a * c)
         xi = (2 * c) / (-b - sqrt_term)
         x = xi * (xk1 - xk) + xk
