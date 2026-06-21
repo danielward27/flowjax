@@ -3,7 +3,7 @@ import jax.numpy as jnp
 import jax.random as jr
 import pytest
 from jax import vmap
-from jax.tree_util import tree_map, tree_leaves
+from jax.tree_util import tree_leaves, tree_map
 
 from flowjax.bijections import RationalQuadraticSpline
 
@@ -37,46 +37,24 @@ def test_RationalQuadraticSpline_init(interval):
     y = vmap(spline.transform)(x)
     assert pytest.approx(x, abs=1e-6) == y
 
-@pytest.mark.parametrize("direction", ["forward", "inverse"])
-def test_RationalQuadraticSpline_out_of_bounds_grad_nan(direction):
-    """Checks that gradients do not contain NaNs when evaluating the forward 
-    and inverse passes on out-of-bounds inputs."""
-    
-    # 1. Initialize RQS
+
+def test_RationalQuadraticSpline_out_of_bounds_grad_nan():
+    """Checks that gradients do not contain NaNs for out of interval inputs."""
+    key = jr.key(1)
     spline = RationalQuadraticSpline(knots=4, interval=1.0)
-
-    # 2. Partition and add truly random noise to simulate a "trained" state
-    params, static = eqx.partition(spline, eqx.is_inexact_array)
-    key = jr.key(42)
-    
-    def add_noise(x):
-        nonlocal key
-        if x is not None:
-            key, subkey = jr.split(key)
-            return x + jr.normal(subkey, x.shape) * 1.5
-        return x
-        
-    params_noisy = tree_map(add_noise, params)
-    spline_trained = eqx.combine(params_noisy, static)
-
-    # 3. Provide an out-of-bounds input (interval is 1.0, so 50.0 is way out)
-    val = jnp.array(50.0)
-
-    # 4. Define a dummy loss evaluating the requested direction
-    def loss(model, v):
-        if direction == "forward":
-            out, _ = model.transform_and_log_det(v)
-        else:
-            out, _ = model.inverse_and_log_det(v)
-        return out.sum()
-
-    # 5. Compute gradients
-    _, grad = eqx.filter_value_and_grad(loss)(spline_trained, val)
-
-    # 6. Check for NaNs
-    nan_found = any(
-        jnp.any(jnp.isnan(leaf)) 
-        for leaf in tree_leaves(grad) if eqx.is_array(leaf)
+    spline = tree_map(  # Not identity
+        lambda x: x + jr.normal(key, x.shape) * 1.5 if eqx.is_inexact_array(x) else x,
+        spline,
     )
-    
-    assert not nan_found, f"NaNs detected in gradients for out-of-bounds {direction} pass"
+    val = jnp.array(50.0)  # Out of bounds
+    forward_grad = eqx.filter_grad(lambda m, v: m.transform_and_log_det(v)[0].sum())(
+        spline, val
+    )
+    inverse_grad = eqx.filter_grad(lambda m, v: m.inverse_and_log_det(v)[0].sum())(
+        spline, val
+    )
+
+    for grad in (forward_grad, inverse_grad):
+        assert not any(
+            jnp.any(jnp.isnan(leaf)) for leaf in tree_leaves(grad) if eqx.is_array(leaf)
+        ), "NaNs detected in gradients for out-of-bounds pass"
