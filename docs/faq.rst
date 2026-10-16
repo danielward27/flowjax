@@ -63,7 +63,7 @@ with the inverse, to "undo" the preprocessing, e.g.
     >>> from flowjax.distributions import Transformed
     >>> preprocess = Affine(-x.mean(axis=0)/x.std(axis=0), 1/x.std(axis=0))
     >>> x_processed = jax.vmap(preprocess.transform)(x)
-    >>> flow, losses = fit_to_data(key, dist=flow, x=x_processed) # doctest: +SKIP
+    >>> flow, losses = fit_to_data(key, dist=flow, data=x_processed) # doctest: +SKIP
     >>> flow = Transformed(flow, Invert(preprocess))  # "undo" the preprocessing
     
 
