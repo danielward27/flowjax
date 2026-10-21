@@ -5,7 +5,7 @@ import paramax
 import pytest
 from jax.tree_util import tree_map
 
-from flowjax.bijections import Affine, MaskedAutoregressive, Vmap
+from flowjax.bijections import AdditiveCondition, Affine, MaskedAutoregressive, Vmap
 
 
 def test_vmap_uneven_init():
@@ -57,3 +57,29 @@ def test_vmap_condition_only():
     y = bijection.transform(x, condition)
     x_reconstructed = bijection.inverse(y, condition)
     assert x_reconstructed == pytest.approx(x)
+
+
+@pytest.mark.parametrize(
+    ("shape", "axis"),
+    [((3,), -1), ((3, 4), -1), ((3, 4), -2), ((3, 4), -3), ((), -1), ((3,), 1)],
+)
+def test_vmap_condition_axis_matches_array_stack(shape, axis):
+    bijection = Vmap(
+        AdditiveCondition(lambda condition: condition, shape, shape),
+        axis_size=2,
+        in_axes_condition=axis,
+    )
+    conditions = [jnp.ones(shape), jnp.full(shape, 2.0)]
+    condition = jnp.stack(conditions, axis=axis)
+    x = jnp.zeros((2, *shape))
+    expected = jnp.stack(conditions)
+
+    assert bijection.cond_shape == condition.shape
+    transformed, log_det = eqx.filter_jit(bijection.transform_and_log_det)(x, condition)
+    assert jnp.allclose(transformed, expected)
+    assert log_det == 0
+    restored, inverse_log_det = eqx.filter_jit(bijection.inverse_and_log_det)(
+        expected, condition
+    )
+    assert jnp.allclose(restored, x)
+    assert inverse_log_det == 0

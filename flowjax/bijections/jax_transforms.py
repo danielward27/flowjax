@@ -196,6 +196,7 @@ class Vmap(AbstractBijection):
     def get_cond_shape(self, cond_ax):
         if self.bijection.cond_shape is None or cond_ax is None:
             return self.bijection.cond_shape
+        cond_ax = range(len(self.bijection.cond_shape) + 1)[cond_ax]
         return (
             *self.bijection.cond_shape[:cond_ax],
             self.axis_size,
