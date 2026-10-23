@@ -85,6 +85,29 @@ If leading dimensions are passed in the arrays (e.g. passing batches of ``x`` an
    >>> dist.log_prob(samples, condition).shape
    (5,)
 
+Mixed Base Distributions
+========================
+
+Use :py:class:`~flowjax.distributions.Stack` to combine independent distributions
+from different families. Components must have the same event shape. Stacking scalar
+components gives a vector distribution, suitable as a flow's base distribution:
+
+.. doctest::
+
+   >>> from flowjax.distributions import Exponential, Stack
+   >>> from flowjax.flows import masked_autoregressive_flow
+   >>> mixed_base = Stack([Normal(), Exponential(1)])
+   >>> mixed_flow = masked_autoregressive_flow(
+   ...     key, base_dist=mixed_base, flow_layers=2, nn_width=4)
+   >>> mixed_samples, mixed_lp = mixed_flow.sample_and_log_prob(key, (4,))
+   >>> mixed_samples.shape, mixed_lp.shape
+   ((4, 2), (4,))
+
+The new axis belongs to the event shape, rather than the leading sample dimensions.
+For vector or matrix components, ``axis`` selects its position as in NumPy's
+``stack``. The flow's support also depends on its bijection; it need not preserve
+the support of each base component.
+
 Simple bijection example
 =========================
 
