@@ -287,9 +287,10 @@ class NumericalInverse(AbstractBijection):
         bijection: The bijection to add an inverse to.
         inverter: Callable implementing the numerical inversion method. Should accept
             the bijection, y and condition as arguments, and return the inverse.
-        use_implicit_differentation: If ``True`` (default), gradients through the numerical
-            inverse are supplied with a custom JVP using implicit differentiation. If
-            ``False``, the inverter is assumed to be safely differentiable as provided.
+        use_implicit_differentation: If ``True`` (default), gradients through the
+            numerical inverse are supplied with a custom JVP using implicit
+            differentiation. If ``False``, the inverter is assumed to be safely
+            differentiable as provided.
     """
 
     bijection: AbstractBijection
@@ -320,21 +321,22 @@ class NumericalInverse(AbstractBijection):
             return inverter(bijection, y, condition)
 
         @wrapped_inverter.def_jvp
-        def wrapped_inverter_jvp(primals, tangents, condition=None):
-            (bijection, y), (bijection_tangent, y_tangent) = primals, tangents
+        def wrapped_inverter_jvp(primals, tangents):
+            bijection, y, condition = primals
+            bijection_tangent, y_tangent, condition_tangent = tangents
             x_star = wrapped_inverter(bijection, y, condition)
             jacobian_operator = lx.JacobianLinearOperator(
                 lambda x, _: bijection.transform(x, condition),
                 x_star,
             )
 
-            def residual(bijection, y):
+            def residual(bijection, y, condition):
                 return bijection.transform(x_star, condition) - y
 
             _, residual_tangent = eqx.filter_jvp(
                 residual,
-                (bijection, y),
-                (bijection_tangent, y_tangent),
+                (bijection, y, condition),
+                (bijection_tangent, y_tangent, condition_tangent),
             )
 
             x_star_tangent = lx.linear_solve(
@@ -344,7 +346,11 @@ class NumericalInverse(AbstractBijection):
 
             return x_star, x_star_tangent
 
-        return wrapped_inverter
+        def call_inverter(bijection, y, condition=None):
+            # Custom JVPs differentiate positional arguments, not keyword arguments.
+            return wrapped_inverter(bijection, y, condition)
+
+        return call_inverter
 
     def transform_and_log_det(self, x, condition=None):
         return self.bijection.transform_and_log_det(x, condition)
