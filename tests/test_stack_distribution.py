@@ -6,7 +6,7 @@ import numpy as np
 import pytest
 from jax.scipy.stats import expon, norm
 
-from flowjax.bijections import AdditiveCondition
+from flowjax.bijections import AdditiveCondition, Affine, NumericalInverse
 from flowjax.distributions import Exponential, Normal, Stack, Transformed
 from flowjax.flows import masked_autoregressive_flow
 
@@ -78,6 +78,21 @@ def test_stack_flow_base():
     assert samples.shape == (5, 2)
     assert jnp.all(jnp.isfinite(log_probs))
     np.testing.assert_allclose(flow.log_prob(samples), log_probs, rtol=1e-4)
+
+
+def test_stack_sampling_preserves_forward_only_density():
+    def unavailable_inverse(bijection, y, condition):
+        raise AssertionError("Sampling must not evaluate the numerical inverse.")
+
+    component = Transformed(
+        Normal(),
+        NumericalInverse(Affine(loc=1, scale=2), unavailable_inverse),
+    )
+    dist = Stack([component, Exponential(3)])
+    samples, log_probs = eqx.filter_jit(dist.sample_and_log_prob)(jr.key(5), (4,))
+    reference = norm.logpdf(samples[:, 0], loc=1, scale=2)
+    reference += expon.logpdf(samples[:, 1], scale=1 / 3)
+    np.testing.assert_allclose(log_probs, reference, rtol=1e-5)
 
 
 def test_stack_validation():
