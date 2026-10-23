@@ -111,6 +111,8 @@ class Stack(AbstractBijection):
         shapes = [b.shape for b in bijections]
         check_shapes_match(shapes)
 
+        # Stacking adds an axis, so negative indices use the output rank.
+        axis = range(len(shapes[0]) + 1)[axis]
         self.shape = shapes[0][:axis] + (len(bijections),) + shapes[0][axis:]
         self.cond_shape = merge_cond_shapes([b.cond_shape for b in bijections])
 
