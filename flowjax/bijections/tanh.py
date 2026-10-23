@@ -64,7 +64,7 @@ class LeakyTanh(AbstractBijection):
     def inverse_and_log_det(self, y, condition=None):
         is_linear = jnp.abs(y) >= jnp.tanh(self.max_val)
         x_linear = (y - jnp.sign(y) * self.intercept) / self.linear_grad
-        x_arctan = jnp.arctanh(y)
+        x_arctan = jnp.arctanh(jnp.where(is_linear, 0, y))
         x = jnp.where(is_linear, x_linear, x_arctan)
         log_grads = jnp.where(is_linear, jnp.log(self.linear_grad), _tanh_log_grad(x))
         return x, -jnp.sum(log_grads)
