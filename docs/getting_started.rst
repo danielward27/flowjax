@@ -108,6 +108,16 @@ For vector or matrix components, ``axis`` selects its position as in NumPy's
 ``stack``. The flow's support also depends on its bijection; it need not preserve
 the support of each base component.
 
+Use :py:class:`~flowjax.distributions.Concatenate` to join vector or matrix
+components along an existing event axis. Their lengths along that axis can differ:
+
+.. doctest::
+
+   >>> from flowjax.distributions import Concatenate
+   >>> mixed_vector = Concatenate([Normal(jnp.zeros(2)), Exponential(jnp.ones(1))])
+   >>> mixed_vector.sample(key).shape
+   (3,)
+
 Simple bijection example
 =========================
 

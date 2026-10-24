@@ -4,6 +4,7 @@ import inspect
 from abc import abstractmethod
 from collections.abc import Callable, Sequence
 from functools import wraps
+from itertools import accumulate
 from math import prod
 from typing import ClassVar
 
@@ -782,6 +783,92 @@ class Stack(AbstractDistribution):
         ]
         samples, log_probs = zip(*results, strict=True)
         return jnp.stack(samples, axis=self.axis), sum(log_probs)
+
+
+class Concatenate(AbstractDistribution):
+    """Concatenate independent distributions along an existing event axis.
+
+    Event shapes must have equal ranks and match outside the concatenation axis.
+    Components may use different distribution families and different sizes along
+    that axis. Conditional components must share a conditioning shape;
+    unconditional components can be included alongside them.
+
+    Example:
+        .. doctest::
+
+            >>> import jax.numpy as jnp
+            >>> from flowjax.distributions import Concatenate, Exponential, Normal
+            >>> components = [Normal(jnp.zeros(2)), Exponential(jnp.ones(1))]
+            >>> base_dist = Concatenate(components)
+            >>> base_dist.shape
+            (3,)
+
+    Args:
+        distributions: Nonempty sequence of nonscalar distributions with compatible
+            event shapes. Use :class:`Stack` to combine scalar distributions.
+        axis: Event axis along which to concatenate, as in ``numpy.concatenate``.
+            Negative axes count from the end of the event shape. Defaults to 0.
+    """
+
+    distributions: tuple[AbstractDistribution, ...]
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
+    axis: int
+    split_indices: tuple[int, ...]
+
+    def __init__(self, distributions: Sequence[AbstractDistribution], axis: int = 0):
+        distributions = tuple(distributions)
+        if not distributions:
+            raise ValueError("Expected at least one distribution.")
+        shape = distributions[0].shape
+        ndim = len(shape)
+        if not ndim:
+            raise ValueError("Cannot concatenate scalar distributions; use Stack.")
+        if any(len(dist.shape) != ndim for dist in distributions):
+            raise ValueError("Distributions must have the same event rank.")
+        if not -ndim <= axis < ndim:
+            raise ValueError(f"Axis {axis} is out of bounds for event rank {ndim}.")
+        self.axis = axis % ndim
+        check_shapes_match(
+            [
+                dist.shape[: self.axis] + dist.shape[self.axis + 1 :]
+                for dist in distributions
+            ]
+        )
+        sizes = [dist.shape[self.axis] for dist in distributions]
+        self.split_indices = tuple(accumulate(sizes))[:-1]
+        self.shape = shape[: self.axis] + (sum(sizes),) + shape[self.axis + 1 :]
+        self.distributions = distributions
+        self.cond_shape = merge_cond_shapes([dist.cond_shape for dist in distributions])
+
+    def _log_prob(self, x, condition=None):
+        parts = jnp.split(x, self.split_indices, axis=self.axis)
+        return sum(
+            dist._log_prob(xi, condition if dist.cond_shape is not None else None)
+            for dist, xi in zip(self.distributions, parts, strict=True)
+        )
+
+    def _sample(self, key, condition=None):
+        keys = jr.split(key, len(self.distributions))
+        return jnp.concatenate(
+            [
+                dist._sample(k, condition if dist.cond_shape is not None else None)
+                for dist, k in zip(self.distributions, keys, strict=True)
+            ],
+            axis=self.axis,
+        )
+
+    def _sample_and_log_prob(self, key, condition=None):
+        keys = jr.split(key, len(self.distributions))
+        results = [
+            dist._sample_and_log_prob(
+                k,
+                condition if dist.cond_shape is not None else None,
+            )
+            for dist, k in zip(self.distributions, keys, strict=True)
+        ]
+        samples, log_probs = zip(*results, strict=True)
+        return jnp.concatenate(samples, axis=self.axis), sum(log_probs)
 
 
 class VmapMixture(AbstractDistribution):
