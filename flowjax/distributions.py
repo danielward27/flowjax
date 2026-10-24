@@ -2,8 +2,9 @@
 
 import inspect
 from abc import abstractmethod
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from functools import wraps
+from itertools import accumulate
 from math import prod
 from typing import ClassVar
 
@@ -32,6 +33,7 @@ from flowjax.bijections import (
 from flowjax.utils import (
     _get_ufunc_signature,
     arraylike_to_array,
+    check_shapes_match,
     merge_cond_shapes,
 )
 
@@ -705,6 +707,168 @@ class Logistic(AbstractLocScaleDistribution):
             shape=jnp.broadcast_shapes(jnp.shape(loc), jnp.shape(scale)),
         )
         self.bijection = Affine(loc=loc, scale=scale)
+
+
+class Stack(AbstractDistribution):
+    """Stack independent distributions along a new event axis.
+
+    Components must have equal event shapes, but may be different distribution
+    types. Conditional components must share a conditioning shape; unconditional
+    components can be included alongside them.
+
+    Example:
+        .. doctest::
+
+            >>> from flowjax.distributions import Exponential, Normal, Stack
+            >>> base_dist = Stack([Normal(), Exponential(1)])
+            >>> base_dist.shape
+            (2,)
+
+        This can be used as the ``base_dist`` of a flow. The flow's support also
+        depends on its bijection, so it need not match the base distribution's support.
+
+    Args:
+        distributions: Nonempty sequence of distributions with matching event shapes.
+        axis: Position of the new event axis, as in ``numpy.stack``. Negative axes
+            count from the end of the output event shape. Defaults to 0.
+    """
+
+    distributions: tuple[AbstractDistribution, ...]
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
+    axis: int
+
+    def __init__(self, distributions: Sequence[AbstractDistribution], axis: int = 0):
+        distributions = tuple(distributions)
+        if not distributions:
+            raise ValueError("Expected at least one distribution.")
+        check_shapes_match([dist.shape for dist in distributions])
+        shape = distributions[0].shape
+        ndim = len(shape) + 1
+        if not -ndim <= axis < ndim:
+            raise ValueError(f"Axis {axis} is out of bounds for output rank {ndim}.")
+        self.axis = axis % ndim
+        self.distributions = distributions
+        self.shape = shape[: self.axis] + (len(distributions),) + shape[self.axis :]
+        self.cond_shape = merge_cond_shapes([dist.cond_shape for dist in distributions])
+
+    def _log_prob(self, x, condition=None):
+        return sum(
+            dist._log_prob(xi, condition if dist.cond_shape is not None else None)
+            for dist, xi in zip(
+                self.distributions,
+                jnp.moveaxis(x, self.axis, 0),
+                strict=True,
+            )
+        )
+
+    def _sample(self, key, condition=None):
+        keys = jr.split(key, len(self.distributions))
+        return jnp.stack(
+            [
+                dist._sample(k, condition if dist.cond_shape is not None else None)
+                for dist, k in zip(self.distributions, keys, strict=True)
+            ],
+            axis=self.axis,
+        )
+
+    def _sample_and_log_prob(self, key, condition=None):
+        keys = jr.split(key, len(self.distributions))
+        results = [
+            dist._sample_and_log_prob(
+                k,
+                condition if dist.cond_shape is not None else None,
+            )
+            for dist, k in zip(self.distributions, keys, strict=True)
+        ]
+        samples, log_probs = zip(*results, strict=True)
+        return jnp.stack(samples, axis=self.axis), sum(log_probs)
+
+
+class Concatenate(AbstractDistribution):
+    """Concatenate independent distributions along an existing event axis.
+
+    Event shapes must have equal ranks and match outside the concatenation axis.
+    Components may use different distribution families and different sizes along
+    that axis. Conditional components must share a conditioning shape;
+    unconditional components can be included alongside them.
+
+    Example:
+        .. doctest::
+
+            >>> import jax.numpy as jnp
+            >>> from flowjax.distributions import Concatenate, Exponential, Normal
+            >>> components = [Normal(jnp.zeros(2)), Exponential(jnp.ones(1))]
+            >>> base_dist = Concatenate(components)
+            >>> base_dist.shape
+            (3,)
+
+    Args:
+        distributions: Nonempty sequence of nonscalar distributions with compatible
+            event shapes. Use :class:`Stack` to combine scalar distributions.
+        axis: Event axis along which to concatenate, as in ``numpy.concatenate``.
+            Negative axes count from the end of the event shape. Defaults to 0.
+    """
+
+    distributions: tuple[AbstractDistribution, ...]
+    shape: tuple[int, ...]
+    cond_shape: tuple[int, ...] | None
+    axis: int
+    split_indices: tuple[int, ...]
+
+    def __init__(self, distributions: Sequence[AbstractDistribution], axis: int = 0):
+        distributions = tuple(distributions)
+        if not distributions:
+            raise ValueError("Expected at least one distribution.")
+        shape = distributions[0].shape
+        ndim = len(shape)
+        if not ndim:
+            raise ValueError("Cannot concatenate scalar distributions; use Stack.")
+        if any(len(dist.shape) != ndim for dist in distributions):
+            raise ValueError("Distributions must have the same event rank.")
+        if not -ndim <= axis < ndim:
+            raise ValueError(f"Axis {axis} is out of bounds for event rank {ndim}.")
+        self.axis = axis % ndim
+        check_shapes_match(
+            [
+                dist.shape[: self.axis] + dist.shape[self.axis + 1 :]
+                for dist in distributions
+            ]
+        )
+        sizes = [dist.shape[self.axis] for dist in distributions]
+        self.split_indices = tuple(accumulate(sizes))[:-1]
+        self.shape = shape[: self.axis] + (sum(sizes),) + shape[self.axis + 1 :]
+        self.distributions = distributions
+        self.cond_shape = merge_cond_shapes([dist.cond_shape for dist in distributions])
+
+    def _log_prob(self, x, condition=None):
+        parts = jnp.split(x, self.split_indices, axis=self.axis)
+        return sum(
+            dist._log_prob(xi, condition if dist.cond_shape is not None else None)
+            for dist, xi in zip(self.distributions, parts, strict=True)
+        )
+
+    def _sample(self, key, condition=None):
+        keys = jr.split(key, len(self.distributions))
+        return jnp.concatenate(
+            [
+                dist._sample(k, condition if dist.cond_shape is not None else None)
+                for dist, k in zip(self.distributions, keys, strict=True)
+            ],
+            axis=self.axis,
+        )
+
+    def _sample_and_log_prob(self, key, condition=None):
+        keys = jr.split(key, len(self.distributions))
+        results = [
+            dist._sample_and_log_prob(
+                k,
+                condition if dist.cond_shape is not None else None,
+            )
+            for dist, k in zip(self.distributions, keys, strict=True)
+        ]
+        samples, log_probs = zip(*results, strict=True)
+        return jnp.concatenate(samples, axis=self.axis), sum(log_probs)
 
 
 class VmapMixture(AbstractDistribution):
