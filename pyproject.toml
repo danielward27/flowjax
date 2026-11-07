@@ -41,7 +41,10 @@ dev = [
     "sphinx",
     "sphinx-book-theme",
     "sphinx-copybutton",
-    "sphinx-autodoc-typehints",
+    # TODO: Remove the <3.17 pin when sphinx-autodoc-typehints no longer
+    # executes jaxtyping's TYPE_CHECKING-only _indirection module. 3.17.x
+    # triggers a guarded_import warning that fails the -W docs build.
+    "sphinx-autodoc-typehints<3.17",
     "nbsphinx",
     "ipython",
     "numpyro>=0.20.0",
