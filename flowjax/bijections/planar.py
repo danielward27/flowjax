@@ -144,6 +144,9 @@ class _UnconditionalPlanar(AbstractBijection):
         """
         wtu = self._act_scale @ self.weight
         m_wtu = -1 + jnp.log(1 + nn.softplus(wtu))
+        if self.negative_slope is not None and self.negative_slope > 1:
+            # Both leaky-ReLU branches require 1 + slope * wtu > 0.
+            m_wtu = m_wtu / self.negative_slope
         return self._act_scale + (m_wtu - wtu) * self.weight / norm(self.weight) ** 2
 
     def inverse_and_log_det(self, y, condition=None):
