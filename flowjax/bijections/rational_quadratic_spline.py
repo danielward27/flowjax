@@ -66,7 +66,7 @@ class RationalQuadraticSpline(AbstractBijection):
             x >= jnp.array(self.interval[0]),
             x <= jnp.array(self.interval[1]),
         )
-        x_clipped = jnp.clip(x, self.interval[0], self.interval[1])
+        x_clipped = _clip_preserving_boundary_grad(x, self.interval)
         k = jnp.searchsorted(x_pos, x_clipped) - 1  # k is bin number
         k = jnp.clip(k, min=0, max=len(x_pos) - 2)
         xi = (x_clipped - x_pos[k]) / (x_pos[k + 1] - x_pos[k])
@@ -77,7 +77,7 @@ class RationalQuadraticSpline(AbstractBijection):
         y = yk + num / den  # eq. 4
 
         # avoid numerical precision issues transforming from in -> out of bounds
-        y = jnp.clip(y, self.interval[0], self.interval[1])
+        y = _clip_preserving_boundary_grad(y, self.interval)
         y = jnp.where(in_bounds, y, x)
         deriv = _rqs_derivative(
             dk=derivatives[k],
@@ -95,12 +95,14 @@ class RationalQuadraticSpline(AbstractBijection):
             y >= jnp.array(self.interval[0]),
             y <= jnp.array(self.interval[1]),
         )
-        y_clipped = jnp.clip(y, self.interval[0], self.interval[1])
+        y_clipped = _clip_preserving_boundary_grad(y, self.interval)
         k = jnp.searchsorted(y_pos, y_clipped) - 1
         k = jnp.clip(k, min=0, max=len(x_pos) - 2)
         xk, xk1, yk, yk1 = x_pos[k], x_pos[k + 1], y_pos[k], y_pos[k + 1]
         sk = (yk1 - yk) / (xk1 - xk)
-        y_delta_s_term = (y_clipped - yk) * (derivatives[k + 1] + derivatives[k] - 2 * sk)
+        y_delta_s_term = (y_clipped - yk) * (
+            derivatives[k + 1] + derivatives[k] - 2 * sk
+        )
         a = (yk1 - yk) * (sk - derivatives[k]) + y_delta_s_term
         b = (yk1 - yk) * derivatives[k] - y_delta_s_term
         c = -sk * (y_clipped - yk)
@@ -109,7 +111,7 @@ class RationalQuadraticSpline(AbstractBijection):
         x = xi * (xk1 - xk) + xk
 
         # avoid numerical precision issues transforming from in -> out of bounds
-        x = jnp.clip(x, self.interval[0], self.interval[1])
+        x = _clip_preserving_boundary_grad(x, self.interval)
         x = jnp.where(in_bounds, x, y)
         deriv = _rqs_derivative(
             dk=derivatives[k],
@@ -129,3 +131,9 @@ def _rqs_derivative(dk, dk1, sk, xi, in_bounds) -> Array:
     derivative = jnp.where(in_bounds, num / den, 1.0)
     assert isinstance(derivative, Array)
     return derivative
+
+
+def _clip_preserving_boundary_grad(x, interval):
+    """Clip whilst preserving the input gradient on the closed interval."""
+    lower, upper = interval
+    return jnp.where(x < lower, lower, jnp.where(x > upper, upper, x))
