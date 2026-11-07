@@ -12,7 +12,9 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
-          python-version: "3.x"
+          # TODO: Switch back to the latest Python ("3.x") once
+          # https://github.com/patrick-kidger/jaxtyping/issues/409 is resolved.
+          python-version: "3.14"
 
       - name: Install pandoc
         run: |
