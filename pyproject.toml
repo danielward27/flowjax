@@ -24,7 +24,7 @@ license = { file = "LICENSE" }
 name = "flowjax"
 readme = "README.md"
 requires-python = ">=3.11"
-version = "19.1.2"
+version = "19.2.1"
 
 [project.urls]
 repository = "https://github.com/danielward27/flowjax"
@@ -32,7 +32,10 @@ documentation = "https://danielward27.github.io/flowjax/index.html"
 
 [project.optional-dependencies]
 dev = [
-    "pytest",
+    # TODO: Remove the pytest<9 pin once the pytest.approx JAX regression is
+    # fixed in a released pytest version.
+    # https://github.com/pytest-dev/pytest/issues/15284
+    "pytest<9",
     "beartype",
     "ruff",
     "sphinx",

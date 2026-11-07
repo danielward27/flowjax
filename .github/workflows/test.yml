@@ -16,7 +16,9 @@ jobs:
 
     strategy:
       matrix:
-        python-version: ["3.11", "3.x"]
+        # TODO: Switch back to the latest Python ("3.x") once
+        # https://github.com/patrick-kidger/jaxtyping/issues/409 is resolved.
+        python-version: ["3.11", "3.14"]
 
     steps:
       - uses: actions/checkout@v6
